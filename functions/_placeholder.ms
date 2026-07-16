@@ -1,0 +1,2 @@
+-- Pasta reservada: modulos da fase correspondente (ver InLabChecker_Plano.md).
+-- Fase 0 nao inclui codigo aqui.
