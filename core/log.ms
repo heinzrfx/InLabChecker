@@ -1,44 +1,65 @@
 /*
 ================================================================================
- core\log.ms
+ core\log.ms — v0.10 (13/Jul): log colorido via dotNet RichTextBox
 --------------------------------------------------------------------------------
- O QUE ESTE ARQUIVO FAZ:
- Motor de log compartilhado pelas duas frentes do plugin (Preparação e
- Verificação). Mantém o histórico da sessão em memória (InLab_LogLines),
- espelha cada linha em três lugares:
-   1. array global (histórico da sessão)
-   2. MAXScript Listener (via format) — útil para debug
-   3. listbox da UI (quando a janela está aberta)
- e permite salvar o histórico em .txt.
+ LIMITAÇÃO DE ENGINE (documentada, não contornável): o listbox nativo do
+ MaxScript não suporta cor por linha. Substituído por um controle dotNet
+ RichTextBox embutido no rollout — permite cor por linha e fonte monoespaçada.
 
- Tipos de mensagem: #info (padrão), #ok, #warn, #err — viram prefixo textual.
+ Mapeamento de cor pedido pela equipe:
+   #err  (verificação FAIL)        → vermelho
+   #ok   (verificação PASS / sucesso genérico) → verde
+   #warn (advertência)             → âmbar (decisão: não é "falha" nem
+                                      neutro puro — mantém sinalização visível
+                                      sem confundir com FAIL)
+   #info (mensagens neutras)       → cinza claro (cor padrão do tema escuro)
+
+ Fundo escuro fixo (independe do tema do Max) para manter contraste com as
+ cores acima — combina com a paleta escura do restante da UI de referência.
 ================================================================================
 */
 
--- Histórico da sessão. Persiste enquanto o Max estiver aberto,
--- mesmo se a janela do plugin for fechada e reaberta.
-global InLab_LogLines = #()
+global InLab_LogLines = #()      -- histórico da sessão (texto puro, sem cor)
+global InLab_LogUI    = undefined -- referência ao dotNet RichTextBox
 
--- Referência ao listbox do log na UI. É setada pelo rollout no evento "open"
--- e volta a undefined quando a janela fecha. O log funciona mesmo sem UI.
-global InLab_LogUI = undefined
+fn InLab_CorDoTipo tipo =
+(
+    case tipo of
+    (
+        #ok:      (dotNetClass "System.Drawing.Color").FromArgb 120 220 120
+        #err:     (dotNetClass "System.Drawing.Color").FromArgb 235 90 90
+        #warn:    (dotNetClass "System.Drawing.Color").FromArgb 230 180 90
+        default:  (dotNetClass "System.Drawing.Color").FromArgb 210 210 210
+    )
+)
 
--- Reenvia o histórico completo para o listbox da UI (se ela estiver aberta)
--- e rola a seleção para a última linha.
+-- Reenvia o histórico completo para o RichTextBox (usado ao abrir a janela
+-- ou reconectar). Reconstrói as cores a partir do prefixo de cada linha,
+-- já que o histórico em InLab_LogLines é texto puro.
 fn InLab_RefreshLogUI =
 (
     if InLab_LogUI != undefined do
     (
-        InLab_LogUI.items = InLab_LogLines
-        if InLab_LogLines.count > 0 do InLab_LogUI.selection = InLab_LogLines.count
+        InLab_LogUI.Clear()
+        for l in InLab_LogLines do
+        (
+            local tipo = case (substring l 1 7) of
+            (
+                "[ OK ] ": #ok
+                "[ERRO] ": #err
+                "[AVISO]": #warn
+                default:   #info
+            )
+            InLab_LogUI.SelectionStart  = InLab_LogUI.TextLength
+            InLab_LogUI.SelectionLength = 0
+            InLab_LogUI.SelectionColor  = InLab_CorDoTipo tipo
+            InLab_LogUI.AppendText (l + "\n")
+        )
+        InLab_LogUI.SelectionStart = InLab_LogUI.TextLength
+        InLab_LogUI.ScrollToCaret()
     )
 )
 
--- Função principal de log. Uso:
---   InLab_Log "mensagem"                → [INFO]
---   InLab_Log "mensagem" tipo:#ok       → [ OK ]
---   InLab_Log "mensagem" tipo:#warn     → [AVISO]
---   InLab_Log "mensagem" tipo:#err      → [ERRO]
 fn InLab_Log msg tipo:#info =
 (
     local prefixo = case tipo of
@@ -50,20 +71,26 @@ fn InLab_Log msg tipo:#info =
         default: "[INFO] "
     )
     local linha = prefixo + " " + (msg as string)
-    append InLab_LogLines linha       -- 1. histórico em memória
-    format "%\n" linha                -- 2. eco no Listener
-    InLab_RefreshLogUI()              -- 3. UI
+    append InLab_LogLines linha
+    format "%\n" linha
+
+    if InLab_LogUI != undefined do
+    (
+        InLab_LogUI.SelectionStart  = InLab_LogUI.TextLength
+        InLab_LogUI.SelectionLength = 0
+        InLab_LogUI.SelectionColor  = InLab_CorDoTipo tipo
+        InLab_LogUI.AppendText (linha + "\n")
+        InLab_LogUI.SelectionStart = InLab_LogUI.TextLength
+        InLab_LogUI.ScrollToCaret()
+    )
     linha
 )
 
--- Loga um array de linhas de uma vez (usado com FamiliaConfig.linhasDescricao
--- e, na Fase 5, com as linhas dos VerifResults).
 fn InLab_LogLinhas linhas tipo:#info =
 (
     for l in linhas do InLab_Log l tipo:tipo
 )
 
--- Limpa o histórico da sessão e atualiza a UI.
 fn InLab_LimparLog =
 (
     InLab_LogLines = #()
@@ -71,19 +98,13 @@ fn InLab_LimparLog =
     InLab_Log "Log limpo."
 )
 
--- Salva o histórico completo em um arquivo .txt.
--- Robustez: força extensão .txt, tenta o caminho escolhido e, se o disco/
--- pasta recusar (permissão, lock de sync do Google Drive etc.), cai para a
--- pasta temp do Max e informa o caminho real no log. Verifica o arquivo em
--- disco antes de declarar sucesso. Retorna o caminho salvo ou undefined.
+-- Salva o histórico (texto puro, sem cor — cor é só de tela) em .txt.
+-- Robustez mantida: cai para pasta temp se o caminho escolhido recusar.
 fn InLab_SalvarLog arquivo =
 (
-    -- Garante a extensão .txt (getSaveFileName pode devolver sem extensão).
     if (toLower (getFilenameType arquivo)) != ".txt" do arquivo += ".txt"
-
     local salvoEm = undefined
     local tentativas = #(arquivo, ((getDir #temp) + "\\" + (filenameFromPath arquivo)))
-
     for caminho in tentativas while salvoEm == undefined do
     (
         local f = try ( createFile caminho ) catch ( undefined )
@@ -91,11 +112,9 @@ fn InLab_SalvarLog arquivo =
         (
             for l in InLab_LogLines do format "%\n" l to:f
             close f
-            -- Só declara sucesso com o arquivo confirmado em disco.
             if doesFileExist caminho do salvoEm = caminho
         )
     )
-
     if salvoEm != undefined then
     (
         if salvoEm != arquivo do
@@ -103,4 +122,34 @@ fn InLab_SalvarLog arquivo =
         salvoEm
     )
     else undefined
+)
+
+--------------------------------------------------------------------------------
+-- PROGRESSO (v0.10): indicador visual fixo, fora das abas, para operações
+-- demoradas (ProOptimizer, Auto UV, Verificações). Como as operações não
+-- expõem progresso granular, usa barra INDETERMINADA (efeito "marquee") —
+-- comunica "processando", não percentual real.
+--------------------------------------------------------------------------------
+global InLab_ProgressUI = undefined   -- dotNet ProgressBar
+global InLab_ProgressLbl = undefined  -- dotNet Label (texto de status)
+
+fn InLab_ProgressoIniciar msg =
+(
+    if InLab_ProgressUI != undefined do
+    (
+        InLab_ProgressUI.Style = (dotNetClass "System.Windows.Forms.ProgressBarStyle").Marquee
+        InLab_ProgressUI.Visible = true
+    )
+    if InLab_ProgressLbl != undefined do
+    (
+        InLab_ProgressLbl.Text = msg
+        InLab_ProgressLbl.Visible = true
+    )
+    try ( windows.processPostedMessages() ) catch()
+)
+
+fn InLab_ProgressoParar =
+(
+    if InLab_ProgressUI != undefined do InLab_ProgressUI.Visible = false
+    if InLab_ProgressLbl != undefined do InLab_ProgressLbl.Visible = false
 )
