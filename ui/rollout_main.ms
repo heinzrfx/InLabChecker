@@ -20,47 +20,52 @@
 */
 
 ----------------------------------------------------------------------
--- SEÇÃO: Família Estrutural
+-- SEÇÃO: Produto (Fase 5.2 — substitui "Família Estrutural")
 ----------------------------------------------------------------------
-rollout InLabSecFamilia "Família Estrutural" width:420
+-- O produto ativo agora vem 100% de um .json exportado pela plataforma
+-- externa (Lovable + Supabase) — não mais de uma família pré-cadastrada no
+-- plugin. Este rollout só importa e guarda a árvore crua devolvida pelo
+-- parser (InLab_ParseJSON, functions\fn_json.ms) em InLab_ProdutoAtivo; a
+-- tradução para os dados que verificações/otimização consomem de fato é a
+-- Fase 5.3, ainda pendente.
+global InLab_ProdutoAtivo = undefined -- árvore crua do produto ativo (formato de InLab_ParseJSON)
+
+rollout InLabSecProduto "Produto" width:420
 (
-    local nomesExibicao = #(
-        "— selecione a família —",
-        "Corpo Único  (Lote 1)", "Pernas + Tampo  (Lote 1)",
-        "Estrutura + Estofado  (Lote 1)", "Estrutura Modular  (Lote 1)",
-        "Translação  (Lote 2 · animada)", "Rotação  (Lote 2 · animada)",
-        "Giro de Assento  (Lote 2 · animada)", "Movimento Especial  (Lote 2 · animada)"
-    )
-    local nomesInternos = #(
-        "", "corpo_unico", "pernas_tampo", "estrutura_estofado", "estrutura_modular",
-        "translacao", "rotacao", "giro_assento", "movimento_especial"
-    )
+    label lblProdutoAtivo "Nenhum produto carregado." align:#left
+    button btnImportarProduto "Importar JSON do Produto..." width:395 height:26
 
-    dropdownlist ddlFamilia items:nomesExibicao width:395
-    button btnCarregar "Carregar Configuração da Família" width:395 height:24
-
-    on btnCarregar pressed do
+    on btnImportarProduto pressed do
     (
-        local i = ddlFamilia.selection
-        if i <= 1 then InLab_Log "Selecione uma família antes de carregar." tipo:#warn
+        local caminho = getOpenFileName caption:"Selecionar .json do produto" types:"JSON (*.json)|*.json"
+        if caminho == undefined then
+            InLab_Log "Importação de produto cancelada — nenhum arquivo selecionado." tipo:#warn
         else
         (
-            local cfg = InLab_ObterFamilia nomesInternos[i]
-            if cfg == undefined then
-                InLab_Log ("Config da família '" + nomesInternos[i] + "' não encontrada.") tipo:#err
+            local texto = InLab_JSON_LerArquivoUTF8 caminho
+            if texto == undefined then
+            (
+                InLab_ProdutoAtivo = undefined
+                lblProdutoAtivo.text = "Nenhum produto carregado."
+            )
             else
             (
-                InLab_FamiliaAtiva = cfg
-                InLab_Log "----------------------------------------------"
-                InLab_Log ("Família ativa carregada: " + cfg.nome) tipo:#ok
-                InLab_LogLinhas (cfg.linhasDescricao())
-                InLab_Log "----------------------------------------------"
+                local dados = InLab_ParseJSON texto
+                if dados == undefined then
+                (
+                    InLab_ProdutoAtivo = undefined
+                    lblProdutoAtivo.text = "Nenhum produto carregado."
+                )
+                else
+                (
+                    InLab_ProdutoAtivo = dados
+                    local nomeArquivo = filenameFromPath caminho
+                    lblProdutoAtivo.text = "Produto carregado: " + nomeArquivo
+                    InLab_Log ("Produto importado com sucesso: " + nomeArquivo) tipo:#ok
+                )
             )
         )
     )
-    button btnReload "🔄 Reload Plugin" width:120 height:20
-    
-    on btnReload pressed do InLab_RecarregarPlugin()
 )
 
 ----------------------------------------------------------------------
@@ -221,13 +226,52 @@ rollout InLabSecF5 "Converter Material" width:420
 )
 
 ----------------------------------------------------------------------
+-- SEÇÃO: Materiais — Utilidades (ref. ArchToolz, pedido 10/Set)
+-- Select by similar material / Object name → Material name / Detach by
+-- Material com propagação de IDs — ver functions\fn_material_utils.ms.
+----------------------------------------------------------------------
+rollout InLabSecMatUtil "Materiais — Utilidades" width:420
+(
+    label lblMatSel "Selecionar por Material Similar" align:#left
+    label lblMatSelInfo "(usa o material copiado — Copy Mat / Pick Mat da barra do topo)" align:#left
+    radiobuttons rdoEscopoMat labels:#("Somente seleção", "Cena inteira") default:2 columns:2
+    checkbox chkMatPorNome "Também considerar mesmo NOME (cópias/instâncias diferentes)" checked:false
+    button btnMatSel "Selecionar por Material Similar" width:395 height:24
+
+    label lblMatNome "Nome do Objeto → Nome do Material" align:#left across:1
+    button btnMatNome "Aplicar na Seleção" width:395 height:24
+
+    label lblMatDetach "Detach por Material (propaga IDs para os pedaços)" align:#left
+    button btnMatDetach "Detach por Material na Seleção" width:395 height:24
+
+    on btnMatSel pressed do
+    (
+        local escopo = if rdoEscopoMat.state == 1 then #selecao else #cena
+        InLab_SelecionarPorMaterialSimilar escopo:escopo porNome:chkMatPorNome.checked
+    )
+    on btnMatNome pressed do
+    (
+        local objs = InLab_SelecaoValida()
+        if objs.count > 0 do InLab_NomeObjetoParaMaterial objs
+    )
+    on btnMatDetach pressed do
+    (
+        local objs = InLab_SelecaoValida()
+        if objs.count > 0 do InLab_DetachPorMaterialSelecao objs
+    )
+)
+
+----------------------------------------------------------------------
 -- SEÇÃO: Exportar
 ----------------------------------------------------------------------
+-- BUG 10/Set: o botão chamava export headless (#noPrompt) direto — nunca
+-- abria a janela nativa do Real-Time Exporter. Agora ele só garante a
+-- seleção certa na viewport e abre a janela nativa; formato/compressão/
+-- caminho o usuário escolhe DENTRO dela (ver fn_export_gltf.ms).
 rollout InLabSecF6 "Exportar" width:420
 (
-    dropdownlist ddlFormato items:#("glTF Binário (.glb)", "glTF (.gltf)") selection:1 width:395
     radiobuttons rdoEscopoExp labels:#("Somente seleção", "Cena inteira") default:1 columns:2
-    button btnF6 "Exportar..." width:395 height:24
+    button btnF6 "Abrir Real-Time Exporter..." width:395 height:24
 
     on btnF6 pressed do
     (
@@ -237,7 +281,7 @@ rollout InLabSecF6 "Exportar" width:420
         else
         (
             local objs = if soSelecao then (for o in selection collect o) else undefined
-            InLab_ExportGLTF objs somenteSelecao:soSelecao
+            InLab_AbrirExportadorRealTime objs somenteSelecao:soSelecao
         )
     )
 )
@@ -301,6 +345,27 @@ rollout InLabSecLog "Log de Sessão" width:420
 ----------------------------------------------------------------------
 -- ROLLOUT PRINCIPAL
 ----------------------------------------------------------------------
+-- AJUSTE 10/Set — janela principal (e o splash, ver ui\splash.ms) não
+-- abriam no TOPO da tela (referência ArchToolz): só havia reposicionamento
+-- em X, e só reagindo à MUDANÇA do radiobutton — a abertura inicial caía
+-- onde o Max/Windows decidisse (o comentário logo abaixo, em InLab_AbrirUI,
+-- já dizia "posicionada conforme a última preferência de lado", mas isso
+-- nunca tinha sido implementado de fato). Agora:
+--   - global InLab_LadoPainel guarda a preferência (1=esquerda, 2=direita),
+--     sobrevive a reloads dentro da mesma sessão do Max;
+--   - InLab_PosicionarPainel fixa X (esquerda/direita) E Y (sempre no topo
+--     do WorkingArea) — usada tanto na abertura quanto na mudança do rádio;
+--   - InLab_MostrarSplash (ui\splash.ms) lê o MESMO InLab_LadoPainel, então
+--     splash e janela principal sempre abrem no mesmo canto.
+global InLab_LadoPainel = 2 -- 1 = esquerda, 2 = direita (default = direita, igual ao radiobutton)
+
+fn InLab_PosicionarPainel lado =
+(
+    local area = (dotNetClass "System.Windows.Forms.Screen").PrimaryScreen.WorkingArea
+    local x = if lado == 1 then area.Left else (area.Right - 446)
+    try ( InLabChecker_Rollout.pos = [x, area.Top] ) catch()
+)
+
 rollout InLabChecker_Rollout "InLabChecker · InLab Artefacto · v0.10" width:446
 (
     ------------------------------------------------------------------
@@ -321,7 +386,11 @@ rollout InLabChecker_Rollout "InLabChecker · InLab Artefacto · v0.10" width:44
     ------------------------------------------------------------------
     radiobuttons rdoLado labels:#("Fixar à esquerda", "Fixar à direita") default:2 columns:2
 
-    subRollout subSecoes width:438 height:560 pos:[3, 74]
+    -- Realocado de InLabSecFamilia (Fase 5.2): não é específico de nenhuma
+    -- seção, então fica fixo aqui, igual à barra de Copy/Paste acima.
+    button btnReload "🔄 Reload Plugin" width:395 height:22
+
+    subRollout subSecoes width:438 height:538 pos:[3, 96]
 
     ------------------------------------------------------------------
     -- PROGRESSO — fixo, fora das abas, abaixo das seções.
@@ -334,10 +403,17 @@ rollout InLabChecker_Rollout "InLabChecker · InLab Artefacto · v0.10" width:44
     ------------------------------------------------------------------
     on InLabChecker_Rollout open do
     (
-        AddSubRollout subSecoes InLabSecFamilia
+        -- Sincroniza o rádio com a preferência lembrada e fixa a janela no
+        -- topo do lado certo — ANTES de qualquer outra coisa, pra não haver
+        -- frame em que a janela aparece no lugar errado.
+        rdoLado.state = InLab_LadoPainel
+        InLab_PosicionarPainel InLab_LadoPainel
+
+        AddSubRollout subSecoes InLabSecProduto
         AddSubRollout subSecoes InLabSecOtimizacao rolledUp:true
         AddSubRollout subSecoes InLabSecUtil rolledUp:true
         AddSubRollout subSecoes InLabSecF5 rolledUp:true
+        AddSubRollout subSecoes InLabSecMatUtil rolledUp:true
         AddSubRollout subSecoes InLabSecF6 rolledUp:true
         AddSubRollout subSecoes InLabSecFase4 rolledUp:true
         AddSubRollout subSecoes InLabSecLog
@@ -374,18 +450,26 @@ rollout InLabChecker_Rollout "InLabChecker · InLab Artefacto · v0.10" width:44
         if objs.count > 0 do InLab_PasteMat objs
     )
     on btnPickMat pressed do InLab_PickMat()
+    on btnReload pressed do InLab_RecarregarPlugin()
 
-    -- Reposiciona a janela na borda esquerda/direita da tela de trabalho.
+    -- Reposiciona a janela na borda esquerda/direita da tela de trabalho
+    -- (sempre no topo) e lembra a preferência pra próxima abertura/reload.
     on rdoLado changed sel do
     (
-        local area = (dotNetClass "System.Windows.Forms.Screen").PrimaryScreen.WorkingArea
-        local x = if sel == 1 then area.Left else (area.Right - 446)
-        try ( InLabChecker_Rollout.pos = [x, InLabChecker_Rollout.pos.y] ) catch()
+        InLab_LadoPainel = sel
+        InLab_PosicionarPainel sel
     )
 )
 
 -- Fecha instância anterior (se existir), mostra o splash e abre a janela
 -- já posicionada conforme a última preferência de lado (padrão: direita).
+--
+-- global explícito aqui: o fileIn deste arquivo pode acontecer de DENTRO
+-- de InLab_RecarregarPlugin() (reload), um escopo de função aninhado, o
+-- que pode amarrar esta definição ao escopo local do chamador em vez do
+-- global — mesmo problema que já resolvemos no InLabChecker.ms, agora
+-- também no lado de quem DEFINE a função (bug constatado em 29/Jul).
+global InLab_AbrirUI
 fn InLab_AbrirUI =
 (
     try (destroyDialog InLabChecker_Rollout) catch()

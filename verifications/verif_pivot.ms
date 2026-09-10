@@ -20,16 +20,28 @@ fn InLab_V17_PivotRaiz objetos =
 (
     local raizes = InLab_RaizesGeometria objetos
     local problemas = #()
+    local tol = 1.0   -- ±1mm FIXO, conforme spec (Z=0 do MUNDO — não % da altura)
     for o in raizes do
     (
-        local tol = amax 1.0 ((o.max.z - o.min.z) * 0.02)
         local cx = (o.min.x + o.max.x) / 2.0
         local cy = (o.min.y + o.max.y) / 2.0
-        local okZ  = (abs (o.pivot.z - o.min.z)) <= tol
-        local okXY = ((abs (o.pivot.x - cx)) <= tol) and ((abs (o.pivot.y - cy)) <= tol)
-        if not (okZ and okXY) do append problemas (o.name + " pivot:" + o.pivot as string)
+        local okZmundo = (abs o.pivot.z) <= tol
+        local okBase   = (abs (o.pivot.z - o.min.z)) <= tol
+        local okXY     = ((abs (o.pivot.x - cx)) <= tol) and ((abs (o.pivot.y - cy)) <= tol)
+        
+        if not (okZmundo and okXY) do
+        (
+            local motivo = if (not okZmundo) and okBase then
+            (
+                " [base OK, mas objeto flutuando — pivot Z=" + (formattedPrint o.pivot.z format:".2f") + "mm, esperado 0]"
+            )
+            else ""
+            
+            append problemas (o.name + " pivot:" + o.pivot as string + motivo)
+        )
     )
-    InLab_RegistrarVerif "V-17" "Pivot raiz na base/centro" (problemas.count == 0) (if problemas.count == 0 then (raizes.count as string + " raiz(es) OK") else (problemas as string)) critico:true
+    
+    InLab_RegistrarVerif "V-17" "Pivot raiz em Z=0 (mundo), centrado em XY" (problemas.count == 0) (if problemas.count == 0 then (raizes.count as string + " raiz(es) OK") else (problemas as string)) critico:true
 )
 
 -- V-18 · Eixos do pivot alinhados ao mundo (sem rotação residual no nó).

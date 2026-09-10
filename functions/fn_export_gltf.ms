@@ -17,6 +17,24 @@
  nativo usa as configurações padrão dele; ajustes finos ficam mapeados
  para a Fase 6 conforme o plano ("Confirmar/parametrizar: unidades, eixo
  up, compressão, embutir texturas ou externas").
+
+ BUG 10/Set — FALTAVA CHAMAR A JANELA DO REAL-TIME EXPORTER:
+ até aqui o botão Exportar só fazia export HEADLESS (#noPrompt, sem
+ diálogo nenhum) via InLab_ExportGLTF — o usuário nunca via a janela
+ nativa do Real-Time Exporter (a mesma de File > Real-Time Exporter,
+ renomeada de "Game Exporter" a partir do Max 2023) pra ajustar formato/
+ compressão/caminho na hora. Essa janela NÃO é o exportador clássico
+ (exporterPlugin.classes / exportFile) — é um utility plugin à parte, com
+ sua própria API global:
+     GameExporterOpenDialog()  -> abre a janela (true/false)
+     GameExporterHideDialog()  -> fecha (Max 2023+)
+     GameExporterShown()       -> true se já está aberta
+ Ela não aceita parâmetros via script (formato/caminho são escolhidos pelo
+ usuário DENTRO da janela) — por isso InLab_AbrirExportadorRealTime só
+ seleciona os objetos certos na viewport antes de abrir (a janela nativa
+ exporta a partir da seleção atual do Max) e loga o resultado.
+ InLab_ExportGLTF (headless) fica mantida abaixo pra uso futuro (ex.: export
+ em lote sem interação), mas o botão da UI agora chama a função nova.
 ================================================================================
 */
 
@@ -80,6 +98,42 @@ fn InLab_ExportGLTF caminho somenteSelecao:true =
         else
         (
             InLab_Log ("Export não concluído: " + caminho) tipo:#err
+            false
+        )
+    )
+)
+
+--------------------------------------------------------------------------------
+-- Abre a janela NATIVA do Real-Time Exporter (GameExporter) em vez de
+-- exportar direto por script. somenteSelecao:true seleciona objs na
+-- viewport ANTES de abrir — a janela nativa exporta a partir da seleção
+-- atual do Max, então isso garante que ela já abre com o escopo certo.
+-- Retorna true se a janela abriu (ou já estava aberta), false se a API
+-- global não existir nesta build (Max < 2017 — sem Real-Time Exporter).
+--------------------------------------------------------------------------------
+fn InLab_AbrirExportadorRealTime objs somenteSelecao:true =
+(
+    if somenteSelecao and objs != undefined and objs.count > 0 do select objs
+
+    local jaAberta = try ( GameExporterShown() ) catch ( undefined )
+    if jaAberta == true then
+    (
+        InLab_Log "Real-Time Exporter já estava aberto — janela trazida ao foco." tipo:#ok
+        true
+    )
+    else
+    (
+        local ok = try ( GameExporterOpenDialog() ) catch ( undefined )
+        if ok == true then
+        (
+            InLab_Log ("Real-Time Exporter aberto" +
+                       (if somenteSelecao then " · seleção atual (" + objs.count as string + " objeto(s))" else " · cena inteira") +
+                       " — escolha formato/compressão/caminho na própria janela.") tipo:#ok
+            true
+        )
+        else
+        (
+            InLab_Log "Não foi possível abrir o Real-Time Exporter — GameExporterOpenDialog() falhou ou está indisponível nesta build (requer 3ds Max 2017+)." tipo:#err
             false
         )
     )

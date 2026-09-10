@@ -4,10 +4,16 @@
 --------------------------------------------------------------------------------
  V-20: nomenclatura oficial — EM ADVERTÊNCIA até definição (spec, seção 6);
        validNames vazio nos 8 structs.
- V-21/22: LÓGICA INFERIDA (a spec v2.0 herda os nomes da v1.0 sem detalhar;
-       a v1.0 não está disponível). Implementação a confirmar com o Rafael:
-       V-21 = objetos com nome default do Max (não descritivo) → advertência
-       V-22 = nomes duplicados (duplicam nós no GLB) → advertência
+
+ V-21/22 — CORRIGIDOS (auditoria de 08/08/2026, cruzando com a spec v1.0
+ recuperada — a versão anterior deste arquivo tinha sido escrita sem acesso
+ a ela e "chutou" outra lógica, registrada sob os mesmos IDs por engano):
+   V-21 = nomes sem acento/espaço — apenas [A-Za-z0-9_]           (spec 2.7)
+   V-22 = sufixos numéricos sequenciais sem lacuna (_01, _02...)  (spec 2.7)
+
+ A checagem antiga de "nome default do Max" e "nomes duplicados" foi
+ removida destes IDs — pode voltar como um V extra separado se for útil,
+ mas não são o V-21/V-22 da spec.
 ================================================================================
 */
 
@@ -25,25 +31,57 @@ fn InLab_V20_Nomenclatura cfg =
     )
 )
 
-fn InLab_V21_NomesDescritivos objetos =
+-- V-21 · Sem acentos/espaços — apenas [A-Za-z0-9_] (spec v1.0 · seção 2.7).
+fn InLab_V21_NomesValidos objetos =
 (
-    local padroesDefault = #("Box*", "Object*", "Plane*", "Sphere*", "Cylinder*", "Teapot*", "GeoSphere*", "Editable*", "Shape*", "Line*")
-    local ruins = #()
+    local permitidos = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789_"
+    local problemas = #()
     for o in objetos do
-        for p in padroesDefault do
-            if matchPattern o.name pattern:p do appendIfUnique ruins o.name
-    InLab_RegistrarVerif "V-21" "Nomes de objeto descritivos [lógica inferida]" (ruins.count == 0) (if ruins.count == 0 then "sem nomes default do Max" else (ruins as string)) critico:false
+        for i = 1 to o.name.count do
+        (
+            local c = o.name[i]
+            if (findString permitidos c) == undefined do
+                appendIfUnique problemas (o.name + " → caractere inválido: '" + c + "'")
+        )
+    local msg = if problemas.count == 0 then "todos os nomes válidos" else (problemas as string)
+    InLab_RegistrarVerif "V-21" "Nomes sem acentos/espaços" (problemas.count == 0) msg critico:true
 )
 
-fn InLab_V22_NomesUnicos objetos =
+-- V-22 · Sufixos numéricos sequenciais sem lacuna (spec v1.0 · seção 2.7).
+-- Detecta grupos "Prefixo_NN" automaticamente a partir dos nomes da cena —
+-- não depende da lista oficial (validNames), que ainda está pendente.
+fn InLab_V22_SufixosSequenciais objetos =
 (
-    local vistos = #()
-    local dups = #()
+    local grupos = #()
     for o in objetos do
     (
-        local n = toLower o.name
-        if (findItem vistos n) > 0 then appendIfUnique dups o.name
-        else append vistos n
+        local n = o.name
+        local under = undefined
+        for i = n.count to 1 by -1 while under == undefined do if n[i] == "_" do under = i
+        if under != undefined and under < n.count then
+        (
+            local prefixo = substring n 1 (under - 1)
+            local sufixo  = substring n (under + 1) (n.count - under)
+            local numOk = true
+            local num = 0
+            try ( num = sufixo as integer ; if num == undefined do numOk = false ) catch ( numOk = false )
+            if numOk do
+            (
+                local idx = 0
+                for i = 1 to grupos.count where grupos[i][1] == prefixo do idx = i
+                if idx == 0 then ( append grupos #(prefixo, #(num)) )
+                else append grupos[idx][2] num
+            )
+        )
     )
-    InLab_RegistrarVerif "V-22" "Nomes de objeto únicos [lógica inferida]" (dups.count == 0) (if dups.count == 0 then "sem duplicatas" else (dups as string)) critico:false
+    local problemas = #()
+    for g in grupos where g[2].count > 1 do
+    (
+        local nums = deepCopy g[2]
+        sort nums
+        for i = 1 to nums.count where nums[i] != i do
+            append problemas (g[1] + "_*: sequência com lacuna — encontrado " + (nums as string) + ", esperado 1.." + nums.count as string)
+    )
+    local msg = if problemas.count == 0 then "sequências OK (ou sem sufixo numérico)" else (problemas as string)
+    InLab_RegistrarVerif "V-22" "Sufixos numéricos sequenciais (_01, _02... sem lacuna)" (problemas.count == 0) msg critico:false
 )

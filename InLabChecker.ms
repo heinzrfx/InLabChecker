@@ -30,6 +30,8 @@
 
         global InLab_AbrirUI
         global InLab_RecarregarPlugin
+        global InLab_Log            
+        global InLabChecker_Rollout
 
         ------------------------------------------------------------------
         -- MANIFESTO DE MÓDULOS — global agora, pra ser reaproveitado pelo
@@ -52,11 +54,15 @@
             @"familias\familia_giro_assento.ms",
             @"familias\familia_movimento_especial.ms",
             -- 3. FUNÇÕES DE PREPARAÇÃO
+            -- fn_json.ms primeiro: parser genérico consumido pela seção de
+            -- Produto (ui\rollout_main.ms) — só depende de core\log.ms.
+            @"functions\fn_json.ms",
             @"functions\fn_prooptimizer.ms",
             @"functions\fn_realworldscale.ms",
             @"functions\fn_checktexture.ms",
             @"functions\fn_autouv.ms",
             @"functions\fn_material_convert.ms",
+            @"functions\fn_material_utils.ms",
             @"functions\fn_export_gltf.ms",
             @"functions\fn_utilidades.ms",
             -- 4. VERIFICAÇÃO + relatório

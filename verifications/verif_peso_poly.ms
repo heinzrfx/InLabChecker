@@ -28,23 +28,57 @@ fn InLab_V02_PesoSKP cfg =
         InLab_RegistrarVerif "V-02" "Peso do arquivo SKP" false ("verificação externa — teto " + cfg.maxSkpMB as string + " MB (SKP fora do escopo do Max)") critico:false
 )
 
--- V-03/V-04 · Total de polígonos dentro da faixa [polyMin, polyMax].
-fn InLab_V03_V04_Poligonos cfg objetos =
+--- V-03 · Total de polígonos DENTRO da faixa [polyMin, polyMax] — UMA verificação,
+-- não duas. (O antigo "V-04 piso" era só a outra metade do V-03 duplicada.)
+fn InLab_V03_Poligonos cfg objetos =
 (
     local total = InLab_ContarPoligonos objetos
-    InLab_RegistrarVerif "V-03" "Polígonos — teto" (total <= cfg.polyMax) (total as string + " faces · teto " + cfg.polyMax as string) provisorio:true
-    InLab_RegistrarVerif "V-04" "Polígonos — piso" (total >= cfg.polyMin) (total as string + " faces · piso " + cfg.polyMin as string) critico:false
+    local dentro = (total >= cfg.polyMin) and (total <= cfg.polyMax)
+    local msg = total as string + " faces · faixa " + cfg.polyMin as string + "–" + cfg.polyMax as string
+    InLab_RegistrarVerif "V-03" "Polígonos totais (faixa da família)" dentro msg provisorio:true
 )
 
--- V-05 · Draw calls ≈ número de objetos de geometria. Regra dura codificada
--- só para as famílias com contagem fixa; demais reportam a contagem contra
--- a regra descritiva da config.
+-- V-04 · Distribuição por parte nomeada (spec 2.2 · seção 2.4 v1.0).
+-- Só valida partes com limite definido em cfg.limitesPorParte — igual ao
+-- padrão já usado no V-20 para nomenclatura pendente.
+fn InLab_V04_PoligonosPorParte cfg objetos =
+(
+    if cfg.limitesPorParte.count == 0 then
+    (
+        InLab_RegistrarVerif "V-04" "Polígonos por parte (limite individual)" true "sem limites por parte definidos para esta família — pendente (spec 2.2)" critico:false
+    )
+    else
+    (
+        local problemas = #()
+        for regra in cfg.limitesPorParte do
+        (
+            local prefixo = regra[1]
+            local limite  = regra[2]
+            for o in objetos where (matchPattern o.name pattern:(prefixo + "*") ignoreCase:true) do
+            (
+                local n = InLab_ContarPoligonos #(o)
+                if n > limite do append problemas (o.name + ": " + n as string + " > " + limite as string + " (" + prefixo + ")")
+            )
+        )
+        local msg = if problemas.count == 0 then "todas as partes dentro do limite individual" else (problemas as string)
+        InLab_RegistrarVerif "V-04" "Polígonos por parte (limite individual)" (problemas.count == 0) msg critico:true
+    )
+)
+
+-- V-05 · Draw calls por regra da família (spec v2.0 · seção 2.3).
+-- Famílias com regra FIXA são validadas numericamente. Famílias "1 por parte"
+-- não têm como ser validadas ainda: o número de partes esperadas depende da
+-- nomenclatura oficial (validNames), que está pendente — mesmo caso do V-20.
 fn InLab_V05_DrawCalls cfg objetos =
 (
     local n = objetos.count
-    local ok = true
-    if cfg.nome == "corpo_unico" or cfg.nome == "pernas_tampo" do ok = (n <= 2)
-    InLab_RegistrarVerif "V-05" "Draw calls (contagem de objetos)" ok (n as string + " objeto(s) · regra da família: " + cfg.drawCallsRule) provisorio:true
+    case cfg.nome of
+    (
+        "corpo_unico":    InLab_RegistrarVerif "V-05" "Draw calls" (n <= 2) (n as string + " objeto(s) · regra: " + cfg.drawCallsRule) provisorio:true
+        "pernas_tampo":   InLab_RegistrarVerif "V-05" "Draw calls" (n <= 2) (n as string + " objeto(s) · regra: " + cfg.drawCallsRule) provisorio:true
+        "giro_assento":   InLab_RegistrarVerif "V-05" "Draw calls" (n <= 2) (n as string + " objeto(s) · regra: " + cfg.drawCallsRule) provisorio:true
+        default:          InLab_RegistrarVerif "V-05" "Draw calls" true (n as string + " objeto(s) · regra: '" + cfg.drawCallsRule + "' — não verificável numericamente até nomenclatura oficial (valid_names) definir as partes esperadas") critico:false
+    )
 )
 
 -- V-06 · Sugestão de Attach: objetos compartilhando o MESMO material são

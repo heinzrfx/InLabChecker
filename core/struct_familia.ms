@@ -32,6 +32,7 @@ struct FamiliaConfig
     tampoAcessorio   = false,      -- V-38: só relevante para Pernas+Tampo
     materialTypes    = #(),        -- ex.: #("zona_acabamento"), #("palha"), #("cristal") → V-35/36/37
     validNames       = #(),        -- V-20: vazio até a nomenclatura oficial ser definida (fica em advertência)
+    limitesPorParte  = #(),        -- V-04: #("Prefixo", limiteMax) por parte. Vazio até Bianca definir por família.
 
     -- Gera a descrição da config como ARRAY de linhas, prontas para o log da UI.
     -- (o listbox do log trabalha linha a linha, por isso não retorna string única)
@@ -50,6 +51,7 @@ struct FamiliaConfig
         append L ("Tampo acessório (V-38): " + (if tampoAcessorio then "sim" else "não"))
         append L ("Materiais especiais: " + (if materialTypes.count > 0 then (materialTypes as string) else "nenhum"))
         append L ("Nomes válidos (V-20): " + (if validNames.count == 0 then "pendente — verificação em modo advertência" else (validNames as string)))
+        append L ("Limites por parte (V-04): " + (if limitesPorParte.count == 0 then "pendente — verificação em modo advertência" else (limitesPorParte as string)))
         L
     )
 )
@@ -62,6 +64,15 @@ struct FamiliaConfig
 global InLab_Familias = #()
 
 -- Família atualmente selecionada na UI (setada pelo botão "Carregar Configuração").
+--
+-- ÓRFÃ desde a Fase 5.2 (import de JSON por produto): a seção de UI que
+-- setava esta global (InLabSecFamilia, dropdown + "Carregar Configuração
+-- da Família") foi removida de ui\rollout_main.ms — nada mais atribui este
+-- global. Quem ainda LÊ InLab_FamiliaAtiva (ex.: fn_prooptimizer "Alvo da
+-- família", verif_orquestrador, InLabSecUtil, InLabSecFase4) fica quebrado
+-- até a Fase 5.3 traduzir o JSON importado (InLab_ProdutoAtivo, em
+-- ui\rollout_main.ms) para um equivalente — a atualização desses pontos de
+-- leitura é Fase 5.4, não mexer nisso antes.
 global InLab_FamiliaAtiva = undefined
 
 -- Registra uma config no array global. Se uma família com o mesmo nome já
@@ -84,3 +95,4 @@ fn InLab_ObterFamilia nomeFam =
     for f in InLab_Familias where f.nome == nomeFam do encontrada = f
     encontrada
 )
+
