@@ -86,7 +86,8 @@ rollout InLabSecOtimizacao "Otimização" width:420
     label lblF1 "ProOptimizer" align:#left
     radiobuttons rdoModoOpt labels:#("Percentual manual", "Alvo da família (polyMax)") default:1 columns:2
     spinner spnPercent "VertexPercent:" range:[1.0, 100.0, 50.0] type:#float fieldWidth:55 align:#left
-    button btnF1 "Aplicar" width:395 height:25
+    button btnF1 "Aplicar" width:192 height:25 across:2
+    button btnF1Undo "Desfazer Otimização" width:192 height:25
 
     label lblF2 "Auto UV" align:#left across:1
     spinner spnPadding "Padding:" range:[0.0, 0.05, 0.005] scale:0.001 type:#float fieldWidth:50 align:#left
@@ -128,6 +129,13 @@ rollout InLabSecOtimizacao "Otimização" width:420
             )
         )
     )
+
+    -- AJUSTE 15/Set: InLab_ReverterOtimizacao (functions\fn_prooptimizer.ms)
+    -- existia desde a v0.9 mas nunca teve botão — a "camada 2" de undo descrita
+    -- no cabeçalho daquele módulo era código morto. Ela remove exatamente os
+    -- modificadores da última rodada, e funciona mesmo que o usuário já tenha
+    -- feito outras ações depois (cenário em que o Ctrl+Z simples não alcança).
+    on btnF1Undo pressed do InLab_ReverterOtimizacao()
 
     on btnF2 pressed do
     (
