@@ -3,16 +3,26 @@
  ui\rollout_main.ms — v0.10 (13/Jul) — reorganização completa de UI
 --------------------------------------------------------------------------------
  MUDANÇAS DESTA VERSÃO (pedido da equipe, ref. ArchToolz):
-   - Barra de ferramentas FIXA no topo (Copy/Paste Objs/Mat, Pick Mat).
-     Paste DWG: desabilitado — pendência de escopo (ver fn_clipboard.ms).
    - Ordem "Somente seleção" / "Cena inteira" padronizada em todo o plugin.
    - Seções reordenadas: Família → Otimização → Utilidades → Converter
      Material → Exportar → Verificações → Log (sempre por último).
    - Log colorido (dotNet RichTextBox — listbox nativo não suporta cor).
-   - Progress bar fixa abaixo das seções (fora das abas).
    - Splash screen ao abrir.
    - Opção de fixar o painel à esquerda/direita da tela (reposicionamento
      de janela — NÃO é docking real; ver ressalva entregue à equipe).
+
+ AJUSTE 15/Set (debug de UI, pedido Rafael): removidos dois blocos fixos que
+ ficavam acima/abaixo das seções:
+   - Barra de ferramentas do topo (Copy/Paste Objs/Mat, Paste DWG, Pick Mat)
+     — os botões nem chamavam funções carregadas (fn_clipboard.ms não está
+     no manifesto INLAB_MODULOS de InLabChecker.ms), então pressioná-los já
+     dava erro. Removida por inteiro; fn_clipboard.ms continua no repo,
+     intocado, caso a equipe decida reconectar essa função depois.
+   - Barra de progresso fixa abaixo das seções (dncProgress/dncProgressLbl).
+     InLab_ProgressoIniciar/Parar (core\log.ms) já protegem contra
+     InLab_ProgressUI/InLab_ProgressLbl == undefined, então essas chamadas
+     (ProOptimizer, Auto UV, Verificações) continuam funcionando normalmente
+     como no-op silencioso — nada mais a ajustar nesses outros arquivos.
 
  ARQUITETURA: cada seção segue sendo um rollout independente, define-before-
  use, comunicação só via globais — mesma disciplina desde a v0.7.
@@ -233,7 +243,7 @@ rollout InLabSecF5 "Converter Material" width:420
 rollout InLabSecMatUtil "Materiais — Utilidades" width:420
 (
     label lblMatSel "Selecionar por Material Similar" align:#left
-    label lblMatSelInfo "(usa o material copiado — Copy Mat / Pick Mat da barra do topo)" align:#left
+    label lblMatSelInfo "(usa o material copiado — recurso Copy Mat / Pick Mat removido; ver nota 15/Set)" align:#left
     radiobuttons rdoEscopoMat labels:#("Somente seleção", "Cena inteira") default:2 columns:2
     checkbox chkMatPorNome "Também considerar mesmo NOME (cópias/instâncias diferentes)" checked:false
     button btnMatSel "Selecionar por Material Similar" width:395 height:24
@@ -369,34 +379,20 @@ fn InLab_PosicionarPainel lado =
 rollout InLabChecker_Rollout "InLabChecker · InLab Artefacto · v0.10" width:446
 (
     ------------------------------------------------------------------
-    -- BARRA FIXA (topo) — Copy/Paste Objs/Mat, Pick Mat. Sempre visível,
-    -- independente da seção/aba ativa. Paste DWG desabilitado (pendência
-    -- de escopo — ver fn_clipboard.ms).
-    ------------------------------------------------------------------
-    button btnCopyObjs  "Copy Objs"  width:68 across:6 offset:[0,0]
-    button btnPasteObjs "Paste Objs" width:68
-    button btnCopyMat   "Copy Mat"   width:68
-    button btnPasteMat  "Paste Mat"  width:68
-    button btnPasteDWG  "Paste DWG"  width:68 enabled:false
-    button btnPickMat   "Pick Mat"   width:68
-
-    ------------------------------------------------------------------
     -- LADO DO PAINEL — reposicionamento na borda da tela (não é docking
     -- real; ver ressalva entregue à equipe).
     ------------------------------------------------------------------
     radiobuttons rdoLado labels:#("Fixar à esquerda", "Fixar à direita") default:2 columns:2
 
     -- Realocado de InLabSecFamilia (Fase 5.2): não é específico de nenhuma
-    -- seção, então fica fixo aqui, igual à barra de Copy/Paste acima.
+    -- seção, então fica fixo aqui, no topo da janela.
     button btnReload "🔄 Reload Plugin" width:395 height:22
 
-    subRollout subSecoes width:438 height:538 pos:[3, 96]
-
-    ------------------------------------------------------------------
-    -- PROGRESSO — fixo, fora das abas, abaixo das seções.
-    ------------------------------------------------------------------
-    dotNetControl dncProgress "System.Windows.Forms.ProgressBar" width:398 height:14 pos:[3, 640]
-    dotNetControl dncProgressLbl "System.Windows.Forms.Label" width:398 height:16 pos:[3, 656]
+    -- AJUSTE 15/Set: sem pos: fixo — a barra de Copy/Paste que estava acima
+    -- foi removida, então deixamos o fluxo automático do rollout posicionar
+    -- subSecoes logo abaixo do Reload Plugin em vez de reusar o y:96 antigo
+    -- (calculado pra caber a barra que não existe mais).
+    subRollout subSecoes width:438 height:538
 
     ------------------------------------------------------------------
     -- EVENTOS
@@ -418,12 +414,6 @@ rollout InLabChecker_Rollout "InLabChecker · InLab Artefacto · v0.10" width:44
         AddSubRollout subSecoes InLabSecFase4 rolledUp:true
         AddSubRollout subSecoes InLabSecLog
 
-        dncProgress.Visible = false
-        dncProgressLbl.Visible = false
-        dncProgressLbl.ForeColor = (dotNetClass "System.Drawing.Color").FromArgb 200 200 200
-        InLab_ProgressUI  = dncProgress
-        InLab_ProgressLbl = dncProgressLbl
-
         InLab_Log ("Sessão InLabChecker v0.10 · " + localTime)
         InLab_Log ("Famílias registradas: " + InLab_Familias.count as string + " de 8")
         InLab_Log ("Unidade do sistema: " + (InLab_UnidadeSistema() as string))
@@ -433,23 +423,6 @@ rollout InLabChecker_Rollout "InLabChecker · InLab Artefacto · v0.10" width:44
 
     on InLabChecker_Rollout close do InLab_LogUI = undefined
 
-    on btnCopyObjs pressed do
-    (
-        local objs = InLab_SelecaoValida()
-        if objs.count > 0 do InLab_CopyObjs objs
-    )
-    on btnPasteObjs pressed do InLab_PasteObjs()
-    on btnCopyMat pressed do
-    (
-        local objs = InLab_SelecaoValida()
-        if objs.count > 0 do InLab_CopyMat objs
-    )
-    on btnPasteMat pressed do
-    (
-        local objs = InLab_SelecaoValida()
-        if objs.count > 0 do InLab_PasteMat objs
-    )
-    on btnPickMat pressed do InLab_PickMat()
     on btnReload pressed do InLab_RecarregarPlugin()
 
     -- Reposiciona a janela na borda esquerda/direita da tela de trabalho
@@ -461,18 +434,26 @@ rollout InLabChecker_Rollout "InLabChecker · InLab Artefacto · v0.10" width:44
     )
 )
 
--- Fecha instância anterior (se existir), mostra o splash e abre a janela
--- já posicionada conforme a última preferência de lado (padrão: direita).
+-- Fecha instância anterior (se existir) e abre a janela já posicionada
+-- conforme a última preferência de lado (padrão: direita).
 --
 -- global explícito aqui: o fileIn deste arquivo pode acontecer de DENTRO
 -- de InLab_RecarregarPlugin() (reload), um escopo de função aninhado, o
 -- que pode amarrar esta definição ao escopo local do chamador em vez do
 -- global — mesmo problema que já resolvemos no InLabChecker.ms, agora
 -- também no lado de quem DEFINE a função (bug constatado em 29/Jul).
+--
+-- SPLASH DESLIGADO (10/Set, pedido Rafael): InLab_MostrarSplash() comentada
+-- abaixo — não removida do arquivo (ui\splash.ms continua íntegro) pra ser
+-- fácil religar depois. Só descomentar a linha pra voltar a mostrar.
 global InLab_AbrirUI
 fn InLab_AbrirUI =
 (
     try (destroyDialog InLabChecker_Rollout) catch()
-    InLab_MostrarSplash()
-    createDialog InLabChecker_Rollout 446 690
+    -- InLab_MostrarSplash()
+    -- AJUSTE 15/Set: altura reduzida de 690 pra 600 — a barra do topo e a
+    -- barra de progresso que ocupavam esse espaço foram removidas. Valor
+    -- estimado, não testado no Max ainda; se sobrar/faltar espaço embaixo
+    -- do Log de Sessão, é só ajustar este número.
+    createDialog InLabChecker_Rollout 446 600
 )
