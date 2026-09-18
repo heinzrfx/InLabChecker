@@ -30,20 +30,68 @@
 */
 
 ----------------------------------------------------------------------
--- SEÇÃO: Produto (Fase 5.2 — substitui "Família Estrutural")
+-- SEÇÃO: Produto (Fase 5.2 import · 18/Set renomeação pelo JSON)
 ----------------------------------------------------------------------
--- O produto ativo agora vem 100% de um .json exportado pela plataforma
--- externa (Lovable + Supabase) — não mais de uma família pré-cadastrada no
--- plugin. Este rollout só importa e guarda a árvore crua devolvida pelo
--- parser (InLab_ParseJSON, functions\fn_json.ms) em InLab_ProdutoAtivo; a
--- tradução para os dados que verificações/otimização consomem de fato é a
--- Fase 5.3, ainda pendente.
-global InLab_ProdutoAtivo = undefined -- árvore crua do produto ativo (formato de InLab_ParseJSON)
+-- Importa o export de nomenclatura da plataforma (Lovable + Supabase),
+-- escolhe o produto (pré-selecionado pelo nome do .max = cod_est), liga
+-- cada parte a um material da seleção e aplica os nomes oficiais. A lógica
+-- toda está em functions\fn_renomear_produto.ms; aqui só fica o estado da
+-- tela. Lista + dropdown nativos em vez de tabela dotNet: o número de
+-- partes varia por produto e rollout não cria controles dinamicamente.
+global InLab_ProdutoAtivo = undefined -- árvore crua do JSON importado (formato de InLab_ParseJSON)
 
 rollout InLabSecProduto "Produto" width:420
 (
+    local produtos = #()  -- itens de "produtos" do export importado
+    local materiais = #() -- materiais lidos da seleção
+    local ligacoes = #()  -- paralelo às partes do produto escolhido: material ou undefined
+    local objsLidos = #() -- objetos da última leitura — são eles que recebem o mesh_final
+
     label lblProdutoAtivo "Nenhum produto carregado." align:#left
     button btnImportarProduto "Importar JSON do Produto..." width:395 height:26
+    dropdownlist ddlProduto "Produto:" items:#() width:395
+    button btnLerSelecao "Ler materiais da seleção" width:395 height:24
+    listbox lbxPartes "Parte  →  material:" items:#() height:6 width:395
+    dropdownlist ddlMaterial "Material da parte marcada:" items:#() width:395
+    button btnAplicar "Aplicar nomes" width:192 height:26 across:2
+    button btnDesfazer "Desfazer nomes" width:192 height:26
+
+    fn produtoEscolhido =
+        if ddlProduto.selection > 0 and ddlProduto.selection <= produtos.count then produtos[ddlProduto.selection] else undefined
+
+    fn partesEscolhidas =
+    (
+        local p = produtoEscolhido()
+        local partes = if p != undefined then InLab_JSON_Obter p "partes" else undefined
+        if isKindOf partes Array then partes else #()
+    )
+
+    fn atualizarTela =
+    (
+        local partes = partesEscolhidas()
+        local sel = lbxPartes.selection
+        lbxPartes.items = for i = 1 to partes.count collect
+            ((InLab_Produto_Rotulo partes[i]) + "  →  " + (if ligacoes[i] == undefined then "(sem material)" else ligacoes[i].name))
+        if sel > 0 and sel <= partes.count do lbxPartes.selection = sel
+        ddlMaterial.items = #("— nenhum —") + (for m in materiais collect m.name)
+        local i = lbxPartes.selection
+        ddlMaterial.selection = if i > 0 and ligacoes[i] != undefined then (findItem materiais ligacoes[i]) + 1 else 1
+    )
+
+    fn sugerir =
+    (
+        ligacoes = InLab_Produto_SugerirLigacoes (partesEscolhidas()) materiais
+        atualizarTela()
+    )
+
+    fn limparProduto =
+    (
+        InLab_ProdutoAtivo = undefined
+        produtos = #()
+        ddlProduto.items = #()
+        lblProdutoAtivo.text = "Nenhum produto carregado."
+        sugerir()
+    )
 
     on btnImportarProduto pressed do
     (
@@ -53,28 +101,84 @@ rollout InLabSecProduto "Produto" width:420
         else
         (
             local texto = InLab_JSON_LerArquivoUTF8 caminho
-            if texto == undefined then
-            (
-                InLab_ProdutoAtivo = undefined
-                lblProdutoAtivo.text = "Nenhum produto carregado."
-            )
+            local dados = if texto == undefined then undefined else InLab_ParseJSON texto
+            if dados == undefined then limparProduto()
             else
             (
-                local dados = InLab_ParseJSON texto
-                if dados == undefined then
-                (
-                    InLab_ProdutoAtivo = undefined
-                    lblProdutoAtivo.text = "Nenhum produto carregado."
-                )
+                InLab_ProdutoAtivo = dados
+                local nomeArquivo = filenameFromPath caminho
+                lblProdutoAtivo.text = "Produto carregado: " + nomeArquivo
+                InLab_Log ("Produto importado com sucesso: " + nomeArquivo) tipo:#ok
+                produtos = InLab_Produto_Lista dados
+                ddlProduto.items = for p in produtos collect ((InLab_Produto_Texto p "cod_est") + " – " + (InLab_Produto_Texto p "nome"))
+                if produtos.count == 0 then
+                    InLab_Log "Este JSON não tem lista de produtos — importe o export da linha (nomenclatura_export_...json), não o nomenclatura_projeto.json." tipo:#warn
                 else
                 (
-                    InLab_ProdutoAtivo = dados
-                    local nomeArquivo = filenameFromPath caminho
-                    lblProdutoAtivo.text = "Produto carregado: " + nomeArquivo
-                    InLab_Log ("Produto importado com sucesso: " + nomeArquivo) tipo:#ok
+                    local cod = getFilenameFile maxFileName
+                    local idx = InLab_Produto_IndicePorCodigo produtos cod
+                    if idx > 0 then
+                        InLab_Log ("Produto do arquivo aberto: " + ddlProduto.items[idx]) tipo:#ok
+                    else
+                    (
+                        idx = 1
+                        InLab_Log ("Nenhum produto com cod_est '" + cod + "' (nome do .max) — escolha na lista.") tipo:#warn
+                    )
+                    ddlProduto.selection = idx
                 )
+                sugerir()
             )
         )
+    )
+
+    on ddlProduto selected i do sugerir()
+
+    on btnLerSelecao pressed do
+    (
+        local objs = InLab_SelecaoValida()
+        if objs.count > 0 do
+        (
+            objsLidos = objs
+            materiais = InLab_Produto_MateriaisDaSelecao objs
+            sugerir()
+            local n = 0
+            for l in ligacoes where l != undefined do n += 1
+            InLab_Log (materiais.count as string + " material(is) em " + objs.count as string + " objeto(s) · " +
+                       n as string + " parte(s) pré-ligada(s) — confira antes de aplicar.")
+        )
+    )
+
+    on lbxPartes selected i do atualizarTela()
+
+    on ddlMaterial selected j do
+    (
+        local i = lbxPartes.selection
+        if i == 0 then
+            InLab_Log "Marque uma parte na lista antes de escolher o material." tipo:#warn
+        else
+            ligacoes[i] = if j == 1 then undefined else materiais[j - 1]
+        atualizarTela()
+    )
+
+    on btnAplicar pressed do
+    (
+        local p = produtoEscolhido()
+        if p == undefined then
+            InLab_Log "Importe o JSON e escolha o produto antes de aplicar." tipo:#warn
+        else if objsLidos.count == 0 then
+            InLab_Log "Clique em 'Ler materiais da seleção' antes de aplicar." tipo:#warn
+        else
+        (
+            objsLidos = for o in objsLidos where isValidNode o collect o
+            InLab_Produto_Aplicar p ligacoes objsLidos
+            atualizarTela()
+        )
+    )
+
+    on btnDesfazer pressed do
+    (
+        InLab_Produto_Reverter()
+        atualizarTela()
     )
 )
 
