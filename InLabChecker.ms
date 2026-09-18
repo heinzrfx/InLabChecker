@@ -57,6 +57,8 @@
             -- fn_json.ms primeiro: parser genérico consumido pela seção de
             -- Produto (ui\rollout_main.ms) — só depende de core\log.ms.
             @"functions\fn_json.ms",
+            -- renomeação pelo JSON de produto — depende de fn_json.ms.
+            @"functions\fn_renomear_produto.ms",
             @"functions\fn_prooptimizer.ms",
             @"functions\fn_realworldscale.ms",
             @"functions\fn_checktexture.ms",
