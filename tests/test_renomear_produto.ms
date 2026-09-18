@@ -118,6 +118,20 @@ global INLAB_TESTE_SAIDA, INLAB_TESTE_FALHAS
         checar "Reverter: material" (mTampo.name == "tampo_madeira" and mGav.name == "Material #99")
         checar "Reverter: mapas" (bmpDif.name == "dif_qualquer" and bmpNorm.name == "norm_qualquer")
         checar "Reverter: objetos" (b1.name == "obj_tampo" and b3.name == "obj_gaveta")
+
+        -- 7. APLICAR DUAS VEZES COM LIGAÇÃO TROCADA E REVERTER (bug 18/Set no
+        -- teste da UI: cada Aplicar zerava o histórico, e o Desfazer não achava
+        -- nada — ficaram dois materiais ART_P_Base na cena)
+        InLab_Produto_Aplicar produtos[1] lig criados
+        InLab_Produto_Aplicar produtos[1] #(mGav, mExt, mInt, undefined) criados
+        checar "2ª aplicação: Tampo agora é o material da gaveta" (mGav.name == "ART_P_Tampo")
+        InLab_Produto_Reverter()
+        checar "Reverter após 2 aplicações: materiais originais" (mTampo.name == "tampo_madeira" and mGav.name == "Material #99" and mExt.name == "Encosto Externo couro")
+        checar "Reverter após 2 aplicações: mapas originais" (bmpDif.name == "dif_qualquer" and nb.name == "nb_qualquer")
+        checar "Reverter após 2 aplicações: objetos originais" (b1.name == "obj_tampo" and b2.name == "obj_encosto" and b3.name == "obj_gaveta")
+        InLab_Produto_Reverter()
+        checar "Reverter de novo: nada muda" (mTampo.name == "tampo_madeira" and b1.name == "obj_tampo")
+
         -- Ctrl+Z nativo NÃO é testável daqui: rodado de dentro do script,
         -- `max undo` desfaz o script inteiro (inclusive a criação das caixas),
         -- não só a renomeação — confirmado em 18/Set. Conferir à mão pela UI.

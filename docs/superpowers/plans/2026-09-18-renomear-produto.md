@@ -744,3 +744,10 @@ rollout InLabSecProduto "Produto" width:420
 git add ui/rollout_main.ms
 git commit -m "feat(ui): secao Produto liga partes a materiais e aplica nomes"
 ```
+
+---
+
+## Desvios durante a execução (18/09)
+
+- **Teste, etapa de Ctrl+Z removida:** `max undo` rodado de dentro do script desfez a criação das caixas de teste, não a renomeação. Ctrl+Z só é conferível à mão.
+- **Histórico do Desfazer acumula:** `InLab_Produto_Aplicar` não zera mais `InLab_UltimaRenomeacao`; só `InLab_Produto_Reverter` zera. No teste da UI, o modelador aplicou, trocou a ligação da Base e aplicou de novo; cada Aplicar zerava o histórico e o Desfazer não achou nada (ficaram dois materiais `ART_P_Base`). Teste novo: etapa 7 de `tests/test_renomear_produto.ms`.

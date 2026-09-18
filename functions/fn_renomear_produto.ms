@@ -16,13 +16,16 @@
  InLab_UltimaRenomeacao, restaurados por InLab_Produto_Reverter — mesmo
  padrão de InLab_ReverterOtimizacao / InLab_ReverterConversao (o undo nativo
  pode não cobrir .name de material/texmap alterado por script).
+ O histórico ACUMULA entre aplicações e só é zerado pelo Reverter (bug
+ 18/Set: zerar a cada Aplicar fazia o Desfazer perder a 1ª aplicação quando
+ o modelador trocava a ligação e aplicava de novo).
 
  `global` antes de cada fn usada fora daqui (ou recursiva): este arquivo
  pode ser carregado de dentro de InLab_RecarregarPlugin() — ver fn_json.ms.
 ================================================================================
 */
 
-global InLab_UltimaRenomeacao = #() -- pares #(alvo, nomeAntigo) da última aplicação
+global InLab_UltimaRenomeacao = #() -- pares #(alvo, nomeAntigo) desde o último Reverter
 
 --------------------------------------------------------------------------------
 -- DADOS DO JSON
@@ -240,7 +243,6 @@ fn InLab_Produto_Aplicar produto ligacoes objs =
     )
     else
     (
-        InLab_UltimaRenomeacao = #()
         local nMat = 0, nMap = 0, nObj = 0, nAviso = 0
         local mapasFeitos = #()
         undo "InLab: Renomear pelo JSON" on
