@@ -175,12 +175,9 @@ global INLAB_TESTE_SAIDA, INLAB_TESTE_FALHAS
         checar "Reverter: material" (mTampo.name == "tampo_madeira" and mGav.name == "Material #99")
         checar "Reverter: mapas" (bmpDif.name == "dif_qualquer" and bmpNorm.name == "norm_qualquer")
         checar "Reverter: objetos" (b1.name == "obj_tampo" and b3.name == "obj_gaveta")
-
-        -- 7. CTRL+Z (informativo: diz se o undo nativo cobre nome de material)
-        InLab_Produto_Aplicar produtos[1] lig criados
-        max undo
-        linha ("INFO  após max undo → objeto: " + b1.name + " · material: " + mTampo.name + " · mapa: " + bmpDif.name)
-        InLab_Produto_Reverter()
+        -- Ctrl+Z nativo NÃO é testável daqui: rodado de dentro do script,
+        -- `max undo` desfaz o script inteiro (inclusive a criação das caixas),
+        -- não só a renomeação — confirmado em 18/Set. Conferir à mão pela UI.
     )
     catch
     (
