@@ -73,6 +73,8 @@
             @"verifications\verif_nomenclatura.ms",
             @"verifications\verif_geometria.ms",
             @"verifications\verif_animacao.ms",
+            -- medição de UV (issue #1): só leitura, usada pelo Auto UV no log
+            @"verifications\verif_uv.ms",
             @"report\report_generator.ms",
             @"verifications\verif_orquestrador.ms",
             -- 5. UI
