@@ -193,10 +193,16 @@ rollout InLabSecOtimizacao "Otimização" width:420
     button btnF1 "Aplicar" width:192 height:25 across:2
     button btnF1Undo "Desfazer Otimização" width:192 height:25
 
-    label lblF2 "Auto UV" align:#left across:1
-    spinner spnPadding "Padding:" range:[0.0, 0.05, 0.005] scale:0.001 type:#float fieldWidth:50 align:#left
-    button btnF2 "Auto UV na Seleção" width:192 across:2
-    button btnF2Clean "Clean UV" width:192
+    -- 18/Set (issue #1): o padding sai da resolução do bake; o Auto UV grava
+    -- no canal 3 e não toca no canal 1. Os itens do dropdown seguem a ordem
+    -- de INLAB_UV_RESOLUCOES (functions\fn_autouv.ms).
+    label lblF2 "Auto UV  (canal 3 · bake de textura e AO)" align:#left across:1
+    spinner spnAnguloUV "Ângulo flatten (°):" range:[10, 90, 55] type:#float fieldWidth:40 align:#left
+    checkbox chkSeamsOcultas "Preferir seams em regiões ocultas" checked:true
+    dropdownlist ddlResolucaoUV "Resolução do bake:" items:#("1024", "2048", "4096") selection:1 width:120 align:#left
+    button btnF2 "Auto UV na Seleção" width:126 across:3
+    button btnF2Clean "Clean UV" width:126
+    button btnF2Reverter "Reverter Auto UV" width:126
 
     label lblF34 "Check Texture  |  Real World Scale" align:#left across:1
     radiobuttons rdoEscopoTex labels:#("Somente seleção", "Cena inteira") default:1 columns:2
@@ -247,7 +253,8 @@ rollout InLabSecOtimizacao "Otimização" width:420
         if objs.count > 0 do
         (
             InLab_ProgressoIniciar "Gerando Auto UV..."
-            InLab_AutoUV objs padding:spnPadding.value
+            InLab_AutoUV objs angulo:spnAnguloUV.value seamsOcultas:chkSeamsOcultas.checked \
+                resolucao:INLAB_UV_RESOLUCOES[ddlResolucaoUV.selection]
             InLab_ProgressoParar()
         )
     )
@@ -256,6 +263,7 @@ rollout InLabSecOtimizacao "Otimização" width:420
         local objs = InLab_SelecaoValida()
         if objs.count > 0 do InLab_CleanUV objs
     )
+    on btnF2Reverter pressed do InLab_ReverterAutoUV()
 
     on btnF3 pressed do
     (
