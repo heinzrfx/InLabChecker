@@ -40,6 +40,9 @@ A branch atual `feat/renomear-produto` tem `ui/rollout_main.ms` modificado e nã
 | `ui/rollout_main.ms:196-199, 244-258` | modificar (Fase 2) | ângulo, seams ocultas, resolução e botão Reverter |
 | `docs/superpowers/specs/2026-09-18-autouv-fase0-apis.md` | criar (Fase 0) | tabela de APIs e respostas da investigação |
 | `docs/superpowers/plans/2026-09-18-autouv-artista.md` | atualizar (fim da Fase 0) | detalhar as Fases 3 a 5 com as APIs confirmadas |
+| `docs/superpowers/specs/2026-09-21-autouv-fase3-sondagem.md` | criar (Fase 3) | sequência do solver com seams e tempos |
+| `functions/fn_autouv_seams.ms` | criar (Fase 3) | seams por ângulo, ocultação e corte de tubos |
+| `tests/test_autouv_seams.ms` | criar (Fase 3) | peças sintéticas com resposta conhecida |
 
 ## Por que as Fases 3 a 5 ainda não estão detalhadas
 
@@ -56,7 +59,7 @@ As seams por ângulo, o straighten, o rescale e o pack com opções dependem de 
 - Consome: nada.
 - Produz: as respostas abaixo, que as Tarefas 2 a 4 e o plano das Fases 3 a 5 usam. Em especial: (a) `node.baseObject = <cópia>` funciona? (b) `setMapChannel 3` abre diálogo modal? (c) `getMapChannel()` devolve 3 depois de `setMapChannel 3`? (d) qual propriedade de canal o `UVW_Mapping_Clear` usa?
 
-- [ ] **Passo 1: despejar a API do `Unwrap_UVW` e do `UVW_Mapping_Clear` num arquivo**
+- [x] **Passo 1: despejar a API do `Unwrap_UVW` e do `UVW_Mapping_Clear` num arquivo**
 
 Rode pelo MCP numa cena vazia:
 
@@ -89,7 +92,7 @@ Esperado: o caminho do arquivo. Leia o arquivo e filtre as linhas relevantes:
 grep -inE "seam|angle|straighten|rescale|rotate|align|pack|relax|unfold3d|texel|density|overlap|peel|flatten|mapchannel|channel" "<arquivo devolvido>"
 ```
 
-- [ ] **Passo 2: responder às quatro perguntas de comportamento**
+- [x] **Passo 2: responder às quatro perguntas de comportamento**
 
 ```maxscript
 resetMaxFile #noPrompt
@@ -121,7 +124,7 @@ resetMaxFile #noPrompt
 
 Esperado: um array de textos. Se a chamada do MCP travar, é porque o `setMapChannel` abriu um diálogo modal. Nesse caso anote, feche o diálogo à mão (peça ao usuário) e procure uma alternativa (propriedade de canal no `showProperties` do passo 1).
 
-- [ ] **Passo 3: identificar `unfoldMethod = 46000`**
+- [x] **Passo 3: identificar `unfoldMethod = 46000`**
 
 Copie os arquivos de teste e inspecione o `Unwrap_UVW` que o ArchToolz deixou:
 
@@ -144,11 +147,11 @@ mkdir -p "$TEMP/inlab_autouv" && cp "G:/Meu Drive/Trabalhos/2026/Artefacto/Inlab
 
 Depois, com o modificador na tela do Modify, troque `u.unfoldMethod` para os valores oferecidos pela UI do Unfold3D (mude o dropdown do solver na UI e releia a propriedade depois de cada troca) para mapear número → nome. Consulte também a documentação do Max 2024 (`mcp__plugin_context7_context7__query-docs` ou WebSearch "Unwrap_UVW unfoldMethod"). **Se não for possível identificar o solver, pare e pergunte ao usuário**, como a issue manda.
 
-- [ ] **Passo 4: repetir os passos 1 e 2 no Max 2027, se estiver instalado**
+- [x] **Passo 4: repetir os passos 1 e 2 no Max 2027, se estiver instalado**
 
 Use `mcp__3dsmax-mcp__list_max_instances` para ver se há uma instância 2027. Se não houver, marque a coluna 2027 como "não verificado" na tabela.
 
-- [ ] **Passo 5: escrever o documento da Fase 0**
+- [x] **Passo 5: escrever o documento da Fase 0**
 
 `docs/superpowers/specs/2026-09-18-autouv-fase0-apis.md` com:
 
@@ -186,7 +189,7 @@ Build: 3ds Max <versão exata de maxVersion()>. Data: <data>.
 
 Preencha só com o que foi visto no arquivo do passo 1. Linha sem API = "não existe", sem palpite.
 
-- [ ] **Passo 6: pedir autorização e publicar**
+- [x] **Passo 6: pedir autorização e publicar**
 
 Mostre a tabela ao usuário. Com autorização, commit (`docs(autouv): registra investigacao da API do Unwrap_UVW (fase 0)`) e comentário na issue: `gh issue comment 1 --body-file docs/superpowers/specs/2026-09-18-autouv-fase0-apis.md`.
 
@@ -208,7 +211,7 @@ Mostre a tabela ao usuário. Com autorização, commit (`docs(autouv): registra 
   - `InLab_UVMetricasTexto met` → uma linha para o log.
   - `INLAB_UV_GUTTER_BUSCA = 0.02`: raio de busca do gutter. Acima disso o texto mostra "≥0.020".
 
-- [ ] **Passo 1: escrever o teste `tests/test_verif_uv.ms`**
+- [x] **Passo 1: escrever o teste `tests/test_verif_uv.ms`**
 
 ```maxscript
 /*
@@ -367,12 +370,12 @@ global INLAB_TESTE_SAIDA, INLAB_TESTE_FALHAS
 
 Conta dos valores esperados: no caso base, cada ilha tem 0,3 × 0,3 = 0,09 de área UV e as duas somam 0,18. No caso 7, a face 1 tem área UV 0,045 e a face 2 tem 0,09, com a mesma área 3D (50 cm²). Então r = 0,667 e 1,333 contra a média da ilha, e o pior é 1/0,667 = 1,5.
 
-- [ ] **Passo 2: rodar e ver falhar**
+- [x] **Passo 2: rodar e ver falhar**
 
 Pelo MCP: `resetMaxFile #noPrompt` e depois `fileIn @"G:\Meu Drive\GitHub\InLabChecker\tests\test_verif_uv.ms"`. Leia `(getDir #temp) + "\inlab_test_verif_uv.txt"`.
 Esperado: `EXCEÇÃO:` (o `fileIn` de `verif_uv.ms` falha porque o arquivo não existe) e `1 FALHA(S)`.
 
-- [ ] **Passo 3: escrever `verifications/verif_uv.ms`**
+- [x] **Passo 3: escrever `verifications/verif_uv.ms`**
 
 ```maxscript
 /*
@@ -717,11 +720,11 @@ fn InLab_UVMetricasTexto met =
 )
 ```
 
-- [ ] **Passo 4: rodar o teste e ver passar**
+- [x] **Passo 4: rodar o teste e ver passar**
 
 Mesmo comando do Passo 2. Esperado: todas as linhas `PASS` e `TUDO OK`. Se o caso de desempenho passar de 30 s, anote o tempo medido e avise antes de seguir. O Box008 tem 15 mil faces e o Auto UV mede cada objeto.
 
-- [ ] **Passo 5: registrar no manifesto**
+- [x] **Passo 5: registrar no manifesto**
 
 Em `InLabChecker.ms`, no bloco `-- 4. VERIFICAÇÃO + relatório`, depois de `@"verifications\verif_animacao.ms",`:
 
@@ -734,7 +737,7 @@ Em `InLabChecker.ms`, no bloco `-- 4. VERIFICAÇÃO + relatório`, depois de `@"
 
 Pelo MCP: `InLab_RecarregarPlugin()`. Esperado: `true` e "Plugin recarregado com sucesso." no log.
 
-- [ ] **Passo 6: medir o baseline (pipeline atual e ArchToolz) com o helper**
+- [x] **Passo 6: medir o baseline (pipeline atual e ArchToolz) com o helper**
 
 Ainda com o `fn_autouv.ms` antigo (o que grava no canal 1). Com as cópias da Tarefa 1 em `(getDir #temp)\inlab_autouv\` e o plugin carregado:
 
@@ -769,7 +772,7 @@ Ainda com o `fn_autouv.ms` antigo (o que grava no canal 1). Com as cópias da Ta
 
 Leia `baseline.txt`. Compare as linhas do ArchToolz com a tabela da issue. **Se a razão de densidade medida bater com a da issue só em área (`densidadeRazaoArea`, o quadrado da linear), avise o usuário antes de seguir.** A meta "≤ 1,10×" precisa usar a mesma definição que a tabela do ArchToolz, e só o usuário decide qual das duas vale.
 
-- [ ] **Passo 7: pedir autorização, commit e PR da Fase 1**
+- [x] **Passo 7: pedir autorização, commit e PR da Fase 1**
 
 ```bash
 git add verifications/verif_uv.ms tests/test_verif_uv.ms InLabChecker.ms
@@ -803,7 +806,7 @@ Com autorização: PR referenciando `#1` e comentário na issue com a tabela do 
 - Pipeline provisório (a issue permite): `flattenMap` com o ângulo da UI → relax → pack com o padding da resolução. O checkbox de seams ocultas é aceito, mas só registra no log que entra na Fase 3.
 - **Se a Tarefa 1 mostrar que `node.baseObject = copia` não funciona:** pare. A alternativa (`convertToPoly` no Reverter) perde a topologia original de polígonos, e isso precisa de aprovação do usuário.
 
-- [ ] **Passo 1: escrever o teste `tests/test_autouv.ms`**
+- [x] **Passo 1: escrever o teste `tests/test_autouv.ms`**
 
 ```maxscript
 /*
@@ -925,12 +928,12 @@ global INLAB_TESTE_SAIDA, INLAB_TESTE_FALHAS
 )
 ```
 
-- [ ] **Passo 2: rodar e ver falhar**
+- [x] **Passo 2: rodar e ver falhar**
 
 Pelo MCP: `resetMaxFile #noPrompt` e depois `fileIn @"G:\Meu Drive\GitHub\InLabChecker\tests\test_autouv.ms"`. Leia `inlab_test_autouv.txt`.
 Esperado: `FAIL` a partir de "Padding 1K" (`InLab_PaddingUV` não existe) ou `EXCEÇÃO`. Nenhuma linha "TUDO OK".
 
-- [ ] **Passo 3: reescrever `functions/fn_autouv.ms`**
+- [x] **Passo 3: reescrever `functions/fn_autouv.ms`**
 
 Arquivo inteiro:
 
@@ -1255,15 +1258,15 @@ fn InLab_ReverterAutoUV =
 
 Ajuste antes de rodar: se a Tarefa 1 mostrou que o `UVW_Mapping_Clear` usa outra propriedade de canal (resposta d), troque as duas linhas `clr.channel` / `clr.mapID` por ela.
 
-- [ ] **Passo 4: rodar o teste e ver passar**
+- [x] **Passo 4: rodar o teste e ver passar**
 
 Mesmo comando do Passo 2. Esperado: `TUDO OK`. As linhas `[LOG ...]` mostram as métricas de cada objeto. Se "canal 1 idêntico" falhar para `uv_poly`, investigue (`superpowers:systematic-debugging`) antes de mexer: pode ser a triangulação do `convertToMesh` diferente da do snapshot da `Editable_Poly`.
 
-- [ ] **Passo 5: rodar o teste da Fase 1 de novo**
+- [x] **Passo 5: rodar o teste da Fase 1 de novo**
 
 `resetMaxFile #noPrompt` e `fileIn @"...\tests\test_verif_uv.ms"`. Esperado: `TUDO OK`.
 
-- [ ] **Passo 6: commit**
+- [x] **Passo 6: commit**
 
 ```bash
 git add functions/fn_autouv.ms tests/test_autouv.ms
@@ -1281,7 +1284,7 @@ git commit -m "feat(autouv): grava o 0-1 do bake no canal 3 e preserva o canal 1
 - Consome: `InLab_AutoUV objs angulo: seamsOcultas: resolucao:`, `InLab_CleanUV`, `InLab_ReverterAutoUV`, `INLAB_UV_RESOLUCOES` (Tarefa 3).
 - Produz: controles `spnAnguloUV`, `chkSeamsOcultas`, `ddlResolucaoUV`, `btnF2Reverter`. `spnPadding` deixa de existir.
 
-- [ ] **Passo 1: trocar os controles**
+- [x] **Passo 1: trocar os controles**
 
 Substituir:
 
@@ -1308,7 +1311,7 @@ por:
 
 O rótulo do dropdown precisa bater com `INLAB_UV_RESOLUCOES`, na mesma ordem.
 
-- [ ] **Passo 2: trocar os handlers**
+- [x] **Passo 2: trocar os handlers**
 
 Substituir o handler `on btnF2 pressed do ( ... )` por:
 
@@ -1332,11 +1335,11 @@ E, logo depois do handler `on btnF2Clean pressed do ( ... )`, que continua igual
     on btnF2Reverter pressed do InLab_ReverterAutoUV()
 ```
 
-- [ ] **Passo 3: recarregar e conferir a carga**
+- [x] **Passo 3: recarregar e conferir a carga**
 
 Pelo MCP: `InLab_RecarregarPlugin()`. Esperado: `true`. Tire um `capture_screen` da janela para conferir o layout da seção. Depois peça ao usuário para clicar em cada botão (Auto UV, Clean UV, Reverter) numa caixa e conferir o Ctrl+Z, que não dá para testar por script.
 
-- [ ] **Passo 4: medir nas peças reais**
+- [x] **Passo 4: medir nas peças reais**
 
 Numa cópia de `01.max` (`(getDir #temp)\inlab_autouv\01.max`):
 
@@ -1363,7 +1366,7 @@ Numa cópia de `01.max` (`(getDir #temp)\inlab_autouv\01.max`):
 
 Leia `fase2.txt`. Esperado: canal 1 idêntico = `true` nas 5 peças e o pai igual ao de antes. As métricas são do pipeline provisório e **não** precisam bater a meta nesta fase, mas registre-as. Se o Box008 levar mais de alguns minutos, avise.
 
-- [ ] **Passo 5: pedir autorização, commit e PR da Fase 2**
+- [x] **Passo 5: pedir autorização, commit e PR da Fase 2**
 
 ```bash
 git add ui/rollout_main.ms
@@ -1376,20 +1379,515 @@ Com autorização: PR referenciando `#1` e comentário na issue com a tabela do 
 
 ### Tarefa 5 (fim da Fase 0/2): detalhar as Fases 3 a 5 neste plano
 
-- [ ] **Passo 1:** com o documento da Fase 0 e os números do baseline e da Fase 2 em mãos, reescreva a seção abaixo no mesmo formato das Tarefas 2 a 4 (arquivos, interfaces, teste com código, implementação com código, comandos). Mostre ao usuário antes de executar.
+- [x] **Passo 1:** reescrever a seção abaixo com as APIs confirmadas e os números medidos (21/Set).
 
-## Fases 3 a 5: escopo fixo, detalhe pendente da Fase 0
+---
 
-**Fase 3: seams** (etapas 1 e 2 do pipeline da issue)
-- Novo módulo `functions/fn_autouv_seams.ms` (no manifesto, antes de `fn_autouv.ms`). Classificação por elemento (plano / cilíndrico-torneado / orgânico), peso de ocultação por face (`−Z` inferior, `+Y` traseira, contato) e seleção de arestas: diedro acima do ângulo, fechando a ilha pelo caminho mais oculto e seguindo edge loops.
-- Teste `tests/test_autouv_seams.ms` com peças sintéticas de resposta conhecida: caixa (6 cortes nas quinas), cilindro (1 corte reto na traseira + caps), caixa chanfrada (chanfro preso à face grande), almofada (ChamferBox, topo e fundo inteiros).
-- Saída: nenhuma seam em escada nas peças sintéticas, e Box013 com a abertura do ArchToolz.
+## O que a Fase 2 entregou de diferente do plano (21/Set, PR #2)
 
-**Fase 4: unfold, organizar e pack** (etapas 3 a 5)
-- Unfold conforme + relax, com loop de corte de alívio até N iterações. Densidade uniforme, straighten, alinhamento 0°/90°, pack sem rescale relativo e com gutter de `InLab_PaddingUV`, borda com metade dele. Progresso por objeto no log.
-- Testes de métrica em `tests/test_autouv.ms`: `densidadeRazao ≤ 1,10`, `sobrepostas == 0`, `gutterMin ≥ InLab_PaddingUV res`, `bordaMin ≥ InLab_PaddingUV res / 2`.
+Quem for executar as Fases 3 a 5 parte de `functions/fn_autouv.ms` como ficou no PR #2, **não** do código da Tarefa 3. As diferenças estão no cabeçalho do arquivo:
 
-**Fase 5: validação final**
-- Todos os critérios de aceite da issue nas peças Box007/008/009/013/014. Tabela atual × ArchToolz × novo e capturas do template UV de Box008, Box013 e Box014.
+- **Grupos:** `select o` num membro de grupo fechado seleciona o grupo todo, e o `modPanel.addModToSelection` antigo instanciava um Unwrap em 26 peças. Agora `InLab_AbrirGruposAcima` / `InLab_FecharGrupos` envolvem o Unwrap, e o modificador entra com `addModifier o`.
+- **Relax:** saiu do pipeline. Sobre o flatten ele dobra faces (8 de 125 objetos). `InLab_TentarRelax` continua no arquivo para a Fase 4.
+- **Instâncias:** a base instanciada não é convertida, e o Unwrap fica compartilhado. `InLab_Instancias` e `InLab_AutoUV_Registro` tratam o conjunto de instâncias.
+- **Gutter:** o `pack` entrega 70–80% do espaçamento pedido. Em malha pequena, há até 3 repassadas medidas (`INLAB_UV_ESPACAMENTO_MAX = 8`).
+- **Malha grande** (> `INLAB_UV_MEDIR_MAX_FACES = 30000` triângulos): o flatten usa espaçamento × `INLAB_UV_FOLGA_ESPACAMENTO = 1.4`, não há pack extra nem métricas completas, e só a sobreposição nativa (`selectOverlappedFaces`) é checada.
+- **Canal 1:** o código confere `uvw.getMapChannel() == 3` e a contagem de vértices/faces de mapa (`InLab_ContagemCanal`). A assinatura completa ficou só nos testes.
+- **Unfold3DPack:** ignora `unfoldRoomSpace` (gutter ~1 px com qualquer valor). Os valores `unfold*` que a issue lista para o ArchToolz são os padrões de fábrica de um Unwrap novo.
 
-**Pontos de parada já conhecidos (da issue):** API inexistente nas duas builds sem fallback razoável; meta numérica (densidade ≤ 1,10×, aproveitamento > ArchToolz) inalcançável com o solver disponível; `unfoldMethod = 46000` não identificado.
+## Números de partida (Max 2024, 55°, 1024 px)
+
+| Peça | Ilhas | Aproveitamento (Fase 2 / ArchToolz) | Densidade (Fase 2 / ArchToolz) | Distorção máx |
+|---|---|---|---|---|
+| Box013 | 6 | 50% / 58% | 1,03× / 1,17× | 1,55× |
+| Box014 | 7 | 37% / 45% | 1,10× / 1,35× | 1,52× |
+| Box007/009 | 8 | 23% / 24% | 1,05× / 1,54× | 1,68× |
+| Box008 | 37 | 11% / 20% | 1,13× / 1,52× | 3,47× |
+| " Armchair pillow 02" (306 mil tris) | — | não medido | não medido | — |
+
+- **Tempo:** ~2,8 s por peça da cadeira. Na pillow 02: 44 s, contra ~30 s do ArchToolz. O `flattenMap` sozinho leva 40–55 s nessa malha; o Unfold3D completo leva 82 s.
+- **Medição:** `InLab_MedirUV` leva 186 s na pillow 02. Serve para teste e validação, não para o Auto UV em malha grande.
+
+## O que já foi confirmado para a Fase 3 (sondagem de 21/Set)
+
+- Sobre base **Editable_Poly**, o Unwrap enxerga as mesmas arestas do `polyop`: 12 numa caixa, com a mesma numeração. `uvw.setSelectedGeomEdges <arestas do polyop>` seguido de `uvw.peltEdgeSelToSeam true` grava as seams exatamente nessas arestas (conferido com `getPeltSelectedSeams`).
+- Sobre base **Editable_mesh**, o Unwrap enxerga 18 arestas numa caixa, diagonais incluídas, sem ligação direta com a numeração do mesh. Seams calculadas no mesh passam pelas diagonais dos triângulos, que é o defeito em escada do ArchToolz no Box014 (ele converte para mesh antes de abrir).
+- `uvw.WeldAllShared()` junta o objeto numa ilha antes de cortar.
+- **Ainda não achado:** o solver que respeita as seams do Pelt. `LSCMSolve()` e `Unfold3DSolve()` rodados depois de `peltEdgeSelToSeam` ignoraram as seams: a caixa com o topo cortado saiu como 1 ilha. `breakSelected()` depois de `peltSeamToEdgeSel` não pegou nenhuma aresta UV. Isso é o primeiro passo da Tarefa 6.
+
+## Decisão do usuário (21/Set): base Editable_Poly
+
+**Decidido: opção 1, manter `Editable_Poly`.** O Auto UV não converte mais a base para mesh. Isso muda `InLab_AutoUV_PrepararBase` na Tarefa 7 (Passo 5) e o teste "Base Editable_Poly virou Editable_mesh" de `tests/test_autouv.ms`, que passa a esperar `Editable_Poly`. Contexto da decisão:
+
+**Base da peça.** A issue fixou "base convertida para `Editable_mesh`", igual ao ArchToolz. Seams que seguem edge loops precisam da topologia de polígonos, e sobre mesh a numeração não bate. Opções:
+1. **Recomendado:** base `Editable_Poly` sem modificadores continua `Editable_Poly`, e o Auto UV não converte mais. O Reverter fica mais simples (só remove o Unwrap).
+2. Converter para mesh depois de gravar o UV, perdendo as seams vivas no Unwrap.
+
+A decisão muda `InLab_AutoUV_PrepararBase`. Peças que já chegam como `Editable_mesh` triangulado (as pillows do teste) não têm edge loops. Nelas, o caminho de seams por ângulo usa o fallback flatten da Fase 2.
+
+## Restrições novas (valem para as Tarefas 6 a 9)
+
+- **Orçamento de tempo:** o Auto UV completo leva no máximo 1,5× o ArchToolz. Referências: pillow 02 ≤ 45 s, e peças da cadeira ≤ 5 s cada. Laço em MaxScript sobre faces ou arestas precisa ter o custo medido em 300 mil faces antes de entrar. Acima de `INLAB_UV_MEDIR_MAX_FACES`, nada de `InLab_MedirUV` dentro do Auto UV.
+- **Canal 1** idêntico, **grupos e instâncias** preservados, **Reverter** e **Ctrl+Z**: os testes da Fase 2 (`tests/test_autouv.ms`) continuam passando em toda tarefa.
+- Só via MCP, conforme as Restrições globais do topo deste plano.
+
+---
+
+### Tarefa 6 (Fase 3, parte 1): sondagem do solver com seams e do custo das seams por ângulo
+
+Sem código de produção. O entregável é `docs/superpowers/specs/2026-09-21-autouv-fase3-sondagem.md`, com as respostas e os tempos.
+
+- [ ] **Passo 1: achar a sequência que respeita as seams.** Numa cena vazia, rode o script abaixo. Ele prepara a caixa com o topo cortado e testa cada candidato. A resposta certa dá **2 ilhas**, 0 sobrepostas e distorção ≤ 1,2.
+
+```maxscript
+(
+    resetMaxFile #noPrompt
+    fileIn @"G:\Meu Drive\GitHub\InLabChecker\InLabChecker.ms"
+    max modify mode
+    fn preparar =
+    (
+        local b = Box length:20 width:20 height:20 mapcoords:true
+        convertToPoly b
+        local fTop = (for f = 1 to polyop.getNumFaces b where (polyop.getFaceNormal b f).z > 0.9 collect f)[1]
+        select b
+        local u = Unwrap_UVW()
+        addModifier b u
+        modPanel.setCurrentObject u
+        u.setMapChannel 3
+        local np = u.numberPolygons()
+        u.selectFaces #{1..np}
+        u.WeldAllShared()
+        u.setSelectedGeomEdges (polyop.getEdgesUsingFace b #{fTop})
+        u.peltEdgeSelToSeam true
+        #(b, u, np)
+    )
+    fn resultado b = ( local m = InLab_MedirUV b 3 ; "ilhas " + m.nIlhas as string + " sobre " + m.sobrepostas as string + " dist " + (formattedPrint m.distorcaoMax format:".2f") )
+    local candidatos = #(
+        #("seams -> UV edge sel (modo aresta) -> break -> LSCM", fn c u np = ( u.setTVSubObjectMode 2 ; u.peltSeamToEdgeSel true ; u.uvEdgeSelect() ; u.breakSelected() ; u.setTVSubObjectMode 3 ; u.selectFaces #{1..np} ; u.LSCMSolve() )),
+        #("RegularMapExpand #peltseams por ilha -> LSCM", fn c u np = ( u.selectFaces #{1} ; u.RegularMapExpand #peltseams ; u.LSCMSolve() )),
+        #("LSCMInteractive false", fn c u np = ( u.selectFaces #{1..np} ; u.LSCMInteractive false ; u.LSCMSolve() )),
+        #("Unfold3DSolve com a opção de seams do Pelt", fn c u np = ( u.selectFaces #{1..np} ; u.Unfold3DSolve() ))
+    )
+    local saida = openFile ((getDir #temp) + "\\inlab_fase3_solver.txt") mode:"wt"
+    for c in candidatos do
+    (
+        local p = preparar()
+        local ok = try ( c[2] c p[2] p[3] ; "ok" ) catch ( getCurrentException() )
+        format "% · % · %\n" c[1] ok (resultado p[1]) to:saida
+        delete p[1]
+    )
+    close saida
+)
+```
+
+Se nenhum candidato der 2 ilhas, procure no dump `inlab_unwrap_api_26000.txt` da Fase 0 funções com "peel", "pelt" ou "quick", acrescente cada uma como candidato e rode de novo. **Se ainda assim nada respeitar as seams: pare e avise o usuário.** Sem isso, a Fase 3 precisa de outro desenho (por exemplo, cortar a malha em elementos antes do Unwrap), e essa decisão é dele.
+
+- [ ] **Passo 2: custo das seams por ângulo e do corte de tubos.** Com o candidato vencedor, rode `InLab_SeamsPorAngulo` e `InLab_CortarTubos` da Tarefa 7 (o código está lá) num `Editable_Poly` de ~150 mil polígonos: `Sphere segs:400`, convertido. Anote o tempo de cada função e o do solver. Se a soma passar de 45 s, registre qual parte estoura. Essa parte ganha um caminho nativo ou um limite por tamanho na Tarefa 7.
+
+- [ ] **Passo 3: documento e comentário.** Escreva o documento da sondagem: a sequência vencedora com o código, os tempos e o que ficou de fora. Mostre ao usuário. Com autorização: `docs(autouv): registra sondagem do solver com seams (fase 3)` e comentário na issue #1.
+
+---
+
+### Tarefa 7 (Fase 3, parte 2): seams por ângulo com corte nas regiões ocultas
+
+**Pré-requisitos:** Tarefa 6 com uma sequência vencedora, e a decisão da base (seção acima).
+
+**Arquivos:**
+- Criar: `functions/fn_autouv_seams.ms` (no manifesto, antes de `functions\fn_autouv.ms`)
+- Criar: `tests/test_autouv_seams.ms`
+- Modificar: `functions/fn_autouv.ms` (a etapa 1 passa a usar as seams quando a base é `Editable_Poly`; o flatten fica como fallback)
+- Modificar: `InLabChecker.ms` (manifesto)
+
+**Interfaces:**
+- Consome: `InLab_MedirUV` (só nos testes), `InLab_Log`.
+- Produz (todas `global`):
+  - `InLab_SeamsPorAngulo obj angulo` → BitArray de arestas do `polyop`: bordas abertas + arestas com diedro > `angulo`.
+  - `InLab_OcultacaoFace obj f` → Float de 0 (visível) a 1 (oculta). Considera a normal voltada para baixo (`−Z`) e para trás (`+Y`, já que a frente do produto aponta para `−Y`).
+  - `InLab_CortarTubos obj seams` → BitArray: `seams` mais um corte por ilha que ainda tenha mais de uma borda (tubo). O corte segue o caminho de menor custo entre duas bordas, com custo = comprimento × (1 + `INLAB_SEAM_PESO_VISIVEL` × (1 − ocultação)).
+  - `InLab_AplicarSeams uvw seams` → Boolean: executa a sequência vencedora da Tarefa 6 e devolve `true` se o solver rodou.
+  - `INLAB_SEAM_PESO_VISIVEL = 4.0`.
+
+- [ ] **Passo 1: escrever o teste `tests/test_autouv_seams.ms`**
+
+```maxscript
+/*
+ tests\test_autouv_seams.ms — teste de functions\fn_autouv_seams.ms (issue #1, Fase 3)
+ RODAR NUMA CENA VAZIA. Peças sintéticas com resposta conhecida.
+ Resultado: <temp do Max>\inlab_test_autouv_seams.txt
+*/
+global InLab_Log, InLab_EhGeometria, InLab_MedirUV
+global InLab_SeamsPorAngulo, InLab_OcultacaoFace, InLab_CortarTubos, InLab_AplicarSeams
+global INLAB_TESTE_SAIDA, INLAB_TESTE_FALHAS
+(
+    local dirTeste = getFilenamePath (getSourceFileName())
+    local raiz = substring dirTeste 1 (dirTeste.count - 6)
+    local arqSaida = (getDir #temp) + "\\inlab_test_autouv_seams.txt"
+    INLAB_TESTE_SAIDA = createFile arqSaida encoding:#utf8
+    INLAB_TESTE_FALHAS = 0
+    fn linha s = ( format "%\n" s to:INLAB_TESTE_SAIDA ; flush INLAB_TESTE_SAIDA )
+    fn checar nome ok = ( if not ok do INLAB_TESTE_FALHAS += 1 ; linha ((if ok then "PASS  " else "FAIL  ") + nome) )
+    -- aplica as seams num Unwrap novo e mede o canal 3
+    fn abrir o seams =
+    (
+        max modify mode
+        select o
+        local u = Unwrap_UVW()
+        addModifier o u
+        modPanel.setCurrentObject u
+        u.setMapChannel 3
+        local ok = InLab_AplicarSeams u seams
+        #(ok, InLab_MedirUV o 3)
+    )
+    local logOriginal = InLab_Log
+    InLab_Log = fn _l msg tipo:#info = ( format "      [LOG %] %\n" tipo msg to:INLAB_TESTE_SAIDA ; flush INLAB_TESTE_SAIDA )
+    local criados = #()
+    try
+    (
+        fileIn (raiz + @"core\utils.ms")
+        fileIn (raiz + @"verifications\verif_uv.ms")
+        fileIn (raiz + @"functions\fn_autouv_seams.ms")
+
+        -- 1. CAIXA: todas as 12 arestas têm diedro de 90° → 6 ilhas planas
+        local cx = Box length:20 width:20 height:20 mapcoords:true
+        convertToPoly cx
+        append criados cx
+        local s = InLab_SeamsPorAngulo cx 55.0
+        checar "Caixa: 12 seams a 55°" (s.numberSet == 12)
+        local r = abrir cx s
+        checar "Caixa: solver rodou" r[1]
+        checar "Caixa: 6 ilhas, 0 sobrepostas, distorção ≤ 1,05" (r[2].nIlhas == 6 and r[2].sobrepostas == 0 and r[2].distorcaoMax <= 1.05)
+
+        -- 2. OCULTAÇÃO: fundo (−Z) e traseira (+Y) ocultos, frente (−Y) e topo visíveis
+        local p2 = Box length:20 width:20 height:20
+        convertToPoly p2
+        append criados p2
+        fn faceNormal o n = ( for f = 1 to polyop.getNumFaces o where dot (polyop.getFaceNormal o f) n > 0.9 collect f )[1]
+        checar "Ocultação: fundo ≥ 0,9" ((InLab_OcultacaoFace p2 (faceNormal p2 [0,0,-1])) >= 0.9)
+        checar "Ocultação: traseira ≥ 0,9" ((InLab_OcultacaoFace p2 (faceNormal p2 [0,1,0])) >= 0.9)
+        checar "Ocultação: frente ≤ 0,1" ((InLab_OcultacaoFace p2 (faceNormal p2 [0,-1,0])) <= 0.1)
+        checar "Ocultação: topo ≤ 0,1" ((InLab_OcultacaoFace p2 (faceNormal p2 [0,0,1])) <= 0.1)
+
+        -- 3. CILINDRO: caps cortados pelo ângulo, lateral é um tubo e ganha 1 corte na traseira
+        local ci = Cylinder radius:10 height:30 sides:24 heightsegs:3 capsegs:1 mapcoords:true pos:[60, 0, 0]
+        convertToPoly ci
+        append criados ci
+        local sAng = InLab_SeamsPorAngulo ci 55.0
+        checar "Cilindro: só os 2 anéis dos caps a 55° (48 arestas)" (sAng.numberSet == 48)
+        local sTub = InLab_CortarTubos ci sAng
+        local extras = sTub - sAng
+        checar "Cilindro: corte do tubo com 3 arestas (heightsegs)" (extras.numberSet == 3)
+        local yMed = 0.0
+        for e in extras do ( local vs = polyop.getEdgeVerts ci e ; yMed += ((polyop.getVert ci vs[1]).y + (polyop.getVert ci vs[2]).y) / 2.0 )
+        checar "Cilindro: corte na traseira (y médio > 0)" (yMed / 3.0 > ci.pos.y)
+        local rc = abrir ci sTub
+        checar "Cilindro: 3 ilhas, 0 sobrepostas" (rc[2].nIlhas == 3 and rc[2].sobrepostas == 0)
+        checar "Cilindro: distorção ≤ 1,15" (rc[2].distorcaoMax <= 1.15)
+
+        -- 4. ALMOFADA (ChamferBox): topo e fundo inteiros, sem seam em escada
+        local cb = ChamferBox length:40 width:40 height:12 fillet:3 filletSegs:3 mapcoords:true pos:[120, 0, 0]
+        convertToPoly cb
+        append criados cb
+        local sCb = InLab_CortarTubos cb (InLab_SeamsPorAngulo cb 55.0)
+        local rcb = abrir cb sCb
+        linha ("      almofada: " + InLab_UVMetricasTexto rcb[2])
+        checar "Almofada: 0 sobrepostas" (rcb[2].sobrepostas == 0)
+        checar "Almofada: distorção ≤ 1,5" (rcb[2].distorcaoMax <= 1.5)
+        checar "Almofada: no máximo 6 ilhas" (rcb[2].nIlhas <= 6)
+
+        -- 5. DESEMPENHO: ~150 mil polígonos em menos de 45 s (seams + solver)
+        local esf = Sphere radius:20 segs:400 mapcoords:true pos:[200, 0, 0]
+        convertToPoly esf
+        append criados esf
+        local t0 = timeStamp()
+        local sE = InLab_CortarTubos esf (InLab_SeamsPorAngulo esf 55.0)
+        local tSeams = timeStamp() - t0
+        t0 = timeStamp()
+        max modify mode
+        select esf
+        local ue = Unwrap_UVW()
+        addModifier esf ue
+        modPanel.setCurrentObject ue
+        ue.setMapChannel 3
+        InLab_AplicarSeams ue sE
+        local tSolver = timeStamp() - t0
+        linha ("      esfera " + (polyop.getNumFaces esf) as string + " polígonos: seams " + tSeams as string + " ms · solver " + tSolver as string + " ms")
+        checar "Desempenho: seams + solver < 45 s" (tSeams + tSolver < 45000)
+    )
+    catch ( INLAB_TESTE_FALHAS += 1 ; linha ("EXCEÇÃO: " + getCurrentException()) )
+    for o in criados where isValidNode o do delete o
+    InLab_Log = logOriginal
+    linha ("\n" + (if INLAB_TESTE_FALHAS == 0 then "TUDO OK" else (INLAB_TESTE_FALHAS as string + " FALHA(S)")))
+    close INLAB_TESTE_SAIDA
+)
+```
+
+- [ ] **Passo 2: rodar e ver falhar** (`fileIn` de `fn_autouv_seams.ms` inexistente → `EXCEÇÃO`).
+
+- [ ] **Passo 3: escrever `functions/fn_autouv_seams.ms`**
+
+```maxscript
+/*
+================================================================================
+ functions\fn_autouv_seams.ms — seams do Auto UV (issue #1, Fase 3)
+--------------------------------------------------------------------------------
+ Trabalha sobre a base Editable_Poly: o Unwrap sobre Editable_Poly usa a
+ mesma numeração de arestas do polyop (sondagem de 21/Set). Sobre
+ Editable_mesh as seams passariam pelas diagonais dos triângulos, que é o
+ defeito "em escada" do ArchToolz.
+   1. InLab_SeamsPorAngulo: bordas abertas + diedro acima do ângulo da UI.
+   2. InLab_CortarTubos: ilha com mais de uma borda (tubo, anel) não abre
+      sem corte. Liga duas bordas pelo caminho mais barato, e o custo
+      cresce quanto mais visível a aresta (frente −Y e topo +Z pesam).
+   3. InLab_AplicarSeams: sequência do solver validada na Tarefa 6.
+================================================================================
+*/
+global INLAB_SEAM_PESO_VISIVEL = 4.0
+global InLab_SeamsPorAngulo, InLab_OcultacaoFace, InLab_CortarTubos, InLab_AplicarSeams
+global InLab_Seams_Ilhas, InLab_Seams_Bordas, InLab_Seams_Caminho
+
+fn InLab_SeamsPorAngulo obj angulo =
+(
+    local seams = #{}
+    local cosLim = cos angulo
+    for e = 1 to polyop.getNumEdges obj do
+    (
+        local fs = (polyop.getEdgeFaces obj e) as array
+        if fs.count < 2 then seams[e] = true
+        else if (dot (polyop.getFaceNormal obj fs[1]) (polyop.getFaceNormal obj fs[2])) < cosLim do seams[e] = true
+    )
+    seams
+)
+
+-- 0 = visível (frente −Y, topo +Z, laterais), 1 = oculta (fundo −Z, traseira +Y).
+-- Normal no espaço do mundo: a regra de frente/fundo é do produto na cena.
+fn InLab_OcultacaoFace obj f =
+(
+    local n = normalize ((polyop.getFaceNormal obj f) * (obj.transform.rotationPart as matrix3))
+    amin 1.0 (amax 0.0 (amax (-n.z) n.y))
+)
+
+-- Ilhas: faces ligadas por arestas que não são seam. Devolve #(ilhaDaFace, nIlhas).
+fn InLab_Seams_Ilhas obj seams =
+(
+    local nF = polyop.getNumFaces obj
+    local ilha = for f = 1 to nF collect 0
+    local n = 0
+    for f0 = 1 to nF where ilha[f0] == 0 do
+    (
+        n += 1
+        ilha[f0] = n
+        local pilha = #(f0)
+        while pilha.count > 0 do
+        (
+            local f = pilha[pilha.count]
+            pilha.count = pilha.count - 1
+            for e in (polyop.getEdgesUsingFace obj #{f}) where not seams[e] do
+                for g in ((polyop.getEdgeFaces obj e) as array) where ilha[g] == 0 do
+                (
+                    ilha[g] = n
+                    append pilha g
+                )
+        )
+    )
+    #(ilha, n)
+)
+
+-- Bordas de uma ilha: arestas seam (ou abertas) que tocam a ilha, agrupadas
+-- em laços conexos pelos vértices. Devolve um array de BitArrays de arestas.
+fn InLab_Seams_Bordas obj seams ilha i =
+(
+    local arestas = #{}
+    for e in seams do
+        for g in ((polyop.getEdgeFaces obj e) as array) where ilha[g] == i do arestas[e] = true
+    local lacos = #()
+    local resta = copy arestas
+    while resta.numberSet > 0 do
+    (
+        local e0 = (resta as array)[1]
+        local laco = #{e0}
+        resta[e0] = false
+        local fila = #(e0)
+        while fila.count > 0 do
+        (
+            local e = fila[fila.count]
+            fila.count = fila.count - 1
+            for v in (polyop.getEdgeVerts obj e) do
+                for e2 in ((polyop.getEdgesUsingVert obj v) * resta) do
+                (
+                    resta[e2] = false
+                    laco[e2] = true
+                    append fila e2
+                )
+        )
+        append lacos laco
+    )
+    lacos
+)
+
+-- Caminho mais barato (Dijkstra por vértices, fila simples ordenada por
+-- inserção) entre os vértices do laço A e os do laço B, andando só por
+-- arestas internas da ilha. Devolve o BitArray das arestas do caminho.
+fn InLab_Seams_Caminho obj ilha i seams lacoA lacoB =
+(
+    local vA = polyop.getVertsUsingEdge obj lacoA
+    local vB = polyop.getVertsUsingEdge obj lacoB
+    local dist = #()
+    local veio = #()
+    local fila = #()
+    for v in vA do ( dist[v] = 0.0 ; append fila v )
+    local alvo = undefined
+    while fila.count > 0 and alvo == undefined do
+    (
+        -- menor distância na fila (a fila é pequena: frente de onda)
+        local k = 1
+        for j = 2 to fila.count where dist[fila[j]] < dist[fila[k]] do k = j
+        local v = fila[k]
+        deleteItem fila k
+        if vB[v] then alvo = v
+        else
+            for e in (polyop.getEdgesUsingVert obj v) where not seams[e] do
+            (
+                local fs = (polyop.getEdgeFaces obj e) as array
+                if (for g in fs where ilha[g] == i collect g).count > 0 do
+                (
+                    local vs = polyop.getEdgeVerts obj e
+                    local w = if vs[1] == v then vs[2] else vs[1]
+                    local oc = 0.0
+                    for g in fs do oc += InLab_OcultacaoFace obj g
+                    oc /= fs.count
+                    local custo = (distance (polyop.getVert obj v) (polyop.getVert obj w)) * (1.0 + INLAB_SEAM_PESO_VISIVEL * (1.0 - oc))
+                    local nd = dist[v] + custo
+                    if dist[w] == undefined or nd < dist[w] do
+                    (
+                        if dist[w] == undefined do append fila w
+                        dist[w] = nd
+                        veio[w] = #(v, e)
+                    )
+                )
+            )
+    )
+    local caminho = #{}
+    if alvo != undefined do
+    (
+        local v = alvo
+        while veio[v] != undefined and not vA[v] do
+        (
+            caminho[veio[v][2]] = true
+            v = veio[v][1]
+        )
+    )
+    caminho
+)
+
+fn InLab_CortarTubos obj seams =
+(
+    local res = copy seams
+    local ilhas = InLab_Seams_Ilhas obj res
+    for i = 1 to ilhas[2] do
+    (
+        local lacos = InLab_Seams_Bordas obj res ilhas[1] i
+        -- n laços → n−1 cortes, sempre a partir do primeiro laço
+        for j = 2 to lacos.count do
+            res += InLab_Seams_Caminho obj ilhas[1] i res lacos[1] lacos[j]
+    )
+    res
+)
+
+-- Sequência validada na Tarefa 6. Copie aqui, sem alterar, o código do
+-- candidato vencedor registrado em docs/superpowers/specs/2026-09-21-autouv-fase3-sondagem.md.
+-- O corpo abaixo é o candidato 1 da sondagem, que é o mais provável. Se a
+-- Tarefa 6 escolher outro, troque por ele antes de rodar o teste.
+fn InLab_AplicarSeams uvw seams =
+(
+    local ok = false
+    try
+    (
+        local np = uvw.numberPolygons()
+        uvw.selectFaces #{1..np}
+        uvw.WeldAllShared()
+        uvw.setSelectedGeomEdges seams
+        uvw.peltEdgeSelToSeam true
+        uvw.setTVSubObjectMode 2
+        uvw.peltSeamToEdgeSel true
+        uvw.uvEdgeSelect()
+        uvw.breakSelected()
+        uvw.setTVSubObjectMode 3
+        uvw.selectFaces #{1..np}
+        uvw.LSCMSolve()
+        ok = true
+    )
+    catch ( InLab_Log ("Seams: solver falhou — " + getCurrentException()) tipo:#err )
+    ok
+)
+```
+
+- [ ] **Passo 4: rodar o teste e ver passar.** Se o caso de desempenho estourar, use o número da Tarefa 6 para decidir, com o usuário: limitar as seams por ângulo a malhas ≤ `INLAB_UV_MEDIR_MAX_FACES` e usar o flatten acima disso, ou achar uma versão nativa da parte lenta.
+
+- [ ] **Passo 5: ligar no Auto UV.** Em `functions/fn_autouv.ms`, etapa 1: se `classOf o.baseObject == Editable_Poly` e a malha estiver dentro do limite do Passo 4, rode `InLab_AplicarSeams uvw (InLab_CortarTubos o (InLab_SeamsPorAngulo o angulo))`. O log registra "Seams por ângulo". Caso contrário, fica o flatten da Fase 2, e o log registra o motivo. Com o checkbox de seams ocultas desligado, `INLAB_SEAM_PESO_VISIVEL` vale 0 (corte pelo caminho mais curto). Acrescente `@"functions\fn_autouv_seams.ms",` ao manifesto, antes de `@"functions\fn_autouv.ms",`.
+
+- [ ] **Passo 6: medir e commitar.** Rode `tests/test_autouv_seams.ms`, `tests/test_autouv.ms` e `tests/test_verif_uv.ms`. Rode também a cadeira inteira, com o script da validação da Fase 2 no histórico do PR #2: 0 sobrepostas, canal 1 idêntico e tempo ≤ 5 s por peça. Mostre a tabela e capturas do UV do Box013 e do Box014 ao usuário. Com autorização: `feat(autouv): seams por angulo com corte nas regioes ocultas`.
+
+---
+
+### Tarefa 8 (Fase 4): organizar e empacotar
+
+**Arquivos:** modificar `functions/fn_autouv.ms` (etapa 2) e `tests/test_autouv.ms`.
+
+**Interfaces:**
+- Consome: a etapa 1 da Tarefa 7.
+- Produz: `InLab_OrganizarIlhas uvw` (straighten + alinhamento 0°/90° + densidade uniforme) e `InLab_EmpacotarUV uvw padding` (pack sem rotação livre, gutter ≥ padding e borda ≥ padding/2).
+
+APIs confirmadas na Fase 0: `Straighten()`, `RotateSelectedCenter <float>`, `alignByPivotHorizontal()`/`alignByPivotVertical()`, `RescaleCluster <bitArray> <node>`, `pack <method> <spacing> <normalize> <rotate> <fillholes>`.
+
+- [ ] **Passo 1: testes de métrica.** Em `tests/test_autouv.ms`, depois da seção 1, acrescente para `uv_poly`, `uv_grupo` e `uv_cil`:
+
+```maxscript
+        -- Fase 4: densidade uniforme e gutter/borda pela resolução
+        for o in objs do
+        (
+            local m = InLab_MedirUV o INLAB_CANAL_UV_BAKE
+            checar (o.name + ": densidade ≤ 1,10×") (m.densidadeRazao <= 1.10)
+            checar (o.name + ": borda ≥ metade do padding") (m.bordaMin >= (InLab_PaddingUV 1024) / 2.0 * 0.98)
+        )
+```
+
+- [ ] **Passo 2: implementar.** Em `fn_autouv.ms`, depois da etapa 1:
+
+```maxscript
+-- Densidade uniforme, straighten das ilhas quase retas e alinhamento ao
+-- eixo. Tudo nativo: nada de laço por face em MaxScript.
+fn InLab_OrganizarIlhas uvw o =
+(
+    local np = uvw.numberPolygons()
+    uvw.selectFaces #{1..np}
+    try ( uvw.RescaleCluster #{1..np} o ) catch ( InLab_Log (o.name + ": RescaleCluster indisponível.") tipo:#warn )
+    try ( uvw.Straighten() ) catch ( InLab_Log (o.name + ": Straighten indisponível.") tipo:#warn )
+    try ( uvw.alignByPivotHorizontal() ) catch ( InLab_Log (o.name + ": alinhamento indisponível.") tipo:#warn )
+)
+
+-- Pack sem rotação livre (0°/90° já vêm do alinhamento), com a correção de
+-- gutter da Fase 2 para malha pequena.
+fn InLab_EmpacotarUV uvw padding =
+(
+    local np = uvw.numberPolygons()
+    uvw.selectFaces #{1..np}
+    uvw.pack 1 padding true false true
+)
+```
+
+Chame `InLab_OrganizarIlhas uvw o` logo depois da etapa 1. Troque o `uvw.pack 1 padding true true true` da etapa 2 por `InLab_EmpacotarUV uvw padding`, mantendo a correção de gutter. Para a borda, depois do pack, escale tudo em `(1 − padding)` a partir do centro (0,5; 0,5) com `uvw.ScaleSelectedCenter (1.0 - padding) 0`.
+
+- [ ] **Passo 3: rodar e medir.** Rode os três testes e a cadeira inteira. Se `densidade ≤ 1,10×` falhar com o `RescaleCluster`, **pare e traga os números** (a issue prevê relaxar a meta). O mesmo vale se o aproveitamento ficar abaixo do ArchToolz em mais de 5 pontos na média das peças da issue.
+
+- [ ] **Passo 4:** com autorização, `feat(autouv): densidade uniforme, alinhamento e pack sem rotacao`.
+
+---
+
+### Tarefa 9 (Fase 5): validação final
+
+- [ ] **Passo 1:** rode todos os critérios de aceite da issue nas peças Box007/008/009/013/014 e na cadeira inteira de `01.max`, e também na " Armchair pillow 02" (só tempo e sobreposição nativa, pelo tamanho). Monte a tabela atual × ArchToolz × novo por peça, no formato da tabela da issue.
+- [ ] **Passo 2:** capture o template UV do Box008, do Box013 e do Box014 (`renderUV` do Unwrap, 1024 px) e compare com o ArchToolz lado a lado.
+- [ ] **Passo 3:** peça ao usuário para conferir pela UI numa peça real e no Max 2027, se disponível.
+- [ ] **Passo 4:** com autorização, comentário na issue #1 com a tabela e as capturas, e PR das Fases 3 a 5.
+
+**Pontos de parada:** nenhum solver respeita as seams (Tarefa 6); o orçamento de tempo estoura sem caminho nativo (Tarefa 7); a densidade ≤ 1,10× ou o aproveitamento fica inalcançável (Tarefa 8).

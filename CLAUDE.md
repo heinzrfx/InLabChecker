@@ -40,5 +40,12 @@ A spec funcional (v1.0/v2.0, com numeração V-xx e seções) é citada nos come
 - **Log por objeto:** `InLab_Log (o.name + ": ...") tipo:#ok|#warn|#err` e uma linha de resumo no final.
 - **Unidades e orientação:** cenas em cm. A frente do produto aponta para `−Y` (viewport Front), com pivot na base (Z=0 do mundo, ±1 mm).
 - **Pegadinhas do MaxScript** já documentadas no código: `case` inline com `;` não parseia (use multi-linha). `listbox` nativo não suporta cor. Rollouts não criam controles dinamicamente.
+- **Pegadinhas do painel Modify e do `Unwrap_UVW`** (achadas no Auto UV, ver cabeçalho de `fn_autouv.ms`):
+  - `select o` num membro de grupo **fechado** seleciona o grupo todo, e `modPanel.addModToSelection` instancia um só modificador em todos os membros. Abra os grupos acima do nó (`InLab_AbrirGruposAcima` / `InLab_FecharGrupos`) e use `addModifier o`.
+  - Instâncias compartilham o stack: um modificador numa instância aparece em todas. `convertToMesh` numa instância torna todas únicas.
+  - `meshop.getMapSupport` dá erro de runtime com canal ≥ `meshop.getNumMaps`, em vez de devolver `false`. Numa malha nova, chame `meshop.setNumMaps` antes de ativar o canal 3.
+  - `relax` do Unwrap sobre um flatten piora o UV: com as bordas soltas encolhe as ilhas até virarem linhas, com as bordas travadas dobra faces. O `Unfold3DPack` ignora `unfoldRoomSpace`, e os valores `unfold*` de um Unwrap novo são só os padrões de fábrica.
+- **Desempenho:** laço em MaxScript sobre faces ou vértices não escala para malhas de centenas de milhares de faces: `InLab_MedirUV` leva ~3 min em 300 mil faces. Em código de produção, prefira operações nativas (`selectOverlappedFaces`, contagens de `meshop`) e limite o que é medido pelo tamanho da malha (`INLAB_UV_MEDIR_MAX_FACES`).
+- **MCP do 3ds Max:** roda em `safe_mode`, que bloqueia `createFile`/`copyFile` no código enviado. Use `openFile ... mode:"wt"` e copie arquivos pelo shell. Uma chamada que passa de 120 s vai para segundo plano e, enquanto isso, a thread principal do Max fica ocupada.
 - **Testes** seguem `tests/test_renomear_produto.ms`: pré-declarar os globais, fazer `fileIn` só dos módulos necessários, substituir `InLab_Log` por um logger que escreve no arquivo de saída, criar a cena de teste, `checar "descrição" condição` e apagar o que foi criado no final.
 - **Git:** commits em português, sem acento no assunto, no formato `feat(escopo): ...` / `fix(escopo): ...`. Branch por feature (`feat/...`) a partir de `main`.
