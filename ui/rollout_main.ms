@@ -26,6 +26,17 @@
 
  ARQUITETURA: cada seção segue sendo um rollout independente, define-before-
  use, comunicação só via globais — mesma disciplina desde a v0.7.
+
+ AJUSTE 22/Set (header-kit-ui, Tarefa 5): botão "Reload Plugin" de 395x22 saiu
+ do topo do rollout principal — vira ícone dentro do header (ui\header.ms),
+ montado por InLab_Header_Montar em InLabChecker_Rollout.open, antes dos
+ AddSubRollout. rdoLado e subSecoes descem 56px (pos: explícito) pra abrir
+ espaço pro pnlHeader em pos:[0,0]. Legenda do rollout e a linha de log de
+ sessão passam a citar a versão do header (INLAB_HEADER_VERSAO_PADRAO) em vez
+ de v0.10 hardcoded, pra não ficarem contraditórias na mesma tela — a
+ unificação geral das strings de versão é do core\versao.ms, de outro
+ sub-projeto. Altura do subRollout (508) e da janela (ver InLab_AbrirUI)
+ MEDIDAS no Max com o header montado, não estimadas.
 ================================================================================
 */
 
@@ -476,23 +487,24 @@ fn InLab_PosicionarPainel lado =
     try ( InLabChecker_Rollout.pos = [x, area.Top] ) catch()
 )
 
-rollout InLabChecker_Rollout "InLabChecker · InLab Artefacto · v0.10" width:446
+rollout InLabChecker_Rollout "InLabChecker · InLab Artefacto · v0.11" width:446
 (
+    ------------------------------------------------------------------
+    -- HEADER (22/09/2026) — faixa de marca com Reload e pastilha de
+    -- versão. Substitui o botão "Reload Plugin" de 395x22 que ficava
+    -- aqui. O conteúdo é montado por InLab_Header_Montar (ui\header.ms):
+    -- rollout não cria controle em tempo de execução, mas filho de Panel
+    -- dotNet cria.
+    ------------------------------------------------------------------
+    dotNetControl pnlHeader "System.Windows.Forms.Panel" pos:[0,0] width:446 height:56
+
     ------------------------------------------------------------------
     -- LADO DO PAINEL — reposicionamento na borda da tela (não é docking
     -- real; ver ressalva entregue à equipe).
     ------------------------------------------------------------------
-    radiobuttons rdoLado labels:#("Fixar à esquerda", "Fixar à direita") default:2 columns:2
+    radiobuttons rdoLado labels:#("Fixar à esquerda", "Fixar à direita") default:2 columns:2 pos:[8,64]
 
-    -- Realocado de InLabSecFamilia (Fase 5.2): não é específico de nenhuma
-    -- seção, então fica fixo aqui, no topo da janela.
-    button btnReload "🔄 Reload Plugin" width:395 height:22
-
-    -- AJUSTE 15/Set: sem pos: fixo — a barra de Copy/Paste que estava acima
-    -- foi removida, então deixamos o fluxo automático do rollout posicionar
-    -- subSecoes logo abaixo do Reload Plugin em vez de reusar o y:96 antigo
-    -- (calculado pra caber a barra que não existe mais).
-    subRollout subSecoes width:438 height:538
+    subRollout subSecoes width:438 height:508 pos:[4,88]
 
     ------------------------------------------------------------------
     -- EVENTOS
@@ -505,6 +517,9 @@ rollout InLabChecker_Rollout "InLabChecker · InLab Artefacto · v0.10" width:44
         rdoLado.state = InLab_LadoPainel
         InLab_PosicionarPainel InLab_LadoPainel
 
+        InLab_Header_Montar pnlHeader
+        InLab_Header_Estado #ocioso versao:INLAB_HEADER_VERSAO_PADRAO
+
         AddSubRollout subSecoes InLabSecProduto
         AddSubRollout subSecoes InLabSecOtimizacao rolledUp:true
         AddSubRollout subSecoes InLabSecUtil rolledUp:true
@@ -514,7 +529,7 @@ rollout InLabChecker_Rollout "InLabChecker · InLab Artefacto · v0.10" width:44
         AddSubRollout subSecoes InLabSecFase4 rolledUp:true
         AddSubRollout subSecoes InLabSecLog
 
-        InLab_Log ("Sessão InLabChecker v0.10 · " + localTime)
+        InLab_Log ("Sessão InLabChecker v" + INLAB_HEADER_VERSAO_PADRAO + " · " + localTime)
         InLab_Log ("Famílias registradas: " + InLab_Familias.count as string + " de 8")
         InLab_Log ("Unidade do sistema: " + (InLab_UnidadeSistema() as string))
         if InLab_Familias.count != 8 do
@@ -522,8 +537,6 @@ rollout InLabChecker_Rollout "InLabChecker · InLab Artefacto · v0.10" width:44
     )
 
     on InLabChecker_Rollout close do InLab_LogUI = undefined
-
-    on btnReload pressed do InLab_RecarregarPlugin()
 
     -- Reposiciona a janela na borda esquerda/direita da tela de trabalho
     -- (sempre no topo) e lembra a preferência pra próxima abertura/reload.
@@ -551,9 +564,11 @@ fn InLab_AbrirUI =
 (
     try (destroyDialog InLabChecker_Rollout) catch()
     -- InLab_MostrarSplash()
-    -- AJUSTE 15/Set: altura reduzida de 690 pra 600 — a barra do topo e a
-    -- barra de progresso que ocupavam esse espaço foram removidas. Valor
-    -- estimado, não testado no Max ainda; se sobrar/faltar espaço embaixo
-    -- do Log de Sessão, é só ajustar este número.
-    createDialog InLabChecker_Rollout 446 600
+    -- AJUSTE 22/Set (header-kit-ui, Tarefa 5) — 604 MEDIDO no Max (não mais
+    -- estimado): com o header (56px) + rádio de lado (pos:[8,64]) + subSecoes
+    -- (altura 508, pos:[4,88]), sobra abaixo do subRollout = 604 - (88+508) =
+    -- 8px (dentro da faixa pedida de 4-10px). Substitui o valor de 600 do
+    -- AJUSTE 15/Set (barra do topo/progresso removidas), que nunca tinha sido
+    -- de fato conferido no Max — o comentário anterior dizia isso mesmo.
+    createDialog InLabChecker_Rollout 446 604
 )

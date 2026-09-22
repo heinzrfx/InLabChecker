@@ -38,6 +38,37 @@
  clique (InLab_Header_OnPastilha) nao faz nada. Devolve false em vez de
  levantar excecao porque quem chama e um callback assincrono do updater
  (sub-projeto 3, ainda nao existe) — excecao la dentro morre sem rastro.
+
+ RELOAD DE DENTRO DO PROPRIO HEADER (Task 5, 22/09/2026): InLab_RecarregarPlugin
+ refaz o fileIn de TODOS os modulos, inclusive deste arquivo, que contem o
+ handler que disparou a chamada — mesma classe de risco do passo 5 do updater
+ (codigo se substituindo enquanto roda). CAMINHO QUE FICOU: o handler DIRETO
+ (InLab_Header_OnReload chamando InLab_RecarregarPlugin() na hora), sem timer.
+ Testado no Max via MCP com InLab_Header_BtnReload.PerformClick() (clique de
+ verdade no dotNet Button, nao so chamar a funcao do handler à mao): o painel
+ fechou, reabriu com o header montado (pnlHeader.Controls.Count > 0 depois),
+ altura 604 (valor novo, confirma que rollout_main.ms recarregou de fato), e o
+ log mostrou a nova linha de sessao seguida de "Plugin recarregado com
+ sucesso." — sem excecao, sem travar. O caminho alternativo com
+ System.Windows.Forms.Timer (que adia a chamada pro tick, depois do clique
+ retornar) NAO foi necessario e nao foi adicionado a este arquivo; fica
+ descrito no brief da Task 5 (.superpowers\sdd\2026-09-22-header-kit-ui\
+ task-5-brief.md) como plano B caso um build futuro do Max quebre esse
+ caminho direto.
+
+ PENDENCIA CONHECIDA — ESCALA DO WINDOWS A 150% (Task 5, 22/09/2026): NAO
+ TESTADO. Testar exige reiniciar o 3ds Max, o que derruba a sessao do MCP no
+ meio da tarefa — ninguem confirmou visualmente o header a 150% ainda. Os 56px
+ fixos do pnlHeader e o subtitulo em 7pt (InLab_Header_Sub) sao os pontos de
+ risco listados na spec (secao 7): a 150% o Max redesenha a UI e as duas
+ coisas podem nao acompanhar, cortando o subtitulo ou empurrando a pastilha
+ pra fora da faixa. NAO afirmar que funciona a 150% sem ter visto. Se quebrar,
+ o conserto nao e chutar outro numero fixo: e trocar os 56px fixos por altura
+ DERIVADA da fonte — depois de InLab_Header_Titulo e InLab_Header_Sub terem
+ AutoSize:true (ja tem), ler `InLab_Header_Titulo.Height + InLab_Header_Sub.Height
+ + 16` dentro de InLab_Header_Montar e devolver esse valor pro pnlHeader.Height
+ (e pro InLabChecker_Rollout ajustar o layout abaixo, ja que rdoLado e
+ subSecoes tem pos: fixo hoje).
 ================================================================================
 */
 
