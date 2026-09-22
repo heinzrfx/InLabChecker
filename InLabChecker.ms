@@ -57,6 +57,8 @@
             -- fn_json.ms primeiro: parser genérico consumido pela seção de
             -- Produto (ui\rollout_main.ms) — só depende de core\log.ms.
             @"functions\fn_json.ms",
+            -- renomeação pelo JSON de produto — depende de fn_json.ms.
+            @"functions\fn_renomear_produto.ms",
             @"functions\fn_prooptimizer.ms",
             @"functions\fn_realworldscale.ms",
             @"functions\fn_checktexture.ms",
@@ -71,6 +73,8 @@
             @"verifications\verif_nomenclatura.ms",
             @"verifications\verif_geometria.ms",
             @"verifications\verif_animacao.ms",
+            -- medição de UV (issue #1): só leitura, usada pelo Auto UV no log
+            @"verifications\verif_uv.ms",
             @"report\report_generator.ms",
             @"verifications\verif_orquestrador.ms",
             -- 5. UI

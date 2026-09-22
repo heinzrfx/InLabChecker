@@ -22,10 +22,23 @@
  - ProOptimizer reduz por VÉRTICES (VertexPercent), não faces. A redução de
    faces acompanha aproximadamente; o log reporta a contagem REAL de faces
    antes/depois por objeto.
- - Cada set de propriedade está em try/catch individual: se algum nome de
-   propriedade divergir na sua versão do Max/Corona, o log aponta qual.
-   Nesse caso, rodar no Listener:  showProperties (ProOptimizer())
-   e me enviar a saída para eu ajustar os nomes.
+ - A propriedade que dispara o cálculo é '.Calculate' (confirmado por
+   showProperties (ProOptimizer()) no Max 2024). Ela é resolvida por sondagem
+   (isProperty) para sobreviver a variação entre builds.
+ - ARMADILHA PRINCIPAL DESTE MÓDULO: '.Calculate' só executa com o nó
+   SELECIONADO e o modificador corrente no painel Modify. Fora desse contexto
+   a atribuição é aceita e descartada em silêncio — sem exceção nenhuma. Por
+   isso o loop seleciona objeto a objeto e usa modPanel.setCurrentObject, e
+   restaura seleção/painel do usuário no final. NÃO REMOVA esse bloco achando
+   que é ruído: sem ele o plugin volta a não otimizar nada.
+ - FALHA É ALTA, NÃO SILENCIOSA: se o cálculo não disparar, ou se a malha sair
+   com o mesmo número de vértices que entrou, o modificador é REMOVIDO e o log
+   registra o objeto como não otimizado. Antes o try/catch engolia a falha e a
+   função reportava sucesso sobre uma malha intacta.
+ - ATENÇÃO À UNIDADE DE CONTAGEM: este módulo mede em TRIÂNGULOS
+   (GetTriMeshFaceCount), enquanto core\utils.ms mede em faces do poly
+   (getPolygonCount). Numa malha all-quad os dois diferem por 2x. Ver ressalva
+   entregue à equipe sobre o polyMax das famílias.
 ================================================================================
 */
 
@@ -71,6 +84,12 @@ fn InLab_ProOptimizer objs percentual manterUV:true =
     )
     else
     (
+        -- Estado do usuário a ser restaurado no fim: precisamos mexer na
+        -- seleção e no painel de comando (ver bloco do Calculate abaixo),
+        -- e isso não pode vazar pra quem apertou o botão.
+        local selOriginal   = selection as array
+        local painelOriginal = getCommandPanelTaskMode()
+
         -- Camada 1 de undo: bloco nomeado no histórico do Max.
         undo "InLab ProOptimizer" on
         (
@@ -83,42 +102,113 @@ fn InLab_ProOptimizer objs percentual manterUV:true =
                 local triAntes  = (GetTriMeshFaceCount o)[1]
                 local vertAntes = (GetTriMeshFaceCount o)[2]
 
+                -- CONTEXTO OBRIGATÓRIO PRO Calculate (bug 15/Set, ver abaixo):
+                -- o nó precisa estar SELECIONADO e o painel Modify ativo, e o
+                -- modificador precisa ser o objeto CORRENTE do painel. Fora
+                -- disso o Calculate é descartado em silêncio.
+                select o
+                setCommandPanelTaskMode #modify
+                try ( subObjectLevel = 0 ) catch ()
+
                 local po = ProOptimizer()
                 addModifier o po
+                try ( modPanel.setCurrentObject po ) catch ()
 
+                -- As opções (KeepUV etc.) precisam estar setadas ANTES do
+                -- cálculo: ele monta a estrutura de otimização já respeitando
+                -- esses flags, igual ao fluxo da UI do modificador.
                 try ( po.KeepUV = manterUV )
                 catch ( InLab_Log ("ProOptimizer.KeepUV indisponível em '" + o.name + "'") tipo:#err )
 
-                -- ORDEM CORRIGIDA (bug 1): "Calculate" PRIMEIRO, percentual
-                -- DEPOIS — como no fluxo da UI do modificador. Na ordem
-                -- invertida o percentual não aplica e a malha passa sem
-                -- redução (vértices idênticos).
-                try ( po.CalculationEnabled = true )
-                catch ( InLab_Log ("ProOptimizer.CalculationEnabled indisponível em '" + o.name + "'") tipo:#err )
+                -- BUG 15/Set — POR QUE O PROOPTIMIZER NUNCA REDUZIA NADA.
+                -- Duas causas empilhadas, nesta ordem:
+                --
+                -- (a) o código setava 'CalculationEnabled', que NÃO EXISTE na
+                --     API — showProperties (ProOptimizer()) no Max 2024 lista
+                --     '.Calculate'. Resolvido por sondagem logo abaixo.
+                --
+                -- (b) a de verdade: '.Calculate' NÃO É UM FLAG DE PARAMBLOCK,
+                --     é um COMANDO. Ele só executa quando o modificador é o
+                --     objeto corrente do painel Modify. Setado fora desse
+                --     contexto, o valor é descartado EM SILÊNCIO — sem
+                --     exceção, e lendo de volta retorna 'false'. Nenhum
+                --     try/catch pegaria isso. Daí o bloco 'select o' +
+                --     setCommandPanelTaskMode + modPanel.setCurrentObject
+                --     logo acima, que é o que faz o cálculo rodar de fato.
+                --     Medido: 7666 -> 3833 verts com VertexPercent 50.
+                --
+                -- Sintomas que isso explicava:
+                --   · Editable Mesh (já triangulado) -> contagem idêntica.
+                --   · Editable Poly (quads) -> parecia DOBRAR, porque o
+                --     modificador converte quads em tris sem reduzir nada
+                --     (10k quads exibidos viram 20k tris exibidos).
+                local propCalc = undefined
+                for c in #(#Calculate, #CalculationEnabled) while propCalc == undefined do
+                    if isProperty po c do
+                        ( try ( setProperty po c true ; propCalc = c ) catch () )
 
-                try ( po.VertexPercent = percentual )
-                catch ( InLab_Log ("ProOptimizer.VertexPercent indisponível em '" + o.name + "'") tipo:#err )
+                if propCalc == undefined then
+                (
+                    deleteModifier o po
+                    InLab_Log (o.name + ": ProOptimizer sem propriedade de cálculo — nenhuma de " +
+                               "Calculate/CalculationEnabled existe nesta build. Objeto NÃO otimizado, " +
+                               "modificador removido.") tipo:#err
+                )
+                else
+                (
+                    local pctOk = false
+                    try ( po.VertexPercent = percentual ; pctOk = true ) catch ()
+                    if not pctOk do
+                        ( InLab_Log ("ProOptimizer.VertexPercent indisponível em '" + o.name + "'") tipo:#err )
 
-                local triDepois  = (GetTriMeshFaceCount o)[1]
-                local vertDepois = (GetTriMeshFaceCount o)[2]
-                local antes  = triAntes
-                local depois = triDepois
+                    local triDepois  = (GetTriMeshFaceCount o)[1]
+                    local vertDepois = (GetTriMeshFaceCount o)[2]
 
-                -- Camada 2 de undo: registro dedicado para revert cirúrgico.
-                local rec = OtimizacaoRecord()
-                rec.no          = o
-                rec.modificador = po
-                rec.polysAntes  = antes
-                rec.polysDepois = depois
-                append InLab_UltimaOtimizacao rec
+                    -- VERIFICAÇÃO DE EFEITO REAL: sem isto a função logava
+                    -- "aplicado com sucesso" mesmo sem ter removido um vértice
+                    -- sequer — foi o que mascarou o bug acima por semanas.
+                    -- ProOptimizer reduz por VÉRTICES, então o veredito é medido
+                    -- em vértices, não em faces.
+                    if vertDepois >= vertAntes then
+                    (
+                        deleteModifier o po
+                        InLab_Log (o.name + ": ProOptimizer NÃO reduziu (" +
+                                   vertAntes as string + " -> " + vertDepois as string +
+                                   " verts). Modificador removido — malha intacta.") tipo:#warn
+                    )
+                    else
+                    (
+                        -- Camada 2 de undo: registro dedicado para revert cirúrgico.
+                        local rec = OtimizacaoRecord()
+                        rec.no          = o
+                        rec.modificador = po
+                        rec.polysAntes  = triAntes
+                        rec.polysDepois = triDepois
+                        append InLab_UltimaOtimizacao rec
 
-                InLab_Log (o.name + ": " + triAntes as string + " -> " + triDepois as string + " tris · " +
-                           vertAntes as string + " -> " + vertDepois as string + " verts") tipo:#ok
-                otimizados += 1
+                        InLab_Log (o.name + ": " + triAntes as string + " -> " + triDepois as string + " tris · " +
+                                   vertAntes as string + " -> " + vertDepois as string + " verts") tipo:#ok
+                        otimizados += 1
+                    )
+                )
             )
         )
-        InLab_Log ("ProOptimizer aplicado a " + otimizados as string +
-                   " objeto(s) com VertexPercent = " + (formattedPrint percentual format:".1f") + "%.")
+
+        -- Restaura seleção e painel de comando. Fica FORA do bloco de undo
+        -- de propósito: restaurar não é parte da operação que o Ctrl+Z desfaz.
+        try
+        (
+            if selOriginal.count > 0 then select selOriginal else clearSelection()
+            setCommandPanelTaskMode painelOriginal
+        )
+        catch ( InLab_Log "Não foi possível restaurar seleção/painel após a otimização." tipo:#warn )
+
+        if otimizados == 0 then
+            InLab_Log ("ProOptimizer NÃO otimizou nenhum objeto (VertexPercent = " +
+                       (formattedPrint percentual format:".1f") + "%). Ver linhas acima.") tipo:#err
+        else
+            InLab_Log ("ProOptimizer aplicado a " + otimizados as string +
+                       " objeto(s) com VertexPercent = " + (formattedPrint percentual format:".1f") + "%.") tipo:#ok
         otimizados
     )
 )

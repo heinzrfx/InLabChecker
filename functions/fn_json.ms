@@ -2,12 +2,13 @@
 ================================================================================
  functions\fn_json.ms — Fase 5.1: parser JSON genérico, 100% MAXScript nativo
 --------------------------------------------------------------------------------
- POR QUE NÃO dotNet (Json.NET / JavaScriptSerializer): o plugin roda em
- máquinas de modelador do 3ds Max 2024 ao 2027 sem etapa de instalação
- extra. JavaScriptSerializer depende da assembly System.Web.Extensions, que
- nem sempre está presente/carregável em toda instalação — um parser escrito
- em MAXScript puro (recursive descent sobre a string) não depende de nada
- além da linguagem em si.
+ AJUSTE 18/Set — .NET VIRA O CAMINHO PRINCIPAL: o parser MAXScript puro
+ (recursive descent sobre a string) travou o Max com o export real da
+ plataforma (943 KB → +40 GB de RAM). Agora InLab_ParseJSON usa
+ JavaScriptSerializer (System.Web.Extensions) e converte o resultado pro
+ formato nativo abaixo. O parser MAXScript continua aqui como PLANO B, só
+ pra instalação onde System.Web.Extensions não carregar — era esse o motivo
+ original de evitar o .NET (portabilidade entre Max 2024 e 2027).
 
  REPRESENTAÇÃO ESCOLHIDA (decisão desta fase, documentada conforme pedido):
    objeto JSON {...}  → Array MAXScript de pares #(chave, valor), chave
@@ -77,10 +78,14 @@ fn InLab_JSON_HexParaInt hex =
 --------------------------------------------------------------------------------
 -- PARSERS POR TIPO — cada um recebe (texto, pos) com pos apontando para o
 -- primeiro caractere do valor, e devolve #(valorConvertido, posApósOValor).
--- Recursivos entre si (objeto/array chamam InLab_JSON_ParsearValor) — a
--- ordem de definição no arquivo não importa em MAXScript (nomes de fn são
--- resolvidos em tempo de chamada, não de definição).
+-- Recursivos entre si (objeto/array chamam InLab_JSON_ParsearValor, que só
+-- é definida mais abaixo). A ordem IMPORTA: em MAXScript um nome não
+-- declarado usado dentro do corpo de uma fn vira variável LOCAL (undefined),
+-- não referência global — sem o `global` abaixo, qualquer JSON com {} ou []
+-- falhava com "Call needs function or class, got: undefined".
 --------------------------------------------------------------------------------
+
+global InLab_JSON_ParsearValor
 
 fn InLab_JSON_ParsearString texto pos =
 (
@@ -266,6 +271,114 @@ fn InLab_JSON_ParsearValor texto pos =
     else throw ("caractere inesperado '" + c + "' na posição " + (pos as string))
 )
 
+-- Parser MAXScript puro — PLANO B, só usado se o .NET não carregar (ver
+-- InLab_ParseJSON). Devolve #(ok, valorOuMensagemDeErro).
+fn InLab_JSON_ParseMaxScript texto =
+(
+    local ok = true
+    local valor = undefined
+    try
+    (
+        local r = InLab_JSON_ParsearValor texto 1
+        valor = r[1]
+        local posFinal = InLab_JSON_Pular texto r[2]
+        if posFinal <= texto.count do
+            throw ("texto sobrando após o fim do JSON válido, a partir da posição " + (posFinal as string))
+    )
+    catch
+    (
+        ok = false
+        valor = getCurrentException()
+    )
+    #(ok, valor)
+)
+
+--------------------------------------------------------------------------------
+-- PARSER .NET — CAMINHO PRINCIPAL (ajuste 18/Set)
+-- O parser MAXScript acima percorre o texto caractere a caractere e cada
+-- `texto[pos]` / `resultado += c` aloca uma string nova que o GC não recolhe
+-- durante o loop: com o export real da plataforma (943 KB) o Max passou de
+-- 40 GB de RAM e travou. JavaScriptSerializer (System.Web.Extensions, parte
+-- do .NET Framework 4.x que o Max 2024+ já usa) faz o mesmo em milissegundos.
+-- A árvore .NET é convertida logo em seguida pro MESMO formato nativo do
+-- parser MAXScript (objeto → array de pares), então nada fora deste arquivo
+-- percebe a troca.
+--------------------------------------------------------------------------------
+
+-- Cache: serializer + tipos usados na conversão (dotNetClass/GetType a cada
+-- nó da árvore custaria uma chamada .NET extra por valor).
+global INLAB_JSON_Serializer = undefined
+global INLAB_JSON_TipoIDict = undefined
+global INLAB_JSON_TipoIList = undefined
+global INLAB_JSON_Convert = undefined
+
+-- Devolve o serializer pronto, ou undefined se a assembly não carregar
+-- (aí InLab_ParseJSON cai no parser MAXScript).
+fn InLab_JSON_SerializerDotNet =
+(
+    if INLAB_JSON_Serializer == undefined do
+    (
+        try
+        (
+            dotNet.loadAssembly "System.Web.Extensions"
+            local s = dotNetObject "System.Web.Script.Serialization.JavaScriptSerializer"
+            -- padrão é ~2 milhões de caracteres; nomenclatura_projeto.json tem 6,5 MB
+            s.MaxJsonLength = (dotNetClass "System.Int32").MaxValue
+            local tipo = dotNetClass "System.Type"
+            INLAB_JSON_TipoIDict = tipo.GetType "System.Collections.IDictionary"
+            INLAB_JSON_TipoIList = tipo.GetType "System.Collections.IList"
+            INLAB_JSON_Convert = dotNetClass "System.Convert"
+            INLAB_JSON_Serializer = s
+        )
+        catch ( INLAB_JSON_Serializer = undefined )
+    )
+    INLAB_JSON_Serializer
+)
+
+-- Converte o que o JavaScriptSerializer devolve para o formato nativo:
+--   Dictionary<string,object> → array de pares #(chave, valor)
+--   object[] (ou IList)       → Array
+--   string / bool / int       → String / Boolean / Integer
+--   decimal (números com ".") → Float via Convert.ToDouble
+-- Os filhos são lidos com asDotNetObject:true DE PROPÓSITO: sem isso o
+-- MAXScript converte System.Decimal sozinho para Integer, truncando
+-- (2.5 → 2, -0.125 → 0 — pego no diagnóstico de 18/Set). Converter via
+-- texto também não serve: em Windows pt-BR o Decimal vira "2,5".
+global InLab_JSON_DotNetParaNativo
+fn InLab_JSON_DotNetParaNativo v =
+(
+    if v == undefined then undefined
+    else if isKindOf v Array then
+        for x in v collect InLab_JSON_DotNetParaNativo x
+    else if classOf v != dotNetObject then v -- já nativo (não deveria ocorrer)
+    else if INLAB_JSON_TipoIDict.IsInstanceOfType v then
+    (
+        local chaves = dotNetObject "System.Collections.ArrayList" v.Keys
+        for i = 0 to chaves.Count - 1 collect
+        (
+            local k = chaves.get_Item i
+            #(k as string, InLab_JSON_DotNetParaNativo (v.get_Item k asDotNetObject:true))
+        )
+    )
+    else
+    (
+        -- (encadear v.GetType().IsArray não parseia no MAXScript)
+        local tipoV = v.GetType()
+        if tipoV.IsArray then
+            for i = 0 to v.Length - 1 collect InLab_JSON_DotNetParaNativo (v.GetValue i asDotNetObject:true)
+        else if INLAB_JSON_TipoIList.IsInstanceOfType v then
+            for i = 0 to v.Count - 1 collect InLab_JSON_DotNetParaNativo (v.get_Item i asDotNetObject:true)
+        else case tipoV.Name of
+        (
+            "String":  v.ToString()
+            "Boolean": INLAB_JSON_Convert.ToBoolean v
+            "Int32":   INLAB_JSON_Convert.ToInt32 v
+            "Int64":   INLAB_JSON_Convert.ToInt64 v
+            default:   try ( INLAB_JSON_Convert.ToDouble v ) catch ( v.ToString() )
+        )
+    )
+)
+
 --------------------------------------------------------------------------------
 -- PONTO DE ENTRADA — chamado de outros módulos (UI etc.), por isso o
 -- `global` explícito antes da definição (mesma cautela de escopo de reload
@@ -280,24 +393,31 @@ fn InLab_ParseJSON texto =
         InLab_Log "InLab_ParseJSON: texto vazio ou indefinido — nada para interpretar." tipo:#err
     else
     (
-        local ok = true
-        local mensagemErro = ""
-        local valorFinal = undefined
-        try
+        local ser = InLab_JSON_SerializerDotNet()
+        if ser != undefined then
         (
-            local r = InLab_JSON_ParsearValor texto 1
-            valorFinal = r[1]
-            local posFinal = InLab_JSON_Pular texto r[2]
-            if posFinal <= texto.count do
-                throw ("texto sobrando após o fim do JSON válido, a partir da posição " + (posFinal as string))
+            local bruto = undefined
+            local erro = undefined
+            try ( bruto = ser.DeserializeObject texto asDotNetObject:true ) catch ( erro = getCurrentException() )
+            if erro != undefined then
+                InLab_Log ("InLab_ParseJSON: JSON malformado — " + erro) tipo:#err
+            else
+            (
+                try ( resultado = InLab_JSON_DotNetParaNativo bruto )
+                catch
+                (
+                    resultado = undefined
+                    InLab_Log ("InLab_ParseJSON: falha ao converter o JSON para MAXScript — " + getCurrentException()) tipo:#err
+                )
+            )
         )
-        catch
+        else
         (
-            ok = false
-            mensagemErro = getCurrentException()
+            InLab_Log "InLab_ParseJSON: parser .NET indisponível — usando o parser MAXScript (arquivos grandes podem travar o Max)." tipo:#warn
+            local r = InLab_JSON_ParseMaxScript texto
+            if r[1] then resultado = r[2]
+            else InLab_Log ("InLab_ParseJSON: JSON malformado — " + r[2]) tipo:#err
         )
-        if ok then resultado = valorFinal
-        else InLab_Log ("InLab_ParseJSON: JSON malformado — " + mensagemErro) tipo:#err
     )
     resultado
 )
@@ -320,23 +440,18 @@ fn InLab_JSON_Obter objetoComoPares chave =
 -- mesmo motivo de InLab_ParseJSON acima: é chamado a partir da UI (Fase 5.2).
 --------------------------------------------------------------------------------
 
+-- Ajuste 18/Set: lê de uma vez via .NET (System.IO.File, sempre presente).
+-- A versão anterior concatenava linha a linha (`partes += linha`) e levava
+-- 25 s só pra ler o export de 943 KB. ReadAllText também descarta o BOM.
 global InLab_JSON_LerArquivoUTF8
 fn InLab_JSON_LerArquivoUTF8 caminho =
 (
     local conteudo = undefined
-    local f = try ( openFile caminho mode:"r" encoding:#utf8 ) catch ( undefined )
-    if f == undefined then
-        InLab_Log ("Não foi possível abrir o arquivo: " + caminho) tipo:#err
-    else
+    try ( conteudo = (dotNetClass "System.IO.File").ReadAllText caminho (dotNetClass "System.Text.Encoding").UTF8 )
+    catch
     (
-        local partes = ""
-        while not (eof f) do
-        (
-            local linha = readLine f
-            partes += linha + "\n"
-        )
-        close f
-        conteudo = partes
+        conteudo = undefined
+        InLab_Log ("Não foi possível abrir o arquivo: " + caminho + " — " + getCurrentException()) tipo:#err
     )
     conteudo
 )

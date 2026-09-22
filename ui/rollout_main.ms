@@ -3,16 +3,26 @@
  ui\rollout_main.ms — v0.10 (13/Jul) — reorganização completa de UI
 --------------------------------------------------------------------------------
  MUDANÇAS DESTA VERSÃO (pedido da equipe, ref. ArchToolz):
-   - Barra de ferramentas FIXA no topo (Copy/Paste Objs/Mat, Pick Mat).
-     Paste DWG: desabilitado — pendência de escopo (ver fn_clipboard.ms).
    - Ordem "Somente seleção" / "Cena inteira" padronizada em todo o plugin.
    - Seções reordenadas: Família → Otimização → Utilidades → Converter
      Material → Exportar → Verificações → Log (sempre por último).
    - Log colorido (dotNet RichTextBox — listbox nativo não suporta cor).
-   - Progress bar fixa abaixo das seções (fora das abas).
    - Splash screen ao abrir.
    - Opção de fixar o painel à esquerda/direita da tela (reposicionamento
      de janela — NÃO é docking real; ver ressalva entregue à equipe).
+
+ AJUSTE 15/Set (debug de UI, pedido Rafael): removidos dois blocos fixos que
+ ficavam acima/abaixo das seções:
+   - Barra de ferramentas do topo (Copy/Paste Objs/Mat, Paste DWG, Pick Mat)
+     — os botões nem chamavam funções carregadas (fn_clipboard.ms não está
+     no manifesto INLAB_MODULOS de InLabChecker.ms), então pressioná-los já
+     dava erro. Removida por inteiro; fn_clipboard.ms continua no repo,
+     intocado, caso a equipe decida reconectar essa função depois.
+   - Barra de progresso fixa abaixo das seções (dncProgress/dncProgressLbl).
+     InLab_ProgressoIniciar/Parar (core\log.ms) já protegem contra
+     InLab_ProgressUI/InLab_ProgressLbl == undefined, então essas chamadas
+     (ProOptimizer, Auto UV, Verificações) continuam funcionando normalmente
+     como no-op silencioso — nada mais a ajustar nesses outros arquivos.
 
  ARQUITETURA: cada seção segue sendo um rollout independente, define-before-
  use, comunicação só via globais — mesma disciplina desde a v0.7.
@@ -20,20 +30,68 @@
 */
 
 ----------------------------------------------------------------------
--- SEÇÃO: Produto (Fase 5.2 — substitui "Família Estrutural")
+-- SEÇÃO: Produto (Fase 5.2 import · 18/Set renomeação pelo JSON)
 ----------------------------------------------------------------------
--- O produto ativo agora vem 100% de um .json exportado pela plataforma
--- externa (Lovable + Supabase) — não mais de uma família pré-cadastrada no
--- plugin. Este rollout só importa e guarda a árvore crua devolvida pelo
--- parser (InLab_ParseJSON, functions\fn_json.ms) em InLab_ProdutoAtivo; a
--- tradução para os dados que verificações/otimização consomem de fato é a
--- Fase 5.3, ainda pendente.
-global InLab_ProdutoAtivo = undefined -- árvore crua do produto ativo (formato de InLab_ParseJSON)
+-- Importa o export de nomenclatura da plataforma (Lovable + Supabase),
+-- escolhe o produto (pré-selecionado pelo nome do .max = cod_est), liga
+-- cada parte a um material da seleção e aplica os nomes oficiais. A lógica
+-- toda está em functions\fn_renomear_produto.ms; aqui só fica o estado da
+-- tela. Lista + dropdown nativos em vez de tabela dotNet: o número de
+-- partes varia por produto e rollout não cria controles dinamicamente.
+global InLab_ProdutoAtivo = undefined -- árvore crua do JSON importado (formato de InLab_ParseJSON)
 
 rollout InLabSecProduto "Produto" width:420
 (
+    local produtos = #()  -- itens de "produtos" do export importado
+    local materiais = #() -- materiais lidos da seleção
+    local ligacoes = #()  -- paralelo às partes do produto escolhido: material ou undefined
+    local objsLidos = #() -- objetos da última leitura — são eles que recebem o mesh_final
+
     label lblProdutoAtivo "Nenhum produto carregado." align:#left
     button btnImportarProduto "Importar JSON do Produto..." width:395 height:26
+    dropdownlist ddlProduto "Produto:" items:#() width:395
+    button btnLerSelecao "Ler materiais da seleção" width:395 height:24
+    listbox lbxPartes "Parte  →  material:" items:#() height:6 width:395
+    dropdownlist ddlMaterial "Material da parte marcada:" items:#() width:395
+    button btnAplicar "Aplicar nomes" width:192 height:26 across:2
+    button btnDesfazer "Desfazer nomes" width:192 height:26
+
+    fn produtoEscolhido =
+        if ddlProduto.selection > 0 and ddlProduto.selection <= produtos.count then produtos[ddlProduto.selection] else undefined
+
+    fn partesEscolhidas =
+    (
+        local p = produtoEscolhido()
+        local partes = if p != undefined then InLab_JSON_Obter p "partes" else undefined
+        if isKindOf partes Array then partes else #()
+    )
+
+    fn atualizarTela =
+    (
+        local partes = partesEscolhidas()
+        local sel = lbxPartes.selection
+        lbxPartes.items = for i = 1 to partes.count collect
+            ((InLab_Produto_Rotulo partes[i]) + "  →  " + (if ligacoes[i] == undefined then "(sem material)" else ligacoes[i].name))
+        if sel > 0 and sel <= partes.count do lbxPartes.selection = sel
+        ddlMaterial.items = #("— nenhum —") + (for m in materiais collect m.name)
+        local i = lbxPartes.selection
+        ddlMaterial.selection = if i > 0 and ligacoes[i] != undefined then (findItem materiais ligacoes[i]) + 1 else 1
+    )
+
+    fn sugerir =
+    (
+        ligacoes = InLab_Produto_SugerirLigacoes (partesEscolhidas()) materiais
+        atualizarTela()
+    )
+
+    fn limparProduto =
+    (
+        InLab_ProdutoAtivo = undefined
+        produtos = #()
+        ddlProduto.items = #()
+        lblProdutoAtivo.text = "Nenhum produto carregado."
+        sugerir()
+    )
 
     on btnImportarProduto pressed do
     (
@@ -43,28 +101,84 @@ rollout InLabSecProduto "Produto" width:420
         else
         (
             local texto = InLab_JSON_LerArquivoUTF8 caminho
-            if texto == undefined then
-            (
-                InLab_ProdutoAtivo = undefined
-                lblProdutoAtivo.text = "Nenhum produto carregado."
-            )
+            local dados = if texto == undefined then undefined else InLab_ParseJSON texto
+            if dados == undefined then limparProduto()
             else
             (
-                local dados = InLab_ParseJSON texto
-                if dados == undefined then
-                (
-                    InLab_ProdutoAtivo = undefined
-                    lblProdutoAtivo.text = "Nenhum produto carregado."
-                )
+                InLab_ProdutoAtivo = dados
+                local nomeArquivo = filenameFromPath caminho
+                lblProdutoAtivo.text = "Produto carregado: " + nomeArquivo
+                InLab_Log ("Produto importado com sucesso: " + nomeArquivo) tipo:#ok
+                produtos = InLab_Produto_Lista dados
+                ddlProduto.items = for p in produtos collect ((InLab_Produto_Texto p "cod_est") + " – " + (InLab_Produto_Texto p "nome"))
+                if produtos.count == 0 then
+                    InLab_Log "Este JSON não tem lista de produtos — importe o export da linha (nomenclatura_export_...json), não o nomenclatura_projeto.json." tipo:#warn
                 else
                 (
-                    InLab_ProdutoAtivo = dados
-                    local nomeArquivo = filenameFromPath caminho
-                    lblProdutoAtivo.text = "Produto carregado: " + nomeArquivo
-                    InLab_Log ("Produto importado com sucesso: " + nomeArquivo) tipo:#ok
+                    local cod = getFilenameFile maxFileName
+                    local idx = InLab_Produto_IndicePorCodigo produtos cod
+                    if idx > 0 then
+                        InLab_Log ("Produto do arquivo aberto: " + ddlProduto.items[idx]) tipo:#ok
+                    else
+                    (
+                        idx = 1
+                        InLab_Log ("Nenhum produto com cod_est '" + cod + "' (nome do .max) — escolha na lista.") tipo:#warn
+                    )
+                    ddlProduto.selection = idx
                 )
+                sugerir()
             )
         )
+    )
+
+    on ddlProduto selected i do sugerir()
+
+    on btnLerSelecao pressed do
+    (
+        local objs = InLab_SelecaoValida()
+        if objs.count > 0 do
+        (
+            objsLidos = objs
+            materiais = InLab_Produto_MateriaisDaSelecao objs
+            sugerir()
+            local n = 0
+            for l in ligacoes where l != undefined do n += 1
+            InLab_Log (materiais.count as string + " material(is) em " + objs.count as string + " objeto(s) · " +
+                       n as string + " parte(s) pré-ligada(s) — confira antes de aplicar.")
+        )
+    )
+
+    on lbxPartes selected i do atualizarTela()
+
+    on ddlMaterial selected j do
+    (
+        local i = lbxPartes.selection
+        if i == 0 then
+            InLab_Log "Marque uma parte na lista antes de escolher o material." tipo:#warn
+        else
+            ligacoes[i] = if j == 1 then undefined else materiais[j - 1]
+        atualizarTela()
+    )
+
+    on btnAplicar pressed do
+    (
+        local p = produtoEscolhido()
+        if p == undefined then
+            InLab_Log "Importe o JSON e escolha o produto antes de aplicar." tipo:#warn
+        else if objsLidos.count == 0 then
+            InLab_Log "Clique em 'Ler materiais da seleção' antes de aplicar." tipo:#warn
+        else
+        (
+            objsLidos = for o in objsLidos where isValidNode o collect o
+            InLab_Produto_Aplicar p ligacoes objsLidos
+            atualizarTela()
+        )
+    )
+
+    on btnDesfazer pressed do
+    (
+        InLab_Produto_Reverter()
+        atualizarTela()
     )
 )
 
@@ -76,12 +190,19 @@ rollout InLabSecOtimizacao "Otimização" width:420
     label lblF1 "ProOptimizer" align:#left
     radiobuttons rdoModoOpt labels:#("Percentual manual", "Alvo da família (polyMax)") default:1 columns:2
     spinner spnPercent "VertexPercent:" range:[1.0, 100.0, 50.0] type:#float fieldWidth:55 align:#left
-    button btnF1 "Aplicar" width:395 height:25
+    button btnF1 "Aplicar" width:192 height:25 across:2
+    button btnF1Undo "Desfazer Otimização" width:192 height:25
 
-    label lblF2 "Auto UV" align:#left across:1
-    spinner spnPadding "Padding:" range:[0.0, 0.05, 0.005] scale:0.001 type:#float fieldWidth:50 align:#left
-    button btnF2 "Auto UV na Seleção" width:192 across:2
-    button btnF2Clean "Clean UV" width:192
+    -- 18/Set (issue #1): o padding sai da resolução do bake; o Auto UV grava
+    -- no canal 3 e não toca no canal 1. Os itens do dropdown seguem a ordem
+    -- de INLAB_UV_RESOLUCOES (functions\fn_autouv.ms).
+    label lblF2 "Auto UV  (canal 3 · bake de textura e AO)" align:#left across:1
+    spinner spnAnguloUV "Ângulo flatten (°):" range:[10, 90, 55] type:#float fieldWidth:40 align:#left
+    checkbox chkSeamsOcultas "Preferir seams em regiões ocultas" checked:true
+    dropdownlist ddlResolucaoUV "Resolução do bake:" items:#("1024", "2048", "4096") selection:1 width:120 align:#left
+    button btnF2 "Auto UV na Seleção" width:126 across:3
+    button btnF2Clean "Clean UV" width:126
+    button btnF2Reverter "Reverter Auto UV" width:126
 
     label lblF34 "Check Texture  |  Real World Scale" align:#left across:1
     radiobuttons rdoEscopoTex labels:#("Somente seleção", "Cena inteira") default:1 columns:2
@@ -119,13 +240,21 @@ rollout InLabSecOtimizacao "Otimização" width:420
         )
     )
 
+    -- AJUSTE 15/Set: InLab_ReverterOtimizacao (functions\fn_prooptimizer.ms)
+    -- existia desde a v0.9 mas nunca teve botão — a "camada 2" de undo descrita
+    -- no cabeçalho daquele módulo era código morto. Ela remove exatamente os
+    -- modificadores da última rodada, e funciona mesmo que o usuário já tenha
+    -- feito outras ações depois (cenário em que o Ctrl+Z simples não alcança).
+    on btnF1Undo pressed do InLab_ReverterOtimizacao()
+
     on btnF2 pressed do
     (
         local objs = InLab_SelecaoValida()
         if objs.count > 0 do
         (
             InLab_ProgressoIniciar "Gerando Auto UV..."
-            InLab_AutoUV objs padding:spnPadding.value
+            InLab_AutoUV objs angulo:spnAnguloUV.value seamsOcultas:chkSeamsOcultas.checked \
+                resolucao:INLAB_UV_RESOLUCOES[ddlResolucaoUV.selection]
             InLab_ProgressoParar()
         )
     )
@@ -134,6 +263,7 @@ rollout InLabSecOtimizacao "Otimização" width:420
         local objs = InLab_SelecaoValida()
         if objs.count > 0 do InLab_CleanUV objs
     )
+    on btnF2Reverter pressed do InLab_ReverterAutoUV()
 
     on btnF3 pressed do
     (
@@ -233,7 +363,7 @@ rollout InLabSecF5 "Converter Material" width:420
 rollout InLabSecMatUtil "Materiais — Utilidades" width:420
 (
     label lblMatSel "Selecionar por Material Similar" align:#left
-    label lblMatSelInfo "(usa o material copiado — Copy Mat / Pick Mat da barra do topo)" align:#left
+    label lblMatSelInfo "(usa o material copiado — recurso Copy Mat / Pick Mat removido; ver nota 15/Set)" align:#left
     radiobuttons rdoEscopoMat labels:#("Somente seleção", "Cena inteira") default:2 columns:2
     checkbox chkMatPorNome "Também considerar mesmo NOME (cópias/instâncias diferentes)" checked:false
     button btnMatSel "Selecionar por Material Similar" width:395 height:24
@@ -369,34 +499,20 @@ fn InLab_PosicionarPainel lado =
 rollout InLabChecker_Rollout "InLabChecker · InLab Artefacto · v0.10" width:446
 (
     ------------------------------------------------------------------
-    -- BARRA FIXA (topo) — Copy/Paste Objs/Mat, Pick Mat. Sempre visível,
-    -- independente da seção/aba ativa. Paste DWG desabilitado (pendência
-    -- de escopo — ver fn_clipboard.ms).
-    ------------------------------------------------------------------
-    button btnCopyObjs  "Copy Objs"  width:68 across:6 offset:[0,0]
-    button btnPasteObjs "Paste Objs" width:68
-    button btnCopyMat   "Copy Mat"   width:68
-    button btnPasteMat  "Paste Mat"  width:68
-    button btnPasteDWG  "Paste DWG"  width:68 enabled:false
-    button btnPickMat   "Pick Mat"   width:68
-
-    ------------------------------------------------------------------
     -- LADO DO PAINEL — reposicionamento na borda da tela (não é docking
     -- real; ver ressalva entregue à equipe).
     ------------------------------------------------------------------
     radiobuttons rdoLado labels:#("Fixar à esquerda", "Fixar à direita") default:2 columns:2
 
     -- Realocado de InLabSecFamilia (Fase 5.2): não é específico de nenhuma
-    -- seção, então fica fixo aqui, igual à barra de Copy/Paste acima.
+    -- seção, então fica fixo aqui, no topo da janela.
     button btnReload "🔄 Reload Plugin" width:395 height:22
 
-    subRollout subSecoes width:438 height:538 pos:[3, 96]
-
-    ------------------------------------------------------------------
-    -- PROGRESSO — fixo, fora das abas, abaixo das seções.
-    ------------------------------------------------------------------
-    dotNetControl dncProgress "System.Windows.Forms.ProgressBar" width:398 height:14 pos:[3, 640]
-    dotNetControl dncProgressLbl "System.Windows.Forms.Label" width:398 height:16 pos:[3, 656]
+    -- AJUSTE 15/Set: sem pos: fixo — a barra de Copy/Paste que estava acima
+    -- foi removida, então deixamos o fluxo automático do rollout posicionar
+    -- subSecoes logo abaixo do Reload Plugin em vez de reusar o y:96 antigo
+    -- (calculado pra caber a barra que não existe mais).
+    subRollout subSecoes width:438 height:538
 
     ------------------------------------------------------------------
     -- EVENTOS
@@ -418,12 +534,6 @@ rollout InLabChecker_Rollout "InLabChecker · InLab Artefacto · v0.10" width:44
         AddSubRollout subSecoes InLabSecFase4 rolledUp:true
         AddSubRollout subSecoes InLabSecLog
 
-        dncProgress.Visible = false
-        dncProgressLbl.Visible = false
-        dncProgressLbl.ForeColor = (dotNetClass "System.Drawing.Color").FromArgb 200 200 200
-        InLab_ProgressUI  = dncProgress
-        InLab_ProgressLbl = dncProgressLbl
-
         InLab_Log ("Sessão InLabChecker v0.10 · " + localTime)
         InLab_Log ("Famílias registradas: " + InLab_Familias.count as string + " de 8")
         InLab_Log ("Unidade do sistema: " + (InLab_UnidadeSistema() as string))
@@ -433,23 +543,6 @@ rollout InLabChecker_Rollout "InLabChecker · InLab Artefacto · v0.10" width:44
 
     on InLabChecker_Rollout close do InLab_LogUI = undefined
 
-    on btnCopyObjs pressed do
-    (
-        local objs = InLab_SelecaoValida()
-        if objs.count > 0 do InLab_CopyObjs objs
-    )
-    on btnPasteObjs pressed do InLab_PasteObjs()
-    on btnCopyMat pressed do
-    (
-        local objs = InLab_SelecaoValida()
-        if objs.count > 0 do InLab_CopyMat objs
-    )
-    on btnPasteMat pressed do
-    (
-        local objs = InLab_SelecaoValida()
-        if objs.count > 0 do InLab_PasteMat objs
-    )
-    on btnPickMat pressed do InLab_PickMat()
     on btnReload pressed do InLab_RecarregarPlugin()
 
     -- Reposiciona a janela na borda esquerda/direita da tela de trabalho
@@ -461,18 +554,26 @@ rollout InLabChecker_Rollout "InLabChecker · InLab Artefacto · v0.10" width:44
     )
 )
 
--- Fecha instância anterior (se existir), mostra o splash e abre a janela
--- já posicionada conforme a última preferência de lado (padrão: direita).
+-- Fecha instância anterior (se existir) e abre a janela já posicionada
+-- conforme a última preferência de lado (padrão: direita).
 --
 -- global explícito aqui: o fileIn deste arquivo pode acontecer de DENTRO
 -- de InLab_RecarregarPlugin() (reload), um escopo de função aninhado, o
 -- que pode amarrar esta definição ao escopo local do chamador em vez do
 -- global — mesmo problema que já resolvemos no InLabChecker.ms, agora
 -- também no lado de quem DEFINE a função (bug constatado em 29/Jul).
+--
+-- SPLASH DESLIGADO (10/Set, pedido Rafael): InLab_MostrarSplash() comentada
+-- abaixo — não removida do arquivo (ui\splash.ms continua íntegro) pra ser
+-- fácil religar depois. Só descomentar a linha pra voltar a mostrar.
 global InLab_AbrirUI
 fn InLab_AbrirUI =
 (
     try (destroyDialog InLabChecker_Rollout) catch()
-    InLab_MostrarSplash()
-    createDialog InLabChecker_Rollout 446 690
+    -- InLab_MostrarSplash()
+    -- AJUSTE 15/Set: altura reduzida de 690 pra 600 — a barra do topo e a
+    -- barra de progresso que ocupavam esse espaço foram removidas. Valor
+    -- estimado, não testado no Max ainda; se sobrar/faltar espaço embaixo
+    -- do Log de Sessão, é só ajustar este número.
+    createDialog InLabChecker_Rollout 446 600
 )
