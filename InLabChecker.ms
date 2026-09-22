@@ -80,6 +80,9 @@
             @"report\report_generator.ms",
             @"verifications\verif_orquestrador.ms",
             -- 5. UI
+            -- kit antes de tudo: header e (depois) as seções leem cor dele.
+            @"ui\kit.ms",
+            @"ui\header.ms",
             @"ui\splash.ms",
             @"ui\rollout_main.ms"
         )

@@ -26,6 +26,27 @@
 
  ARQUITETURA: cada seção segue sendo um rollout independente, define-before-
  use, comunicação só via globais — mesma disciplina desde a v0.7.
+
+ AJUSTE 22/Set (header-kit-ui, Tarefa 5): botão "Reload Plugin" de 395x22 saiu
+ do topo do rollout principal — vira ícone dentro do header (ui\header.ms),
+ montado por InLab_Header_Montar em InLabChecker_Rollout.open, antes dos
+ AddSubRollout. rdoLado e subSecoes descem 56px (pos: explícito) pra abrir
+ espaço pro pnlHeader em pos:[0,0]. A LINHA DE LOG de sessão passa a citar
+ INLAB_HEADER_VERSAO_PADRAO em vez de v0.10 hardcoded; a LEGENDA do rollout
+ continua literal ("· v0.11") porque legenda de rollout é avaliada em tempo de
+ DEFINIÇÃO do rollout, quando um global ainda não vale nada — não dá pra
+ interpolar. As duas ficaram na mesma versão, mas por caminhos diferentes: a
+ legenda tem que ser atualizada na mão quando a versão subir. A unificação
+ geral das strings de versão é do core\versao.ms, de outro sub-projeto.
+ Altura do subRollout (508) e da janela (ver InLab_AbrirUI) MEDIDAS no Max com
+ o header montado, não estimadas.
+
+ CONSERTOS DO REVIEW FINAL (22/09/2026): a montagem do header em `on open`
+ ganhou try/catch — uma exceção ali deixava o painel SEM SEÇÃO NENHUMA, porque
+ os 8 AddSubRollout vêm depois. E o `on open` repinta o ESTADO CORRENTE
+ (InLab_Header_EstadoAtual) em vez de forçar #ocioso: forçar apagava o aviso de
+ atualização a cada Reload. O `on close` zera também as globais dos controles
+ do header, pra não ficarem apontando pra controle destruído.
 ================================================================================
 */
 
@@ -476,23 +497,24 @@ fn InLab_PosicionarPainel lado =
     try ( InLabChecker_Rollout.pos = [x, area.Top] ) catch()
 )
 
-rollout InLabChecker_Rollout "InLabChecker · InLab Artefacto · v0.10" width:446
+rollout InLabChecker_Rollout "InLabChecker · InLab Artefacto · v0.11" width:446
 (
+    ------------------------------------------------------------------
+    -- HEADER (22/09/2026) — faixa de marca com Reload e pastilha de
+    -- versão. Substitui o botão "Reload Plugin" de 395x22 que ficava
+    -- aqui. O conteúdo é montado por InLab_Header_Montar (ui\header.ms):
+    -- rollout não cria controle em tempo de execução, mas filho de Panel
+    -- dotNet cria.
+    ------------------------------------------------------------------
+    dotNetControl pnlHeader "System.Windows.Forms.Panel" pos:[0,0] width:446 height:56
+
     ------------------------------------------------------------------
     -- LADO DO PAINEL — reposicionamento na borda da tela (não é docking
     -- real; ver ressalva entregue à equipe).
     ------------------------------------------------------------------
-    radiobuttons rdoLado labels:#("Fixar à esquerda", "Fixar à direita") default:2 columns:2
+    radiobuttons rdoLado labels:#("Fixar à esquerda", "Fixar à direita") default:2 columns:2 pos:[8,64]
 
-    -- Realocado de InLabSecFamilia (Fase 5.2): não é específico de nenhuma
-    -- seção, então fica fixo aqui, no topo da janela.
-    button btnReload "🔄 Reload Plugin" width:395 height:22
-
-    -- AJUSTE 15/Set: sem pos: fixo — a barra de Copy/Paste que estava acima
-    -- foi removida, então deixamos o fluxo automático do rollout posicionar
-    -- subSecoes logo abaixo do Reload Plugin em vez de reusar o y:96 antigo
-    -- (calculado pra caber a barra que não existe mais).
-    subRollout subSecoes width:438 height:538
+    subRollout subSecoes width:438 height:508 pos:[4,88]
 
     ------------------------------------------------------------------
     -- EVENTOS
@@ -505,6 +527,23 @@ rollout InLabChecker_Rollout "InLabChecker · InLab Artefacto · v0.10" width:44
         rdoLado.state = InLab_LadoPainel
         InLab_PosicionarPainel InLab_LadoPainel
 
+        -- GUARDA OBRIGATÓRIA: os 8 AddSubRollout vêm DEPOIS. Sem o try/catch,
+        -- uma falha no header (arte corrompida, dotNet fora do ar) abriria o
+        -- painel sem nenhuma seção — o plugin inteiro inutilizado por causa de
+        -- uma faixa decorativa. Com ele, o header pode faltar e o painel abre.
+        try
+        (
+            InLab_Header_Montar pnlHeader
+            -- Repinta o estado CORRENTE, não #ocioso fixo: depois de um Reload
+            -- disparado pelo próprio header, InLab_Header_EstadoAtual pode ser
+            -- #disponivel e o aviso de atualização tem que sobreviver.
+            InLab_Header_Estado InLab_Header_EstadoAtual
+        )
+        catch
+        (
+            InLab_Log ("Falha ao montar o header — o painel abre sem a faixa. " + getCurrentException()) tipo:#err
+        )
+
         AddSubRollout subSecoes InLabSecProduto
         AddSubRollout subSecoes InLabSecOtimizacao rolledUp:true
         AddSubRollout subSecoes InLabSecUtil rolledUp:true
@@ -514,16 +553,29 @@ rollout InLabChecker_Rollout "InLabChecker · InLab Artefacto · v0.10" width:44
         AddSubRollout subSecoes InLabSecFase4 rolledUp:true
         AddSubRollout subSecoes InLabSecLog
 
-        InLab_Log ("Sessão InLabChecker v0.10 · " + localTime)
+        InLab_Log ("Sessão InLabChecker v" + INLAB_HEADER_VERSAO_PADRAO + " · " + localTime)
         InLab_Log ("Famílias registradas: " + InLab_Familias.count as string + " de 8")
         InLab_Log ("Unidade do sistema: " + (InLab_UnidadeSistema() as string))
         if InLab_Familias.count != 8 do
             InLab_Log "Nem todas as famílias foram carregadas — verificar o manifesto." tipo:#err
     )
 
-    on InLabChecker_Rollout close do InLab_LogUI = undefined
-
-    on btnReload pressed do InLab_RecarregarPlugin()
+    -- Fechar o painel destrói os controles dotNet. As globais que apontavam
+    -- pra eles têm que ser zeradas junto: InLab_Header_Estado é chamada por
+    -- callback assíncrono do updater e, com a global apontando pra controle
+    -- morto, ela tentaria pintar o que não existe mais. Zerada, ela cai no
+    -- caminho "estado mudou antes de o header ser montado — só guardei", e a
+    -- próxima abertura do painel repinta o estado certo.
+    on InLabChecker_Rollout close do
+    (
+        InLab_LogUI = undefined
+        InLab_Header_Pnl = undefined
+        InLab_Header_Marca = undefined
+        InLab_Header_Titulo = undefined
+        InLab_Header_Sub = undefined
+        InLab_Header_BtnReload = undefined
+        InLab_Header_Pastilha = undefined
+    )
 
     -- Reposiciona a janela na borda esquerda/direita da tela de trabalho
     -- (sempre no topo) e lembra a preferência pra próxima abertura/reload.
@@ -551,9 +603,11 @@ fn InLab_AbrirUI =
 (
     try (destroyDialog InLabChecker_Rollout) catch()
     -- InLab_MostrarSplash()
-    -- AJUSTE 15/Set: altura reduzida de 690 pra 600 — a barra do topo e a
-    -- barra de progresso que ocupavam esse espaço foram removidas. Valor
-    -- estimado, não testado no Max ainda; se sobrar/faltar espaço embaixo
-    -- do Log de Sessão, é só ajustar este número.
-    createDialog InLabChecker_Rollout 446 600
+    -- AJUSTE 22/Set (header-kit-ui, Tarefa 5) — 604 MEDIDO no Max (não mais
+    -- estimado): com o header (56px) + rádio de lado (pos:[8,64]) + subSecoes
+    -- (altura 508, pos:[4,88]), sobra abaixo do subRollout = 604 - (88+508) =
+    -- 8px (dentro da faixa pedida de 4-10px). Substitui o valor de 600 do
+    -- AJUSTE 15/Set (barra do topo/progresso removidas), que nunca tinha sido
+    -- de fato conferido no Max — o comentário anterior dizia isso mesmo.
+    createDialog InLabChecker_Rollout 446 604
 )
