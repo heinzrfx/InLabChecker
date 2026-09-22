@@ -63,6 +63,8 @@
             @"functions\fn_realworldscale.ms",
             @"functions\fn_checktexture.ms",
             @"functions\fn_autouv.ms",
+            -- Real World Fix: usa InLab_Instancias de fn_autouv.ms
+            @"functions\fn_realworldfix.ms",
             @"functions\fn_material_convert.ms",
             @"functions\fn_material_utils.ms",
             @"functions\fn_export_gltf.ms",

@@ -183,7 +183,7 @@ rollout InLabSecProduto "Produto" width:420
 )
 
 ----------------------------------------------------------------------
--- SEÇÃO: Otimização (ProOptimizer + Auto UV + Check Texture + Real World Scale)
+-- SEÇÃO: Otimização (ProOptimizer + Auto UV + Real World Fix)
 ----------------------------------------------------------------------
 rollout InLabSecOtimizacao "Otimização" width:420
 (
@@ -205,11 +205,11 @@ rollout InLabSecOtimizacao "Otimização" width:420
     button btnF2Clean "Clean UV" width:126
     button btnF2Reverter "Reverter Auto UV" width:126
 
-    label lblF34 "Check Texture  |  Real World Scale" align:#left across:1
-    radiobuttons rdoEscopoTex labels:#("Somente seleção", "Cena inteira") default:1 columns:2
-    button btnF3 "Inventariar Texturas" width:192 across:2
-    button btnF4 "Verificar Escala" width:192
-    checkbox chkResetXForm "ResetXForm automático (scale fora de 100%)" checked:false
+    -- 22/Set: o Check Texture e o Verificar Escala saíram da aba (as funções
+    -- continuam em functions\, a V-19 usa INLAB_UNIDADE_PADRAO). No lugar,
+    -- o Real World Fix (functions\fn_realworldfix.ms).
+    label lblF34 "Real World Fix  (tira o Real-World Map Size · WebGL)" align:#left across:1
+    button btnRWFix "Real World Fix" width:390 height:25
 
     on btnF1 pressed do
     (
@@ -265,30 +265,10 @@ rollout InLabSecOtimizacao "Otimização" width:420
     )
     on btnF2Reverter pressed do InLab_ReverterAutoUV()
 
-    on btnF3 pressed do
+    on btnRWFix pressed do
     (
-        if rdoEscopoTex.state == 1 then
-        (
-            local objs = InLab_SelecaoValida()
-            if objs.count > 0 do InLab_CheckTexture escopo:#selecao objs:objs
-        )
-        else InLab_CheckTexture escopo:#cena
-    )
-
-    on btnF4 pressed do
-    (
-        local unidadeOk = InLab_VerificarUnidade()
-        if not unidadeOk do
-        (
-            local msg = "A unidade do sistema diverge do padrão InLab (" + INLAB_UNIDADE_PADRAO as string +
-                        ").\n\nCorrigir agora?\n\nATENÇÃO: a geometria NÃO será reescalada."
-            if queryBox msg title:"InLabChecker · Unidade do Sistema" do InLab_VerificarUnidade corrigir:true
-        )
-        -- Ordem fixa (bug 3): seleção primeiro (se houver), cena depois.
-        if selection.count > 0 do
-            InLab_VerificarEscala (selection as array) aplicarResetXForm:chkResetXForm.checked rotulo:"seleção"
-        local todaCena = for o in geometry where InLab_EhGeometria o collect o
-        InLab_VerificarEscala todaCena aplicarResetXForm:chkResetXForm.checked rotulo:"cena inteira"
+        local objs = InLab_SelecaoValida()
+        if objs.count > 0 do InLab_RealWorldFix objs
     )
 )
 
