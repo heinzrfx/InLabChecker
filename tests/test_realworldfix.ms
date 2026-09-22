@@ -107,8 +107,9 @@ global INLAB_TESTE_SAIDA, INLAB_TESTE_FALHAS, INLAB_TESTE_LOG
         -- B: box, gizmo 100×80×50, mesmo material, FORA da seleção.
         local b = caixa "t_B" [200,0,0] maptype:4 dims:100.0
         b.material = mA
-        -- C: usa o mesmo material sem UVW em Real-World (só aviso).
-        local c = Box name:"t_C" pos:[400,0,0]
+        -- C: usa o mesmo material sem UVW em Real-World (UV gravado na malha,
+        --    caso do objeto já colapsado): entra pelo material, UV ÷ 60×40.
+        local c = Box name:"t_C" pos:[400,0,0] mapcoords:true
         c.material = mA
         -- D: sem UVW em Real-World, na seleção (ignorado).
         local d = Box name:"t_D" pos:[600,0,0]
@@ -124,7 +125,30 @@ global INLAB_TESTE_SAIDA, INLAB_TESTE_FALHAS, INLAB_TESTE_LOG
         local e = caixa "t_E" [800,0,0] maptype:4
         e.material = mE
         local e2 = instance e name:"t_E2" pos:[1000,0,0]
-        criados = #(a, b, c, d, e, e2)
+        -- F + F2: CoronaTriplanar (espaço objeto, escala 75, offset 10 em X)
+        --    compartilhado; F2 fora da seleção. "CoronaTriplanar name:..."
+        --    derruba o Max: criar vazio e setar depois.
+        local bmpF = CoronaBitmap name:"t_bmpF"
+        local tpF = CoronaTriplanar()
+        tpF.name = "t_tpF"
+        tpF.texmapX = bmpF
+        tpF.onlyTexmapX = true
+        tpF.scale = 75.0
+        tpF.offset = [10,0,0]
+        local mF = CoronaPhysicalMtl name:"t_mtlF" baseTexmap:tpF
+        local f = Box name:"t_F" length:80 width:100 height:60 pos:[1200,0,0]
+        rotate f (eulerangles 0 0 30)
+        f.material = mF
+        local f2 = Box name:"t_F2" pos:[1400,0,0]
+        f2.material = mF
+        -- G: Triplanar em espaço 2 (nó de referência): não é convertido.
+        local tpG = CoronaTriplanar()
+        tpG.name = "t_tpG"
+        tpG.texmapX = CoronaBitmap name:"t_bmpG"
+        tpG.space = 2
+        local g = Box name:"t_G" pos:[1600,0,0]
+        g.material = CoronaPhysicalMtl name:"t_mtlG" baseTexmap:tpG
+        criados = #(a, b, c, d, e, e2, f, f2, g)
         -- Um UVW Map criado por script só se ajusta ao objeto na 1ª avaliação
         -- do nó (classof avalia). Sem isso o UV "antes" do D vem de antes do ajuste.
         for o in criados do classof o
@@ -134,22 +158,39 @@ global INLAB_TESTE_SAIDA, INLAB_TESTE_FALHAS, INLAB_TESTE_LOG
         local uvE = uvAtual e
         local uvE2 = uvAtual e2
         local uvD = uvAtual d
+        local uvC = uvAtual c
+        -- UV esperado do F: Box 75 com gizmo girado 180° em Z no pivot, −offset
+        local uvFesp = (
+            local cf = copy f
+            cf.material = undefined
+            addModifier cf (Uvwmap maptype:4 length:75 width:75 height:75)
+            classof cf
+            cf.modifiers[1].gizmo.transform = (rotateZMatrix 180) * (transMatrix [-10,0,0])
+            local r = uvAtual cf
+            delete cf
+            r
+        )
 
-        -- 2. RODA na seleção A, D, E (B e E2 entram pelo material)
-        local n = InLab_RealWorldFix #(a, d, e)
+        -- 2. RODA na seleção A, D, E, F, G (B, C, E2 e F2 entram pelo material)
+        local n = InLab_RealWorldFix #(a, d, e, f, g)
 
         -- 3. OBJETOS
-        checar "Retorno: 4 convertidos (A, B, E, E2)" (n == 4)
+        checar "Retorno: 7 convertidos (A, B, C, E, E2, F, F2)" (n == 7)
         checar "A colapsado em Editable_mesh" (classof a.baseobject == Editable_mesh and a.modifiers.count == 0)
         checar "A: UV = UV antigo ÷ 60×40 (com Bend acima)" ((erroUV uvA (uvAtual a) [60,40]) < 1e-4)
         checar "B incluído pelo material e colapsado" (classof b.baseobject == Editable_mesh and b.modifiers.count == 0)
         checar "B: UV = UV antigo ÷ 60×40 (gizmo 100)" ((erroUV uvB (uvAtual b) [60,40]) < 1e-4)
         checar "B: log avisa a inclusão" (logTem "t_B: fora da seleção" #warn)
-        checar "C: não mexido, log avisa" (classof c.baseobject == Box and (logTem "t_C: usa bitmap" #warn))
+        checar "C: UV gravado ÷ 60×40, colapsado" (classof c.baseobject == Editable_mesh and (erroUV uvC (uvAtual c) [60,40]) < 1e-4)
+        checar "C: log avisa a inclusão" (logTem "t_C: fora da seleção" #warn)
         checar "D: ignorado, UVW Map continua" (d.modifiers.count == 1 and (erroUV uvD (uvAtual d) [1,1]) < 1e-6)
         checar "E: UV ÷ 50 (Multi/Sub, difuso nativo)" ((erroUV uvE (uvAtual e) [50,50]) < 1e-4)
         checar "E2: instância também convertida, sem Xform em dobro" ((erroUV uvE2 (uvAtual e2) [50,50]) < 1e-4)
         checar "E: log avisa a instância" (logTem "t_E: era instância" #warn or logTem "t_E2: era instância" #warn)
+        checar "F: colapsado, UV = Box 75 do Triplanar" (classof f.baseobject == Editable_mesh and (erroUV uvFesp (uvAtual f) [1,1]) < 1e-4)
+        checar "F: Triplanar trocado pelo bitmap no material" (mF.baseTexmap == bmpF and (getClassInstances CoronaTriplanar target:mF).count == 0)
+        checar "F2: incluído pelo Triplanar e colapsado" (classof f2.baseobject == Editable_mesh and (logTem "t_F2: fora da seleção" #warn))
+        checar "G: Triplanar espaço 2 intocado" (classof g.baseobject == Box and g.material.baseTexmap == tpG)
 
         -- 4. BITMAPS
         checar "Difuso Corona: Real-World off, escala 1" (not dif.realWorldScale and dif.uvwScale == [1,1,1])

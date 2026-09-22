@@ -32,9 +32,20 @@
  tamanho deles era outro, o log avisa.
 
  MATERIAL COMPARTILHADO: desligar o Real-World de um bitmap quebra quem mais
- o usa. Os objetos fora da seleção que usam esses bitmaps e também têm UVW
- Map em Real-World entram no processamento (log #warn com o nome). Os que usam
- sem UVW em Real-World só geram aviso.
+ o usa. Os objetos fora da seleção que usam esses bitmaps (ou os Triplanares
+ abaixo) entram no processamento (log #warn com o nome).
+
+ 22/Set (teste do usuário numa cadeira): objeto JÁ COLAPSADO não tinha UVW
+ Map no stack e o botão ignorava. Dois casos novos:
+ - UV em cm gravado na malha + bitmap em Real-World: UVW_Xform no topo, no
+   canal do bitmap, com o mesmo fator. Render idêntico pelo mesmo motivo.
+ - CoronaTriplanar (era o caso da cadeira: escala 75 cm, o UV nem era usado):
+   vira um UVW Map Box equivalente (medição em InLab_RWF_GizmoTriplanar) e o
+   Triplanar sai do material via replaceInstances, ficando o mapa que estava
+   dentro dele. O blend das emendas se perde nas superfícies curvas.
+ Pegadinhas achadas: "CoronaTriplanar name:..." no construtor dá
+ EXCEPTION_ACCESS_VIOLATION (criar sem argumentos e setar depois); o
+ .gizmo do Uvwmap só existe depois da 1ª avaliação do nó.
 
  Sem botão de reverter (decisão do usuário): o undo do Max cobre.
 
@@ -48,6 +59,9 @@
  conversão aqui é própria, não uma cópia.
 ================================================================================
 */
+
+-- Definida mais abaixo, usada antes (InLab_RWF_Referencia).
+global InLab_RWF_BitmapsRWFora
 
 -- Slots de difuso/base color, em ordem de tentativa (Corona Physical,
 -- Corona Legacy, Physical Material, Standard).
@@ -125,9 +139,10 @@ fn InLab_RWF_Referencia o =
 (
     local ref = undefined
     local tamanhos = #()
+    local fora = InLab_RWF_BitmapsRWFora o.material
     for mtl in (InLab_RWF_MateriaisFolha o.material) do
     (
-        local bmps = InLab_RWF_BitmapsRW (InLab_RWF_MapaDifuso mtl)
+        local bmps = for b in (InLab_RWF_BitmapsRW (InLab_RWF_MapaDifuso mtl)) where findItem fora b > 0 collect b
         if bmps.count > 0 do
         (
             if ref == undefined do ref = bmps[1]
@@ -139,7 +154,7 @@ fn InLab_RWF_Referencia o =
                    ". Um canal UV só comporta um: usando " + ref.name + ".") tipo:#warn
     if ref == undefined do
     (
-        local todos = InLab_RWF_BitmapsRW o.material
+        local todos = fora
         if todos.count > 0 do
         (
             ref = todos[1]
@@ -180,47 +195,159 @@ fn InLab_RWF_ConverterBitmap m tam =
 )
 
 --------------------------------------------------------------------------------
+-- CoronaTriplanar (22/Set). Projeta pela posição no espaço e ignora o UV.
+-- Medido no render (blend 0, caixa girada, antes/depois idêntico):
+--   space 0 = objeto, space 1 = mundo; scale = tamanho de um ladrilho;
+--   equivale a um UVW Map Box de lado "scale" com o gizmo girado 180° em Z,
+--   centrado no pivot (space 0) ou na origem do mundo (space 1), deslocado
+--   por −offset. O blend só muda onde a normal é curva (emendas perdem a
+--   mistura). Rotação e space 2 (nó de referência) não foram medidos.
+--------------------------------------------------------------------------------
+fn InLab_RWF_Triplanares mtl =
+(
+    if mtl == undefined or CoronaTriplanar == undefined then #()
+    else getClassInstances CoronaTriplanar target:mtl
+)
+
+-- Bitmaps em Real-World fora de qualquer Triplanar (os de dentro não usam UV).
+fn InLab_RWF_BitmapsRWFora mtl =
+(
+    local dentro = #()
+    for t in (InLab_RWF_Triplanares mtl) do join dentro (InLab_RWF_BitmapsRW t)
+    for b in (InLab_RWF_BitmapsRW mtl) where findItem dentro b == 0 collect b
+)
+
+-- true se o objeto tem UV no canal. getMapSupport dá erro com canal >=
+-- getNumMaps em vez de devolver false (ver CLAUDE.md).
+fn InLab_RWF_TemCanal o canal =
+(
+    local m = snapshotAsMesh o
+    local tem = canal < (meshop.getNumMaps m) and (meshop.getMapSupport m canal)
+    delete m
+    tem
+)
+
+-- Canal de mapa de um bitmap (1 se não souber).
+fn InLab_RWF_CanalBitmap m =
+(
+    if m == undefined then 1
+    else if classof m == Bitmaptexture then m.coords.mapChannel
+    else if CoronaBitmap != undefined and classof m == CoronaBitmap then m.uvwChannel
+    else 1
+)
+
+-- Canal que o conteúdo do Triplanar vai ler depois de sair dele.
+fn InLab_RWF_CanalTriplanar t =
+(
+    local canal = 1
+    local classes = #(Bitmaptexture)
+    if CoronaBitmap != undefined do append classes CoronaBitmap
+    local achou = false
+    for c in classes while not achou do
+    (
+        local bs = if t.texmapX == undefined then #() else getClassInstances c target:t.texmapX
+        if classof t.texmapX == c do bs = #(t.texmapX)
+        if bs.count > 0 do ( canal = InLab_RWF_CanalBitmap bs[1]; achou = true )
+    )
+    canal
+)
+
+-- Gizmo do UVW Box equivalente ao Triplanar, no espaço do objeto.
+fn InLab_RWF_GizmoTriplanar t o =
+(
+    local tm = (rotateZMatrix 180) * (transMatrix (-t.offset))
+    if t.space == 1 then tm * (inverse o.objectTransform) else tm
+)
+
+-- Triplanar que dá para converter (sem log).
+fn InLab_RWF_TriplanarConvertivel t =
+(
+    (t.space == 0 or t.space == 1) and t.texmapX != undefined
+)
+
+-- Idem, logando o motivo quando não dá e os avisos quando dá.
+fn InLab_RWF_TriplanarSuportado t =
+(
+    if t.space != 0 and t.space != 1 then
+    (
+        InLab_Log (t.name + ": Triplanar em espaço " + t.space as string + " (nó de referência) não é convertido.") tipo:#warn
+        false
+    )
+    else if t.texmapX == undefined then
+    (
+        InLab_Log (t.name + ": Triplanar sem mapa no X, não é convertido.") tipo:#warn
+        false
+    )
+    else
+    (
+        if t.Blend > 0.0 do
+            InLab_Log (t.name + ": Triplanar com blend " + t.Blend as string + ". Nas partes curvas as emendas perdem a mistura (~1% da imagem no teste).") tipo:#info
+        if t.rotation != [0,0,0] do
+            InLab_Log (t.name + ": Triplanar com rotação " + t.rotation as string + " não medida; a rotação é ignorada. Conferir.") tipo:#warn
+        if not t.onlyTexmapX and (t.texmapY != t.texmapX or t.texmapZ != t.texmapX) do
+            InLab_Log (t.name + ": Triplanar com mapas diferentes em Y/Z; fica só o do X.") tipo:#warn
+        true
+    )
+)
+
+--------------------------------------------------------------------------------
 -- Entrada do botão. objs = seleção. Devolve o nº de objetos convertidos.
+-- Três casos, que podem vir juntos no mesmo objeto:
+--   A. UVW Map em Real-World no stack → UVW_Xform logo acima dele.
+--   B. objeto colapsado (UV em cm gravado na malha) com bitmap em
+--      Real-World no material → UVW_Xform no topo, no canal do bitmap.
+--   C. CoronaTriplanar no material → UVW Map Box equivalente no topo, e o
+--      Triplanar sai do material (fica o mapa que estava dentro dele).
 --------------------------------------------------------------------------------
 fn InLab_RealWorldFix objs =
 (
     ----------------------------------------------------------------------
-    -- 1. Candidatos: geometria com UVW Map ativo em Real-World.
+    -- 1. Candidatos: geometria com UVW em Real-World, bitmap em
+    --    Real-World fora de Triplanar, ou Triplanar suportado no material.
     ----------------------------------------------------------------------
-    local alvos = for o in objs where InLab_EhGeometria o and (InLab_RWF_UVWsRW o).count > 0 collect o
+    fn precisa o =
+    (
+        (InLab_RWF_UVWsRW o).count > 0 or (InLab_RWF_BitmapsRWFora o.material).count > 0 or
+        (for t in (InLab_RWF_Triplanares o.material) where InLab_RWF_TriplanarConvertivel t collect t).count > 0
+    )
+    local alvos = for o in objs where InLab_EhGeometria o and (precisa o) collect o
     local ignorados = objs.count - alvos.count
     if ignorados > 0 do
-        InLab_Log ("Real World Fix: " + ignorados as string + " objeto(s) da seleção sem UVW Map em Real-World, ignorado(s).") tipo:#info
+        InLab_Log ("Real World Fix: " + ignorados as string + " objeto(s) da seleção sem Real-World nem Triplanar, ignorado(s).") tipo:#info
 
     ----------------------------------------------------------------------
-    -- 2. Fecho pelo material: quem mais usa os bitmaps que vão mudar.
+    -- 2. Fecho pelo material: quem mais usa os bitmaps e Triplanares que
+    --    vão mudar entra na conversão.
     ----------------------------------------------------------------------
     local bitmaps = #()
-    local semRW = #()
+    local triplanares = #()
     local i = 1
     while i <= alvos.count do
     (
-        for b in (InLab_RWF_BitmapsRW alvos[i].material) where findItem bitmaps b == 0 do
+        local mapas = #()
+        for b in (InLab_RWF_BitmapsRWFora alvos[i].material) where findItem bitmaps b == 0 do ( append bitmaps b; append mapas b )
+        for t in (InLab_RWF_Triplanares alvos[i].material) where findItem triplanares t == 0 do
         (
-            append bitmaps b
-            for n in (refs.dependentNodes b) where findItem alvos n == 0 do
+            append triplanares t
+            if InLab_RWF_TriplanarConvertivel t do append mapas t
+        )
+        for mp in mapas do
+            for n in (refs.dependentNodes mp) where findItem alvos n == 0 do
             (
-                if InLab_EhGeometria n and (InLab_RWF_UVWsRW n).count > 0 then
+                if InLab_EhGeometria n then
                 (
                     append alvos n
-                    InLab_Log (n.name + ": fora da seleção, mas usa " + b.name + ". Incluído na conversão.") tipo:#warn
+                    InLab_Log (n.name + ": fora da seleção, mas usa " + mp.name + ". Incluído na conversão.") tipo:#warn
                 )
-                else appendIfUnique semRW n
+                else InLab_Log (n.name + ": usa " + mp.name + " mas não é geometria. Conferir.") tipo:#warn
             )
-        )
         i += 1
     )
-    for n in semRW do
-        InLab_Log (n.name + ": usa bitmap em Real-World sem UVW Map em Real-World. A textura dele vai mudar de escala.") tipo:#warn
+    local tpOk = for t in triplanares collect (InLab_RWF_TriplanarSuportado t)
 
     if alvos.count == 0 then
     (
-        InLab_Log "Real World Fix: nenhum objeto com UVW Map em Real-World." tipo:#warn
+        InLab_Log "Real World Fix: nenhum objeto com Real-World ou Triplanar." tipo:#warn
         0
     )
     else
@@ -233,7 +360,7 @@ fn InLab_RealWorldFix objs =
         for k in 1 to alvos.count where refs_[k] != undefined do
         (
             local tam = InLab_RWF_TamanhoBitmap refs_[k]
-            for b in (InLab_RWF_BitmapsRW alvos[k].material) do
+            for b in (InLab_RWF_BitmapsRWFora alvos[k].material) do
             (
                 local j = findItem bitmaps b
                 if tamBitmap[j] == undefined then tamBitmap[j] = tam
@@ -249,6 +376,7 @@ fn InLab_RealWorldFix objs =
         local feitos = 0
         local falhos = #()   -- bitmaps dos objetos que falharam
         local nBitmaps = 0
+        local nTp = 0
         undo "InLab Real World Fix" on
         (
             for k in 1 to alvos.count do
@@ -262,22 +390,63 @@ fn InLab_RealWorldFix objs =
                         InstanceMgr.MakeObjectsUnique o #individual
                         InLab_Log (o.name + ": era instância. Ficou único para colapsar.") tipo:#warn
                     )
-                    local txt = ""
-                    if refs_[k] != undefined then
+                    local partes = #()
+                    local nMods = o.modifiers.count
+                    local uvws = InLab_RWF_UVWsRW o
+                    local canalRW = 0
+                    if refs_[k] != undefined do
                     (
                         local tam = InLab_RWF_TamanhoBitmap refs_[k]
-                        for u in (InLab_RWF_UVWsRW o) do
+                        local txtTam = (formattedPrint tam.x format:".4g") + " × " + (formattedPrint tam.y format:".4g")
+                        if uvws.count > 0 then
                         (
-                            local idx = 0
-                            for iM in 1 to o.modifiers.count where o.modifiers[iM] == u do idx = iM
-                            local x = UVW_Xform name:"InLab RWF" U_Tile:(1.0 / tam.x) V_Tile:(1.0 / tam.y) Map_Channel:u.mapChannel
-                            if idx > 1 then addModifier o x before:(idx - 1) else addModifier o x
+                            -- A. Xform logo acima de cada UVW Map em Real-World
+                            for u in uvws do
+                            (
+                                local idx = 0
+                                for iM in 1 to o.modifiers.count where o.modifiers[iM] == u do idx = iM
+                                local x = UVW_Xform name:"InLab RWF" U_Tile:(1.0 / tam.x) V_Tile:(1.0 / tam.y) Map_Channel:u.mapChannel
+                                if idx > 1 then addModifier o x before:(idx - 1) else addModifier o x
+                                canalRW = u.mapChannel
+                            )
+                            append partes ("UV ÷ " + txtTam + " (referência " + refs_[k].name + ")")
                         )
-                        txt = "UV ÷ " + (formattedPrint tam.x format:".4g") + " × " + (formattedPrint tam.y format:".4g") +
-                              " (referência " + refs_[k].name + ")"
+                        else
+                        (
+                            -- B. UV já gravado na malha: Xform no topo, no canal do bitmap
+                            canalRW = InLab_RWF_CanalBitmap refs_[k]
+                            if InLab_RWF_TemCanal o canalRW then
+                            (
+                                addModifier o (UVW_Xform name:"InLab RWF" U_Tile:(1.0 / tam.x) V_Tile:(1.0 / tam.y) Map_Channel:canalRW)
+                                append partes ("UV gravado no canal " + canalRW as string + " ÷ " + txtTam + " (referência " + refs_[k].name + ")")
+                            )
+                            else
+                                InLab_Log (o.name + ": sem UV no canal " + canalRW as string + " para o bitmap " + refs_[k].name +
+                                           ". Precisa de mapeamento; nada a dividir.") tipo:#warn
+                        )
                     )
-                    else txt = "sem bitmap em Real-World no material; UV colapsado como estava"
-                    local nMods = o.modifiers.count
+                    -- C. Triplanar → UVW Map Box equivalente no topo
+                    local tps = for t in (InLab_RWF_Triplanares o.material) where tpOk[findItem triplanares t] collect t
+                    if tps.count > 0 do
+                    (
+                        local t = tps[1]
+                        -- difuso e bump costumam ter Triplanares iguais; só avisa se diferem
+                        local diferentes = for t2 in tps where t2.scale != t.scale or t2.space != t.space or t2.offset != t.offset collect t2
+                        if diferentes.count > 0 do
+                            InLab_Log (o.name + ": material com Triplanares de escala/espaço/offset diferentes; o UV segue o " + t.name + ".") tipo:#warn
+                        local canal = InLab_RWF_CanalTriplanar t
+                        if canal == canalRW do
+                            InLab_Log (o.name + ": Triplanar e bitmap em Real-World no mesmo canal " + canal as string +
+                                       ". O UV do Triplanar prevalece; conferir o bitmap.") tipo:#warn
+                        addModifier o (Uvwmap name:"InLab RWF Triplanar" maptype:4 length:t.scale width:t.scale height:t.scale mapChannel:canal)
+                        classof o   -- o gizmo só existe depois da 1ª avaliação
+                        o.modifiers[1].gizmo.transform = InLab_RWF_GizmoTriplanar t o
+                        append partes ("Triplanar " + t.name + " → Box " + (formattedPrint t.scale format:".4g") + " no canal " + canal as string +
+                                       " (espaço " + (if t.space == 1 then "mundo" else "objeto") + ")")
+                    )
+                    if partes.count == 0 do append partes "sem bitmap em Real-World no material; UV colapsado como estava"
+                    local txt = partes[1]
+                    for p in 2 to partes.count do txt += " · " + partes[p]
                     convertToMesh o
                     InLab_Log (o.name + ": " + txt + ". Stack de " + nMods as string + " modificador(es) colapsado.") tipo:#ok
                 )
@@ -285,11 +454,28 @@ fn InLab_RealWorldFix objs =
                 (
                     ok = false
                     InLab_Log (o.name + ": falhou (" + getCurrentException() + ").") tipo:#err
-                    -- tira o Xform que ficou no stack sem colapsar
+                    -- tira o que o Real World Fix pôs no stack sem colapsar
                     if isValidNode o do
-                        for iM = o.modifiers.count to 1 by -1 where o.modifiers[iM].name == "InLab RWF" do deleteModifier o iM
+                        for iM = o.modifiers.count to 1 by -1 where matchPattern o.modifiers[iM].name pattern:"InLab RWF*" do deleteModifier o iM
                 )
-                if ok then feitos += 1 else join falhos (InLab_RWF_BitmapsRW o.material)
+                if ok then feitos += 1 else
+                (
+                    join falhos (InLab_RWF_BitmapsRW o.material)
+                    join falhos (InLab_RWF_Triplanares o.material)
+                )
+            )
+            -- Triplanar sai do material: quem o referencia passa a usar o mapa
+            -- que estava dentro dele (lendo o UV Box que acabou de ser gravado).
+            for j in 1 to triplanares.count where tpOk[j] do
+            (
+                local t = triplanares[j]
+                if findItem falhos t > 0 then
+                    InLab_Log (t.name + ": Triplanar mantido, um objeto que o usa falhou.") tipo:#err
+                else
+                (
+                    replaceInstances t t.texmapX
+                    nTp += 1
+                )
             )
             -- Bitmap de objeto que falhou fica em Real-World: o UV dele não mudou.
             for j in 1 to bitmaps.count do
@@ -306,7 +492,8 @@ fn InLab_RealWorldFix objs =
         )
         local tipoResumo = if feitos == alvos.count then #ok else #warn
         InLab_Log ("Real World Fix: " + feitos as string + "/" + alvos.count as string + " objeto(s) convertido(s) · " +
-                   nBitmaps as string + "/" + bitmaps.count as string + " bitmap(s) sem Real-World.") tipo:tipoResumo
+                   nBitmaps as string + "/" + bitmaps.count as string + " bitmap(s) sem Real-World · " +
+                   nTp as string + "/" + triplanares.count as string + " Triplanar(es) removido(s).") tipo:tipoResumo
         feitos
     )
 )
