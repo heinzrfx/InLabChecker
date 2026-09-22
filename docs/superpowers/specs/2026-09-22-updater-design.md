@@ -146,6 +146,13 @@ A descoberta fica por conta da tarja (abaixo).
 
 ### Tarja de aviso em `ui/rollout_main.ms`
 
+> **OBSOLETO desde 22/09/2026 — NAO CONSTRUIR.** O sub-projeto header/kit
+> (`2026-09-22-header-kit-ui-design.md`, secao 6) ja entregou o aviso: quem
+> avisa e a pastilha de versao do header, via `InLab_Header_Estado
+> #disponivel versao:"0.13"`. O botao "Reload Plugin" citado abaixo tambem
+> nao existe mais — virou icone dentro do header. O paragrafo fica como
+> registro da decisao original.
+
 Um `label` logo abaixo do botao "Reload Plugin", `visible:false` por padrao,
 que aparece com `"v0.13 disponivel — abra a secao Atualizacao"` quando o
 estado e `#disponivel` e a versao nao esta ignorada.

@@ -141,10 +141,13 @@ registrada no CLAUDE.md: a restricao vale para controle **de rollout**. Filho de
 
 ```
 fn InLab_Header_Montar pnl      -- constroi os filhos; idempotente (limpa .Controls antes)
-fn InLab_Header_Estado estado versao:unsupplied
+                                -- termina repintando o estado corrente, nao um #INFO fixo
+fn InLab_Header_Estado estado versao:unsupplied pct:0
     -- estado: #ocioso | #checando | #disponivel | #baixando | #erro
+    -- pct: so usado em #baixando
     -- e a API que o sub-projeto 3 chama; aqui ela ja existe e so nao e chamada por ninguem
-global InLab_Header_Pnl, InLab_Header_Pastilha, InLab_Header_Estado_Atual
+    -- PRE-CONDICAO: chamar na thread principal do Max; quem marshala e o chamador
+global InLab_Header_Pnl, InLab_Header_Pastilha, InLab_Header_EstadoAtual, InLab_Header_Versao
 ```
 
 **Todo estado em global.** Handler de evento dotNet nao enxerga `local` do
@@ -169,7 +172,7 @@ os assets e passar na validacao.
 | Arquivo | O que muda |
 | --- | --- |
 | `InLabChecker.ms` | `ui/kit.ms` e `ui/header.ms` entram em `INLAB_MODULOS`, nessa ordem, antes de `ui/rollout_main.ms` |
-| `ui/rollout_main.ms` | `btnReload` sai; entra `dotNetControl pnlHeader ... pos:[0,0] height:56`; `rdoLado` e `subRollout` descem; `on open` chama `InLab_Header_Montar` e `InLab_Header_Estado #ocioso` |
+| `ui/rollout_main.ms` | `btnReload` sai; entra `dotNetControl pnlHeader ... pos:[0,0] height:56`; `rdoLado` e `subRollout` descem; `on open` chama `InLab_Header_Montar` e `InLab_Header_Estado InLab_Header_EstadoAtual` (o estado corrente, que nasce `#ocioso` e sobrevive ao Reload), os dois sob `try/catch` pra que uma falha no header nao impeca os `AddSubRollout` |
 | `core/log.ms` | `#warn` passa de `FromArgb 230 180 90` para `FromArgb 232 164 41` |
 
 ## 5. Estados da pastilha
