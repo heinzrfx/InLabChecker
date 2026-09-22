@@ -23,18 +23,40 @@
 
  YAGNI: nasce so com o que o header consome. Caixa de status e barra de
  progresso entram quando a secao Atualizacao existir (sub-projeto 3).
+ FUNDO_PAINEL, SUPERFICIE, LOG e TEXTO ficam sem consumidor por enquanto DE
+ PROPOSITO: a spec (secao 4) nomeia as quatro na lista do kit e a repaginacao
+ das 7 secoes (sub-projeto 4) e a consumidora imediata.
+
+ CONSERTOS DO REVIEW FINAL (22/09/2026):
+   - LOG passou de (35,35,35) para (30,30,30), que e o valor real lido em
+     ui\rollout_main.ms (rtbLog.BackColor). Divergia do log de verdade.
+   - InLab_Kit_Pastilha parou de criar um System.Drawing.Font por chamada.
+     Ver o comentario de INLAB_KIT_FONTE_PASTILHA abaixo.
 ================================================================================
 */
 
 global INLAB_KIT_CORES
 global InLab_Kit_Cor, InLab_Kit_Fonte, InLab_Kit_BotaoIcone, InLab_Kit_Pastilha
 
+-- FONTES DA PASTILHA — CRIADAS UMA VEZ SO (22/09/2026). Cada
+-- System.Drawing.Font e um handle GDI, e o processo tem cota (~10 mil). O
+-- consumidor documentado de InLab_Kit_Pastilha e o estado #baixando pct:, que
+-- e um callback de progresso de download: uma fonte nova por tick vazaria
+-- handle ate o Max ficar sem. Declaradas SEM valor de proposito — `global X`
+-- sem atribuicao nao zera um global que ja existe, entao as duas fontes
+-- sobrevivem ao reload (`global X = expr` recriaria as duas a cada fileIn).
+global INLAB_KIT_FONTE_PASTILHA, INLAB_KIT_FONTE_PASTILHA_BOLD
+
 INLAB_KIT_CORES = #(
     -- superficies
     #(#FUNDO_HEADER,     #( 31,  31,  31)),
     #(#FUNDO_PAINEL,     #( 43,  43,  43)),
     #(#SUPERFICIE,       #( 63,  63,  63)),
-    #(#LOG,              #( 35,  35,  35)),
+    -- LOG: lido de ui\rollout_main.ms (rtbLog.BackColor = FromArgb 30 30 30),
+    -- nao estimado. Estava (35,35,35) ate 22/09/2026 e divergia do log real —
+    -- a primeira secao a trocar o literal pela cor do kit teria mudado o fundo
+    -- do log sem querer.
+    #(#LOG,              #( 30,  30,  30)),
     -- marca
     #(#MARCA,            #(232, 164,  41)),
     -- texto
@@ -111,7 +133,28 @@ fn InLab_Kit_Pastilha ctrl tipo texto clicavel:false =
     ctrl.FlatAppearance.BorderColor = InLab_Kit_Cor ((suf + "_BORDA") as name)
     ctrl.BackColor = InLab_Kit_Cor ((suf + "_FUNDO") as name)
     ctrl.ForeColor = InLab_Kit_Cor ((suf + "_TEXTO") as name)
-    ctrl.Font = InLab_Kit_Fonte 8.25 bold:clicavel
+
+    -- Fonte: reusa as duas globais e so atribui quando o negrito TEM que
+    -- mudar. Sem isso, cada chamada (incluindo cada tick de #baixando)
+    -- criaria um System.Drawing.Font novo e vazaria o handle GDI.
+    if INLAB_KIT_FONTE_PASTILHA == undefined do
+        INLAB_KIT_FONTE_PASTILHA = InLab_Kit_Fonte 8.25
+    if INLAB_KIT_FONTE_PASTILHA_BOLD == undefined do
+        INLAB_KIT_FONTE_PASTILHA_BOLD = InLab_Kit_Fonte 8.25 bold:true
+    local fonteAlvo = if clicavel then INLAB_KIT_FONTE_PASTILHA_BOLD
+                      else INLAB_KIT_FONTE_PASTILHA
+    local fonteAtual = ctrl.Font
+    -- A familia e o tamanho entram na comparacao porque um Button recem-criado
+    -- ja vem com a fonte padrao do WinForms e Bold == false: olhar so o negrito
+    -- deixaria a pastilha com a fonte de fabrica na primeira pintura.
+    local fonteOk = false
+    if fonteAtual != undefined do
+    (
+        if fonteAtual.Bold == clicavel and fonteAtual.FontFamily.Name == fonteAlvo.FontFamily.Name do
+            fonteOk = (abs (fonteAtual.Size - fonteAlvo.Size)) < 0.01
+    )
+    if not fonteOk do ctrl.Font = fonteAlvo
+
     ctrl.Text = texto
     ctrl.Cursor = if clicavel then (dotNetClass "System.Windows.Forms.Cursors").Hand
                   else (dotNetClass "System.Windows.Forms.Cursors").Default

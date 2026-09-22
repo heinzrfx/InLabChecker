@@ -50,6 +50,11 @@ global INLAB_HEADER_ESTADOS
         checar "MARCA e o ambar amostrado do logo (232,164,41)" (marca.R == 232 and marca.G == 164 and marca.B == 41)
         local fundo = InLab_Kit_Cor #FUNDO_HEADER
         checar "FUNDO_HEADER e #1F1F1F" (fundo.R == 31 and fundo.G == 31 and fundo.B == 31)
+        -- LOG nao pode divergir do fundo real do log: ui\rollout_main.ms usa
+        -- rtbLog.BackColor = FromArgb 30 30 30. A primeira secao que trocar o
+        -- literal pela cor do kit tem que pintar o MESMO tom.
+        local corLog = InLab_Kit_Cor #LOG
+        checar "LOG e o fundo real do rtbLog (30,30,30)" (corLog.R == 30 and corLog.G == 30 and corLog.B == 30)
 
         -- 2. O KIT NAO PODE DIVERGIR DO LOG
         -- Trava os dois lados: quebra se alguem mudar um sem o outro.
@@ -142,7 +147,8 @@ global INLAB_HEADER_ESTADOS
 
         checar "Aceita #ocioso"     ((InLab_Header_Estado #ocioso versao:"0.11") == true)
         checar "Guardou o estado"   (InLab_Header_EstadoAtual == #ocioso)
-        checar "Ocioso pinta OK"    (corIgual InLab_Header_Pastilha.BackColor (InLab_Kit_Cor #OK_FUNDO))
+        -- #ocioso e INFO (fundo #333333) pela spec, secao 5 — nao OK/verde.
+        checar "Ocioso pinta INFO"  (corIgual InLab_Header_Pastilha.BackColor (InLab_Kit_Cor #INFO_FUNDO))
         checar "Ocioso mostra a versao" (InLab_Header_Pastilha.Text == "v0.11")
 
         checar "Aceita #checando"   ((InLab_Header_Estado #checando) == true)
@@ -168,6 +174,64 @@ global INLAB_HEADER_ESTADOS
         checar "Estado invalido nao muda o estado atual" (InLab_Header_EstadoAtual == antes)
 
         checar "A lista de estados tem os 5" (INLAB_HEADER_ESTADOS.count == 5)
+
+        -- 11. O ESTADO SOBREVIVE AO RELOAD
+        -- O Reload mora DENTRO do header e InLab_RecarregarPlugin refaz o
+        -- fileIn de TODOS os modulos, inclusive ui\header.ms. Cenario real: o
+        -- updater acha a v0.13, poe a pastilha em #disponivel, o artista clica
+        -- no Reload que o proprio header hospeda. Se montar repintasse #INFO
+        -- fixo, ou se o fileIn zerasse as globais, o aviso sumiria justo ai.
+        InLab_Header_Estado #disponivel versao:"0.13"
+        local pnlReload = dotNetObject "System.Windows.Forms.Panel"
+        pnlReload.Width = 446
+        pnlReload.Height = 56
+        InLab_Header_Montar pnlReload
+        checar "Montar repinta o estado corrente, nao INFO" (corIgual InLab_Header_Pastilha.BackColor (InLab_Kit_Cor #WARN_FUNDO))
+        checar "Montar preserva a versao exibida" (InLab_Header_Pastilha.Text == "v0.13")
+        checar "Montar nao mexe em InLab_Header_EstadoAtual" (InLab_Header_EstadoAtual == #disponivel)
+
+        -- O fileIn e o reload de verdade: `global X = expr` sobrescreveria.
+        fileIn (raiz + @"ui\header.ms")
+        checar "fileIn de header.ms nao zera o estado" (InLab_Header_EstadoAtual == #disponivel)
+        checar "fileIn de header.ms nao zera a versao" (InLab_Header_Versao == "0.13")
+        local pnlPosReload = dotNetObject "System.Windows.Forms.Panel"
+        pnlPosReload.Width = 446
+        pnlPosReload.Height = 56
+        InLab_Header_Montar pnlPosReload
+        checar "Depois do fileIn o aviso continua ambar" (corIgual InLab_Header_Pastilha.BackColor (InLab_Kit_Cor #WARN_FUNDO))
+        checar "Depois do fileIn a versao continua v0.13" (InLab_Header_Pastilha.Text == "v0.13")
+
+        -- 12. PAINEL FECHADO / CONTROLE MORTO
+        -- Fechar o painel destroi o controle dotNet, e quem chama
+        -- InLab_Header_Estado e um callback assincrono do updater. A funcao nao
+        -- pode levantar (a excecao morre sem rastro) nem afirmar que pintou. A
+        -- simulacao troca a pastilha por um objeto que nao e Button: o primeiro
+        -- acesso a .FlatStyle levanta, igual a um controle morto.
+        local pastilhaBoa = InLab_Header_Pastilha
+        InLab_Header_Pastilha = dotNetObject "System.Drawing.Point" 0 0
+        local retPintura = #naoRodou
+        try ( retPintura = (InLab_Header_Estado #checando) ) catch ( retPintura = #excecao )
+        checar "Pintura que falha devolve false, sem excecao" (retPintura == false)
+        checar "Pintura que falha guarda o estado assim mesmo" (InLab_Header_EstadoAtual == #checando)
+        InLab_Header_Pastilha = pastilhaBoa
+
+        -- 13. A FONTE DA PASTILHA NAO E RECRIADA A CADA CHAMADA
+        -- InLab_Kit_Pastilha e chamada a cada tick de #baixando pct:. Cada
+        -- System.Drawing.Font e um handle GDI (cota de ~10 mil por processo):
+        -- uma fonte por tick vazaria ate o Max ficar sem.
+        InLab_Header_Estado #baixando pct:10
+        local fonteTick1 = InLab_Header_Pastilha.Font
+        InLab_Header_Estado #baixando pct:11
+        local fonteTick2 = InLab_Header_Pastilha.Font
+        -- ReferenceEquals, nao Equals: Font.Equals compara por VALOR e daria
+        -- true mesmo com um objeto novo a cada tick, que e justo o vazamento.
+        local objCls = dotNetClass "System.Object"
+        checar "Pastilha reusa a MESMA instancia de Font entre ticks" (objCls.ReferenceEquals fonteTick1 fonteTick2)
+        checar "Pastilha usa a fonte do kit (Segoe UI 8.25)" (fonteTick2.FontFamily.Name == "Segoe UI" and (abs (fonteTick2.Size - 8.25)) < 0.01)
+        InLab_Header_Estado #disponivel
+        checar "Clicavel deixa a pastilha em negrito" (InLab_Header_Pastilha.Font.Bold == true)
+        InLab_Header_Estado #ocioso
+        checar "Nao clicavel volta ao normal" (InLab_Header_Pastilha.Font.Bold == false)
     )
     catch
     (

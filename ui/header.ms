@@ -39,6 +39,24 @@
  levantar excecao porque quem chama e um callback assincrono do updater
  (sub-projeto 3, ainda nao existe) — excecao la dentro morre sem rastro.
 
+ PRE-CONDICAO DE THREAD DE InLab_Header_Estado (22/09/2026): chamar SEMPRE na
+ thread principal do 3ds Max. A funcao toca global de MaxScript e controle
+ WinForms, e nenhuma das duas coisas e segura fora dela — um callback de
+ download NAO roda na thread principal. Quem marshala e o CHAMADOR (o updater,
+ sub-projeto 3): ele que faca o Invoke/BeginInvoke num controle do painel, ou
+ enfileire num System.Windows.Forms.Timer, antes de chamar isto. Esta funcao
+ nao tenta adivinhar a thread de quem chamou.
+
+ O ESTADO SOBREVIVE AO RELOAD (22/09/2026): InLab_Header_EstadoAtual e
+ InLab_Header_Versao sao declarados SEM valor e so inicializados se ainda nao
+ existirem — `global X = expr` re-executa e sobrescreve a cada fileIn, e o
+ fileIn de TODOS os modulos e exatamente o que InLab_RecarregarPlugin faz. Sem
+ isso, o cenario real quebrava: o updater acha a v0.13, poe a pastilha em
+ #disponivel, o artista clica no Reload que o PROPRIO header hospeda, e o
+ aviso sumia. Por isso InLab_Header_Montar termina repintando a partir do
+ estado corrente (InLab_Header_Estado InLab_Header_EstadoAtual) em vez de um
+ #INFO fixo, e InLabChecker_Rollout.open faz o mesmo em vez de forcar #ocioso.
+
  RELOAD DE DENTRO DO PROPRIO HEADER (Task 5, 22/09/2026): InLab_RecarregarPlugin
  refaz o fileIn de TODOS os modulos, inclusive deste arquivo, que contem o
  handler que disparou a chamada — mesma classe de risco do passo 5 do updater
@@ -52,9 +70,12 @@
  sucesso." — sem excecao, sem travar. O caminho alternativo com
  System.Windows.Forms.Timer (que adia a chamada pro tick, depois do clique
  retornar) NAO foi necessario e nao foi adicionado a este arquivo; fica
- descrito no brief da Task 5 (.superpowers\sdd\2026-09-22-header-kit-ui\
- task-5-brief.md) como plano B caso um build futuro do Max quebre esse
- caminho direto.
+ descrito, com o codigo, no plano — docs\superpowers\plans\
+ 2026-09-22-header-kit-ui.md, Task 5, Step 7 — como plano B caso um build
+ futuro do Max quebre esse caminho direto. (Ate 22/09/2026 este paragrafo
+ apontava pro brief em .superpowers\sdd\..., que o .gitignore desta mesma
+ branch deixou de fora do repo: depois do merge aquele caminho so existiria
+ na maquina de quem escreveu.)
 
  PENDENCIA CONHECIDA — ESCALA DO WINDOWS A 150% (Task 5, 22/09/2026): NAO
  TESTADO. Testar exige reiniciar o 3ds Max, o que derruba a sessao do MCP no
@@ -83,8 +104,16 @@ global InLab_Header_Montar, InLab_Header_OnReload
 global InLab_RecarregarPlugin
 
 global INLAB_HEADER_ESTADOS = #(#ocioso, #checando, #disponivel, #baixando, #erro)
-global InLab_Header_EstadoAtual = #ocioso
-global InLab_Header_Versao = INLAB_HEADER_VERSAO_PADRAO
+
+-- DECLARADOS SEM VALOR, DE PROPOSITO: `global X = expr` re-executa e
+-- sobrescreve a cada fileIn, e InLab_RecarregarPlugin refaz o fileIn de todos
+-- os modulos. Assim o estado da pastilha (e a versao exibida) sobrevive ao
+-- Reload que o proprio header hospeda. Ver o cabecalho.
+global InLab_Header_EstadoAtual
+global InLab_Header_Versao
+if InLab_Header_EstadoAtual == undefined do InLab_Header_EstadoAtual = #ocioso
+if InLab_Header_Versao == undefined do InLab_Header_Versao = INLAB_HEADER_VERSAO_PADRAO
+
 global InLab_Header_Estado, InLab_Header_OnPastilha
 
 -- Handler de nivel superior: so le global.
@@ -126,8 +155,10 @@ fn InLab_Header_Montar pnl =
     pnl.Controls.Clear()   -- idempotente: montar 2x nao duplica
     pnl.BackColor = InLab_Kit_Cor #FUNDO_HEADER
 
-    local dir = (dotNetClass "System.Windows.Forms.AnchorStyles")
-    local ancRight = dotNet.combineEnums dir.Top dir.Right
+    -- SEM Anchor (22/09/2026): a pastilha e o Reload tinham Anchor Top|Right,
+    -- que nunca dispara — o painel do plugin nao redimensiona e o pnlHeader e
+    -- fixo em 446. Como as posicoes ja sao calculadas a partir de pnl.Width,
+    -- a ancora era so ruido.
 
     -- MARCA
     InLab_Header_Marca = dotNetObject "System.Windows.Forms.PictureBox"
@@ -163,8 +194,6 @@ fn InLab_Header_Montar pnl =
     InLab_Header_Pastilha = dotNetObject "System.Windows.Forms.Button"
     InLab_Header_Pastilha.Size = dotNetObject "System.Drawing.Size" 74 28
     InLab_Header_Pastilha.Location = dotNetObject "System.Drawing.Point" (pnl.Width - 84) 14
-    InLab_Header_Pastilha.Anchor = ancRight
-    InLab_Kit_Pastilha InLab_Header_Pastilha #INFO ("v" + INLAB_HEADER_VERSAO_PADRAO)
     dotNet.addEventHandler InLab_Header_Pastilha "Click" InLab_Header_OnPastilha
     pnl.Controls.Add InLab_Header_Pastilha
 
@@ -172,12 +201,18 @@ fn InLab_Header_Montar pnl =
     InLab_Header_BtnReload = dotNetObject "System.Windows.Forms.Button"
     InLab_Header_BtnReload.Size = dotNetObject "System.Drawing.Size" 28 28
     InLab_Header_BtnReload.Location = dotNetObject "System.Drawing.Point" (pnl.Width - 118) 14
-    InLab_Header_BtnReload.Anchor = ancRight
     InLab_Header_BtnReload.Text = "⟳"
     InLab_Kit_BotaoIcone InLab_Header_BtnReload
     InLab_Header_BtnReload.Font = InLab_Kit_Fonte 12
     dotNet.addEventHandler InLab_Header_BtnReload "Click" InLab_Header_OnReload
     pnl.Controls.Add InLab_Header_BtnReload
+
+    -- Repinta a partir do ESTADO CORRENTE, nao de um #INFO fixo: depois de um
+    -- Reload disparado pelo proprio header, InLab_Header_EstadoAtual pode ser
+    -- #disponivel, e o aviso tem que reaparecer. A global esta pre-declarada la
+    -- em cima, entao a resolucao em tempo de chamada acha InLab_Header_Estado
+    -- mesmo ela sendo definida depois neste arquivo.
+    InLab_Header_Estado InLab_Header_EstadoAtual
 
     true
 )
@@ -205,9 +240,15 @@ fn InLab_Header_OnPastilha sender arg =
 --   versao : troca a versão exibida (em #disponivel, é a versão NOVA)
 --   pct    : só usado em #baixando
 --
--- Devolve true se aceitou, false se o estado é inválido — nunca levanta
--- exceção, porque quem vai chamar isto é um callback assíncrono do updater e
--- uma exceção lá dentro morre sem deixar rastro.
+-- Devolve true se aceitou e pintou, false se o estado é inválido OU se a
+-- pintura falhou — nunca levanta exceção, porque quem vai chamar isto é um
+-- callback assíncrono do updater e uma exceção lá dentro morre sem deixar
+-- rastro. O try/catch em volta da pintura é o que torna isso mecanismo e não
+-- promessa: com o painel fechado, o controle dotNet pode já ter sido
+-- destruído. O estado fica guardado de qualquer jeito, então a próxima
+-- montagem do header repinta certo.
+--
+-- CHAMAR NA THREAD PRINCIPAL DO MAX — ver o cabeçalho deste arquivo.
 fn InLab_Header_Estado estado versao:unsupplied pct:0 =
 (
     if (findItem INLAB_HEADER_ESTADOS estado) == 0 then
@@ -229,9 +270,12 @@ fn InLab_Header_Estado estado versao:unsupplied pct:0 =
     local clicavel = false
     case estado of
     (
+        -- #ocioso é INFO (fundo #333333, borda #454545, texto #A8A8A8), como
+        -- manda a spec, seção 5. Até 22/09/2026 estava pintando OK (verde) —
+        -- o plano é que divergia da spec nessa linha; a spec é a autoridade.
         #ocioso:
         (
-            tipo = #OK
+            tipo = #INFO
         )
         #checando:
         (
@@ -254,6 +298,15 @@ fn InLab_Header_Estado estado versao:unsupplied pct:0 =
             clicavel = true
         )
     )
-    InLab_Kit_Pastilha InLab_Header_Pastilha tipo texto clicavel:clicavel
-    true
+    local pintou = false
+    try
+    (
+        InLab_Kit_Pastilha InLab_Header_Pastilha tipo texto clicavel:clicavel
+        pintou = true
+    )
+    catch
+    (
+        InLab_Log ("Header: não consegui pintar a pastilha (painel fechado?) — " + getCurrentException()) tipo:#warn
+    )
+    pintou
 )
