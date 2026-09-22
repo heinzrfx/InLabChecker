@@ -11,6 +11,8 @@ global INLAB_TESTE_SAIDA, INLAB_TESTE_FALHAS
 global INLAB_ROOT, INLAB_HEADER_VERSAO_PADRAO
 global InLab_Header_Montar, InLab_Header_Pnl, InLab_Header_Pastilha
 global InLab_Header_Titulo, InLab_Header_Marca
+global InLab_Header_Estado, InLab_Header_EstadoAtual, InLab_Header_Versao
+global INLAB_HEADER_ESTADOS
 (
     local dirTeste = getFilenamePath (getSourceFileName())
     local raiz = substring dirTeste 1 (dirTeste.count - 6) -- tira "tests\"
@@ -134,6 +136,38 @@ global InLab_Header_Titulo, InLab_Header_Marca
         )
         catch ( travado = true )
         checar "PNG nao fica travado pelo header" (travado == false)
+
+        -- 10. OS 5 ESTADOS DA PASTILHA
+        InLab_Header_Montar pnlTeste
+
+        checar "Aceita #ocioso"     ((InLab_Header_Estado #ocioso versao:"0.11") == true)
+        checar "Guardou o estado"   (InLab_Header_EstadoAtual == #ocioso)
+        checar "Ocioso pinta OK"    (corIgual InLab_Header_Pastilha.BackColor (InLab_Kit_Cor #OK_FUNDO))
+        checar "Ocioso mostra a versao" (InLab_Header_Pastilha.Text == "v0.11")
+
+        checar "Aceita #checando"   ((InLab_Header_Estado #checando) == true)
+        checar "Checando pinta PROGRESSO" (corIgual InLab_Header_Pastilha.BackColor (InLab_Kit_Cor #PROGRESSO_FUNDO))
+        checar "Checando mantem a versao" (InLab_Header_Versao == "0.11")
+
+        checar "Aceita #disponivel" ((InLab_Header_Estado #disponivel versao:"0.13") == true)
+        checar "Disponivel pinta WARN" (corIgual InLab_Header_Pastilha.BackColor (InLab_Kit_Cor #WARN_FUNDO))
+        checar "Disponivel mostra a versao nova" (InLab_Header_Pastilha.Text == "v0.13")
+        checar "Disponivel e clicavel" (InLab_Header_Pastilha.Cursor.ToString() == (dotNetClass "System.Windows.Forms.Cursors").Hand.ToString())
+
+        checar "Aceita #baixando"   ((InLab_Header_Estado #baixando pct:62) == true)
+        checar "Baixando mostra o percentual" (InLab_Header_Pastilha.Text == "62%")
+
+        checar "Aceita #erro"       ((InLab_Header_Estado #erro) == true)
+        checar "Erro pinta ERR"     (corIgual InLab_Header_Pastilha.BackColor (InLab_Kit_Cor #ERR_FUNDO))
+
+        -- Estado invalido: recusa sem excecao e sem mexer no que estava
+        local antes = InLab_Header_EstadoAtual
+        local recusou = true
+        try ( recusou = ((InLab_Header_Estado #banana) == false) ) catch ( recusou = false )
+        checar "Estado invalido devolve false, sem excecao" (recusou == true)
+        checar "Estado invalido nao muda o estado atual" (InLab_Header_EstadoAtual == antes)
+
+        checar "A lista de estados tem os 5" (INLAB_HEADER_ESTADOS.count == 5)
     )
     catch
     (

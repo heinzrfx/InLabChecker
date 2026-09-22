@@ -30,6 +30,14 @@
  G:\Meu Drive\Trabalhos\2026\Artefacto\Logo\9.png, um ativo de design que
  mora FORA deste repo (nao versionado). Só a derivada 120x160 gerada dele —
  ui\img\header_bulbo.png — fica versionada aqui.
+
+ OS 5 ESTADOS (Task 4, 22/09/2026): InLab_Header_Estado pinta a mesma
+ pastilha para #ocioso | #checando | #disponivel | #baixando | #erro, via
+ InLab_Kit_Pastilha. A pastilha E o aviso de atualizacao — fica ambar e
+ clicavel em #disponivel, vermelha e clicavel em #erro; nos demais estados o
+ clique (InLab_Header_OnPastilha) nao faz nada. Devolve false em vez de
+ levantar excecao porque quem chama e um callback assincrono do updater
+ (sub-projeto 3, ainda nao existe) — excecao la dentro morre sem rastro.
 ================================================================================
 */
 
@@ -42,6 +50,11 @@ global InLab_Header_Pnl, InLab_Header_Marca, InLab_Header_Titulo
 global InLab_Header_Sub, InLab_Header_BtnReload, InLab_Header_Pastilha
 global InLab_Header_Montar, InLab_Header_OnReload
 global InLab_RecarregarPlugin
+
+global INLAB_HEADER_ESTADOS = #(#ocioso, #checando, #disponivel, #baixando, #erro)
+global InLab_Header_EstadoAtual = #ocioso
+global InLab_Header_Versao = INLAB_HEADER_VERSAO_PADRAO
+global InLab_Header_Estado, InLab_Header_OnPastilha
 
 -- Handler de nivel superior: so le global.
 fn InLab_Header_OnReload sender arg =
@@ -121,6 +134,7 @@ fn InLab_Header_Montar pnl =
     InLab_Header_Pastilha.Location = dotNetObject "System.Drawing.Point" (pnl.Width - 84) 14
     InLab_Header_Pastilha.Anchor = ancRight
     InLab_Kit_Pastilha InLab_Header_Pastilha #INFO ("v" + INLAB_HEADER_VERSAO_PADRAO)
+    dotNet.addEventHandler InLab_Header_Pastilha "Click" InLab_Header_OnPastilha
     pnl.Controls.Add InLab_Header_Pastilha
 
     -- RELOAD
@@ -134,5 +148,81 @@ fn InLab_Header_Montar pnl =
     dotNet.addEventHandler InLab_Header_BtnReload "Click" InLab_Header_OnReload
     pnl.Controls.Add InLab_Header_BtnReload
 
+    true
+)
+
+-- Clique na pastilha. Só faz sentido em #disponivel e #erro; nos outros
+-- estados a pastilha não é clicável e o handler não faz nada.
+--
+-- Abrir a seção Atualização é do sub-projeto 3, que ainda não existe: por
+-- enquanto o clique registra no log, que é onde o artista já olha.
+fn InLab_Header_OnPastilha sender arg =
+(
+    case InLab_Header_EstadoAtual of
+    (
+        #disponivel: InLab_Log ("Atualização v" + InLab_Header_Versao + " disponível — a seção Atualização entra no próximo sub-projeto.") tipo:#warn
+        #erro:       InLab_Log "A última atualização falhou e foi revertida — o motivo está acima neste log." tipo:#err
+        default:     ()
+    )
+)
+
+-- Pinta a pastilha conforme o estado. Os controles EXISTEM SEMPRE; só mudam
+-- cor, texto e cursor — é o que permite cobrir 5 estados num rollout, que não
+-- cria controle em tempo de execução.
+--
+--   estado : #ocioso | #checando | #disponivel | #baixando | #erro
+--   versao : troca a versão exibida (em #disponivel, é a versão NOVA)
+--   pct    : só usado em #baixando
+--
+-- Devolve true se aceitou, false se o estado é inválido — nunca levanta
+-- exceção, porque quem vai chamar isto é um callback assíncrono do updater e
+-- uma exceção lá dentro morre sem deixar rastro.
+fn InLab_Header_Estado estado versao:unsupplied pct:0 =
+(
+    if (findItem INLAB_HEADER_ESTADOS estado) == 0 then
+    (
+        InLab_Log ("Header: estado desconhecido '" + (estado as string) + "' — mantendo " + (InLab_Header_EstadoAtual as string) + ".") tipo:#warn
+        return false
+    )
+    if versao != unsupplied do InLab_Header_Versao = versao
+    InLab_Header_EstadoAtual = estado
+
+    if InLab_Header_Pastilha == undefined then
+    (
+        InLab_Log "Header: estado mudou antes de o header ser montado — só guardei." tipo:#info
+        return true
+    )
+
+    local tipo = #INFO
+    local texto = "v" + InLab_Header_Versao
+    local clicavel = false
+    case estado of
+    (
+        #ocioso:
+        (
+            tipo = #OK
+        )
+        #checando:
+        (
+            tipo = #PROGRESSO
+            texto = "v" + InLab_Header_Versao + " ···"
+        )
+        #disponivel:
+        (
+            tipo = #WARN
+            clicavel = true
+        )
+        #baixando:
+        (
+            tipo = #PROGRESSO
+            texto = (pct as integer) as string + "%"
+        )
+        #erro:
+        (
+            tipo = #ERR
+            clicavel = true
+        )
+    )
+    InLab_Kit_Pastilha InLab_Header_Pastilha tipo texto clicavel:clicavel
     true
 )
