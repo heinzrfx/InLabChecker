@@ -128,10 +128,15 @@ global INLAB_HEADER_ESTADOS
         local travado = true
         try
         (
-            -- UMA LINHA SO, de proposito. MaxScript nao tem continuacao por
-            -- "\", e parenteses formam BLOCO DE EXPRESSOES: quebrar a chamada
-            -- dentro deles viraria varias expressoes, nao uma chamada com
-            -- varios argumentos. Por isso os aliases curtos acima.
+            -- Aliases curtos pra chamada caber numa linha. Parenteses formam
+            -- BLOCO DE EXPRESSOES em MaxScript: quebrar a chamada dentro deles
+            -- viraria varias expressoes, nao uma chamada com varios argumentos.
+            --
+            -- CORRECAO 22/09/2026: o comentario anterior aqui dizia que
+            -- MaxScript "nao tem continuacao de linha por \". Isso e FALSO —
+            -- testado no Max 2024, a contrabarra no fim da linha continua a
+            -- expressao normalmente. Os aliases sao escolha de legibilidade,
+            -- nao contorno de limitacao da linguagem.
             local fMode = dotNetClass "System.IO.FileMode"
             local fAcc = dotNetClass "System.IO.FileAccess"
             local fShare = dotNetClass "System.IO.FileShare"
