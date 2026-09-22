@@ -74,6 +74,8 @@
  Unfold3DSolve com guarda por ilha (InLab_UnfoldComGuarda): distorção
  ~1,05× e densidade ~1,00× nas peças da issue; as ilhas que o solve
  degenera (Box008, até 80×) voltam às posições do flatten.
+ 22/Set: o parâmetro seamsOcultas: saiu (nunca teve efeito, só avisava no
+ log). A ocultação das seams ficou para uma issue própria.
 
  UNDO: undo "InLab ..." + registro dedicado (InLab_UltimoAutoUV) para o
  Reverter, que alcança além do Ctrl+Z.
@@ -315,15 +317,13 @@ fn InLab_UnfoldComGuarda uvw np =
 --------------------------------------------------------------------------------
 -- AUTO UV sobre a seleção. Grava no canal INLAB_CANAL_UV_BAKE.
 --------------------------------------------------------------------------------
-fn InLab_AutoUV objs angulo:55.0 seamsOcultas:true resolucao:1024 =
+fn InLab_AutoUV objs angulo:55.0 resolucao:1024 =
 (
     local processados = 0
     local padding = InLab_PaddingUV resolucao
     local normais = #([1,0,0], [-1,0,0], [0,1,0], [0,-1,0], [0,0,1], [0,0,-1])
     InLab_Log ("Auto UV: canal " + INLAB_CANAL_UV_BAKE as string + " · ângulo " + (formattedPrint angulo format:".0f") +
                "° · " + resolucao as string + " px (padding " + (formattedPrint padding format:".4f") + ")")
-    if seamsOcultas do
-        InLab_Log "Auto UV: \"Preferir seams em regiões ocultas\" ainda não tem efeito (entra na Fase 3 da issue #1)." tipo:#warn
 
     undo "InLab AutoUV" on
     (

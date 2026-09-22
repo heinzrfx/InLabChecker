@@ -65,7 +65,7 @@ global INLAB_TESTE_SAIDA, INLAB_TESTE_FALHAS
         checar "Cena: canal 1 existe nos 3 objetos" ((for s in antes where s == undefined collect s).count == 0)
 
         -- 1. AUTO UV
-        checar "Auto UV processa 3 objetos" ((InLab_AutoUV objs angulo:55.0 seamsOcultas:true resolucao:1024) == 3)
+        checar "Auto UV processa 3 objetos" ((InLab_AutoUV objs angulo:55.0 resolucao:1024) == 3)
         for i = 1 to objs.count do
         (
             local o = objs[i]
@@ -94,7 +94,7 @@ global INLAB_TESTE_SAIDA, INLAB_TESTE_FALHAS
         checar "Registro: 3 objetos" (InLab_UltimoAutoUV.count == 3)
 
         -- 2. RODAR DE NOVO: substitui o Unwrap, não empilha
-        InLab_AutoUV #(bPoly) angulo:30.0 seamsOcultas:false resolucao:2048
+        InLab_AutoUV #(bPoly) angulo:30.0 resolucao:2048
         checar "Rodar de novo não empilha Unwrap" (bPoly.modifiers.count == 1)
         checar "Rodar de novo mantém um registro por objeto" (InLab_UltimoAutoUV.count == 3)
 
@@ -130,14 +130,14 @@ global INLAB_TESTE_SAIDA, INLAB_TESTE_FALHAS
         convertToMesh eMesh
         join criados #(iA, iB, iC, eMesh)
         local eMeshAntes = InLab_AssinaturaCanal eMesh INLAB_CANAL_UV_MATERIAL
-        checar "Instâncias: processa A, B e o mesh" ((InLab_AutoUV #(iA, iB, eMesh) angulo:55.0 seamsOcultas:false resolucao:1024) == 3)
+        checar "Instâncias: processa A, B e o mesh" ((InLab_AutoUV #(iA, iB, eMesh) angulo:55.0 resolucao:1024) == 3)
         checar "Instâncias: continuam as 3 ligadas" (nInst iA == 3 and nInst iC == 3)
         checar "Instâncias: base mantida" (classOf iA.baseObject == Editable_Poly)
         checar "Instâncias: um Unwrap só, compartilhado" (iA.modifiers.count == 1 and iC.modifiers.count == 1 and iA.modifiers[1] == iC.modifiers[1])
         local mInst = InLab_MedirUV iC INLAB_CANAL_UV_BAKE
         checar "Instâncias: canal 3 válido na instância não selecionada" (mInst != undefined and mInst.foraDe01 == 0 and mInst.sobrepostas == 0 and mInst.aproveitamento > 0.2)
         checar "Instâncias: um registro para o conjunto" (InLab_UltimoAutoUV.count == 2)
-        InLab_AutoUV #(iC) angulo:40.0 seamsOcultas:false resolucao:1024
+        InLab_AutoUV #(iC) angulo:40.0 resolucao:1024
         checar "Instâncias: rodar de novo em C substitui o Unwrap" (iA.modifiers.count == 1 and InLab_UltimoAutoUV.count == 2)
         checar "Mesh: base continua Editable_mesh com Unwrap" (classOf eMesh.baseObject == Editable_mesh and eMesh.modifiers.count == 1)
         checar "Mesh: canal 1 idêntico" ((InLab_AssinaturaCanal eMesh INLAB_CANAL_UV_MATERIAL) == eMeshAntes)
@@ -150,7 +150,7 @@ global INLAB_TESTE_SAIDA, INLAB_TESTE_FALHAS
         convertToPoly almof
         append criados almof
         local t0a = timeStamp()
-        InLab_AutoUV #(almof) angulo:55.0 seamsOcultas:false resolucao:1024
+        InLab_AutoUV #(almof) angulo:55.0 resolucao:1024
         local msA = timeStamp() - t0a
         local mA = InLab_MedirUV almof INLAB_CANAL_UV_BAKE
         linha ("      uv_almofada: " + msA as string + " ms · " + InLab_UVMetricasTexto mA)
@@ -218,7 +218,7 @@ global INLAB_TESTE_SAIDA, INLAB_TESTE_FALHAS
         append criados esfG
         local esfAntes = InLab_AssinaturaCanal esfG INLAB_CANAL_UV_MATERIAL
         local t0 = timeStamp()
-        InLab_AutoUV #(esfG) angulo:55.0 seamsOcultas:false resolucao:1024
+        InLab_AutoUV #(esfG) angulo:55.0 resolucao:1024
         local msG = timeStamp() - t0
         local mG = InLab_MedirUV esfG INLAB_CANAL_UV_BAKE
         linha ("      uv_grande: " + (GetTriMeshFaceCount esfG)[1] as string + " triângulos em " + msG as string + " ms · " + InLab_UVMetricasTexto mG)

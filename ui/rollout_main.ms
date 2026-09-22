@@ -196,9 +196,10 @@ rollout InLabSecOtimizacao "Otimização" width:420
     -- 18/Set (issue #1): o padding sai da resolução do bake; o Auto UV grava
     -- no canal 3 e não toca no canal 1. Os itens do dropdown seguem a ordem
     -- de INLAB_UV_RESOLUCOES (functions\fn_autouv.ms).
+    -- 22/Set: saiu o checkbox "Preferir seams em regiões ocultas", que nunca
+    -- teve efeito. Volta quando a sondagem da Tarefa 7b der resultado.
     label lblF2 "Auto UV  (canal 3 · bake de textura e AO)" align:#left across:1
     spinner spnAnguloUV "Ângulo flatten (°):" range:[10, 90, 55] type:#float fieldWidth:40 align:#left
-    checkbox chkSeamsOcultas "Preferir seams em regiões ocultas" checked:true
     dropdownlist ddlResolucaoUV "Resolução do bake:" items:#("1024", "2048", "4096") selection:1 width:120 align:#left
     button btnF2 "Auto UV na Seleção" width:126 across:3
     button btnF2Clean "Clean UV" width:126
@@ -253,8 +254,7 @@ rollout InLabSecOtimizacao "Otimização" width:420
         if objs.count > 0 do
         (
             InLab_ProgressoIniciar "Gerando Auto UV..."
-            InLab_AutoUV objs angulo:spnAnguloUV.value seamsOcultas:chkSeamsOcultas.checked \
-                resolucao:INLAB_UV_RESOLUCOES[ddlResolucaoUV.selection]
+            InLab_AutoUV objs angulo:spnAnguloUV.value resolucao:INLAB_UV_RESOLUCOES[ddlResolucaoUV.selection]
             InLab_ProgressoParar()
         )
     )

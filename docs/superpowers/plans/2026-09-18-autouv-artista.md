@@ -1683,7 +1683,7 @@ Atualize o cabeçalho do arquivo com um bloco "21/Set (Fase 3)", no padrão dos 
 
   Mostre ao usuário a tabela das peças da issue (Fase 2 × Fase 3 × ArchToolz) e capturas do UV do Box013 e do Box014.
 
-- [ ] **Passo 6:** com autorização, `feat(autouv): base editable poly e unfold3d com guarda por ilha`.
+- [x] **Passo 6:** com autorização, `feat(autouv): base editable poly e unfold3d com guarda por ilha` (a6fd5fe).
 
 ---
 
