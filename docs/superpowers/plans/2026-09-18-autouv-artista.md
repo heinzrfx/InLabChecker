@@ -1503,7 +1503,7 @@ Se nenhum candidato der 2 ilhas, procure no dump `inlab_unwrap_api_26000.txt` da
   - `INLAB_UV_DISTORCAO_MAX_SOLVE = 2.0`: acima disto a ilha volta às posições do flatten.
 - Muda: `InLab_AutoUV_PrepararBase`. `Editable_Poly` e `Editable_mesh` ficam como estão. Outras bases sem modificadores (primitivas) viram `Editable_Poly`, com cópia da original para o Reverter. Base com modificadores ou instanciada continua como na Fase 2.
 
-- [ ] **Passo 1: atualizar o teste.** Em `tests/test_autouv.ms`:
+- [x] **Passo 1: atualizar o teste.** Em `tests/test_autouv.ms`:
   - "Base Editable_Poly virou Editable_mesh" passa a ser `checar "Base Editable_Poly continua Editable_Poly" (classOf bPoly.baseObject == Editable_Poly)`.
   - "Base do objeto no grupo virou Editable_mesh" passa a ser `checar "Primitiva no grupo virou Editable_Poly" (classOf bGrupo.baseObject == Editable_Poly)`.
   - "Reverter: base volta a Editable_Poly" e "Reverter: mesmo nº de polígonos" continuam iguais (a base nem muda).
@@ -1544,9 +1544,9 @@ Se nenhum candidato der 2 ilhas, procure no dump `inlab_unwrap_api_26000.txt` da
         checar "Guarda: distorção por ilha 1,0" ((for d in (InLab_DistorcaoIlhas uG ilG) where abs (d - 1.0) > 0.01 collect d).count == 0)
 ```
 
-- [ ] **Passo 2: rodar e ver falhar** (`InLab_IlhasDoUnwrap` indefinida e bases ainda convertidas para mesh).
+- [x] **Passo 2: rodar e ver falhar** (`InLab_IlhasDoUnwrap` indefinida e bases ainda convertidas para mesh).
 
-- [ ] **Passo 3: implementar em `functions/fn_autouv.ms`.**
+- [x] **Passo 3: implementar em `functions/fn_autouv.ms`.**
 
 Constante, junto das outras:
 
@@ -1673,9 +1673,9 @@ Em `InLab_AutoUV`, logo depois do flatten dar certo e antes do pack:
 
 Atualize o cabeçalho do arquivo com um bloco "21/Set (Fase 3)", no padrão dos outros.
 
-- [ ] **Passo 4: rodar os testes.** Rode `test_autouv` e `test_verif_uv`. Esperado: TUDO OK.
+- [x] **Passo 4: rodar os testes.** Rode `test_autouv` e `test_verif_uv`. Esperado: TUDO OK.
 
-- [ ] **Passo 5: medir nas peças reais.** Rode a cadeira inteira de `01.max` com o script de validação da Fase 2. Esperado:
+- [x] **Passo 5: medir nas peças reais.** Rode a cadeira inteira de `01.max` com o script de validação da Fase 2. Esperado:
   - canal 1 idêntico;
   - 0 sobrepostas além das 2 peças conhecidas (Box002, Box063);
   - Box013 com 6 ilhas e distorção ≤ 1,1;

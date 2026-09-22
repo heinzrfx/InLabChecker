@@ -66,6 +66,15 @@
  padrões de fábrica de um Unwrap novo, e o Unfold3DPack ignora unfoldRoomSpace
  (gutter ~1 px com qualquer valor), por isso ele não substitui o pack.
 
+ 21/Set (Fase 3, sondagem em docs/superpowers/specs/2026-09-21-autouv-fase3-
+ sondagem.md): a base não é mais convertida (Editable_Poly fica poly;
+ primitiva e Editable_mesh também ficam: converter primitiva para poly
+ retriangula as tampas e mudaria o canal 1). Sobre poly o flatten não cria a
+ ilha "em escada" do Box014. Em malha pequena, depois do flatten roda um
+ Unfold3DSolve com guarda por ilha (InLab_UnfoldComGuarda): distorção
+ ~1,05× e densidade ~1,00× nas peças da issue; as ilhas que o solve
+ degenera (Box008, até 80×) voltam às posições do flatten.
+
  UNDO: undo "InLab ..." + registro dedicado (InLab_UltimoAutoUV) para o
  Reverter, que alcança além do Ctrl+Z.
 ================================================================================
@@ -85,6 +94,9 @@ global INLAB_UV_MEDIR_MAX_FACES = 30000
 -- Folga do espaçamento do flatten em malha grande: o gutter real sai ~0,7–0,8×
 -- o espaçamento pedido nas peças medidas.
 global INLAB_UV_FOLGA_ESPACAMENTO = 1.4
+-- Acima disto (max(r, 1/r) da pior face) a ilha do Unfold3DSolve volta às
+-- posições do flatten. O flatten puro não passou de 1,74 nas peças da issue.
+global INLAB_UV_DISTORCAO_MAX_SOLVE = 2.0
 
 -- Registro de um Auto UV aplicado (para o Reverter dedicado).
 struct AutoUVRecord
@@ -101,6 +113,7 @@ global InLab_UltimoAutoUV = #()
 
 global InLab_TentarRelax, InLab_PaddingUV, InLab_AutoUV_PrepararBase, InLab_AutoUV_Registro
 global InLab_AbrirGruposAcima, InLab_FecharGrupos, InLab_Instancias, InLab_ContagemCanal
+global InLab_IlhasDoUnwrap, InLab_DistorcaoIlhas, InLab_UnfoldComGuarda
 global InLab_AutoUV, InLab_CanalDoModificadorUV, InLab_CleanUV, InLab_ReverterAutoUV
 
 --------------------------------------------------------------------------------
@@ -138,14 +151,10 @@ fn InLab_PaddingUV resolucao =
 )
 
 --------------------------------------------------------------------------------
--- Converte a base para Editable_mesh (como o ArchToolz) e devolve uma cópia
--- da base original para o Reverter. Com modificadores no stack a base fica
--- como está, porque converter exigiria colapsar (proibido pela issue #1).
--- Base instanciada também fica: converter quebraria todas as instâncias.
---------------------------------------------------------------------------------
 -- Nº de vértices e faces de mapa do canal, "nV/nF" (ou "sem canal"). Guarda
 -- barata do canal 1 no Auto UV: a assinatura completa (InLab_AssinaturaCanal)
 -- leva ~7 s numa malha de 300 mil faces e fica só nos testes.
+--------------------------------------------------------------------------------
 fn InLab_ContagemCanal o canal =
 (
     local m = snapshotAsMesh o
@@ -164,26 +173,21 @@ fn InLab_Instancias o =
     inst
 )
 
+--------------------------------------------------------------------------------
+-- 21/Set (Fase 3): a base NÃO é mais convertida. Editable_Poly fica poly
+-- (decisão do usuário: o flatten sobre poly não cria a escada do Box014);
+-- primitiva e Editable_mesh também ficam, com o Unwrap por cima. Converter
+-- primitiva para poly retriangula as tampas (cilindro 96 → 92 triângulos) e
+-- mudaria o canal 1. Devolve sempre undefined (nada a restaurar no Reverter);
+-- só avisa quando o Unwrap vai ser compartilhado entre instâncias.
+--------------------------------------------------------------------------------
 fn InLab_AutoUV_PrepararBase o =
 (
-    local original = undefined
     local nInst = (InLab_Instancias o).count
-    if classOf o.baseObject != Editable_mesh do
-    (
-        if nInst > 1 then
-            InLab_Log (o.name + ": instanciado (" + nInst as string + " nós) — base " + (classOf o.baseObject) as string +
-                       " mantida e Unwrap compartilhado: todas as instâncias ficam com o mesmo canal " +
-                       INLAB_CANAL_UV_BAKE as string + ".") tipo:#warn
-        else if o.modifiers.count > 0 then
-            InLab_Log (o.name + ": base " + (classOf o.baseObject) as string + " mantida — há " +
-                       o.modifiers.count as string + " modificador(es) no stack e converter colapsaria.") tipo:#warn
-        else
-        (
-            original = copy o.baseObject
-            convertToMesh o
-        )
-    )
-    original
+    if nInst > 1 do
+        InLab_Log (o.name + ": instanciado (" + nInst as string + " nós) — Unwrap compartilhado: todas as instâncias ficam com o mesmo canal " +
+                   INLAB_CANAL_UV_BAKE as string + ".") tipo:#warn
+    undefined
 )
 
 --------------------------------------------------------------------------------
@@ -220,6 +224,92 @@ fn InLab_AutoUV_Registro o =
     for r in InLab_UltimoAutoUV where isValidNode r.no do
         if achado == undefined and findItem inst r.no > 0 do achado = r
     achado
+)
+
+--------------------------------------------------------------------------------
+-- Ilhas UV do Unwrap ativo, como BitArrays de faces. selectElement nativo:
+-- uma chamada por ilha (o union-find em MaxScript levava 2,7 s no Box008).
+--------------------------------------------------------------------------------
+fn InLab_IlhasDoUnwrap uvw np =
+(
+    local ilhas = #()
+    local resta = #{1..np}
+    uvw.setTVSubObjectMode 3
+    while resta.numberSet > 0 do
+    (
+        local f0 = (for f in resta while true collect f)[1]
+        uvw.selectFaces #{f0}
+        uvw.selectElement()
+        local s = uvw.getSelectedFaces()
+        if s.numberSet == 0 do s = #{f0}
+        append ilhas s
+        resta -= s
+    )
+    ilhas
+)
+
+--------------------------------------------------------------------------------
+-- Distorção de área por ilha: max(r, 1/r) da pior face, r = densidade da
+-- face / densidade da ilha. Mesma definição de InLab_MedirUV, só que por ilha.
+--------------------------------------------------------------------------------
+fn InLab_DistorcaoIlhas uvw ilhas =
+(
+    for s in ilhas collect
+    (
+        local x, y, w, h, aUV, aG
+        local totUV = 0.0, totG = 0.0
+        local faces = #()
+        for f in s do
+        (
+            uvw.getArea #{f} &x &y &w &h &aUV &aG
+            append faces #(aUV, aG)
+            totUV += aUV
+            totG += aG
+        )
+        local dI = if totG > 1e-9 then totUV / totG else 0.0
+        local pior = 1.0
+        if dI > 1e-12 do
+            for p in faces where p[2] > 1e-9 and p[1] > 1e-12 do
+            (
+                local r = (p[1] / p[2]) / dI
+                pior = amax pior (amax r (1.0 / r))
+            )
+        if dI <= 1e-12 then 1e9 else pior
+    )
+)
+
+--------------------------------------------------------------------------------
+-- Unfold3DSolve sobre o flatten, com guarda: as ilhas que o solve degenera
+-- (Box008: distorção 80×) voltam às posições do flatten. Devolve o nº de
+-- ilhas revertidas, ou -1 se o solve não existir nesta build.
+-- 22/Set: o solve RENUMERA os vértices UV das faces (Box050: 78 de 294 faces;
+-- é uma permutação, os mesmos vértices em uso). Voltar por índice de vértice
+-- gravava as posições nos vértices errados (distorção 3 930×, 18 invertidos em
+-- 7 peças da cadeira). A posição do flatten é guardada por CANTO de face e
+-- gravada no vértice que o canto aponta depois do solve.
+--------------------------------------------------------------------------------
+fn InLab_UnfoldComGuarda uvw np =
+(
+    local ilhas = InLab_IlhasDoUnwrap uvw np
+    local cantosFlat = for f = 1 to np collect
+        (for k = 1 to (uvw.numberPointsInFace f) collect uvw.getVertexPosition 0 (uvw.getVertexIndexFromFace f k))
+    uvw.selectFaces #{1..np}
+    local ok = try ( uvw.Unfold3DSolve() ; true ) catch ( InLab_Log ("Unfold3DSolve: " + getCurrentException()) tipo:#warn ; false )
+    if not ok then -1
+    else
+    (
+        local dist = InLab_DistorcaoIlhas uvw ilhas
+        local revertidas = 0
+        for i = 1 to ilhas.count where dist[i] > INLAB_UV_DISTORCAO_MAX_SOLVE do
+        (
+            for f in ilhas[i] do
+                for k = 1 to cantosFlat[f].count do
+                    uvw.setVertexPosition 0 (uvw.getVertexIndexFromFace f k) cantosFlat[f][k]
+            revertidas += 1
+        )
+        uvw.selectFaces #{1..np}
+        revertidas
+    )
 )
 
 --------------------------------------------------------------------------------
@@ -319,6 +409,19 @@ fn InLab_AutoUV objs angulo:55.0 seamsOcultas:true resolucao:1024 =
 
                     if metodo != undefined do
                     (
+                        ------------------------------------------------------
+                        -- 1b · UNFOLD COM GUARDA (Fase 3): só em malha pequena.
+                        -- Na pillow 02 (306 mil tris) o solve sozinho leva 49 s.
+                        ------------------------------------------------------
+                        if not grande do
+                        (
+                            local rev = InLab_UnfoldComGuarda uvw nPolysUV
+                            if rev < 0 then
+                                InLab_Log (o.name + ": Unfold3DSolve indisponível — fica o flatten.") tipo:#warn
+                            else
+                                metodo += " → Unfold3D" + (if rev > 0 then " (" + rev as string + " ilha(s) voltaram ao flatten)" else "")
+                        )
+
                         ------------------------------------------------------
                         -- 2 · PACK com o padding da resolução; fallback Unfold3DPack
                         ------------------------------------------------------

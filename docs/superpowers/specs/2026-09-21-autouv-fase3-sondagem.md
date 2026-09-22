@@ -112,3 +112,13 @@ Protótipo em três passos, todos com funções nativas do Unwrap:
 O que não funcionou:
 - **Reverter com flatten só na seleção:** o flatten normaliza a seleção num 0–1 próprio, e o Box008 foi a densidade 1,31× e 65 ilhas.
 - **`RescaleCluster`** depois disso: não corrigiu a densidade.
+
+## Correção da guarda (22/Set, validação na cadeira)
+
+O protótipo acima voltava as ilhas por índice de vértice (`getVertexPosition 0 v` antes, `setVertexPosition 0 v posFlat[v]` depois). Mas o `Unfold3DSolve` **renumera os vértices UV das faces**. No Box050 são 78 de 294 faces. É uma permutação: os mesmos 408 vértices continuam em uso, só com outros índices. Por isso a reversão gravava as posições nos vértices errados. Na cadeira inteira, 7 peças saíram com faces sobrepostas, invertidas e distorção de até 1,3 milhão × (Box050/051, Rectangle001, Box001, Box005, Box062, Box063). Nas peças da issue a reversão não deu defeito visível (o Box008 reverteu 11 ilhas e saiu certo), e por isso a sondagem não viu o problema. Não investiguei por que o Box008 escapou.
+
+A correção guarda a posição do flatten **por canto de face** e, depois do solve, grava cada canto no vértice que `getVertexIndexFromFace f k` aponta. O teste `test_autouv.ms` agora usa um Torus (o solve renumera 99 de 288 faces), força a reversão de todas as ilhas e exige o UV idêntico ao flatten, canto por canto. Caixa, cilindro e ChamferBox não renumeram.
+
+Cadeira de `01.max` (125 peças) depois da correção: canal 1 idêntico e pai preservado em todas, **0 sobrepostas, 0 invertidos, 0 fora do 0–1 em todas** (Box002 e Box063, sobrepostas na Fase 2, também zeraram), densidade média 1,01×, distorção média 1,50×, **3,7 s por peça em média**.
+
+Achado colateral: com o grupo fechado (a seleção pega o grupo inteiro), o `Unfold3DSolve` dá `EXCEPTION_ACCESS_VIOLATION`. O `InLab_AutoUV` já abre os grupos antes. Isso só apareceu num script de sondagem que não abria.

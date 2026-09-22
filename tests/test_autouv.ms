@@ -9,7 +9,8 @@
 global InLab_Log, InLab_EhGeometria
 global InLab_MedirUV, InLab_AssinaturaCanal, InLab_UVMetricasTexto
 global InLab_AutoUV, InLab_CleanUV, InLab_ReverterAutoUV, InLab_PaddingUV, InLab_UltimoAutoUV
-global INLAB_CANAL_UV_MATERIAL, INLAB_CANAL_UV_BAKE, INLAB_UV_MEDIR_MAX_FACES
+global InLab_IlhasDoUnwrap, InLab_DistorcaoIlhas, InLab_UnfoldComGuarda
+global INLAB_CANAL_UV_MATERIAL, INLAB_CANAL_UV_BAKE, INLAB_UV_MEDIR_MAX_FACES, INLAB_UV_DISTORCAO_MAX_SOLVE
 global INLAB_TESTE_SAIDA, INLAB_TESTE_FALHAS
 (
     local dirTeste = getFilenamePath (getSourceFileName())
@@ -81,8 +82,9 @@ global INLAB_TESTE_SAIDA, INLAB_TESTE_FALHAS
             -- o pack sozinho deixava o gutter 25–30% abaixo do padding (21/Set)
             checar (o.name + ": gutter >= padding de 1K") (m != undefined and m.gutterMin != undefined and m.gutterMin >= (InLab_PaddingUV 1024) * 0.98)
         )
-        checar "Base Editable_Poly virou Editable_mesh" (classOf bPoly.baseObject == Editable_mesh)
-        checar "Base do objeto no grupo virou Editable_mesh" (classOf bGrupo.baseObject == Editable_mesh)
+        -- 21/Set (Fase 3): a base não é mais convertida (primitiva para poly mudaria o canal 1)
+        checar "Base Editable_Poly continua Editable_Poly" (classOf bPoly.baseObject == Editable_Poly)
+        checar "Primitiva no grupo continua Box" (classOf bGrupo.baseObject == Box)
         checar "Base com modificadores ficou como estava" (classOf cil.baseObject == Cylinder)
         checar "UVW Map do canal 1 continua no stack" (temModificador cil Uvwmap)
         checar "Objeto continua no grupo" (bGrupo.parent == grp and isGroupMember bGrupo)
@@ -142,6 +144,72 @@ global INLAB_TESTE_SAIDA, INLAB_TESTE_FALHAS
         InLab_ReverterAutoUV()
         checar "Instâncias: Reverter tira o Unwrap de todas e mantém o vínculo" (iA.modifiers.count == 0 and iC.modifiers.count == 0 and nInst iA == 3)
         checar "Mesh: Reverter tira o Unwrap" (eMesh.modifiers.count == 0 and classOf eMesh.baseObject == Editable_mesh)
+
+        -- 5b. UNFOLD COM GUARDA (Fase 3): flatten sobre poly + Unfold3DSolve por ilha
+        local almof = ChamferBox name:"uv_almofada" length:40 width:40 height:12 fillet:3 filletSegs:3 mapcoords:true pos:[0, 220, 0]
+        convertToPoly almof
+        append criados almof
+        local t0a = timeStamp()
+        InLab_AutoUV #(almof) angulo:55.0 seamsOcultas:false resolucao:1024
+        local msA = timeStamp() - t0a
+        local mA = InLab_MedirUV almof INLAB_CANAL_UV_BAKE
+        linha ("      uv_almofada: " + msA as string + " ms · " + InLab_UVMetricasTexto mA)
+        checar "Almofada: base continua Editable_Poly" (classOf almof.baseObject == Editable_Poly)
+        checar "Almofada: no máximo 6 ilhas (topo, fundo e tiras)" (mA.nIlhas <= 6)
+        checar "Almofada: distorção ≤ 1,2 (o flatten sozinho dava ~1,6)" (mA.distorcaoMax <= 1.2)
+        checar "Almofada: densidade ≤ 1,05" (mA.densidadeRazao <= 1.05)
+        checar "Almofada: 0 sobrepostas, nada fora do 0–1" (mA.sobrepostas == 0 and mA.foraDe01 == 0)
+        checar "Almofada: menos de 5 s" (msA < 5000)
+
+        -- a guarda: distorção por ilha de um UV conhecido (caixa com flatten = 1,0)
+        local cxG = Box name:"uv_guarda" length:20 width:20 height:20 mapcoords:true pos:[80, 220, 0]
+        convertToPoly cxG
+        append criados cxG
+        max modify mode
+        select cxG
+        local uG = Unwrap_UVW()
+        addModifier cxG uG
+        modPanel.setCurrentObject uG
+        uG.setMapChannel 3
+        local npG = uG.numberPolygons()
+        uG.selectFaces #{1..npG}
+        uG.flattenMap 55.0 #([1,0,0], [-1,0,0], [0,1,0], [0,-1,0], [0,0,1], [0,0,-1]) 0.01 true 0 true true
+        local ilG = InLab_IlhasDoUnwrap uG npG
+        checar "Guarda: caixa tem 6 ilhas" (ilG.count == 6)
+        checar "Guarda: distorção por ilha 1,0" ((for d in (InLab_DistorcaoIlhas uG ilG) where abs (d - 1.0) > 0.01 collect d).count == 0)
+
+        -- a reversão (22/Set): o Unfold3DSolve renumera os vértices UV das faces
+        -- (Box050: 78 de 294 faces), então voltar ao flatten por índice de vértice
+        -- gravava as posições nos vértices errados (distorção 3 930×, 18 invertidos).
+        -- Com o limite em 0,5 todas as ilhas voltam, e o UV tem que sair idêntico
+        -- ao flatten, canto por canto. Torus: o solve renumera 99 de 288 faces
+        -- (caixa, cilindro e ChamferBox não renumeram).
+        local cxR = Torus name:"uv_reverte" radius1:20 radius2:5 segs:24 sides:12 mapcoords:true pos:[160, 220, 0]
+        convertToPoly cxR
+        append criados cxR
+        select cxR
+        local uR = Unwrap_UVW()
+        addModifier cxR uR
+        modPanel.setCurrentObject uR
+        uR.setMapChannel 3
+        local npR = uR.numberPolygons()
+        uR.selectFaces #{1..npR}
+        uR.flattenMap 55.0 #([1,0,0], [-1,0,0], [0,1,0], [0,-1,0], [0,0,1], [0,0,-1]) 0.01 true 0 true true
+        fn cantosUV u np = ( for f = 1 to np collect (for k = 1 to (u.numberPointsInFace f) collect u.getVertexPosition 0 (u.getVertexIndexFromFace f k)) )
+        fn indicesUV u np = ( for f = 1 to np collect (for k = 1 to (u.numberPointsInFace f) collect u.getVertexIndexFromFace f k) )
+        local cFlat = cantosUV uR npR
+        local iFlat = indicesUV uR npR
+        local limOrig = INLAB_UV_DISTORCAO_MAX_SOLVE
+        INLAB_UV_DISTORCAO_MAX_SOLVE = 0.5
+        local revR = InLab_UnfoldComGuarda uR npR
+        INLAB_UV_DISTORCAO_MAX_SOLVE = limOrig
+        local iDep = indicesUV uR npR
+        checar "Reversão: o solve renumerou vértices (pré-condição do teste)" ((for f = 1 to npR where (iFlat[f] as string) != (iDep[f] as string) collect f).count > 0)
+        checar "Reversão: todas as ilhas voltaram" (revR == (InLab_IlhasDoUnwrap uR npR).count)
+        local cDep = cantosUV uR npR
+        local difR = 0
+        for f = 1 to npR do for k = 1 to cFlat[f].count where distance cFlat[f][k] cDep[f][k] > 1e-5 do difR += 1
+        checar ("Reversão: UV idêntico ao flatten, canto por canto (" + difR as string + " cantos diferentes)") (difR == 0)
 
         -- 6. MALHA GRANDE (21/Set): acima de INLAB_UV_MEDIR_MAX_FACES o Auto UV
         -- pula o pack extra e as métricas de MaxScript. Antes, 306 mil faces
