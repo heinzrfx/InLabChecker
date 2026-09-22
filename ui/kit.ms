@@ -8,7 +8,8 @@
 
  DE ONDE VEM CADA COR (medido em 22/09/2026, ver
  docs\superpowers\specs\2026-09-22-header-kit-ui-design.md secao 3):
-   - MARCA #E8A429: amostrada do proprio logo (Logo\9.png), cor chapada.
+   - MARCA #E8A429: amostrada do proprio logo (G:\Meu Drive\Trabalhos\2026\
+     Artefacto\Logo\9.png, ativo de design fora do repo), cor chapada.
    - OK / ERR / INFO: lidas de InLab_CorDoTipo em core\log.ms. Sao as cores
      que a equipe aprovou em 13/Jul; o kit promove elas do log pro painel.
    - WARN: passou de #E6B45A para a cor da MARCA em 22/09, pra marca e aviso

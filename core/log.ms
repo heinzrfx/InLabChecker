@@ -15,7 +15,8 @@
    #info (mensagens neutras)       → cinza claro (cor padrão do tema escuro)
 
  22/09/2026: o tom do âmbar de #warn mudou de FromArgb 230 180 90 para
- FromArgb 232 164 41 — o mesmo âmbar amostrado do logo (Logo\9.png), usado
+ FromArgb 232 164 41 — o mesmo âmbar amostrado do logo (G:\Meu Drive\
+ Trabalhos\2026\Artefacto\Logo\9.png, ativo de design fora do repo), usado
  como cor de marca em ui\kit.ms. O cabeçalho acima ("âmbar") continua
  verdadeiro, só mudou o tom. Ver ui\kit.ms e a spec
  2026-09-22-header-kit-ui-design.md.
@@ -35,8 +36,9 @@ fn InLab_CorDoTipo tipo =
         #ok:      (dotNetClass "System.Drawing.Color").FromArgb 120 220 120
         #err:     (dotNetClass "System.Drawing.Color").FromArgb 235 90 90
         -- 22/09/2026: era FromArgb 230 180 90. Passou a ser o ambar da marca
-        -- (#E8A429, amostrado de Logo\9.png) pra aviso e marca serem a mesma
-        -- cor — ver ui\kit.ms e a spec 2026-09-22-header-kit-ui-design.md.
+        -- (#E8A429, amostrado de G:\Meu Drive\Trabalhos\2026\Artefacto\
+        -- Logo\9.png, fora do repo) pra aviso e marca serem a mesma cor —
+        -- ver ui\kit.ms e a spec 2026-09-22-header-kit-ui-design.md.
         #warn:    (dotNetClass "System.Drawing.Color").FromArgb 232 164 41
         default:  (dotNetClass "System.Drawing.Color").FromArgb 210 210 210
     )

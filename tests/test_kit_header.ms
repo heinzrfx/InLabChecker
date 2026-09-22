@@ -8,6 +8,9 @@ global InLab_Log, InLab_CorDoTipo
 global INLAB_KIT_CORES, InLab_Kit_Cor, InLab_Kit_Fonte
 global InLab_Kit_BotaoIcone, InLab_Kit_Pastilha
 global INLAB_TESTE_SAIDA, INLAB_TESTE_FALHAS
+global INLAB_ROOT, INLAB_HEADER_VERSAO_PADRAO
+global InLab_Header_Montar, InLab_Header_Pnl, InLab_Header_Pastilha
+global InLab_Header_Titulo, InLab_Header_Marca
 (
     local dirTeste = getFilenamePath (getSourceFileName())
     local raiz = substring dirTeste 1 (dirTeste.count - 6) -- tira "tests\"
@@ -34,6 +37,11 @@ global INLAB_TESTE_SAIDA, INLAB_TESTE_FALHAS
         InLab_Log = fn _logTeste msg tipo:#info = ( format "      [LOG %] %\n" tipo msg to:INLAB_TESTE_SAIDA; flush INLAB_TESTE_SAIDA )
 
         fileIn (raiz + @"ui\kit.ms")
+
+        -- ui\header.ms le INLAB_ROOT pra achar a arte. Fora do plugin, o teste
+        -- define a raiz na mao.
+        INLAB_ROOT = raiz
+        fileIn (raiz + @"ui\header.ms")
 
         -- 1. CORES BASICAS
         local marca = InLab_Kit_Cor #MARCA
@@ -75,6 +83,57 @@ global INLAB_TESTE_SAIDA, INLAB_TESTE_FALHAS
         checar "Fonte respeita o tamanho" (abs (f.Size - 10.5) < 0.01)
         local fb = InLab_Kit_Fonte 10.5 bold:true
         checar "Fonte bold e bold" (fb.Bold == true)
+
+        -- 7. MONTAGEM DO HEADER
+        local pnlTeste = dotNetObject "System.Windows.Forms.Panel"
+        pnlTeste.Width = 446
+        pnlTeste.Height = 56
+        checar "Montar devolve true" ((InLab_Header_Montar pnlTeste) == true)
+        checar "Montar criou controles" (pnlTeste.Controls.Count > 0)
+        local qtd1 = pnlTeste.Controls.Count
+        InLab_Header_Montar pnlTeste
+        checar "Montar 2x nao duplica controle" (pnlTeste.Controls.Count == qtd1)
+        checar "Fundo do header e FUNDO_HEADER" (corIgual pnlTeste.BackColor (InLab_Kit_Cor #FUNDO_HEADER))
+        checar "Titulo diz InLabChecker" (InLab_Header_Titulo.Text == "InLabChecker")
+        checar "Versao padrao e a do repo" (INLAB_HEADER_VERSAO_PADRAO == "0.11")
+
+        -- 8. ARTE AUSENTE NAO DERRUBA O HEADER
+        -- O pacote do updater e validado so contra INLAB_MODULOS, que e tudo
+        -- .ms: um pacote sem o PNG passa na validacao. O header tem que montar
+        -- assim mesmo. Ver spec, secao 6, item 2.
+        local raizBoa = INLAB_ROOT
+        INLAB_ROOT = "Z:\\nao_existe_de_proposito\\"
+        local pnlSemArte = dotNetObject "System.Windows.Forms.Panel"
+        pnlSemArte.Width = 446
+        pnlSemArte.Height = 56
+        local okSemArte = false
+        try ( okSemArte = (InLab_Header_Montar pnlSemArte) ) catch ( okSemArte = false )
+        checar "Monta sem a arte, sem excecao" (okSemArte == true)
+        checar "Sem arte, o texto continua la" (pnlSemArte.Controls.Count > 0)
+        INLAB_ROOT = raizBoa
+
+        -- 9. O PNG NAO PODE FICAR TRAVADO
+        -- Image.FromFile e Bitmap(String) seguram o arquivo enquanto a imagem
+        -- viver. Um PNG travado impede o updater de renomear a pasta de
+        -- instalacao (passo 5 da spec do updater). Se o arquivo puder ser
+        -- aberto pra escrita com o header montado, nao esta travado.
+        local arte = INLAB_ROOT + @"ui\img\header_bulbo.png"
+        local travado = true
+        try
+        (
+            -- UMA LINHA SO, de proposito. MaxScript nao tem continuacao por
+            -- "\", e parenteses formam BLOCO DE EXPRESSOES: quebrar a chamada
+            -- dentro deles viraria varias expressoes, nao uma chamada com
+            -- varios argumentos. Por isso os aliases curtos acima.
+            local fMode = dotNetClass "System.IO.FileMode"
+            local fAcc = dotNetClass "System.IO.FileAccess"
+            local fShare = dotNetClass "System.IO.FileShare"
+            local fs = dotNetObject "System.IO.FileStream" arte fMode.Open fAcc.ReadWrite fShare.None
+            fs.Close()
+            travado = false
+        )
+        catch ( travado = true )
+        checar "PNG nao fica travado pelo header" (travado == false)
     )
     catch
     (
