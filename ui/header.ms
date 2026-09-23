@@ -94,10 +94,9 @@
 */
 
 global INLAB_ROOT
-global INLAB_HEADER_VERSAO_PADRAO = "0.11"  -- maior versao declarada no repo
-                                            -- (InLabChecker.ms). Unificar as
-                                            -- strings e do core\versao.ms, na
-                                            -- spec do updater.
+global INLAB_VERSAO  -- core\versao.ms (1o do manifesto). Ate 23/09/2026
+                    -- havia aqui INLAB_HEADER_VERSAO_PADRAO = "0.11", copia a
+                    -- mao da versao; removida na issue #9.
 global InLab_Header_Pnl, InLab_Header_Marca, InLab_Header_Titulo
 global InLab_Header_Sub, InLab_Header_BtnReload, InLab_Header_Pastilha
 global InLab_Header_Montar, InLab_Header_OnReload
@@ -112,7 +111,7 @@ global INLAB_HEADER_ESTADOS = #(#ocioso, #checando, #disponivel, #baixando, #err
 global InLab_Header_EstadoAtual
 global InLab_Header_Versao
 if InLab_Header_EstadoAtual == undefined do InLab_Header_EstadoAtual = #ocioso
-if InLab_Header_Versao == undefined do InLab_Header_Versao = INLAB_HEADER_VERSAO_PADRAO
+if InLab_Header_Versao == undefined do InLab_Header_Versao = INLAB_VERSAO
 
 global InLab_Header_Estado, InLab_Header_OnPastilha
 

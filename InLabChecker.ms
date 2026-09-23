@@ -1,7 +1,9 @@
 /*
 ================================================================================
  InLabChecker.ms — ENTRY POINT
- InLab · Artefacto · v0.11 (Reload 29/Jul)
+ InLab · Artefacto · versão em core\versao.ms (INLAB_VERSAO) — desde a v0.12
+ (23/09/2026, issue #9) a versão não é mais escrita neste cabeçalho.
+ (Reload 29/Jul)
 --------------------------------------------------------------------------------
  O QUE ESTE ARQUIVO FAZ:
  1. Descobre em qual pasta o plugin está instalado (INLAB_ROOT).
@@ -40,6 +42,9 @@
         ------------------------------------------------------------------
         global INLAB_MODULOS = #(
             -- 1. CORE
+            -- versao.ms primeiro: INLAB_VERSAO tem que valer antes da legenda
+            -- de InLabChecker_Rollout ser avaliada (issue #9).
+            @"core\versao.ms",
             @"core\struct_result.ms",
             @"core\struct_familia.ms",
             @"core\log.ms",

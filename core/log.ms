@@ -1,6 +1,7 @@
 /*
 ================================================================================
- core\log.ms — v0.10 (13/Jul): log colorido via dotNet RichTextBox
+ core\log.ms — desde a v0.10 (13/Jul): log colorido via dotNet RichTextBox
+ (a versão corrente do plugin fica em core\versao.ms, INLAB_VERSAO)
 --------------------------------------------------------------------------------
  LIMITAÇÃO DE ENGINE (documentada, não contornável): o listbox nativo do
  MaxScript não suporta cor por linha. Substituído por um controle dotNet

@@ -38,6 +38,10 @@
  interpolar. As duas ficaram na mesma versão, mas por caminhos diferentes: a
  legenda tem que ser atualizada na mão quando a versão subir. A unificação
  geral das strings de versão é do core\versao.ms, de outro sub-projeto.
+ 23/09/2026 (issue #9): unificado. Legenda e linha de sessão leem INLAB_VERSAO
+ (core\versao.ms). A legenda PODE ser expressão — basta a global ter valor
+ quando este arquivo é carregado, e versao.ms é o 1º item do manifesto
+ (testado no Max 2024). O motivo acima para deixá-la literal não vale mais.
  Altura do subRollout (508) e da janela (ver InLab_AbrirUI) MEDIDAS no Max com
  o header montado, não estimadas.
 
@@ -497,7 +501,7 @@ fn InLab_PosicionarPainel lado =
     try ( InLabChecker_Rollout.pos = [x, area.Top] ) catch()
 )
 
-rollout InLabChecker_Rollout "InLabChecker · InLab Artefacto · v0.11" width:446
+rollout InLabChecker_Rollout ("InLabChecker · InLab Artefacto · v" + INLAB_VERSAO) width:446
 (
     ------------------------------------------------------------------
     -- HEADER (22/09/2026) — faixa de marca com Reload e pastilha de
@@ -553,7 +557,7 @@ rollout InLabChecker_Rollout "InLabChecker · InLab Artefacto · v0.11" width:44
         AddSubRollout subSecoes InLabSecFase4 rolledUp:true
         AddSubRollout subSecoes InLabSecLog
 
-        InLab_Log ("Sessão InLabChecker v" + INLAB_HEADER_VERSAO_PADRAO + " · " + localTime)
+        InLab_Log ("Sessão InLabChecker v" + INLAB_VERSAO + " · " + localTime)
         InLab_Log ("Famílias registradas: " + InLab_Familias.count as string + " de 8")
         InLab_Log ("Unidade do sistema: " + (InLab_UnidadeSistema() as string))
         if InLab_Familias.count != 8 do
