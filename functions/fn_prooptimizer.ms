@@ -57,6 +57,7 @@ global InLab_UltimaOtimizacao = #()
 --------------------------------------------------------------------------------
 -- Percentual necessário para levar o TOTAL de polígonos de `objs` até
 -- `alvoPoly` (polyMax da família). Retorna 100.0 se já está no alvo.
+-- 23/09/2026: sem uso desde a issue #60 (tela nova); remover na #62/#52.
 --------------------------------------------------------------------------------
 fn InLab_PercentualParaAlvo objs alvoPoly =
 (

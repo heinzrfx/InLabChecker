@@ -57,7 +57,11 @@ global INLAB_OTIM_PISOS = #(
 )
 
 -- Meta digitada na tela quando não há família ativa (triângulos).
-global INLAB_OTIM_META_MANUAL = undefined
+-- 23/09/2026 (revisão final): SEM inicializador — `global X = undefined`
+-- reatribui X toda vez que este arquivo é recarregado (InLab_RecarregarPlugin,
+-- ou um fileIn manual), zerando a meta que o usuário tinha digitado. Declarar
+-- sem valor não mexe num global que já existe (mesmo padrão de ui\kit.ms).
+global INLAB_OTIM_META_MANUAL
 
 global InLab_Otim_Triangulos
 fn InLab_Otim_Triangulos objs =

@@ -357,11 +357,21 @@ rollout InLabSecOtimizacao "Otimização" width:420
         lvPropostas.Columns.Add "Proposta" 372
         lvPropostas.BackColor = InLab_Kit_Cor #LOG
         lvPropostas.ForeColor = InLab_Kit_Cor #TEXTO
-        if INLAB_OTIM_META_MANUAL != undefined do spnMeta.value = INLAB_OTIM_META_MANUAL
+        -- 23/09/2026 (revisão final): sem isto, INLAB_OTIM_META_MANUAL fica
+        -- undefined até o usuário mexer no spinner, mesmo com o spinner
+        -- mostrando 100000 — o medidor caía no texto "digite a meta" com um
+        -- número já visível na tela.
+        if INLAB_OTIM_META_MANUAL != undefined then spnMeta.value = INLAB_OTIM_META_MANUAL
+        else INLAB_OTIM_META_MANUAL = spnMeta.value
         btnComparar.enabled = (rdoPasso.state == 2)
         encherLista()
         pintarMedidor()
     )
+
+    -- 23/09/2026 (revisão final): fechar o painel (ou InLab_RecarregarPlugin)
+    -- durante uma comparação deixava o ProOptimizer desligado (enabledInViews
+    -- = false) pra sempre na viewport — pararComparacao() nunca era chamado.
+    on InLabSecOtimizacao close do pararComparacao()
 
     on spnMeta changed v do
     (
@@ -387,6 +397,7 @@ rollout InLabSecOtimizacao "Otimização" width:420
             INLAB_OTIM_PROPOSTAS = InLab_Otim_Calcular rdoPasso.state objs
             InLab_ProgressoParar()
             encherLista()
+            pintarMedidor()
             if INLAB_OTIM_PROPOSTAS.count > 0 do
                 InLab_Log ("Otimização · passo " + rdoPasso.state as string + ": " + INLAB_OTIM_PROPOSTAS.count as string +
                            " proposta(s). Desmarque o que não quiser e clique em Aplicar.")
@@ -395,6 +406,11 @@ rollout InLabSecOtimizacao "Otimização" width:420
 
     on btnAplicar pressed do
     (
+        -- 23/09/2026 (revisão final): Aplicar durante uma comparação zerava
+        -- InLab_UltimaOtimizacao (InLab_ProOptimizer limpa o registro no
+        -- início) com o ProOptimizer do passo anterior ainda desligado na
+        -- viewport — o registro que ligaria ele de volta sumia antes.
+        pararComparacao()
         if INLAB_OTIM_PROPOSTAS.count == 0 then
             InLab_Log "Clique em Calcular antes de Aplicar." tipo:#warn
         else
@@ -411,9 +427,19 @@ rollout InLabSecOtimizacao "Otimização" width:420
 
     on btnComparar pressed do
     (
-        comparando = not comparando
-        InLab_OtimFino_Comparar (not comparando)
-        btnComparar.text = if comparando then "Mostrar ajuste" else "Comparar"
+        -- 23/09/2026 (revisão final): sem o teste de retorno, comparar sem
+        -- nada aplicado (InLab_UltimaOtimizacao vazio) virava "Mostrar
+        -- ajuste" sem alternar coisa nenhuma na viewport — o botão ficava
+        -- preso nesse rótulo até um Aplicar de verdade.
+        local ligar = comparando -- estado ANTES do clique: false liga->desliga, true desliga->liga
+        local n = InLab_OtimFino_Comparar ligar
+        if n == 0 then
+            InLab_Log "Nada para comparar — aplique o passo 2 antes." tipo:#warn
+        else
+        (
+            comparando = not comparando
+            btnComparar.text = if comparando then "Mostrar ajuste" else "Comparar"
+        )
     )
 
     on btnReverter pressed do
@@ -438,6 +464,8 @@ rollout InLabSecUV "UV e Texturas" width:420
     -- 18/Set (issue #1): o padding sai da resolução do bake; o Auto UV grava
     -- no canal 3 e não toca no canal 1. Os itens do dropdown seguem a ordem
     -- de INLAB_UV_RESOLUCOES (functions\fn_autouv.ms).
+    -- 22/Set: saiu o checkbox "Preferir seams em regiões ocultas", que nunca
+    -- teve efeito. Volta quando a sondagem da Tarefa 7b der resultado.
     label lblF2 "Auto UV  (canal 3 · bake de textura e AO)" align:#left
     spinner spnAnguloUV "Ângulo flatten (°):" range:[10, 90, 55] type:#float fieldWidth:40 align:#left
     dropdownlist ddlResolucaoUV "Resolução do bake:" items:#("1024", "2048", "4096") selection:1 width:120 align:#left
@@ -445,6 +473,9 @@ rollout InLabSecUV "UV e Texturas" width:420
     button btnF2Clean "Clean UV" width:126
     button btnF2Reverter "Reverter Auto UV" width:126
 
+    -- 22/Set: o Check Texture e o Verificar Escala saíram da aba (as funções
+    -- continuam em functions\, a V-19 usa INLAB_UNIDADE_PADRAO). No lugar,
+    -- o Real World Fix (functions\fn_realworldfix.ms).
     label lblF34 "Real World Fix  (tira o Real-World Map Size · WebGL)" align:#left across:1
     button btnRWFix "Real World Fix" width:390 height:25
 
