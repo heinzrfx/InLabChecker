@@ -7,7 +7,7 @@ Para 3ds Max 2024. Não precisa ser administrador. Leva uns 5 minutos e é feito
 Na página da última release (<https://github.com/heinzrfx/InLabChecker/releases/latest>), em **Assets**, baixe os dois arquivos:
 
 - `InLabChecker-v<versão>.zip`: o plugin.
-- `inlabchecker_boot.ms`: o arquivo que abre o plugin junto com o Max.
+- `inlabchecker_boot.ms`: o arquivo que registra o botão do InLabChecker na barra de ferramentas quando o Max abre.
 
 ## Passo a passo
 
@@ -46,22 +46,26 @@ Se ficou `scripts\InLabChecker\InLabChecker-v0.12\InLabChecker.ms` (uma pasta a 
 
 Se a pasta `startup` não existir, crie.
 
-**6. Abra o 3ds Max.** O painel do InLabChecker abre sozinho. No log, a primeira linha mostra a versão instalada: `Sessão InLabChecker v0.12 · ...`.
+**6. Abra o 3ds Max e ponha o botão numa barra** (só na primeira vez). O painel **não** abre sozinho: ele abre pelo botão com a lâmpada âmbar.
 
-## Opcional: botão na barra de ferramentas
+1. **Customize > Customize User Interface...**
+2. Aba **Toolbars**, lista **Category**: escolha **InLab**.
+3. Arraste **InLabChecker** da lista para uma barra de ferramentas do Max.
 
-Com o Max aberto: **Scripting > Run Script...** > `scripts\InLabChecker\install\instalar_icone.ms`. Depois, **Customize > Customize User Interface** > aba **Toolbars** > categoria **InLab** > arraste **InLabChecker** para uma barra.
+**7. Clique no botão.** O painel abre, e a primeira linha do log mostra a versão instalada: `Sessão InLabChecker v0.13 · ...`.
 
-## Se o painel não abrir
+Se o botão aparecer sem a lâmpada (só o texto ou um quadrado vazio), feche e abra o Max de novo: o ícone é copiado na primeira abertura e a barra só o mostra na seguinte.
 
-- Confira se `InLabChecker.ms` está direto em `scripts\InLabChecker\` (passo 4).
-- Confira se `inlabchecker_boot.ms` está em `scripts\startup\` (passo 5).
-- Abra **Scripting > MAXScript Listener**: um erro de carga aparece lá como `InLabChecker: falha ao carregar ...`. Mande essa linha junto com o aviso.
+## Se o botão não aparecer ou o painel não abrir
+
+- Sem a categoria **InLab** no Customize User Interface: confira se `inlabchecker_boot.ms` está em `scripts\startup\` (passo 5) e reabra o Max.
+- Clicou e apareceu "InLabChecker não encontrado": confira se `InLabChecker.ms` está direto em `scripts\InLabChecker\` (passo 4).
+- Abra **Scripting > MAXScript Listener**: um erro aparece lá como `InLabChecker: falha ao ...`. Mande essa linha junto com o aviso.
 - Se aparecer a janela **"Instalação Incompleta"**, faltam arquivos na pasta: extraia o zip de novo.
 
 ## Desinstalar
 
-Apague `scripts\startup\inlabchecker_boot.ms` e a pasta `scripts\InLabChecker`. As preferências ficam em `%LOCALAPPDATA%\Autodesk\3dsMax\2024 - 64bit\ENU\plugcfg\InLabChecker.ini` e podem ser apagadas também.
+Apague `scripts\startup\inlabchecker_boot.ms` e a pasta `scripts\InLabChecker`, e tire o botão da barra (clique direito nele > **Delete Button**). As preferências ficam em `%LOCALAPPDATA%\Autodesk\3dsMax\2024 - 64bit\ENU\plugcfg\InLabChecker.ini` e podem ser apagadas também.
 
 ---
 
