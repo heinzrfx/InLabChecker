@@ -60,6 +60,13 @@
  InLab_Produto_SugerirFamilia (classe + animacao do JSON); mudar o dropdown
  chama InLab_DefinirFamiliaAtiva. Sem isso InLab_FamiliaAtiva nunca tinha
  valor e "Rodar Verificações" / "Alvo da família" só avisavam.
+
+ 23/09/2026 (issue #55): seção "Materiais — Utilidades" (InLabSecMatUtil)
+ removida da UI e do AddSubRollout. "Selecionar por Material Similar" e
+ "Nome do Objeto → Nome do Material" saem de vez (código de
+ functions\fn_material_utils.ms e fn_clipboard.ms fica intocado, apagado
+ só na limpeza da #52). O botão "Detach por Material" migra para
+ Utilidades Rápidas (InLabSecUtil), único uso que sobra da seção.
 ================================================================================
 */
 
@@ -362,6 +369,9 @@ rollout InLabSecUtil "Utilidades Rápidas" width:420
     label lblFindLimite "limite: carregue uma família" align:#left
     button btnUFind "Find Objects" width:395 height:24
 
+    label lblUDetach "Detach por Material (propaga IDs para os pedaços)" align:#left across:1
+    button btnUDetach "Detach por Material na Seleção" width:395 height:24
+
     on btnUResetX pressed do
     (
         local objs = InLab_SelecaoValida()
@@ -378,6 +388,11 @@ rollout InLabSecUtil "Utilidades Rápidas" width:420
         if objs.count > 0 do InLab_BasePivot objs
     )
     on btnUFind pressed do InLab_FindObjectsPesados()
+    on btnUDetach pressed do
+    (
+        local objs = InLab_SelecaoValida()
+        if objs.count > 0 do InLab_DetachPorMaterialSelecao objs
+    )
 
     -- Atualiza o rótulo do limite sempre que a seção é exibida — mantém o
     -- valor visível sincronizado com a família carregada (não é campo
@@ -410,42 +425,6 @@ rollout InLabSecF5 "Converter Material" width:420
         )
     )
     on btnF5Rev pressed do InLab_ReverterConversao()
-)
-
-----------------------------------------------------------------------
--- SEÇÃO: Materiais — Utilidades (ref. ArchToolz, pedido 10/Set)
--- Select by similar material / Object name → Material name / Detach by
--- Material com propagação de IDs — ver functions\fn_material_utils.ms.
-----------------------------------------------------------------------
-rollout InLabSecMatUtil "Materiais — Utilidades" width:420
-(
-    label lblMatSel "Selecionar por Material Similar" align:#left
-    label lblMatSelInfo "(usa o material copiado — recurso Copy Mat / Pick Mat removido; ver nota 15/Set)" align:#left
-    radiobuttons rdoEscopoMat labels:#("Somente seleção", "Cena inteira") default:2 columns:2
-    checkbox chkMatPorNome "Também considerar mesmo NOME (cópias/instâncias diferentes)" checked:false
-    button btnMatSel "Selecionar por Material Similar" width:395 height:24
-
-    label lblMatNome "Nome do Objeto → Nome do Material" align:#left across:1
-    button btnMatNome "Aplicar na Seleção" width:395 height:24
-
-    label lblMatDetach "Detach por Material (propaga IDs para os pedaços)" align:#left
-    button btnMatDetach "Detach por Material na Seleção" width:395 height:24
-
-    on btnMatSel pressed do
-    (
-        local escopo = if rdoEscopoMat.state == 1 then #selecao else #cena
-        InLab_SelecionarPorMaterialSimilar escopo:escopo porNome:chkMatPorNome.checked
-    )
-    on btnMatNome pressed do
-    (
-        local objs = InLab_SelecaoValida()
-        if objs.count > 0 do InLab_NomeObjetoParaMaterial objs
-    )
-    on btnMatDetach pressed do
-    (
-        local objs = InLab_SelecaoValida()
-        if objs.count > 0 do InLab_DetachPorMaterialSelecao objs
-    )
 )
 
 ----------------------------------------------------------------------
@@ -604,7 +583,6 @@ rollout InLabChecker_Rollout ("InLabChecker · InLab Artefacto · v" + INLAB_VER
         AddSubRollout subSecoes InLabSecOtimizacao rolledUp:true
         AddSubRollout subSecoes InLabSecUtil rolledUp:true
         AddSubRollout subSecoes InLabSecF5 rolledUp:true
-        AddSubRollout subSecoes InLabSecMatUtil rolledUp:true
         AddSubRollout subSecoes InLabSecF6 rolledUp:true
         AddSubRollout subSecoes InLabSecFase4 rolledUp:true
         AddSubRollout subSecoes InLabSecUpdate rolledUp:true   -- ui\rollout_update.ms (#14)
