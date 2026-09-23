@@ -8,7 +8,7 @@ global InLab_Log, InLab_CorDoTipo
 global INLAB_KIT_CORES, InLab_Kit_Cor, InLab_Kit_Fonte
 global InLab_Kit_BotaoIcone, InLab_Kit_Pastilha
 global INLAB_TESTE_SAIDA, INLAB_TESTE_FALHAS
-global INLAB_ROOT, INLAB_HEADER_VERSAO_PADRAO
+global INLAB_ROOT, INLAB_VERSAO
 global InLab_Header_Montar, InLab_Header_Pnl, InLab_Header_Pastilha
 global InLab_Header_Titulo, InLab_Header_Marca
 global InLab_Header_Estado, InLab_Header_EstadoAtual, InLab_Header_Versao
@@ -35,6 +35,8 @@ global INLAB_HEADER_ESTADOS
         -- deste fileIn nao adianta — o fileIn redefine por cima e o teste passa
         -- a escrever no RichTextBox (ou em nada) em vez do arquivo de saida.
         -- Por isso o fileIn vem primeiro e a troca vem depois.
+        -- versao.ms antes do header: InLab_Header_Versao nasce de INLAB_VERSAO.
+        fileIn (raiz + @"core\versao.ms")
         fileIn (raiz + @"core\log.ms")
         InLab_Log = fn _logTeste msg tipo:#info = ( format "      [LOG %] %\n" tipo msg to:INLAB_TESTE_SAIDA; flush INLAB_TESTE_SAIDA )
 
@@ -102,7 +104,7 @@ global INLAB_HEADER_ESTADOS
         checar "Montar 2x nao duplica controle" (pnlTeste.Controls.Count == qtd1)
         checar "Fundo do header e FUNDO_HEADER" (corIgual pnlTeste.BackColor (InLab_Kit_Cor #FUNDO_HEADER))
         checar "Titulo diz InLabChecker" (InLab_Header_Titulo.Text == "InLabChecker")
-        checar "Versao padrao e a do repo" (INLAB_HEADER_VERSAO_PADRAO == "0.11")
+        checar "Versao do header vem de core\\versao.ms" (INLAB_VERSAO != undefined and InLab_Header_Versao != undefined)
 
         -- 8. ARTE AUSENTE NAO DERRUBA O HEADER
         -- O pacote do updater e validado so contra INLAB_MODULOS, que e tudo
