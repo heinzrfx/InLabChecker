@@ -204,6 +204,70 @@ fn InLab_Produto_SugerirLigacoes partes mtls =
 )
 
 --------------------------------------------------------------------------------
+-- SUGESTÃO DE FAMÍLIA (23/09/2026)
+--------------------------------------------------------------------------------
+-- O export não traz a família do plugin: "familia" no JSON é a LINHA comercial
+-- (ex.: "RIZZI"). A sugestão sai de "animacao" + "classe" e é só um
+-- PRÉ-PREENCHIMENTO do dropdown Família — o modelador confirma ou troca.
+-- Tabela PROVISÓRIA, montada sobre as 22 classes do export Contract/Health
+-- (209 produtos); a validar com a equipe. Classe fora da tabela ⇒ sem
+-- sugestão. Cadeira, banco e banqueta podem ser estofados: conferir.
+global INLAB_FAMILIA_POR_CLASSE = #(
+    #("pernas_tampo",       #("mesa de jantar", "mesa de centro", "mesa lateral", "mesa de cha",
+                              "mesa componivel", "coluna de jantar")),
+    #("estrutura_modular",  #("modulo")),
+    #("estrutura_estofado", #("sofa", "poltrona", "chaise longue", "puff", "cabeceira",
+                              "longarina", "cama", "bicama")),
+    #("corpo_unico",        #("aparador", "buffet", "estante", "mesa de cabeceira",
+                              "cadeira", "banco", "banqueta"))
+)
+
+-- true se algum nome_parte ou mesh_final do produto contém `trecho`
+-- (comparação normalizada: sem acento, minúscula).
+global InLab_Produto_PartesContem
+fn InLab_Produto_PartesContem produto trecho =
+(
+    local partes = InLab_JSON_Obter produto "partes"
+    local achou = false
+    if isKindOf partes Array do
+        for p in partes where not achou do
+            for campo in #("nome_parte", "mesh_final") where not achou do
+                if (findString (InLab_Produto_Normalizar (InLab_Produto_Texto p campo)) trecho) != undefined do achou = true
+    achou
+)
+
+-- #(nomeFamilia, motivo). nomeFamilia = "" quando não dá para sugerir.
+-- Animados: giratório → giro_assento; porta → rotacao; gaveta → translacao;
+-- outro movimento → movimento_especial. Estáticos: pela tabela acima.
+global InLab_Produto_SugerirFamilia
+fn InLab_Produto_SugerirFamilia produto =
+(
+    local classe = InLab_Produto_Normalizar (InLab_Produto_Texto produto "classe")
+    local nome = InLab_Produto_Normalizar (InLab_Produto_Texto produto "nome")
+    local animado = (toLower (InLab_Produto_Texto produto "animacao")) == "true"
+    if animado then
+    (
+        local temPorta = InLab_Produto_PartesContem produto "porta"
+        local temGaveta = InLab_Produto_PartesContem produto "gaveta"
+        if (findString nome "girat") != undefined then
+            #("giro_assento", "animado, nome com 'giratória'")
+        else if temPorta then
+            #("rotacao", "animado, com portas" + (if temGaveta then " (também tem gavetas: confira)" else ""))
+        else if temGaveta then
+            #("translacao", "animado, com gavetas")
+        else
+            #("movimento_especial", "animado, sem porta, gaveta nem giro")
+    )
+    else
+    (
+        local fam = ""
+        for par in INLAB_FAMILIA_POR_CLASSE where fam == "" and (findItem par[2] classe) > 0 do fam = par[1]
+        if fam != "" then #(fam, "classe '" + classe + "'")
+        else #("", (if classe == "" then "produto sem classe" else "classe '" + classe + "' fora da tabela"))
+    )
+)
+
+--------------------------------------------------------------------------------
 -- APLICAR / REVERTER
 --------------------------------------------------------------------------------
 
