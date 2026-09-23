@@ -45,6 +45,8 @@
             -- versao.ms primeiro: INLAB_VERSAO tem que valer antes da legenda
             -- de InLabChecker_Rollout ser avaliada (issue #9).
             @"core\versao.ms",
+            -- prefs.ms: ini em #plugcfg, fora de INLAB_ROOT (issue #10)
+            @"core\prefs.ms",
             @"core\struct_result.ms",
             @"core\struct_familia.ms",
             @"core\log.ms",
