@@ -191,12 +191,17 @@ Um arquivo por passo, no padrao de `tests/test_renomear_produto.ms`:
 
 | # | Entrega | Depende de |
 | --- | --- | --- |
-| O1 | Nucleo + medidor + contagem em triangulos (V-03/V-05) + secao "UV e Texturas" | #29 (familia ativa), #55 (mesmo arquivo de UI) |
+| O1 | Nucleo + medidor + contagem em triangulos (V-03/V-05) + secao "UV e Texturas" + **tela completa dos 3 passos** | #29 (familia ativa), #55 (mesmo arquivo de UI) |
 | O2 | Passo 1 · Reduzir na origem | O1 |
 | O3 | Passo 2 · Ajuste fino (substitui o ProOptimizer atual) | O1, #42 |
 | O4 | Passo 3 · Faces escondidas | O1 |
 
-O2, O3 e O4 mexem em arquivos proprios e podem andar em paralelo depois de O1, mas todos tocam a lista da secao Otimizacao na UI: a parte de UI de cada um entra em sequencia (O2 -> O3 -> O4).
+**O1 monta a tela inteira**, ja ligada aos 3 passos pelo contrato da secao 3, e cria `fn_otim_origem.ms`, `fn_otim_fino.ms` e `fn_otim_escondidas.ms` no manifesto com uma versao minima:
+
+- passos 1 e 3: `Calcular` devolve `#()` e loga "em construcao";
+- passo 2: o comportamento atual do ProOptimizer (percentual unico calculado pela meta), agora como uma linha por peca na lista. Assim a Otimizacao nunca fica sem ferramenta, e o controle antigo (percentual + "Alvo da familia") sai da UI ja em O1.
+
+Com isso O2, O3 e O4 so preenchem o proprio arquivo e o proprio teste: **nao tocam na UI nem no manifesto**, e podem andar em paralelo depois de O1.
 
 ## 8. Fora de escopo
 
