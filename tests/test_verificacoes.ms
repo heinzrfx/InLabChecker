@@ -10,7 +10,7 @@
 global InLab_Log, InLab_VerifResults, InLab_ResetarResultados, InLab_AprovacaoFinal, InLab_RegistrarVerif
 global INLAB_LIMITES_PROVISORIOS, InLab_ObterFamilia, InLab_RodarVerificacoes
 global InLab_V17_PivotRaiz, InLab_V18_EixosPivot, InLab_V11_Modificadores, InLab_V12_XForm
-global InLab_V21_NomesValidos, InLab_V22_SufixosSequenciais, InLab_V30_Keyframes
+global InLab_V21_NomesValidos, InLab_V22_SufixosSequenciais, InLab_V30_Keyframes, InLab_V03_Poligonos
 global INLAB_TESTE_SAIDA, INLAB_TESTE_FALHAS
 (
     local dirTeste = getFilenamePath (getSourceFileName())
@@ -52,6 +52,7 @@ global INLAB_TESTE_SAIDA, INLAB_TESTE_FALHAS
                    @"familias\familia_estrutura_estofado.ms", @"familias\familia_estrutura_modular.ms",
                    @"familias\familia_translacao.ms", @"familias\familia_rotacao.ms",
                    @"familias\familia_giro_assento.ms", @"familias\familia_movimento_especial.ms",
+                   @"functions\fn_otim_nucleo.ms",
                    @"functions\fn_realworldscale.ms",
                    @"verifications\verif_peso_poly.ms", @"verifications\verif_pivot.ms",
                    @"verifications\verif_nomenclatura.ms", @"verifications\verif_geometria.ms",
@@ -150,6 +151,15 @@ global INLAB_TESTE_SAIDA, INLAB_TESTE_FALHAS
         with animate on ( at time 10 k1.pos = [0, -30, 0] )
         checar "V-30: família animada com keys passa" ((rodar30 cfgAnim #(k1)) == #pass)
         checar "V-30: família estática com keys vira advertência" ((rodar30 cfgEst #(k1)) == #warning)
+        limparCena()
+
+        ---------------------------------------------------------------- V-03 (triângulos)
+        local t1 = Box()   -- 6 faces quad = 12 triângulos
+        InLab_ResetarResultados()
+        InLab_V03_Poligonos cfgEst #(t1)
+        local m03 = mensagemDe "V-03"
+        checar ("V-03 conta triângulos: '" + m03 + "'") ((findString m03 "12 triângulos") != undefined)
+        checar "V-03 abaixo da faixa vira advertência (limite provisório)" ((statusDe "V-03") == #warning)
         limparCena()
 
         ---------------------------------------------------------------- APROVAÇÃO

@@ -69,6 +69,11 @@
             -- renomeação pelo JSON de produto — depende de fn_json.ms.
             @"functions\fn_renomear_produto.ms",
             @"functions\fn_prooptimizer.ms",
+            -- Otimização em 3 passos (issue #60): núcleo antes dos passos.
+            @"functions\fn_otim_nucleo.ms",
+            @"functions\fn_otim_origem.ms",
+            @"functions\fn_otim_fino.ms",
+            @"functions\fn_otim_escondidas.ms",
             @"functions\fn_realworldscale.ms",
             @"functions\fn_checktexture.ms",
             @"functions\fn_autouv.ms",

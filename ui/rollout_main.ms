@@ -67,6 +67,14 @@
  functions\fn_material_utils.ms e fn_clipboard.ms fica intocado, apagado
  só na limpeza da #52). O botão "Detach por Material" migra para
  Utilidades Rápidas (InLabSecUtil), único uso que sobra da seção.
+
+ 23/09/2026 (issue #60): seção Otimização reescrita — medidor em triângulos
+ (cena x faixa da família), seletor de passo 1/2/3 e lista de revisão
+ (ListView com checkbox). Fala só com InLab_Otim_Calcular/Aplicar/Reverter.
+ O ProOptimizer por percentual saiu da tela (o passo 2 faz o mesmo por peça).
+ Auto UV, Clean UV e Real World Fix foram para a seção nova "UV e Texturas",
+ sem mudar comportamento. A seção Produto repinta o medidor quando a família
+ muda (InLab_OtimUI_Atualizar).
 ================================================================================
 */
 
@@ -79,6 +87,11 @@
 -- toda está em functions\fn_renomear_produto.ms; aqui só fica o estado da
 -- tela. Lista + dropdown nativos em vez de tabela dotNet: o número de
 -- partes varia por produto e rollout não cria controles dinamicamente.
+-- Repinta o medidor da Otimização. Definida depois de InLabSecOtimizacao;
+-- declarada aqui porque a seção Produto (abaixo) a chama quando a família muda.
+global InLab_OtimUI_Atualizar
+global INLAB_OTIM_PROPOSTAS = #()
+
 global InLab_ProdutoAtivo = undefined -- árvore crua do JSON importado (formato de InLab_ParseJSON)
 
 rollout InLabSecProduto "Produto" width:420
@@ -150,6 +163,7 @@ rollout InLabSecProduto "Produto" width:420
                 InLab_DefinirFamiliaAtiva sug[1]
             )
             mostrarFamilia()
+            if InLab_OtimUI_Atualizar != undefined do InLab_OtimUI_Atualizar()
         )
     )
 
@@ -213,7 +227,11 @@ rollout InLabSecProduto "Produto" width:420
         sugerirFamilia()
     )
 
-    on ddlFamilia selected i do InLab_DefinirFamiliaAtiva (familiaEscolhida())
+    on ddlFamilia selected i do
+    (
+        InLab_DefinirFamiliaAtiva (familiaEscolhida())
+        if InLab_OtimUI_Atualizar != undefined do InLab_OtimUI_Atualizar()
+    )
 
     on InLabSecProduto open do mostrarFamilia()
 
@@ -267,22 +285,188 @@ rollout InLabSecProduto "Produto" width:420
 )
 
 ----------------------------------------------------------------------
--- SEÇÃO: Otimização (ProOptimizer + Auto UV + Real World Fix)
+-- SEÇÃO: Otimização em 3 passos (issue #60)
 ----------------------------------------------------------------------
+-- Spec: docs\superpowers\specs\2026-09-23-otimizacao-design.md. Medidor da
+-- cena inteira (triângulos x faixa da família) + lista de revisão. A seção
+-- só fala com o despachante InLab_Otim_Calcular/Aplicar/Reverter passo
+-- (functions\fn_otim_nucleo.ms): cada passo mora no próprio arquivo.
+-- O botão antigo do ProOptimizer (percentual + "Alvo da família") saiu: o
+-- passo 2 faz o mesmo, por peça, até a issue #62 trazer a meta por peça.
 rollout InLabSecOtimizacao "Otimização" width:420
 (
-    label lblF1 "ProOptimizer" align:#left
-    radiobuttons rdoModoOpt labels:#("Percentual manual", "Alvo da família (polyMax)") default:1 columns:2
-    spinner spnPercent "VertexPercent:" range:[1.0, 100.0, 50.0] type:#float fieldWidth:55 align:#left
-    button btnF1 "Aplicar" width:192 height:25 across:2
-    button btnF1Undo "Desfazer Otimização" width:192 height:25
+    local comparando = false
 
+    dotNetControl lblMedidor "System.Windows.Forms.Label" width:395 height:24
+    spinner spnMeta "Meta (triângulos):" range:[1000, 5000000, 100000] type:#integer fieldWidth:70 align:#left enabled:false
+    radiobuttons rdoPasso labels:#("1 · Reduzir", "2 · Ajuste fino", "3 · Escondidas") default:2 columns:3
+    button btnCalcular "Calcular" width:395 height:24 tooltip:"Mostra o que o passo propõe para a seleção. Nada muda até Aplicar."
+    dotNetControl lvPropostas "System.Windows.Forms.ListView" width:395 height:150
+    button btnAplicar "Aplicar" width:126 height:24 across:3 tooltip:"Aplica só as linhas marcadas."
+    button btnComparar "Comparar" width:126 height:24 tooltip:"Liga e desliga o ajuste fino na tela para ver o antes e o depois."
+    button btnReverter "Reverter" width:126 height:24 tooltip:"Desfaz o último Aplicar deste passo."
+
+    fn pintarMedidor =
+    (
+        local faixa = InLab_Otim_Faixa()
+        spnMeta.enabled = (InLab_FamiliaAtiva == undefined)
+        local total = InLab_Otim_Triangulos (InLab_ObjetosVerificacao())
+        local suf = case (InLab_Otim_Estado total faixa) of
+        (
+            #dentro: "OK"
+            #perto:  "WARN"
+            #longe:  "ERR"
+            default: "INFO"
+        )
+        lblMedidor.Text = InLab_Otim_TextoMedidor total faixa
+        lblMedidor.BackColor = InLab_Kit_Cor ((suf + "_FUNDO") as name)
+        lblMedidor.ForeColor = InLab_Kit_Cor ((suf + "_TEXTO") as name)
+    )
+
+    fn encherLista =
+    (
+        lvPropostas.Items.Clear()
+        for p in INLAB_OTIM_PROPOSTAS do
+        (
+            local it = dotNetObject "System.Windows.Forms.ListViewItem" p.rotulo
+            it.Checked = p.marcada
+            lvPropostas.Items.Add it
+        )
+    )
+
+    fn lerMarcadas =
+        for i = 1 to INLAB_OTIM_PROPOSTAS.count where i <= lvPropostas.Items.Count do
+            INLAB_OTIM_PROPOSTAS[i].marcada = lvPropostas.Items.Item[i - 1].Checked
+
+    fn pararComparacao =
+        if comparando do
+        (
+            InLab_OtimFino_Comparar true
+            comparando = false
+            btnComparar.text = "Comparar"
+        )
+
+    on InLabSecOtimizacao open do
+    (
+        lblMedidor.Font = InLab_Kit_Fonte 9
+        lblMedidor.TextAlign = (dotNetClass "System.Drawing.ContentAlignment").MiddleLeft
+        lvPropostas.View = (dotNetClass "System.Windows.Forms.View").Details
+        lvPropostas.CheckBoxes = true
+        lvPropostas.FullRowSelect = true
+        lvPropostas.HeaderStyle = (dotNetClass "System.Windows.Forms.ColumnHeaderStyle").None
+        lvPropostas.Columns.Add "Proposta" 372
+        lvPropostas.BackColor = InLab_Kit_Cor #LOG
+        lvPropostas.ForeColor = InLab_Kit_Cor #TEXTO
+        -- 23/09/2026 (revisão final): sem isto, INLAB_OTIM_META_MANUAL fica
+        -- undefined até o usuário mexer no spinner, mesmo com o spinner
+        -- mostrando 100000 — o medidor caía no texto "digite a meta" com um
+        -- número já visível na tela.
+        if INLAB_OTIM_META_MANUAL != undefined then spnMeta.value = INLAB_OTIM_META_MANUAL
+        else INLAB_OTIM_META_MANUAL = spnMeta.value
+        btnComparar.enabled = (rdoPasso.state == 2)
+        encherLista()
+        pintarMedidor()
+    )
+
+    -- 23/09/2026 (revisão final): fechar o painel (ou InLab_RecarregarPlugin)
+    -- durante uma comparação deixava o ProOptimizer desligado (enabledInViews
+    -- = false) pra sempre na viewport — pararComparacao() nunca era chamado.
+    on InLabSecOtimizacao close do pararComparacao()
+
+    on spnMeta changed v do
+    (
+        INLAB_OTIM_META_MANUAL = v
+        pintarMedidor()
+    )
+
+    on rdoPasso changed s do
+    (
+        pararComparacao()
+        INLAB_OTIM_PROPOSTAS = #()
+        encherLista()
+        btnComparar.enabled = (s == 2)
+    )
+
+    on btnCalcular pressed do
+    (
+        local objs = InLab_SelecaoValida()
+        if objs.count > 0 do
+        (
+            pararComparacao()
+            InLab_ProgressoIniciar "Calculando..."
+            INLAB_OTIM_PROPOSTAS = InLab_Otim_Calcular rdoPasso.state objs
+            InLab_ProgressoParar()
+            encherLista()
+            pintarMedidor()
+            if INLAB_OTIM_PROPOSTAS.count > 0 do
+                InLab_Log ("Otimização · passo " + rdoPasso.state as string + ": " + INLAB_OTIM_PROPOSTAS.count as string +
+                           " proposta(s). Desmarque o que não quiser e clique em Aplicar.")
+        )
+    )
+
+    on btnAplicar pressed do
+    (
+        -- 23/09/2026 (revisão final): Aplicar durante uma comparação zerava
+        -- InLab_UltimaOtimizacao (InLab_ProOptimizer limpa o registro no
+        -- início) com o ProOptimizer do passo anterior ainda desligado na
+        -- viewport — o registro que ligaria ele de volta sumia antes.
+        pararComparacao()
+        if INLAB_OTIM_PROPOSTAS.count == 0 then
+            InLab_Log "Clique em Calcular antes de Aplicar." tipo:#warn
+        else
+        (
+            lerMarcadas()
+            InLab_ProgressoIniciar "Aplicando..."
+            InLab_Otim_Aplicar rdoPasso.state INLAB_OTIM_PROPOSTAS
+            InLab_ProgressoParar()
+            INLAB_OTIM_PROPOSTAS = #()
+            encherLista()
+            pintarMedidor()
+        )
+    )
+
+    on btnComparar pressed do
+    (
+        -- 23/09/2026 (revisão final): sem o teste de retorno, comparar sem
+        -- nada aplicado (InLab_UltimaOtimizacao vazio) virava "Mostrar
+        -- ajuste" sem alternar coisa nenhuma na viewport — o botão ficava
+        -- preso nesse rótulo até um Aplicar de verdade.
+        local ligar = comparando -- estado ANTES do clique: false liga->desliga, true desliga->liga
+        local n = InLab_OtimFino_Comparar ligar
+        if n == 0 then
+            InLab_Log "Nada para comparar — aplique o passo 2 antes." tipo:#warn
+        else
+        (
+            comparando = not comparando
+            btnComparar.text = if comparando then "Mostrar ajuste" else "Comparar"
+        )
+    )
+
+    on btnReverter pressed do
+    (
+        pararComparacao()
+        InLab_Otim_Reverter rdoPasso.state
+        pintarMedidor()
+    )
+)
+
+fn InLab_OtimUI_Atualizar =
+    try ( InLabSecOtimizacao.pintarMedidor() )
+    catch ( InLab_Log ("Otimização: medidor não atualizou (" + getCurrentException() + ").") tipo:#warn )
+
+----------------------------------------------------------------------
+-- SEÇÃO: UV e Texturas (issue #60)
+----------------------------------------------------------------------
+-- Auto UV, Clean UV e Real World Fix saíram da seção Otimização sem mudar
+-- nada: mesmos controles, mesmos handlers. Os textos entram na revisão #58.
+rollout InLabSecUV "UV e Texturas" width:420
+(
     -- 18/Set (issue #1): o padding sai da resolução do bake; o Auto UV grava
     -- no canal 3 e não toca no canal 1. Os itens do dropdown seguem a ordem
     -- de INLAB_UV_RESOLUCOES (functions\fn_autouv.ms).
     -- 22/Set: saiu o checkbox "Preferir seams em regiões ocultas", que nunca
     -- teve efeito. Volta quando a sondagem da Tarefa 7b der resultado.
-    label lblF2 "Auto UV  (canal 3 · bake de textura e AO)" align:#left across:1
+    label lblF2 "Auto UV  (canal 3 · bake de textura e AO)" align:#left
     spinner spnAnguloUV "Ângulo flatten (°):" range:[10, 90, 55] type:#float fieldWidth:40 align:#left
     dropdownlist ddlResolucaoUV "Resolução do bake:" items:#("1024", "2048", "4096") selection:1 width:120 align:#left
     button btnF2 "Auto UV na Seleção" width:126 across:3
@@ -294,43 +478,6 @@ rollout InLabSecOtimizacao "Otimização" width:420
     -- o Real World Fix (functions\fn_realworldfix.ms).
     label lblF34 "Real World Fix  (tira o Real-World Map Size · WebGL)" align:#left across:1
     button btnRWFix "Real World Fix" width:390 height:25
-
-    on btnF1 pressed do
-    (
-        local objs = InLab_SelecaoValida()
-        if objs.count > 0 do
-        (
-            local pct = spnPercent.value
-            if rdoModoOpt.state == 2 do
-            (
-                if InLab_FamiliaAtiva == undefined then
-                (
-                    InLab_Log "Modo alvo requer uma família — escolha no dropdown Família da seção Produto." tipo:#warn
-                    pct = undefined
-                )
-                else
-                (
-                    pct = InLab_PercentualParaAlvo objs InLab_FamiliaAtiva.polyMax
-                    InLab_Log ("Alvo '" + InLab_FamiliaAtiva.nome + "': polyMax " +
-                               InLab_FamiliaAtiva.polyMax as string + " → VertexPercent " +
-                               (formattedPrint pct format:".1f") + "%.")
-                )
-            )
-            if pct != undefined do
-            (
-                InLab_ProgressoIniciar "Otimizando geometria..."
-                InLab_ProOptimizer objs pct
-                InLab_ProgressoParar()
-            )
-        )
-    )
-
-    -- AJUSTE 15/Set: InLab_ReverterOtimizacao (functions\fn_prooptimizer.ms)
-    -- existia desde a v0.9 mas nunca teve botão — a "camada 2" de undo descrita
-    -- no cabeçalho daquele módulo era código morto. Ela remove exatamente os
-    -- modificadores da última rodada, e funciona mesmo que o usuário já tenha
-    -- feito outras ações depois (cenário em que o Ctrl+Z simples não alcança).
-    on btnF1Undo pressed do InLab_ReverterOtimizacao()
 
     on btnF2 pressed do
     (
@@ -581,6 +728,7 @@ rollout InLabChecker_Rollout ("InLabChecker · InLab Artefacto · v" + INLAB_VER
 
         AddSubRollout subSecoes InLabSecProduto
         AddSubRollout subSecoes InLabSecOtimizacao rolledUp:true
+        AddSubRollout subSecoes InLabSecUV rolledUp:true
         AddSubRollout subSecoes InLabSecUtil rolledUp:true
         AddSubRollout subSecoes InLabSecF5 rolledUp:true
         AddSubRollout subSecoes InLabSecF6 rolledUp:true
