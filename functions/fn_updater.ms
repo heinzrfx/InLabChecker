@@ -113,6 +113,7 @@ global InLab_Header_Estado            -- ui\header.ms, carregado depois
 global InLab_Update_Disparar, InLab_UpdatePintarHeader
 global InLab_Update_Recarregar
 global InLab_Update_WC                -- WebClient do download em curso (Cancelar)
+global InLab_SecUpdate_Atualizar      -- ui\rollout_update.ms, carregado depois
 
 global INLAB_UPDATE_API = "https://api.github.com/repos/heinzrfx/InLabChecker/releases/latest"
 global INLAB_UPDATE_INTERVALO_S = 4 * 3600
@@ -129,7 +130,8 @@ struct UpdateEstado
     silencioso = true,      -- modo da consulta em curso/última
     ignorada = false,       -- versaoRemota é a versaoIgnorada do ini
     pct = 0,                -- progresso do download (#13)
-    aviso = ""              -- frase de sucesso ("Atualizado para vX.") (#13)
+    aviso = "",             -- frase de sucesso ("Atualizado para vX.") (#13)
+    publicadaEm = ""        -- data da release, "dd/mm/aaaa" (#14)
 )
 
 global InLab_Update
@@ -137,7 +139,7 @@ global InLab_Update
     local novo = UpdateEstado()
     if InLab_Update != undefined do
     (
-        for campo in #(#estado, #versaoRemota, #urlZip, #tamanhoZip, #notasUrl, #msgErro, #token, #silencioso, #ignorada, #pct, #aviso) do
+        for campo in #(#estado, #versaoRemota, #urlZip, #tamanhoZip, #notasUrl, #msgErro, #token, #silencioso, #ignorada, #pct, #aviso, #publicadaEm) do
             try ( setProperty novo campo (getProperty InLab_Update campo) ) catch ()
         novo.token += 1
         if novo.estado == #checando do novo.estado = #ocioso
@@ -151,6 +153,21 @@ global InLab_Update
         )
     )
     InLab_Update = novo
+)
+
+-- Toda mensagem do updater passa por aqui: vai para o log com o prefixo
+-- "Atualização: " e para um histórico curto que a seção mostra nos estados de
+-- sucesso e erro (#14). O histórico é declarado SEM valor para sobreviver ao
+-- reload — o log.ms recarregado zera o log da sessão, e é justo depois de uma
+-- troca de versão que as últimas linhas importam.
+global INLAB_UPDATE_HIST
+if INLAB_UPDATE_HIST == undefined do INLAB_UPDATE_HIST = #()
+fn InLab_UpdateLog msg tipo:#info =
+(
+    InLab_Log ("Atualização: " + msg) tipo:tipo
+    local t = (dotNetClass "System.DateTime").Now.ToString "HH:mm"
+    append INLAB_UPDATE_HIST ("[" + t + "] " + msg)
+    while INLAB_UPDATE_HIST.count > 10 do deleteItem INLAB_UPDATE_HIST 1
 )
 
 -- Segundos Unix (UTC), como inteiro 32 bits — Integer64 `as string` sai com
@@ -178,7 +195,7 @@ fn InLab_UpdateFalhar msg =
 (
     InLab_Update.estado = #erro
     InLab_Update.msgErro = msg
-    InLab_Log ("Atualização: " + msg) tipo:(if InLab_Update.silencioso then #warn else #err)
+    InLab_UpdateLog ("" + msg) tipo:(if InLab_Update.silencioso then #warn else #err)
     InLab_UpdatePintarHeader()
 )
 
@@ -203,7 +220,12 @@ fn InLab_UpdatePintarHeader =
         )
     )
     catch
-        InLab_Log ("Atualização: falha ao pintar a pastilha (" + getCurrentException() + ").") tipo:#warn
+        InLab_UpdateLog ("falha ao pintar a pastilha (" + getCurrentException() + ").") tipo:#warn
+    -- A seção Atualização (#14) repinta junto. Pode não existir (teste, painel
+    -- fechado) e pode chegar depois de um Reload: nada aqui pode levantar.
+    if InLab_SecUpdate_Atualizar != undefined do
+        try ( InLab_SecUpdate_Atualizar() )
+        catch ( InLab_Log ("Atualização: falha ao repintar a seção (" + getCurrentException() + ").") tipo:#warn )
 )
 
 -- Interpreta a resposta. `tok` é o token que a consulta levou; `texto` o corpo
@@ -222,7 +244,7 @@ fn InLab_UpdateProcessar tok texto status:0 erro:undefined =
                 (
                     InLab_Update.estado = #ocioso
                     InLab_Update.msgErro = "Nenhuma release publicada ainda."
-                    InLab_Log ("Atualização: " + InLab_Update.msgErro) tipo:#info
+                    InLab_UpdateLog ("" + InLab_Update.msgErro) tipo:#info
                     InLab_UpdatePintarHeader()
                 )
                 403: InLab_UpdateFalhar "o GitHub recusou a consulta (limite de 60 por hora por IP). Tente mais tarde."
@@ -253,6 +275,8 @@ fn InLab_UpdateProcessar tok texto status:0 erro:undefined =
                 u.urlZip = InLab_JSON_Obter zip "browser_download_url"
                 u.tamanhoZip = InLab_JSON_Obter zip "size"
                 u.notasUrl = InLab_JSON_Obter json "html_url"
+                local pub = InLab_JSON_Obter json "published_at"   -- "2026-09-23T11:32:12Z"
+                u.publicadaEm = if isKindOf pub String and pub.count >= 10 then                     (substring pub 9 2) + "/" + (substring pub 6 2) + "/" + (substring pub 1 4) else ""
                 u.msgErro = ""
                 if (InLab_CompararVersao INLAB_VERSAO u.versaoRemota) == -1 then
                 (
@@ -260,15 +284,15 @@ fn InLab_UpdateProcessar tok texto status:0 erro:undefined =
                     u.ignorada = ign != "" and (InLab_CompararVersao ign u.versaoRemota) == 0
                     u.estado = #disponivel
                     if u.ignorada then
-                        InLab_Log ("Atualização: v" + u.versaoRemota + " disponível, ignorada a seu pedido.") tipo:#info
+                        InLab_UpdateLog ("v" + u.versaoRemota + " disponível, ignorada a seu pedido.") tipo:#info
                     else
-                        InLab_Log ("Atualização: v" + u.versaoRemota + " disponível (instalada: v" + INLAB_VERSAO + ").") tipo:#warn
+                        InLab_UpdateLog ("v" + u.versaoRemota + " disponível (instalada: v" + INLAB_VERSAO + ").") tipo:#warn
                 )
                 else
                 (
                     u.ignorada = false
                     u.estado = #ocioso
-                    InLab_Log ("Atualização: v" + INLAB_VERSAO + " é a versão mais recente.") tipo:#ok
+                    InLab_UpdateLog ("v" + INLAB_VERSAO + " é a versão mais recente.") tipo:#ok
                 )
                 InLab_UpdatePintarHeader()
             )
@@ -298,7 +322,7 @@ fn InLab_Update_OnConcluido sender e =
         InLab_UpdateProcessar tok texto status:status erro:erro
     )
     catch
-        InLab_Log ("Atualização: falha ao tratar a resposta (" + getCurrentException() + ").") tipo:#err
+        InLab_UpdateLog ("falha ao tratar a resposta (" + getCurrentException() + ").") tipo:#err
 )
 
 -- Dispara a consulta e retorna na hora. Trocada por stub nos testes.
@@ -319,7 +343,7 @@ fn InLab_Update_Disparar url tok =
         ok = true
     )
     catch
-        InLab_Log ("Atualização: não foi possível iniciar a consulta (" + getCurrentException() + ").") tipo:#warn
+        InLab_UpdateLog ("não foi possível iniciar a consulta (" + getCurrentException() + ").") tipo:#warn
     ok
 )
 
@@ -328,7 +352,7 @@ fn InLab_UpdateChecar silencioso:false =
     local u = InLab_Update
     if u.estado == #baixando or u.estado == #aplicando then
     (
-        if not silencioso do InLab_Log "Atualização: já há uma atualização em andamento." tipo:#warn
+        if not silencioso do InLab_UpdateLog "já há uma atualização em andamento." tipo:#warn
         false
     )
     else if not (InLab_UpdateDeveChecar silencioso) then false
@@ -340,7 +364,7 @@ fn InLab_UpdateChecar silencioso:false =
         u.msgErro = ""
         u.aviso = ""
         InLab_PrefGravar "ultimaChecagem" ((InLab_UpdateAgora()) as string)
-        if not silencioso do InLab_Log "Atualização: procurando versão nova..." tipo:#info
+        if not silencioso do InLab_UpdateLog "procurando versão nova..." tipo:#info
         InLab_UpdatePintarHeader()
         local ok = InLab_Update_Disparar INLAB_UPDATE_API u.token
         if not ok do InLab_UpdateFalhar "não foi possível iniciar a consulta."
@@ -481,7 +505,7 @@ fn InLab_Update_Recarregar raiz =
     )
     catch
     (
-        InLab_Log ("Atualização: falha ao carregar " + entry + " (" + getCurrentException() + ").") tipo:#err
+        InLab_UpdateLog ("falha ao carregar " + entry + " (" + getCurrentException() + ").") tipo:#err
         undefined
     )
 )
@@ -517,12 +541,12 @@ fn InLab_UpdateTrocar raiz dirNovo versaoEsperada =
     if causa == "" then
     (
         try ( InLab_UpdateApagarDir c[3] )
-        catch ( InLab_Log ("Atualização: não apagou " + c[3] + " (" + getCurrentException() + "). Pode apagar à mão.") tipo:#warn )
+        catch ( InLab_UpdateLog ("não apagou " + c[3] + " (" + getCurrentException() + "). Pode apagar à mão.") tipo:#warn )
     )
     else
     (
         -- ROLLBACK: desfaz só o que foi feito, na ordem inversa.
-        InLab_Log ("Atualização: " + causa + " Voltando para a versão anterior...") tipo:#err
+        InLab_UpdateLog ("" + causa + " Voltando para a versão anterior...") tipo:#err
         try
         (
             if raizParaBak do
@@ -533,12 +557,12 @@ fn InLab_UpdateTrocar raiz dirNovo versaoEsperada =
             if bakParaOld do InLab_UpdateMover c[3] c[2]
             local v = InLab_Update_Recarregar c[1]
             if v != undefined then
-                InLab_Log ("Atualização: versão anterior restaurada (v" + v + ").") tipo:#warn
+                InLab_UpdateLog ("versão anterior restaurada (v" + v + ").") tipo:#warn
             else
-                InLab_Log ("Atualização: os arquivos da versão anterior voltaram para " + c[1] + ", mas ela não carregou. Feche e abra o Max.") tipo:#err
+                InLab_UpdateLog ("os arquivos da versão anterior voltaram para " + c[1] + ", mas ela não carregou. Feche e abra o Max.") tipo:#err
         )
         catch
-            InLab_Log ("Atualização: O ROLLBACK FALHOU (" + getCurrentException() + "). Confira " + c[1] + " e " + c[2] + "; se preciso, reinstale pelo zip da release.") tipo:#err
+            InLab_UpdateLog ("O ROLLBACK FALHOU (" + getCurrentException() + "). Confira " + c[1] + " e " + c[2] + "; se preciso, reinstale pelo zip da release.") tipo:#err
     )
     causa
 )
@@ -569,7 +593,7 @@ fn InLab_UpdateAplicarZip arqZip raiz versao tamanho =
             if causa == "" do causa = InLab_UpdateTrocar raiz c[4] versao
             -- Sobra quando abortou antes de mover (ou depois de um rollback).
             try ( InLab_UpdateApagarDir c[4] )
-            catch ( InLab_Log ("Atualização: não apagou " + c[4] + " (" + getCurrentException() + ").") tipo:#warn )
+            catch ( InLab_UpdateLog ("não apagou " + c[4] + " (" + getCurrentException() + ").") tipo:#warn )
             causa
         )
     )
@@ -585,7 +609,7 @@ fn InLab_UpdateConcluir causa versao =
         u.msgErro = ""
         u.ignorada = false
         u.aviso = "Atualizado para v" + versao + "."
-        InLab_Log ("Atualização: v" + versao + " instalada. A versão anterior ficou guardada (InLabChecker.bak) e dá para voltar sem fechar o Max.") tipo:#ok
+        InLab_UpdateLog ("v" + versao + " instalada. A versão anterior ficou guardada (InLabChecker.bak) e dá para voltar sem fechar o Max.") tipo:#ok
         InLab_UpdatePintarHeader()
     )
     else
@@ -602,10 +626,10 @@ fn InLab_UpdateAplicarBaixado arqZip =
     u.estado = #aplicando
     u.pct = 100
     InLab_UpdatePintarHeader()
-    InLab_Log ("Atualização: aplicando v" + versao + "...") tipo:#info
+    InLab_UpdateLog ("aplicando v" + versao + "...") tipo:#info
     local causa = InLab_UpdateAplicarZip arqZip INLAB_ROOT versao u.tamanhoZip
     try ( (dotNetClass "System.IO.File").Delete arqZip )
-    catch ( InLab_Log ("Atualização: não apagou " + arqZip + " (" + getCurrentException() + ").") tipo:#warn )
+    catch ( InLab_UpdateLog ("não apagou " + arqZip + " (" + getCurrentException() + ").") tipo:#warn )
     InLab_UpdateConcluir causa versao
 )
 
@@ -622,12 +646,12 @@ fn InLab_Update_OnProgresso sender e =
             if marco > InLab_Update_UltimoMarco and marco < 100 do
             (
                 InLab_Update_UltimoMarco = marco
-                InLab_Log ("Atualização: baixando v" + u.versaoRemota + "... " + marco as string + "%") tipo:#info
+                InLab_UpdateLog ("baixando v" + u.versaoRemota + "... " + marco as string + "%") tipo:#info
             )
         )
     )
     catch
-        InLab_Log ("Atualização: falha no progresso do download (" + getCurrentException() + ").") tipo:#warn
+        InLab_UpdateLog ("falha no progresso do download (" + getCurrentException() + ").") tipo:#warn
 )
 
 fn InLab_Update_OnBaixado sender e =
@@ -646,7 +670,7 @@ fn InLab_Update_OnBaixado sender e =
                 u.estado = #disponivel
                 u.pct = 0
                 try ( (dotNetClass "System.IO.File").Delete arq ) catch ()
-                InLab_Log "Atualização: download cancelado. Nada foi alterado." tipo:#info
+                InLab_UpdateLog "download cancelado. Nada foi alterado." tipo:#info
                 InLab_UpdatePintarHeader()
             )
             else if e.Error != undefined then
@@ -659,7 +683,7 @@ fn InLab_Update_OnBaixado sender e =
         )
     )
     catch
-        InLab_Log ("Atualização: falha ao tratar o fim do download (" + getCurrentException() + ").") tipo:#err
+        InLab_UpdateLog ("falha ao tratar o fim do download (" + getCurrentException() + ").") tipo:#err
 )
 
 fn InLab_UpdateBaixarEAplicar =
@@ -667,12 +691,12 @@ fn InLab_UpdateBaixarEAplicar =
     local u = InLab_Update
     if not (u.estado == #disponivel or (u.estado == #erro and u.urlZip != "")) then
     (
-        InLab_Log ("Atualização: nada para aplicar (estado " + u.estado as string + ").") tipo:#warn
+        InLab_UpdateLog ("nada para aplicar (estado " + u.estado as string + ").") tipo:#warn
         false
     )
     else if InLab_UpdateEhCheckout INLAB_ROOT then
     (
-        InLab_Log ("Atualização: a pasta do plugin é um checkout do git (" + INLAB_ROOT + "); atualize pelo git. A atualização só roda numa instalação.") tipo:#err
+        InLab_UpdateLog ("a pasta do plugin é um checkout do git (" + INLAB_ROOT + "); atualize pelo git. A atualização só roda numa instalação.") tipo:#err
         false
     )
     else
@@ -700,7 +724,7 @@ fn InLab_UpdateBaixarEAplicar =
             InLab_Update_WC = wc
             wc.DownloadFileAsync (dotNetObject "System.Uri" u.urlZip) arq tok
             ok = true
-            InLab_Log ("Atualização: baixando v" + u.versaoRemota + " (" + ((u.tamanhoZip / 1024) as string) + " KB)...") tipo:#info
+            InLab_UpdateLog ("baixando v" + u.versaoRemota + " (" + ((u.tamanhoZip / 1024) as string) + " KB)...") tipo:#info
             InLab_UpdatePintarHeader()
         )
         catch
@@ -716,12 +740,12 @@ fn InLab_UpdateCancelar =
         try
         (
             InLab_Update_WC.CancelAsync()
-            InLab_Log "Atualização: cancelando o download..." tipo:#info
+            InLab_UpdateLog "cancelando o download..." tipo:#info
             true
         )
         catch
         (
-            InLab_Log ("Atualização: não conseguiu cancelar (" + getCurrentException() + ").") tipo:#warn
+            InLab_UpdateLog ("não conseguiu cancelar (" + getCurrentException() + ").") tipo:#warn
             false
         )
     )
@@ -763,7 +787,7 @@ fn InLab_UpdateReverterEm raiz =
 
             if causa != "" do
             (
-                InLab_Log ("Atualização: " + causa + " Desfazendo a volta...") tipo:#err
+                InLab_UpdateLog ("" + causa + " Desfazendo a volta...") tipo:#err
                 try
                 (
                     if feito >= 3 do InLab_UpdateMover c[2] troca
@@ -772,7 +796,7 @@ fn InLab_UpdateReverterEm raiz =
                     InLab_Update_Recarregar c[1]
                 )
                 catch
-                    InLab_Log ("Atualização: NÃO DESFEZ (" + getCurrentException() + "). Confira " + c[1] + ", " + c[2] + " e " + troca + ".") tipo:#err
+                    InLab_UpdateLog ("NÃO DESFEZ (" + getCurrentException() + "). Confira " + c[1] + ", " + c[2] + " e " + troca + ".") tipo:#err
             )
             causa
         )
@@ -784,7 +808,7 @@ fn InLab_UpdateReverter =
     local u = InLab_Update
     if u.estado == #baixando or u.estado == #aplicando then
     (
-        InLab_Log "Atualização: espere a atualização em andamento terminar." tipo:#warn
+        InLab_UpdateLog "espere a atualização em andamento terminar." tipo:#warn
         false
     )
     else
@@ -798,7 +822,7 @@ fn InLab_UpdateReverter =
             u.aviso = "Voltou para v" + INLAB_VERSAO + "."
             u.msgErro = ""
             u.estado = if u.versaoRemota != "" and (InLab_CompararVersao INLAB_VERSAO u.versaoRemota) == -1 then #disponivel else #ocioso
-            InLab_Log ("Atualização: voltou da v" + (de as string) + " para a v" + (para as string) + ". A v" + (de as string) + " ficou no .bak.") tipo:#ok
+            InLab_UpdateLog ("voltou da v" + (de as string) + " para a v" + (para as string) + ". A v" + (de as string) + " ficou no .bak.") tipo:#ok
             InLab_UpdatePintarHeader()
             true
         )
@@ -808,5 +832,104 @@ fn InLab_UpdateReverter =
             InLab_UpdateFalhar ("não voltou de versão: " + causa)
             false
         )
+    )
+)
+
+--------------------------------------------------------------------------------
+-- PARTE 3 (issue #14): AÇÕES DA SEÇÃO ATUALIZAÇÃO
+-- ui\rollout_update.ms só lê controle e chama InLab_UpdateExecutar com a ação
+-- que o botão representa naquele estado. A lógica fica aqui.
+--------------------------------------------------------------------------------
+
+fn InLab_UpdateIgnorar =
+(
+    local u = InLab_Update
+    if u.estado != #disponivel or u.versaoRemota == "" then false
+    else
+    (
+        InLab_PrefGravar "versaoIgnorada" u.versaoRemota
+        u.ignorada = true
+        InLab_UpdateLog ("v" + u.versaoRemota + " ignorada: a pastilha não avisa mais dela. A próxima versão volta a avisar.") tipo:#info
+        InLab_UpdatePintarHeader()
+        true
+    )
+)
+
+-- Depois de um #erro: se a release conhecida é mais nova que a instalada,
+-- tenta aplicar de novo; senão, procura de novo.
+fn InLab_UpdateTentarDeNovo =
+(
+    local u = InLab_Update
+    if u.urlZip != "" and u.versaoRemota != "" and (InLab_CompararVersao INLAB_VERSAO u.versaoRemota) == -1 then
+        InLab_UpdateBaixarEAplicar()
+    else
+        InLab_UpdateChecar silencioso:false
+)
+
+fn InLab_UpdateAbrirNotas =
+(
+    local url = InLab_Update.notasUrl
+    if url == undefined or url == "" then false
+    else
+    (
+        try ( shellLaunch url ""; true )
+        catch ( InLab_UpdateLog ("não abriu as notas (" + getCurrentException() + ").") tipo:#warn; false )
+    )
+)
+
+fn InLab_UpdateTextoDoLog =
+(
+    local u = InLab_Update
+    local t = "InLabChecker v" + INLAB_VERSAO + " · estado " + u.estado as string + "\r\n"
+    if u.versaoRemota != "" do t += "Release: v" + u.versaoRemota + "\r\n"
+    if u.msgErro != "" do t += "Erro: " + u.msgErro + "\r\n"
+    t += "Pasta: " + (INLAB_ROOT as string) + "\r\n"
+    for l in INLAB_UPDATE_HIST do t += l + "\r\n"
+    t
+)
+
+fn InLab_UpdateCopiarLog =
+(
+    try
+    (
+        setClipboardText (InLab_UpdateTextoDoLog())
+        InLab_Log "Atualização: log do updater copiado para a área de transferência." tipo:#ok
+        true
+    )
+    catch ( InLab_UpdateLog ("não copiou o log (" + getCurrentException() + ").") tipo:#warn; false )
+)
+
+-- "dd/mm HH:mm" da última consulta ao GitHub, ou "nunca".
+fn InLab_UpdateUltimaChecagemTexto =
+(
+    local n = (InLab_PrefLer "ultimaChecagem" "") as integer
+    if n == undefined or n <= 0 then "nunca"
+    else
+        try ( (((dotNetClass "System.DateTimeOffset").FromUnixTimeSeconds n).ToLocalTime()).ToString "dd/MM HH:mm" )
+        catch ( "?" )
+)
+
+-- Tamanho do zip para a caixa de status: "120 KB" / "1,3 MB".
+fn InLab_UpdateTamanhoTexto bytes =
+(
+    if bytes == undefined or bytes <= 0 then ""
+    else if bytes < 1048576 then ((bytes / 1024) as string) + " KB"
+    else substituteString (formattedPrint (bytes / 1048576.0) format:".1f") "." "," + " MB"
+)
+
+-- Ponto único de entrada dos botões da seção.
+fn InLab_UpdateExecutar acao =
+(
+    case acao of
+    (
+        #procurar: InLab_UpdateChecar silencioso:false
+        #aplicar:  InLab_UpdateBaixarEAplicar()
+        #notas:    InLab_UpdateAbrirNotas()
+        #ignorar:  InLab_UpdateIgnorar()
+        #cancelar: InLab_UpdateCancelar()
+        #reverter: InLab_UpdateReverter()
+        #tentar:   InLab_UpdateTentarDeNovo()
+        #copiar:   InLab_UpdateCopiarLog()
+        default:   false
     )
 )

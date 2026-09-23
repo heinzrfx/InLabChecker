@@ -15,6 +15,9 @@ global InLab_PrefLer, InLab_PrefGravar, InLab_PrefApagar
 global InLab_ParseJSON, InLab_JSON_Obter
 global InLab_Update, InLab_UpdateChecar, InLab_UpdateProcessar, InLab_UpdateEstadoTexto
 global InLab_Update_Disparar, InLab_Header_Estado, InLab_UpdateAgora
+global InLab_UpdateIgnorar, InLab_UpdateTamanhoTexto, InLab_UpdateLog, INLAB_UPDATE_HIST
+global InLab_UpdateTextoDoLog, InLab_UpdateExecutar, InLab_UpdateUltimaChecagemTexto
+global InLab_SecUpdate_Atualizar
 global INLAB_TESTE_SAIDA, INLAB_TESTE_FALHAS, INLAB_TESTE_DISPAROS, INLAB_TESTE_HEADER
 (
     local dirTeste = getFilenamePath (getSourceFileName())
@@ -33,6 +36,10 @@ global INLAB_TESTE_SAIDA, INLAB_TESTE_FALHAS, INLAB_TESTE_DISPAROS, INLAB_TESTE_
     local headerOriginal = InLab_Header_Estado
     local disparoOriginal = undefined
     local updateOriginal = InLab_Update
+    -- A secao Atualizacao do painel aberto repintaria com o estado do teste.
+    local secaoOriginal = InLab_SecUpdate_Atualizar
+    InLab_SecUpdate_Atualizar = undefined
+    local histOriginal = INLAB_UPDATE_HIST
     local chaves = #("autoCheck", "ultimaChecagem", "versaoIgnorada")
     local ausente = "__ausente__"
     local prefsAntes = #()
@@ -168,6 +175,27 @@ global INLAB_TESTE_SAIDA, INLAB_TESTE_FALHAS, INLAB_TESTE_DISPAROS, INLAB_TESTE_
         InLab_UpdateProcessar tok undefined status:0 erro:"The remote name could not be resolved"
         ultHeader = INLAB_TESTE_HEADER[INLAB_TESTE_HEADER.count]
         checar "Sem rede no manual: pastilha em #erro" (ultHeader[1] == #erro)
+
+        -- 9. APOIO DA SECAO ATUALIZACAO (#14)
+        tok = novaConsulta()
+        InLab_UpdateProcessar tok jsonMaior
+        checar "publicadaEm vem de published_at (dd/mm/aaaa)" (InLab_Update.publicadaEm == "23/09/2026")
+        checar "Ignorar em #disponivel devolve true" ((InLab_UpdateIgnorar()) == true)
+        checar "Ignorar grava versaoIgnorada no ini" ((InLab_PrefLer "versaoIgnorada" "") == "99.0")
+        checar "Ignorar marca ignorada e apaga a pastilha" (InLab_Update.ignorada and INLAB_TESTE_HEADER[INLAB_TESTE_HEADER.count][1] == #ocioso)
+        InLab_PrefApagar "versaoIgnorada"
+        InLab_Update.estado = #ocioso
+        checar "Ignorar fora de #disponivel devolve false" ((InLab_UpdateIgnorar()) == false)
+        checar "Tamanho em KB" ((InLab_UpdateTamanhoTexto 123193) == "120 KB")
+        checar "Tamanho em MB com virgula" ((InLab_UpdateTamanhoTexto 1363148) == "1,3 MB")
+        checar "Tamanho zero vira vazio" ((InLab_UpdateTamanhoTexto 0) == "")
+        for i = 1 to 15 do InLab_UpdateLog ("linha " + i as string)
+        checar "Historico guarda so as 10 ultimas" (INLAB_UPDATE_HIST.count == 10 and matchPattern INLAB_UPDATE_HIST[10] pattern:"*linha 15")
+        checar "Texto do log leva versao e historico" (matchPattern (InLab_UpdateTextoDoLog()) pattern:("*v" + INLAB_VERSAO + "*linha 15*"))
+        checar "Acao desconhecida devolve false" ((InLab_UpdateExecutar #banana) == false)
+        INLAB_TESTE_DISPAROS = #()
+        checar "Acao #procurar dispara a checagem manual" ((InLab_UpdateExecutar #procurar) == true and INLAB_TESTE_DISPAROS.count == 1)
+        checar "Ultima checagem vira texto dd/MM HH:mm" (matchPattern (InLab_UpdateUltimaChecagemTexto()) pattern:"??/?? ??:??")
     )
     catch
     (
@@ -186,6 +214,8 @@ global INLAB_TESTE_SAIDA, INLAB_TESTE_FALHAS, INLAB_TESTE_DISPAROS, INLAB_TESTE_
     InLab_Header_Estado = headerOriginal
     InLab_Log = logOriginal
     if updateOriginal != undefined do InLab_Update = updateOriginal
+    INLAB_UPDATE_HIST = if histOriginal != undefined then histOriginal else #()
+    InLab_SecUpdate_Atualizar = secaoOriginal
 
     linha ("---- " + (if INLAB_TESTE_FALHAS == 0 then "TUDO OK" else (INLAB_TESTE_FALHAS as string + " FALHA(S)")))
     close INLAB_TESTE_SAIDA

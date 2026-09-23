@@ -15,6 +15,7 @@ global InLab_Update, InLab_Update_Recarregar, InLab_Header_Estado, InLab_Update_
 global InLab_UpdateLerManifesto, InLab_UpdateLerVersao, InLab_UpdateValidarPacote
 global InLab_UpdateAplicarZip, InLab_UpdateReverterEm, InLab_UpdateBaixarEAplicar
 global InLab_UpdateCancelar, InLab_Update_OnBaixado, InLab_UpdateEstadoTexto
+global InLab_SecUpdate_Atualizar, INLAB_UPDATE_HIST
 global INLAB_TESTE_SAIDA, INLAB_TESTE_FALHAS, INLAB_TESTE_RECARGAS, INLAB_TESTE_FALHAR_CARGA
 (
     local dirTeste = getFilenamePath (getSourceFileName())
@@ -71,6 +72,9 @@ global INLAB_TESTE_SAIDA, INLAB_TESTE_FALHAS, INLAB_TESTE_RECARGAS, INLAB_TESTE_
     local logOriginal = InLab_Log
     local headerOriginal = InLab_Header_Estado
     local updateOriginal = InLab_Update
+    local secaoOriginal = InLab_SecUpdate_Atualizar
+    InLab_SecUpdate_Atualizar = undefined
+    local histOriginal = INLAB_UPDATE_HIST
     local rootOriginal = INLAB_ROOT
     local versaoOriginal = INLAB_VERSAO
     local recarregarOriginal = undefined
@@ -218,6 +222,8 @@ global INLAB_TESTE_SAIDA, INLAB_TESTE_FALHAS, INLAB_TESTE_RECARGAS, INLAB_TESTE_
     INLAB_VERSAO = versaoOriginal
     InLab_Update_WC = undefined
     if updateOriginal != undefined do InLab_Update = updateOriginal
+    INLAB_UPDATE_HIST = if histOriginal != undefined then histOriginal else #()
+    InLab_SecUpdate_Atualizar = secaoOriginal
 
     linha ("---- " + (if INLAB_TESTE_FALHAS == 0 then "TUDO OK" else (INLAB_TESTE_FALHAS as string + " FALHA(S)")))
     close INLAB_TESTE_SAIDA

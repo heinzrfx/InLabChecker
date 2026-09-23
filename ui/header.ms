@@ -119,6 +119,7 @@ if InLab_Header_EstadoAtual == undefined do InLab_Header_EstadoAtual = #ocioso
 if InLab_Header_Versao == undefined do InLab_Header_Versao = INLAB_VERSAO
 
 global InLab_Header_Estado, InLab_Header_OnPastilha
+global InLab_SecUpdate_Mostrar   -- ui\rollout_update.ms, carregado depois
 
 -- Handler de nivel superior: so le global.
 fn InLab_Header_OnReload sender arg =
@@ -224,15 +225,24 @@ fn InLab_Header_Montar pnl =
 -- Clique na pastilha. Só faz sentido em #disponivel e #erro; nos outros
 -- estados a pastilha não é clicável e o handler não faz nada.
 --
--- Abrir a seção Atualização é do sub-projeto 3, que ainda não existe: por
--- enquanto o clique registra no log, que é onde o artista já olha.
+-- 23/09/2026 (issue #14): o clique desenrola a seção Atualização
+-- (InLab_SecUpdate_Mostrar, ui\rollout_update.ms), onde estão os botões. Até
+-- a #14 ele só registrava no log. Se a seção não estiver aberta, cai no log.
 fn InLab_Header_OnPastilha sender arg =
 (
-    case InLab_Header_EstadoAtual of
+    if InLab_Header_EstadoAtual == #disponivel or InLab_Header_EstadoAtual == #erro do
     (
-        #disponivel: InLab_Log ("Atualização v" + InLab_Header_Versao + " disponível — a seção Atualização entra no próximo sub-projeto.") tipo:#warn
-        #erro:       InLab_Log "A última atualização falhou e foi revertida — o motivo está acima neste log." tipo:#err
-        default:     ()
+        local mostrou = false
+        if InLab_SecUpdate_Mostrar != undefined do
+            try ( mostrou = InLab_SecUpdate_Mostrar() )
+            catch ( InLab_Log ("Falha ao abrir a seção Atualização (" + getCurrentException() + ").") tipo:#warn )
+        if not mostrou do
+        (
+            if InLab_Header_EstadoAtual == #disponivel then
+                InLab_Log ("Atualização v" + InLab_Header_Versao + " disponível — veja a seção Atualização.") tipo:#warn
+            else
+                InLab_Log "A última atualização falhou — o motivo está na seção Atualização e neste log." tipo:#err
+        )
     )
 )
 

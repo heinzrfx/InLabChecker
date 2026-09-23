@@ -558,6 +558,7 @@ rollout InLabChecker_Rollout ("InLabChecker · InLab Artefacto · v" + INLAB_VER
         AddSubRollout subSecoes InLabSecMatUtil rolledUp:true
         AddSubRollout subSecoes InLabSecF6 rolledUp:true
         AddSubRollout subSecoes InLabSecFase4 rolledUp:true
+        AddSubRollout subSecoes InLabSecUpdate rolledUp:true   -- ui\rollout_update.ms (#14)
         AddSubRollout subSecoes InLabSecLog
 
         InLab_Log ("Sessão InLabChecker v" + INLAB_VERSAO + " · " + localTime)
