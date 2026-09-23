@@ -151,6 +151,12 @@
         )
         else
         (
+            -- 23/09/2026: fecha o painel ANTES de recarregar. O fileIn de
+            -- ui\rollout_main.ms redefine InLabChecker_Rollout, e o
+            -- destroyDialog de InLab_AbrirUI passava a mirar a definição NOVA
+            -- (fechada) — o painel antigo ficava órfão e o Max com 2 janelas
+            -- (rodar este arquivo com o painel aberto). O reload já fazia isso.
+            try ( destroyDialog InLabChecker_Rollout ) catch()
             for m in INLAB_MODULOS do fileIn (INLAB_ROOT + m)
             ::InLab_AbrirUI()
         )

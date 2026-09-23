@@ -54,6 +54,12 @@
  (InLab_Header_EstadoAtual) em vez de forçar #ocioso: forçar apagava o aviso de
  atualização a cada Reload. O `on close` zera também as globais dos controles
  do header, pra não ficarem apontando pra controle destruído.
+
+ 23/09/2026 (família ativa): dropdown "Família (verificações)" na seção
+ Produto. Escolher um produto pré-preenche a família por
+ InLab_Produto_SugerirFamilia (classe + animacao do JSON); mudar o dropdown
+ chama InLab_DefinirFamiliaAtiva. Sem isso InLab_FamiliaAtiva nunca tinha
+ valor e "Rodar Verificações" / "Alvo da família" só avisavam.
 ================================================================================
 */
 
@@ -78,6 +84,9 @@ rollout InLabSecProduto "Produto" width:420
     label lblProdutoAtivo "Nenhum produto carregado." align:#left
     button btnImportarProduto "Importar JSON do Produto..." width:395 height:26
     dropdownlist ddlProduto "Produto:" items:#() width:395
+    -- 23/09/2026: família que as verificações e o "Alvo da família" usam.
+    -- Item 1 = nenhuma; os demais seguem a ordem de InLab_Familias.
+    dropdownlist ddlFamilia "Família (verificações):" items:#() width:395
     button btnLerSelecao "Ler materiais da seleção" width:395 height:24
     listbox lbxPartes "Parte  →  material:" items:#() height:6 width:395
     dropdownlist ddlMaterial "Material da parte marcada:" items:#() width:395
@@ -104,6 +113,37 @@ rollout InLabSecProduto "Produto" width:420
         ddlMaterial.items = #("— nenhum —") + (for m in materiais collect m.name)
         local i = lbxPartes.selection
         ddlMaterial.selection = if i > 0 and ligacoes[i] != undefined then (findItem materiais ligacoes[i]) + 1 else 1
+    )
+
+    fn familiaEscolhida =
+        if ddlFamilia.selection > 1 and ddlFamilia.selection <= InLab_Familias.count + 1 then InLab_Familias[ddlFamilia.selection - 1].nome else ""
+
+    fn mostrarFamilia =
+    (
+        ddlFamilia.items = #("— nenhuma —") + (for f in InLab_Familias collect (InLab_FamiliaRotulo f.nome))
+        local idx = 0
+        if InLab_FamiliaAtiva != undefined do
+            for i = 1 to InLab_Familias.count where InLab_Familias[i].nome == InLab_FamiliaAtiva.nome do idx = i
+        ddlFamilia.selection = idx + 1
+    )
+
+    -- Pré-preenche a família pelo produto escolhido (só sugestão: o
+    -- modelador confirma ou troca no dropdown).
+    fn sugerirFamilia =
+    (
+        local p = produtoEscolhido()
+        if p != undefined do
+        (
+            local sug = InLab_Produto_SugerirFamilia p
+            if sug[1] == "" then
+                InLab_Log ("Família não sugerida (" + sug[2] + ") — escolha no dropdown Família.") tipo:#warn
+            else
+            (
+                InLab_Log ("Família sugerida pelo produto (" + sug[2] + ") — confira no dropdown Família.") tipo:#warn
+                InLab_DefinirFamiliaAtiva sug[1]
+            )
+            mostrarFamilia()
+        )
     )
 
     fn sugerir =
@@ -155,11 +195,20 @@ rollout InLabSecProduto "Produto" width:420
                     ddlProduto.selection = idx
                 )
                 sugerir()
+                sugerirFamilia()
             )
         )
     )
 
-    on ddlProduto selected i do sugerir()
+    on ddlProduto selected i do
+    (
+        sugerir()
+        sugerirFamilia()
+    )
+
+    on ddlFamilia selected i do InLab_DefinirFamiliaAtiva (familiaEscolhida())
+
+    on InLabSecProduto open do mostrarFamilia()
 
     on btnLerSelecao pressed do
     (
@@ -249,7 +298,7 @@ rollout InLabSecOtimizacao "Otimização" width:420
             (
                 if InLab_FamiliaAtiva == undefined then
                 (
-                    InLab_Log "Modo alvo requer uma família carregada (polyMax)." tipo:#warn
+                    InLab_Log "Modo alvo requer uma família — escolha no dropdown Família da seção Produto." tipo:#warn
                     pct = undefined
                 )
                 else
@@ -435,7 +484,7 @@ rollout InLabSecFase4 "Verificações (grupos 1-3 ativos)" width:420
     on btnVerificar pressed do
     (
         if InLab_FamiliaAtiva == undefined then
-            InLab_Log "Carregue a família do produto antes de verificar." tipo:#warn
+            InLab_Log "Escolha a família no dropdown Família da seção Produto antes de verificar." tipo:#warn
         else
         (
             InLab_ProgressoIniciar "Rodando verificações..."
@@ -614,10 +663,31 @@ rollout InLabChecker_Rollout ("InLabChecker · InLab Artefacto · v" + INLAB_VER
 -- SPLASH DESLIGADO (10/Set, pedido Rafael): InLab_MostrarSplash() comentada
 -- abaixo — não removida do arquivo (ui\splash.ms continua íntegro) pra ser
 -- fácil religar depois. Só descomentar a linha pra voltar a mostrar.
+--
+-- 23/09/2026 (2 janelas abertas): além do destroyDialog, fecha qualquer
+-- painel InLabChecker ÓRFÃO — diálogo cuja variável de rollout já foi
+-- redefinida (fileIn do entry point com o painel aberto, bridge do MCP) e
+-- que o destroyDialog não alcança mais. Acha pelo título, só entre as
+-- janelas desta instância do Max (w[3] = janela principal do Max).
+global InLab_FecharPaineisOrfaos
+fn InLab_FecharPaineisOrfaos =
+(
+    local maxHwnd = windows.getMAXHWND()
+    local n = 0
+    for w in (windows.getChildrenHWND (windows.getDesktopHWND()))
+        where w[4] == "MAXScriptDialog" and w[3] == maxHwnd and (matchPattern w[5] pattern:"InLabChecker ·*") do
+    (
+        try ( UIAccessor.CloseDialog w[1]; n += 1 )
+        catch ( format "InLabChecker: não fechou o painel órfão % (%)\n" w[1] (getCurrentException()) )
+    )
+    n
+)
+
 global InLab_AbrirUI
 fn InLab_AbrirUI =
 (
     try (destroyDialog InLabChecker_Rollout) catch()
+    InLab_FecharPaineisOrfaos()
     -- InLab_MostrarSplash()
     -- AJUSTE 22/Set (header-kit-ui, Tarefa 5) — 604 MEDIDO no Max (não mais
     -- estimado): com o header (56px) + rádio de lado (pos:[8,64]) + subSecoes

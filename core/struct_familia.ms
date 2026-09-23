@@ -12,6 +12,10 @@
 
  DECISÃO (Fase 4, 08/Jul): "max_ratio_v_t" incluído como maxRatioVT (V-07).
  "behaviors" do JSON original ficou de fora — nenhuma verificação o consome.
+
+ 23/09/2026: InLab_DefinirFamiliaAtiva e InLab_FamiliaRotulo. A família ativa
+ voltou a ter quem a defina (dropdown Família da seção Produto) — ver a nota
+ em InLab_FamiliaAtiva abaixo.
 ================================================================================
 */
 
@@ -63,16 +67,17 @@ struct FamiliaConfig
 -- Array com as 8 configs registradas (populado pelos arquivos de familias\).
 global InLab_Familias = #()
 
--- Família atualmente selecionada na UI (setada pelo botão "Carregar Configuração").
+-- Família atualmente selecionada na UI.
 --
--- ÓRFÃ desde a Fase 5.2 (import de JSON por produto): a seção de UI que
--- setava esta global (InLabSecFamilia, dropdown + "Carregar Configuração
--- da Família") foi removida de ui\rollout_main.ms — nada mais atribui este
--- global. Quem ainda LÊ InLab_FamiliaAtiva (ex.: fn_prooptimizer "Alvo da
--- família", verif_orquestrador, InLabSecUtil, InLabSecFase4) fica quebrado
--- até a Fase 5.3 traduzir o JSON importado (InLab_ProdutoAtivo, em
--- ui\rollout_main.ms) para um equivalente — a atualização desses pontos de
--- leitura é Fase 5.4, não mexer nisso antes.
+-- 23/09/2026: ficou ÓRFÃ da Fase 5.2 até hoje — a seção Família (dropdown +
+-- "Carregar Configuração") saiu da UI e nada mais atribuía este global, então
+-- "Rodar Verificações" e o modo "Alvo da família" do ProOptimizer nunca
+-- rodavam. Agora é atribuída SÓ por InLab_DefinirFamiliaAtiva, chamada pelo
+-- dropdown "Família" da seção Produto (ui\rollout_main.ms). O export do
+-- produto não traz a família do plugin (o campo "familia" do JSON é a LINHA
+-- comercial, ex.: "RIZZI"): o dropdown vem pré-preenchido por
+-- InLab_Produto_SugerirFamilia (functions\fn_renomear_produto.ms) e o
+-- modelador confirma ou troca.
 global InLab_FamiliaAtiva = undefined
 
 -- Registra uma config no array global. Se uma família com o mesmo nome já
@@ -89,10 +94,55 @@ fn InLab_RegistrarFamilia cfg =
 
 -- Busca uma config pelo nome interno (ex.: "giro_assento").
 -- Retorna undefined se não encontrada.
+global InLab_ObterFamilia
 fn InLab_ObterFamilia nomeFam =
 (
     local encontrada = undefined
     for f in InLab_Familias where f.nome == nomeFam do encontrada = f
     encontrada
+)
+
+-- Nome legível para a UI e o log ("giro_assento" → "Giro de Assento").
+global InLab_FamiliaRotulo
+fn InLab_FamiliaRotulo nomeFam =
+(
+    case nomeFam of
+    (
+        "corpo_unico":         "Corpo Único"
+        "pernas_tampo":        "Pernas + Tampo"
+        "estrutura_estofado":  "Estrutura + Estofado"
+        "estrutura_modular":   "Estrutura Modular"
+        "translacao":          "Translação (gavetas)"
+        "rotacao":             "Rotação (portas / pratos)"
+        "giro_assento":        "Giro de Assento"
+        "movimento_especial":  "Movimento Especial"
+        default:               nomeFam
+    )
+)
+
+-- Define a família ativa pelo nome interno ("" ou undefined limpa). Loga a
+-- config inteira, para o modelador ver os limites que as verificações vão
+-- usar. Devolve a config (ou undefined se o nome não existir).
+global InLab_DefinirFamiliaAtiva
+fn InLab_DefinirFamiliaAtiva nomeFam =
+(
+    if nomeFam == undefined or nomeFam == "" then
+    (
+        InLab_FamiliaAtiva = undefined
+        InLab_Log "Família ativa: nenhuma." tipo:#info
+    )
+    else
+    (
+        local cfg = InLab_ObterFamilia nomeFam
+        if cfg == undefined then
+            InLab_Log ("Família '" + nomeFam + "' não está registrada — família ativa mantida.") tipo:#err
+        else
+        (
+            InLab_FamiliaAtiva = cfg
+            InLab_Log ("Família ativa: " + (InLab_FamiliaRotulo nomeFam)) tipo:#ok
+            for l in cfg.linhasDescricao() do InLab_Log ("   " + l) tipo:#info
+        )
+    )
+    InLab_FamiliaAtiva
 )
 
