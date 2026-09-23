@@ -5,6 +5,11 @@
  Peso de arquivo, faixa de polígonos e draw calls. Todos os limites vêm da
  FamiliaConfig e passam pela flag INLAB_LIMITES_PROVISORIOS (advertência até
  validação do Birô).
+
+ 23/09/2026 (issue #60): V-03 e V-04 passaram de polígonos do Max
+ (`InLab_ContarPoligonos`) para triângulos (`InLab_Otim_Triangulos`,
+ functions\fn_otim_nucleo.ms) — a mesma unidade que o GLB carrega. A V-05
+ conta objetos (draw calls) e não muda.
 ================================================================================
 */
 
@@ -28,14 +33,16 @@ fn InLab_V02_PesoSKP cfg =
         InLab_RegistrarVerif "V-02" "Peso do arquivo SKP" false ("verificação externa — teto " + cfg.maxSkpMB as string + " MB (SKP fora do escopo do Max)") critico:false
 )
 
---- V-03 · Total de polígonos DENTRO da faixa [polyMin, polyMax] — UMA verificação,
--- não duas. (O antigo "V-04 piso" era só a outra metade do V-03 duplicada.)
+-- V-03 · Total de TRIÂNGULOS dentro da faixa [polyMin, polyMax] da família.
+-- 23/09/2026 (issue #60): passou de polígonos do Max para triângulos — o que
+-- o GLB carrega (spec 2026-09-23-otimizacao-design.md). As faixas das
+-- famílias foram escritas sem unidade: conferir com a equipe (#36).
 fn InLab_V03_Poligonos cfg objetos =
 (
-    local total = InLab_ContarPoligonos objetos
+    local total = InLab_Otim_Triangulos objetos
     local dentro = (total >= cfg.polyMin) and (total <= cfg.polyMax)
-    local msg = total as string + " faces · faixa " + cfg.polyMin as string + "–" + cfg.polyMax as string
-    InLab_RegistrarVerif "V-03" "Polígonos totais (faixa da família)" dentro msg provisorio:true
+    local msg = total as string + " triângulos · faixa " + cfg.polyMin as string + "–" + cfg.polyMax as string + " (unidade da faixa a confirmar, #36)"
+    InLab_RegistrarVerif "V-03" "Triângulos totais (faixa da família)" dentro msg provisorio:true
 )
 
 -- V-04 · Distribuição por parte nomeada (spec 2.2 · seção 2.4 v1.0).
@@ -56,7 +63,7 @@ fn InLab_V04_PoligonosPorParte cfg objetos =
             local limite  = regra[2]
             for o in objetos where (matchPattern o.name pattern:(prefixo + "*") ignoreCase:true) do
             (
-                local n = InLab_ContarPoligonos #(o)
+                local n = InLab_Otim_Triangulos #(o)   -- triângulos (issue #60)
                 if n > limite do append problemas (o.name + ": " + n as string + " > " + limite as string + " (" + prefixo + ")")
             )
         )

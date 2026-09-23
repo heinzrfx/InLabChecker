@@ -60,7 +60,7 @@ Proposta = struct com: no, rotulo para a lista, valor antes, valor proposto, tri
 - `InLab_Otim_Triangulos objs`: soma de `(GetTriMeshFaceCount o)[1]` das geometrias (`InLab_EhGeometria`), contando instancias **por no** (o GLB exporta cada no).
 - Faixa: `polyMin`/`polyMax` da familia ativa (#29). Sem familia, o modelador digita a meta.
 - Cor: verde dentro da faixa, amarelo ate 10% fora, vermelho alem disso.
-- **V-03 e V-05 passam a contar triangulos** (mesma funcao). As faixas das familias foram escritas sem unidade e precisam ser conferidas pela equipe (#36): ate la continuam `provisorio:true`.
+- **V-03 e V-04 passam a contar triangulos** (mesma funcao). A V-05 conta objetos (draw calls) e nao muda. As faixas das familias foram escritas sem unidade e precisam ser conferidas pela equipe (#36): ate la continuam `provisorio:true`.
 
 ### 3.2 Passo 1 · Reduzir na origem
 
