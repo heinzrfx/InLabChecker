@@ -58,8 +58,17 @@ fn InLab_OtimFino_Aplicar propostas =
     else InLab_ProOptimizer (for p in marcadas collect p.no) marcadas[1].depois
 )
 
+-- InLab_ReverterOtimizacao() devolve o texto do InLab_Log, não um inteiro —
+-- o contrato (InLab_Otim_Reverter passo -> integer) exige a CONTAGEM. Lê
+-- InLab_UltimaOtimizacao ANTES de reverter, porque a própria função zera
+-- esse array no final (ver fn_prooptimizer.ms).
 global InLab_OtimFino_Reverter
-fn InLab_OtimFino_Reverter = InLab_ReverterOtimizacao()
+fn InLab_OtimFino_Reverter =
+(
+    local n = InLab_UltimaOtimizacao.count
+    InLab_ReverterOtimizacao()
+    n
+)
 
 -- Liga/desliga na viewport os ProOptimizer do último Aplicar (Comparar).
 global InLab_OtimFino_Comparar

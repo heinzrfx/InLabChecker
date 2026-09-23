@@ -120,7 +120,8 @@ global INLAB_TESTE_SAIDA, INLAB_TESTE_FALHAS
         checar "Comparar desliga o ajuste na viewport" ((InLab_OtimFino_Comparar false) == 1 and not e1.modifiers[1].enabledInViews)
         InLab_OtimFino_Comparar true
         props[1].marcada = false
-        InLab_Otim_Reverter 2
+        local nRevertidos = InLab_Otim_Reverter 2
+        checar "Reverter do passo 2 devolve inteiro (1 objeto)" (nRevertidos == 1)
         checar "Reverter do passo 2 volta os triângulos" ((InLab_Otim_Triangulos #(e1)) == trisAntes and e1.modifiers.count == 0)
         checar "Aplicar sem linha marcada não faz nada" ((InLab_Otim_Aplicar 2 props) == 0 and e1.modifiers.count == 0)
         checar "Passo inválido não propõe nada" ((InLab_Otim_Calcular 9 #(e1)).count == 0)

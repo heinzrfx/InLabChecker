@@ -204,7 +204,7 @@ fn InLab_Otim_Aplicar passo propostas =
         1: InLab_OtimOrigem_Aplicar propostas
         2: InLab_OtimFino_Aplicar propostas
         3: InLab_OtimEscondidas_Aplicar propostas
-        default: 0
+        default: ( InLab_Log ("Otimização: passo " + passo as string + " não existe.") tipo:#err; 0 )
     )
 )
 
@@ -216,6 +216,6 @@ fn InLab_Otim_Reverter passo =
         1: InLab_OtimOrigem_Reverter()
         2: InLab_OtimFino_Reverter()
         3: InLab_OtimEscondidas_Reverter()
-        default: 0
+        default: ( InLab_Log ("Otimização: passo " + passo as string + " não existe.") tipo:#err; 0 )
     )
 )
