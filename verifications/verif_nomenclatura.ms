@@ -14,6 +14,9 @@
  A checagem antiga de "nome default do Max" e "nomes duplicados" foi
  removida destes IDs — pode voltar como um V extra separado se for útil,
  mas não são o V-21/V-22 da spec.
+
+ 23/09/2026 (issue #35): V-22 com uma mensagem por grupo, grupo de 1 item
+ checado e sufixo repetido separado de lacuna.
 ================================================================================
 */
 
@@ -74,13 +77,24 @@ fn InLab_V22_SufixosSequenciais objetos =
             )
         )
     )
+    -- 23/09/2026 (issue #35): UMA mensagem por grupo (antes saía uma por
+    -- índice fora de lugar, repetida); grupo de 1 item também é checado
+    -- (Perna_02 sozinho passava); sufixo repetido tem mensagem própria em vez
+    -- de virar "lacuna".
     local problemas = #()
-    for g in grupos where g[2].count > 1 do
+    for g in grupos do
     (
         local nums = deepCopy g[2]
         sort nums
-        for i = 1 to nums.count where nums[i] != i do
-            append problemas (g[1] + "_*: sequência com lacuna — encontrado " + (nums as string) + ", esperado 1.." + nums.count as string)
+        local unicos = makeUniqueArray (deepCopy nums)
+        local lacuna = false
+        for i = 1 to unicos.count where unicos[i] != i do lacuna = true
+        local txt = ""
+        if lacuna do
+            txt += "sequência com lacuna — encontrado " + (unicos as string) + ", esperado 1.." + unicos.count as string
+        if unicos.count < nums.count do
+            txt += (if txt != "" then "; " else "") + "sufixo repetido em " + (nums.count - unicos.count) as string + " objeto(s)"
+        if txt != "" do append problemas (g[1] + "_*: " + txt)
     )
     local msg = if problemas.count == 0 then "sequências OK (ou sem sufixo numérico)" else (problemas as string)
     InLab_RegistrarVerif "V-22" "Sufixos numéricos sequenciais (_01, _02... sem lacuna)" (problemas.count == 0) msg critico:false
