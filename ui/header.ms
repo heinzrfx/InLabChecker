@@ -46,6 +46,11 @@
  sub-projeto 3): ele que faca o Invoke/BeginInvoke num controle do painel, ou
  enfileire num System.Windows.Forms.Timer, antes de chamar isto. Esta funcao
  nao tenta adivinhar a thread de quem chamou.
+ 23/09/2026 (issue #12): MEDIDO, o callback do WebClient do updater VOLTA na
+ thread principal (ManagedThreadId 1 no disparo e no callback), porque o
+ disparo sai da thread principal. Por isso functions\fn_updater.ms chama esta
+ funcao direto, sem marshal. A pre-condicao acima continua valendo para
+ qualquer chamador que dispare de outra thread.
 
  O ESTADO SOBREVIVE AO RELOAD (22/09/2026): InLab_Header_EstadoAtual e
  InLab_Header_Versao sao declarados SEM valor e so inicializados se ainda nao

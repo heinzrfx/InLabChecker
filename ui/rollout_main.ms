@@ -42,6 +42,9 @@
  (core\versao.ms). A legenda PODE ser expressão — basta a global ter valor
  quando este arquivo é carregado, e versao.ms é o 1º item do manifesto
  (testado no Max 2024). O motivo acima para deixá-la literal não vale mais.
+ 23/09/2026 (issue #12): o `on open` termina disparando InLab_UpdateChecar
+ silencioso:true se a preferência autoCheck (padrão "true") estiver ligada.
+ Retorna em ~10 ms; o intervalo de 4 h fica dentro de fn_updater.ms.
  Altura do subRollout (508) e da janela (ver InLab_AbrirUI) MEDIDAS no Max com
  o header montado, não estimadas.
 
@@ -562,6 +565,14 @@ rollout InLabChecker_Rollout ("InLabChecker · InLab Artefacto · v" + INLAB_VER
         InLab_Log ("Unidade do sistema: " + (InLab_UnidadeSistema() as string))
         if InLab_Familias.count != 8 do
             InLab_Log "Nem todas as famílias foram carregadas — verificar o manifesto." tipo:#err
+
+        -- Checagem de atualização (issue #12): retorna na hora, a resposta
+        -- chega depois pelo callback. O intervalo de 4 h fica dentro de
+        -- InLab_UpdateChecar, então reabrir/recarregar o painel não consulta
+        -- o GitHub de novo. autoCheck vira checkbox na seção Atualização (#14).
+        if (InLab_PrefLer "autoCheck" "true") == "true" do
+            try ( InLab_UpdateChecar silencioso:true )
+            catch ( InLab_Log ("Atualização: checagem automática falhou (" + getCurrentException() + ").") tipo:#warn )
     )
 
     -- Fechar o painel destrói os controles dotNet. As globais que apontavam
