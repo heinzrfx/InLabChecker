@@ -93,6 +93,8 @@
             @"ui\kit.ms",
             @"ui\header.ms",
             @"ui\splash.ms",
+            -- seção Atualização (issue #14): antes do rollout_main, que a adiciona
+            @"ui\rollout_update.ms",
             @"ui\rollout_main.ms"
         )
 
