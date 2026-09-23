@@ -7,6 +7,13 @@
  Depois: Customize > Customize User Interface > aba Toolbars > categoria
  "InLab" > arrastar "InLabChecker" para uma barra.
 
+ 23/09/2026: numa INSTALAÇÃO (pasta scripts\InLabChecker + boot no startup)
+ este script não é mais necessário — install\registrar.ms, chamado pelo boot
+ em toda abertura do Max, copia a mesma arte e define o MESMO macro
+ (InLab / InLabChecker_Abrir) apontando para a pasta instalada. Este aqui
+ continua servindo para quem roda o plugin direto do repositório, sem boot:
+ ele embute a raiz de onde foi rodado.
+
  FORA DO MANIFESTO, de propósito: isto não é módulo do plugin. É instalador,
  roda sozinho e não pode depender de nada que o InLabChecker.ms carregue —
  justamente porque uma das coisas que ele conserta é o plugin não estar

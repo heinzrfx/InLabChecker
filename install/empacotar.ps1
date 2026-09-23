@@ -4,8 +4,9 @@
 #   powershell -ExecutionPolicy Bypass -File install\empacotar.ps1 [-Ref v0.12] [-Saida <pasta>]
 # Gera InLabChecker-v<versao>.zip com a estrutura que o entry point espera, na
 # RAIZ do zip (sem pasta InLabChecker\ por cima): InLabChecker.ms, core\,
-# familias\, functions\, verifications\, report\, ui\ e install\instalar_icone.ms
-# (o instalador do ícone acha a raiz subindo de install\).
+# familias\, functions\, verifications\, report\, ui\, install\registrar.ms
+# (o boot o chama na abertura do Max para registrar o botão da barra) e
+# install\instalar_icone.ms (o instalador do ícone acha a raiz subindo de install\).
 # NÃO leva tests\, docs\, .claude\, .superpowers\, o boot nem este script.
 # Usa git archive: empacota o COMMIT, não a pasta de trabalho — mudança local
 # sem commit nunca vaza para a release.
@@ -22,7 +23,7 @@ $versao = $m.Groups[1].Value
 
 $zip = Join-Path (Resolve-Path $Saida) "InLabChecker-v$versao.zip"
 git archive --format=zip -o $zip $Ref `
-    InLabChecker.ms core familias functions verifications report ui install/instalar_icone.ms
+    InLabChecker.ms core familias functions verifications report ui install/instalar_icone.ms install/registrar.ms
 if ($LASTEXITCODE -ne 0) { throw "git archive falhou" }
 
 Write-Output "Versao: $versao"
