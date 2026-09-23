@@ -180,3 +180,42 @@ fn InLab_Otim_Restaurar registro =
     )
     n
 )
+
+--------------------------------------------------------------------------------
+-- DESPACHANTE: a UI só chama estas três. passo = 1 (origem), 2 (fino), 3 (escondidas).
+--------------------------------------------------------------------------------
+global InLab_Otim_Calcular
+fn InLab_Otim_Calcular passo objs =
+(
+    case passo of
+    (
+        1: InLab_OtimOrigem_Calcular objs
+        2: InLab_OtimFino_Calcular objs
+        3: InLab_OtimEscondidas_Calcular objs
+        default: ( InLab_Log ("Otimização: passo " + passo as string + " não existe.") tipo:#err; #() )
+    )
+)
+
+global InLab_Otim_Aplicar
+fn InLab_Otim_Aplicar passo propostas =
+(
+    case passo of
+    (
+        1: InLab_OtimOrigem_Aplicar propostas
+        2: InLab_OtimFino_Aplicar propostas
+        3: InLab_OtimEscondidas_Aplicar propostas
+        default: 0
+    )
+)
+
+global InLab_Otim_Reverter
+fn InLab_Otim_Reverter passo =
+(
+    case passo of
+    (
+        1: InLab_OtimOrigem_Reverter()
+        2: InLab_OtimFino_Reverter()
+        3: InLab_OtimEscondidas_Reverter()
+        default: 0
+    )
+)

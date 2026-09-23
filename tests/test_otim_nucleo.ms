@@ -32,7 +32,8 @@ global INLAB_TESTE_SAIDA, INLAB_TESTE_FALHAS
     (
         for m in #(@"core\versao.ms", @"core\prefs.ms", @"core\struct_result.ms", @"core\struct_familia.ms",
                    @"core\log.ms", @"core\utils.ms", @"familias\familia_corpo_unico.ms",
-                   @"functions\fn_prooptimizer.ms", @"functions\fn_otim_nucleo.ms") do
+                   @"functions\fn_prooptimizer.ms", @"functions\fn_otim_nucleo.ms",
+                   @"functions\fn_otim_origem.ms", @"functions\fn_otim_fino.ms", @"functions\fn_otim_escondidas.ms") do
             fileIn (raiz + m)
         -- Depois dos fileIn: core\log.ms redefine InLab_Log.
         InLab_Log = fn _logTeste msg tipo:#info = ( format "      [LOG %] %\n" tipo msg to:INLAB_TESTE_SAIDA; flush INLAB_TESTE_SAIDA )
@@ -99,6 +100,30 @@ global INLAB_TESTE_SAIDA, INLAB_TESTE_FALHAS
         ts.iterations = 1
         local n = InLab_Otim_Restaurar reg
         checar "Restaurar volta ao valor mais antigo (3), na ordem inversa" (ts.iterations == 3 and n == 2)
+        limparCena()
+
+        ---------------------------------------------------------------- DESPACHANTE E PASSOS
+        local e1 = Sphere radius:20 segs:48
+        convertToPoly e1
+        InLab_FamiliaAtiva = undefined
+        local trisAntes = InLab_Otim_Triangulos #(e1)
+        INLAB_OTIM_META_MANUAL = trisAntes / 2
+        checar "Passo 1 (em construção) não propõe nada" ((InLab_Otim_Calcular 1 #(e1)).count == 0)
+        checar "Passo 3 (em construção) não propõe nada" ((InLab_Otim_Calcular 3 #(e1)).count == 0)
+        local props = InLab_Otim_Calcular 2 #(e1)
+        checar "Passo 2 propõe uma linha por peça" (props.count == 1 and props[1].no == e1)
+        checar "Passo 2: proposta com percentual < 100" (props[1].depois < 100.0)
+        checar "Calcular não mexe na cena" ((InLab_Otim_Triangulos #(e1)) == trisAntes)
+        InLab_Otim_Aplicar 2 props
+        local trisDepois = InLab_Otim_Triangulos #(e1)
+        checar ("Passo 2 reduz (" + trisAntes as string + " -> " + trisDepois as string + ")") (trisDepois < trisAntes * 0.75)
+        checar "Comparar desliga o ajuste na viewport" ((InLab_OtimFino_Comparar false) == 1 and not e1.modifiers[1].enabledInViews)
+        InLab_OtimFino_Comparar true
+        props[1].marcada = false
+        InLab_Otim_Reverter 2
+        checar "Reverter do passo 2 volta os triângulos" ((InLab_Otim_Triangulos #(e1)) == trisAntes and e1.modifiers.count == 0)
+        checar "Aplicar sem linha marcada não faz nada" ((InLab_Otim_Aplicar 2 props) == 0 and e1.modifiers.count == 0)
+        checar "Passo inválido não propõe nada" ((InLab_Otim_Calcular 9 #(e1)).count == 0)
         limparCena()
     )
     catch
