@@ -22,6 +22,15 @@
 
  `global` antes de cada fn usada fora daqui (ou recursiva): este arquivo
  pode ser carregado de dentro de InLab_RecarregarPlugin() — ver fn_json.ms.
+
+ 24/09/2026 (issue #46): `material_id`/`mesh_final` vazio ou null (o export
+ usa "" e null — ver InLab_Produto_Texto) renomeava material/objeto para ""
+ e mapa para "_Canal". InLab_Produto_ParteValida guarda os dois campos —
+ parte inválida é pulada com #warn e nada é renomeado para ela. Nome
+ reaproveitável: a renomeação de meshes (#54) usa a mesma função para
+ `mesh_final`. Aplicar agora loga cada material e objeto renomeado (não só
+ o resumo), e o `catch` de Reverter loga o alvo que sumiu da cena em vez de
+ engolir a exceção.
 ================================================================================
 */
 
@@ -46,6 +55,15 @@ fn InLab_Produto_Lista dados =
 (
     local produtos = InLab_JSON_Obter dados "produtos"
     if isKindOf produtos Array then produtos else #()
+)
+
+-- Parte com `campo` vazio ou null é inválida p/ renomear (o export usa ""
+-- e null p/ campo ausente — ver InLab_Produto_Texto acima). Reaproveitada
+-- por material_id e mesh_final aqui, e pela renomeação de meshes (#54).
+global InLab_Produto_ParteValida
+fn InLab_Produto_ParteValida parte campo =
+(
+    (InLab_Produto_Texto parte campo) != ""
 )
 
 -- Índice (1-based) do produto com esse cod_est; 0 se não houver.
@@ -321,6 +339,11 @@ fn InLab_Produto_Aplicar produto ligacoes objs =
                     InLab_Log ("Parte '" + rot + "' sem material ligado — pulada.") tipo:#warn
                     nAviso += 1
                 )
+                else if not (InLab_Produto_ParteValida partes[i] "material_id") then
+                (
+                    InLab_Log ("Parte '" + rot + "' sem material_id no JSON — material não renomeado.") tipo:#warn
+                    nAviso += 1
+                )
                 else
                 (
                     if (InLab_Produto_Texto partes[i] "tipo") == "" do
@@ -328,7 +351,9 @@ fn InLab_Produto_Aplicar produto ligacoes objs =
                         InLab_Log ("Parte '" + rot + "' sem tipo no JSON — nome provisório '" + mid + "'. Classificar a parte na plataforma.") tipo:#warn
                         nAviso += 1
                     )
+                    local nomeAntigoMtl = mtl.name
                     InLab_Produto_Renomear mtl mid
+                    InLab_Log (mid + ": material renomeado — era '" + nomeAntigoMtl + "', parte '" + rot + "'.") tipo:#ok
                     nMat += 1
                     local bases = #()
                     local contagens = #()
@@ -359,19 +384,27 @@ fn InLab_Produto_Aplicar produto ligacoes objs =
                 )
             )
 
+            for i = 1 to partes.count where ligacoes[i] != undefined and not (InLab_Produto_ParteValida partes[i] "mesh_final") do
+            (
+                InLab_Log ("Parte '" + (InLab_Produto_Rotulo partes[i]) + "' sem mesh_final no JSON — não usada para renomear objeto.") tipo:#warn
+                nAviso += 1
+            )
+
             for o in objs where isValidNode o do
             (
                 local meshes = #()
-                for i = 1 to partes.count where ligacoes[i] != undefined and (InLab_Produto_ObjUsaMaterial o ligacoes[i]) do
+                for i = 1 to partes.count where ligacoes[i] != undefined and (InLab_Produto_ObjUsaMaterial o ligacoes[i]) and (InLab_Produto_ParteValida partes[i] "mesh_final") do
                     appendIfUnique meshes (InLab_Produto_Texto partes[i] "mesh_final")
                 case meshes.count of
                 (
                     0: (
-                        InLab_Log ("Objeto '" + o.name + "' não usa nenhum material ligado — não renomeado.") tipo:#warn
+                        InLab_Log ("Objeto '" + o.name + "' não usa nenhum material ligado com mesh_final válido — não renomeado.") tipo:#warn
                         nAviso += 1
                     )
                     1: (
+                        local nomeAntigoObj = o.name
                         InLab_Produto_Renomear o meshes[1]
+                        InLab_Log (meshes[1] + ": objeto renomeado — era '" + nomeAntigoObj + "'.") tipo:#ok
                         nObj += 1
                     )
                     default: (
@@ -399,7 +432,8 @@ fn InLab_Produto_Reverter =
         for i = InLab_UltimaRenomeacao.count to 1 by -1 do
         (
             local par = InLab_UltimaRenomeacao[i]
-            try ( par[1].name = par[2]; n += 1 ) catch () -- alvo apagado da cena
+            try ( par[1].name = par[2]; n += 1 )
+            catch ( InLab_Log ("Reverter: alvo de '" + par[2] + "' não existe mais na cena — pulado.") tipo:#warn )
         )
         InLab_UltimaRenomeacao = #()
         InLab_Log ("Nomes revertidos: " + n as string + ".") tipo:#ok
