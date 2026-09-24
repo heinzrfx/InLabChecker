@@ -112,6 +112,16 @@
  falhou), fica um aviso de que só o Ctrl+Z restaura o objeto. Tirada a
  segunda declaração `local metodo` (redundante — MAXScript já iça o nome pra
  função inteira).
+
+ 24/Set (issue #51, desempenho; medido no Max 2024 com 01.max, mesmo UV antes
+ e depois — assinatura do canal 3 e métricas idênticas):
+   - InLab_IlhasDoUnwrap pega só o 1º bit ligado de "resta" (o collect antigo
+     listava todas as faces restantes a cada ilha). Box008 com flatten 10°
+     (1 023 ilhas): 4,6 s → 3,1 s; o resto é o selectElement nativo.
+   - A medição final reaproveita a última InLab_MedirUV da correção do
+     gutter quando nenhum pack veio depois dela (antes o mesmo UV era medido
+     de novo). Uma chamada a menos por peça: Box008 19,6 s → 16,5 s, peça de
+     26,6 mil triângulos 30,7 s → 24,6 s.
 ================================================================================
 */
 
@@ -280,7 +290,10 @@ fn InLab_IlhasDoUnwrap uvw np =
     uvw.setTVSubObjectMode 3
     while resta.numberSet > 0 do
     (
-        local f0 = (for f in resta while true collect f)[1]
+        -- 24/Set (#51): só o primeiro bit ligado. O "collect" antigo montava a
+        -- lista de TODAS as faces restantes a cada ilha (O(faces × ilhas)).
+        local f0 = undefined
+        for f in resta while f0 == undefined do f0 = f
         uvw.selectFaces #{f0}
         uvw.selectElement()
         local s = uvw.getSelectedFaces()
@@ -500,11 +513,17 @@ fn InLab_AutoUV objs angulo:55.0 resolucao:1024 =
                         -- gutter sem derrubar o aproveitamento abaixo de 70% do inicial;
                         -- no fim o pack é refeito com o espaçamento dela (o pack parte
                         -- do layout atual, então "voltar" = repackar com esse valor).
+                        -- 24/Set (#51): medição feita sobre o layout ATUAL (nenhum pack
+                        -- depois dela). A medição final reaproveita em vez de medir de
+                        -- novo o mesmo UV — InLab_MedirUV é determinística, o resultado
+                        -- é o mesmo e sai uma chamada de ~3 s no Box008.
+                        local metAtual = undefined
                         if packUsado == "pack recursivo" do
                         (
                             -- 24/Set (#48): InLab_MedirUV devolve undefined quando o canal
                             -- não existe (mesma guarda que já havia na medição final, l.~536).
                             local m0 = InLab_MedirUV o INLAB_CANAL_UV_BAKE
+                            metAtual = m0
                             local g0 = if m0 != undefined then m0.gutterMin else undefined
                             if g0 != undefined and g0 > 0.0 and g0 < padding * 0.98 do
                             (
@@ -515,6 +534,7 @@ fn InLab_AutoUV objs angulo:55.0 resolucao:1024 =
                                     uvw.selectFaces #{1..nPolysUV}
                                     uvw.pack 1 esp true true true
                                     local mi = InLab_MedirUV o INLAB_CANAL_UV_BAKE
+                                    metAtual = mi
                                     gAtual = if mi == undefined or mi.gutterMin == undefined then 0.0 else mi.gutterMin
                                     if mi != undefined and gAtual > melhorG and mi.aproveitamento >= m0.aproveitamento * 0.7 do
                                     (
@@ -526,6 +546,7 @@ fn InLab_AutoUV objs angulo:55.0 resolucao:1024 =
                                 (
                                     uvw.selectFaces #{1..nPolysUV}
                                     uvw.pack 1 melhorEsp true true true
+                                    metAtual = undefined -- layout mudou: a medição final mede de novo
                                 )
                                 if melhorEsp != padding do packUsado += " + gutter corrigido"
                             )
@@ -549,7 +570,7 @@ fn InLab_AutoUV objs angulo:55.0 resolucao:1024 =
                         )
                         else
                         (
-                            local met = InLab_MedirUV o INLAB_CANAL_UV_BAKE
+                            local met = if metAtual != undefined then metAtual else InLab_MedirUV o INLAB_CANAL_UV_BAKE
                             local comProblema = met == undefined or met.sobrepostas > 0 or met.foraDe01 > 0 or (met.invertidos > 0 and not met.espelhado)
                             if met != undefined and met.gutterMin != undefined and met.gutterMin > 0.0 and met.gutterMin < padding * 0.98 do
                                 InLab_Log (o.name + ": gutter " + (formattedPrint met.gutterMin format:".4f") + " abaixo do padding " +
