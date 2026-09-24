@@ -51,6 +51,10 @@
    do Reverter: 1 item por stack, não por nó. A issue #62 (fn_otim_fino.ms)
    reusa o mesmo helper para não somar instância duas vezes no total de
    triângulos da meta por peça.
+ - 24/09/2026 (issue #62): FORA DO MANIFESTO. O passo 2 da Otimização
+   (functions\fn_otim_fino.ms) tem o próprio ProOptimizer com meta por peça e
+   proteções, e nada do plugin chama mais este arquivo. Ele fica no disco só
+   para tests\test_prooptimizer.ms, até a limpeza da issue #52.
 ================================================================================
 */
 

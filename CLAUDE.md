@@ -19,7 +19,7 @@ Não há build, linter nem test runner fora do Max. Tudo roda dentro do 3ds Max,
 
 ## Arquitetura
 
-**Carga por manifesto.** `InLabChecker.ms` define `INLAB_MODULOS`, a lista ordenada de todos os `.ms` carregados: core → famílias → funções → verificações/relatório → UI. A ordem é a ordem de dependência. **Módulo novo só existe se for adicionado ali.** Arquivos fora do manifesto não são carregados (hoje: `functions/fn_clipboard.ms`, `core/struct_produto.ms`, `functions/_placeholder.ms`).
+**Carga por manifesto.** `InLabChecker.ms` define `INLAB_MODULOS`, a lista ordenada de todos os `.ms` carregados: core → famílias → funções → verificações/relatório → UI. A ordem é a ordem de dependência. **Módulo novo só existe se for adicionado ali.** Arquivos fora do manifesto não são carregados (hoje: `functions/fn_clipboard.ms`, `core/struct_produto.ms`, `functions/_placeholder.ms` e `functions/fn_prooptimizer.ms`, substituído pelo passo 2 da Otimização e mantido só até a limpeza #52).
 
 **Tudo é global.** Não há sistema de módulos. Cada arquivo declara `global`s e `fn`s no escopo global, e os módulos se comunicam só por esses globais. Funções públicas levam o prefixo `InLab_`, constantes `INLAB_MAIUSCULO` (ex.: `INLAB_CANAL_UV` em `fn_autouv.ms`). Um global usado antes do arquivo que o define precisa ser pré-declarado com `global Nome` (ver o topo de `InLabChecker.ms` e dos testes).
 
