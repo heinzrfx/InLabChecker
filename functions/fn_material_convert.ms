@@ -33,6 +33,9 @@
 
  UNDO: mesmo padrão das Funções 1 e 2 — os materiais ORIGINAIS ficam
  registrados e InLab_ReverterConversao() os reatribui.
+
+ 24/09/2026 (issue #52, limpeza): InLab_BitmapQuadrado removida — código
+ morto, nenhuma chamada (InLab_BitmapDoTexmap é a função em uso).
 ================================================================================
 */
 
@@ -226,37 +229,6 @@ fn InLab_TexmapParaGLTF texmap nomeBase tamanho fazerBake inverter:false precisa
     else
         InLab_Log (nomeBase + ": mapa procedural e bake desabilitado — slot ficará vazio.") tipo:#warn
 
-    resultado
-)
-
---------------------------------------------------------------------------------
--- Rasteriza um texmap em bitmap quadrado tamanho×tamanho.
--- BITMAP SIMPLES (Bitmaptexture/CoronaBitmap): lê o ARQUIVO direto do disco
--- e reescala — fiel e independente do renderer. Isso corrige o caso palha:
--- renderMap() pode avaliar mapas Corona como branco fora do contexto de
--- render do Corona (diagnóstico 07/Jul — GLB branco no three.js).
--- Procedurais reais: renderMap() como fallback.
---------------------------------------------------------------------------------
-fn InLab_BitmapQuadrado texmap tamanho =
-(
-    local resultado = undefined
-    if (classof texmap == Bitmaptexture) or (InLab_ClasseContem texmap "CoronaBitmap") do
-    (
-        local arq = try ( texmap.filename ) catch ( undefined )
-        if arq != undefined and arq != "" and doesFileExist arq do
-        (
-            try
-            (
-                local src = openBitMap arq
-                resultado = bitmap tamanho tamanho
-                copy src resultado    -- copy entre bitmaps de tamanhos diferentes reescala
-                close src
-            )
-            catch ( resultado = undefined )
-        )
-    )
-    if resultado == undefined do
-        try ( resultado = renderMap texmap size:[tamanho, tamanho] display:false ) catch()
     resultado
 )
 

@@ -3,122 +3,22 @@
  functions\fn_material_utils.ms — UTILIDADES DE MATERIAL (ref. ArchToolz)
 --------------------------------------------------------------------------------
  O QUE ESTE ARQUIVO FAZ:
- Três ferramentas de material que o ArchToolz tem e o InLabChecker ainda não
- tinha (pedido Rafael, 10/Set):
+ InLab_DetachPorMaterialSelecao — detach por Material ID com PROPAGAÇÃO:
+ cada pedaço detachado recebe o SUBMATERIAL correspondente ao seu ID, não o
+ Multi/Sub-Object inteiro. Sem isso, cada pedaço sai carregando todos os
+ slots do material original — pior pra inspeção e pro export GLB, que só
+ precisa do material que aquele pedaço realmente usa.
 
-   1. InLab_SelecionarPorMaterialSimilar — seleciona, no escopo escolhido,
-      todos os objetos cujo material bate com um material de REFERÊNCIA.
-      Reaproveita o clipboard de material já existente (Copy Mat / Pick Mat,
-      fn_clipboard.ms) como origem da referência — não pede um pick novo.
-      Também entra em Multi/Sub-Object: basta UM submaterial bater.
+ ESCOPO: não depende de família carregada — funciona com qualquer objeto,
+ igual às Utilidades Rápidas (fn_utilidades.ms).
 
-   2. InLab_NomeObjetoParaMaterial — renomeia o material de cada objeto da
-      seleção para o nome do próprio objeto (equivalente ao "Object name to
-      Material name" do ArchToolz). Em Multi/Sub-Object, renomeia o material
-      de topo (o multi), não os submateriais — os submateriais são zonas de
-      acabamento, não identidade do objeto.
-
-   3. InLab_DetachPorMaterialSelecao — detach por Material ID com PROPAGAÇÃO:
-      cada pedaço detachado recebe o SUBMATERIAL correspondente ao seu ID,
-      não o Multi/Sub-Object inteiro. Sem isso, cada pedaço sai carregando
-      todos os slots do material original — pior pra inspeção e pro export
-      GLB, que só precisa do material que aquele pedaço realmente usa.
-
- ESCOPO: nenhuma destas três depende de família carregada — funcionam com
- qualquer objeto, igual às Utilidades Rápidas (fn_utilidades.ms).
+ 24/09/2026 (issue #52, limpeza): InLab_SelecionarPorMaterialSimilar,
+ InLab_ObjBateComMaterial e InLab_NomeObjetoParaMaterial removidas — saíram
+ da UI na issue #55 e ficaram sem nenhuma chamada (grep confirmou). Detach
+ por Material é o único uso que sobra deste arquivo (migrou para Utilidades
+ Rápidas na mesma #55).
 ================================================================================
 */
-
---------------------------------------------------------------------------------
--- SELECIONAR POR MATERIAL SIMILAR
---------------------------------------------------------------------------------
-
--- true se o material "de topo" do objeto bate com mtlRef — direto, ou (se
--- for Multi/Sub-Object) em qualquer um dos submateriais. porNome:true relaxa
--- o critério para "mesmo NOME" (cobre cópias/instâncias que não são o mesmo
--- objeto de material em memória — comum depois de "Make Unique" ou merge).
-fn InLab_ObjBateComMaterial obj mtlRef porNome:false =
-(
-    local m = obj.material
-    if m == undefined then false
-    else if m == mtlRef then true
-    else if porNome and m.name == mtlRef.name then true
-    else if classof m == Multimaterial then
-    (
-        local achou = false
-        for i = 1 to m.numsubs while not achou do
-        (
-            local sub = m.materialList[i]
-            if sub != undefined do
-            (
-                if sub == mtlRef then achou = true
-                else if porNome and sub.name == mtlRef.name do achou = true
-            )
-        )
-        achou
-    )
-    else false
-)
-
--- Ponto de entrada da UI. mtlRef default = material já copiado pelo usuário
--- (Copy Mat / Pick Mat da barra fixa) — reaproveita o fluxo existente em vez
--- de pedir um pick novo.
-fn InLab_SelecionarPorMaterialSimilar escopo:#cena porNome:false =
-(
-    local mtlRef = InLab_ClipboardMat
-    if mtlRef == undefined then
-    (
-        InLab_Log "Selecionar por Material Similar: nenhum material de referência — use Copy Mat ou Pick Mat primeiro." tipo:#warn
-        #()
-    )
-    else
-    (
-        local universo = if escopo == #selecao then (selection as array)
-                          else (for o in geometry where InLab_EhGeometria o collect o)
-        local achados = for o in universo where InLab_ObjBateComMaterial o mtlRef porNome:porNome collect o
-
-        if achados.count > 0 do select achados
-        InLab_Log ("Selecionar por Material Similar: '" + mtlRef.name + "' → " + achados.count as string +
-                   " objeto(s) (" + (if escopo == #selecao then "seleção" else "cena inteira") +
-                   (if porNome then ", por nome" else "") + ").") tipo:(if achados.count > 0 then #ok else #warn)
-        achados
-    )
-)
-
---------------------------------------------------------------------------------
--- NOME DO OBJETO → NOME DO MATERIAL
---------------------------------------------------------------------------------
-fn InLab_NomeObjetoParaMaterial objs =
-(
-    local n = 0
-    undo "InLab Nome Objeto -> Material" on
-    (
-        for o in objs do
-        (
-            if o.material == undefined then
-                InLab_Log (o.name + ": sem material — nada a renomear.") tipo:#warn
-            else if o.material.name == o.name then
-                InLab_Log (o.name + ": material já tem o mesmo nome — ignorado.")
-            else
-            (
-                local m = o.material
-                local nomeAntigo = m.name
-                -- Material compartilhado por outros nós (mesma instância):
-                -- renomear afeta TODOS eles — avisa em vez de esconder.
-                local outros = for x in geometry where x != o and InLab_EhGeometria x and x.material == m collect x
-                m.name = o.name
-                n += 1
-                if outros.count > 0 then
-                    InLab_Log (o.name + ": material '" + nomeAntigo + "' → '" + o.name +
-                               "' (COMPARTILHADO com " + outros.count as string + " outro(s) objeto(s) — todos afetados).") tipo:#warn
-                else
-                    InLab_Log (o.name + ": material '" + nomeAntigo + "' → '" + o.name + "'.") tipo:#ok
-            )
-        )
-    )
-    InLab_Log ("Nome Objeto → Material: " + n as string + " material(is) renomeado(s) de " + objs.count as string + " objeto(s).")
-    n
-)
 
 --------------------------------------------------------------------------------
 -- DETACH POR MATERIAL, COM PROPAGAÇÃO DE IDS

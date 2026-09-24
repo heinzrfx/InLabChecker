@@ -1,11 +1,14 @@
 /*
 ================================================================================
- ui\rollout_main.ms — v0.10 (13/Jul) — reorganização completa de UI
+ ui\rollout_main.ms — orquestra as seções do painel principal (rollout)
 --------------------------------------------------------------------------------
- MUDANÇAS DESTA VERSÃO (pedido da equipe, ref. ArchToolz):
+ HISTÓRICO (13/Jul, v0.10) — reorganização completa de UI (pedido da equipe,
+ ref. ArchToolz):
    - Ordem "Somente seleção" / "Cena inteira" padronizada em todo o plugin.
-   - Seções reordenadas: Família → Otimização → Utilidades → Converter
-     Material → Exportar → Verificações → Log (sempre por último).
+   - Seções reordenadas: Produto → Otimização → Utilidades → Converter
+     Material → Exportar → Verificações → Log (sempre por último). (Seção
+     "Família" foi renomeada para "Produto" depois, ver ajuste 23/09/2026
+     abaixo.)
    - Log colorido (dotNet RichTextBox — listbox nativo não suporta cor).
    - Splash screen ao abrir.
    - Opção de fixar o painel à esquerda/direita da tela (reposicionamento
