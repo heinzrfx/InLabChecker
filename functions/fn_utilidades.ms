@@ -40,6 +40,18 @@
    - movem o pivot só da raiz (uma vez por produto, não por peça).
  Raiz sem geometria (helper solto, grupo vazio) não tem pivot alterado —
  loga aviso e não conta no total.
+
+ 24/Set/2026 (issue #47): InLab_FindObjectsPesados não existia (só no
+ histórico) — botão "Find Objects" da seção Utilidades Rápidas dava erro de
+ runtime. Decisão do humano registrada na issue: critério A — objeto pesado
+ é quem passa de INLAB_FIND_FRACAO_POLYMAX (25%) do polyMax da família
+ ativa; sem família ativa, mostra os INLAB_FIND_TOP_N (5) objetos com mais
+ triângulos da cena, já que não há teto pra comparar.
+ Unidade = TRIÂNGULOS (InLab_Otim_Triangulos, functions\fn_otim_nucleo.ms,
+ carregado antes deste módulo no manifesto — issue #60 moveu V-03/V-05 de
+ polígonos do Max pra triângulos, a mesma contagem que o GLB exporta; usar
+ outra unidade aqui deixaria o rótulo do limite (ui\rollout_main.ms) e as
+ verificações discordando sobre o mesmo polyMax).
 ================================================================================
 */
 
@@ -175,4 +187,59 @@ fn InLab_BasePivot objs =
     )
     InLab_Log ("Base pivot: " + n as string + " objeto(s).")
     n
+)
+
+--------------------------------------------------------------------------------
+-- FIND OBJECTS PESADOS (issue #47)
+--------------------------------------------------------------------------------
+
+-- Fração do polyMax da família ativa que define "pesado" (critério A da
+-- decisão do humano, issue #47, 24/Set/2026).
+global INLAB_FIND_FRACAO_POLYMAX = 0.25
+
+-- Sem família ativa não há polyMax pra comparar: mostra os N objetos com
+-- mais triângulos da cena (decisão do humano, issue #47).
+global INLAB_FIND_TOP_N = 5
+
+-- Compara dois pares #(objeto, triângulos) pra ordenar DECRESCENTE por
+-- triângulos (qsort pede uma função de 2 argumentos; a diferença já serve
+-- de valor de comparação).
+fn InLab_FindCompararPeso a b = (b[2] - a[2])
+
+-- Acha e seleciona os objetos "pesados" da cena (ou de `objs`, se passado —
+-- usado pelo teste; o botão da UI chama sem argumento e cai na cena
+-- inteira, igual ao medidor da seção Otimização).
+-- Critério A (issue #47): com família ativa, pesado é quem passa de
+-- INLAB_FIND_FRACAO_POLYMAX do polyMax da família, em triângulos. Sem
+-- família ativa: os INLAB_FIND_TOP_N objetos com mais triângulos da cena.
+fn InLab_FindObjectsPesados objs:undefined =
+(
+    if objs == undefined do objs = InLab_ObjetosVerificacao()
+    local pares = for o in objs where InLab_EhGeometria o collect #(o, InLab_Otim_Triangulos #(o))
+    qsort pares InLab_FindCompararPeso
+    local achados = #()
+    if pares.count == 0 then
+        InLab_Log "Find Objects: cena sem geometria." tipo:#warn
+    else if InLab_FamiliaAtiva != undefined then
+    (
+        local limite = InLab_FamiliaAtiva.polyMax * INLAB_FIND_FRACAO_POLYMAX
+        achados = for p in pares where p[2] > limite collect p
+        if achados.count == 0 do
+            InLab_Log ("Find Objects: nenhum objeto acima de " + (limite as integer) as string +
+                       " triângulos (" + ((INLAB_FIND_FRACAO_POLYMAX * 100) as integer) as string +
+                       "% do polyMax de '" + InLab_FamiliaAtiva.nome + "').") tipo:#info
+    )
+    else
+    (
+        achados = for i = 1 to (amin INLAB_FIND_TOP_N pares.count) collect pares[i]
+        InLab_Log ("Find Objects: sem família ativa — mostrando os " + achados.count as string +
+                   " objeto(s) mais pesado(s) da cena.") tipo:#info
+    )
+    if achados.count > 0 do
+    (
+        select (for a in achados collect a[1])
+        for a in achados do InLab_Log (a[1].name + ": " + a[2] as string + " triângulo(s).") tipo:#warn
+    )
+    InLab_Log ("Find Objects: " + achados.count as string + " objeto(s) pesado(s).")
+    achados.count
 )
