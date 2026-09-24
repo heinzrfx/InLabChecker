@@ -126,6 +126,11 @@
  desligado e não tem mais um "lado" fixo pra herdar, ele volta a abrir
  sempre no topo à direita (mesmo padrão do painel principal na primeira
  vez) — ajuste mínimo só pra não quebrar se alguém religar o splash depois.
+
+ 24/09/2026 (issue #63): a Otimização redesenha a viewport depois de
+ Calcular, ao trocar de passo e ao marcar/desmarcar uma linha do passo 3 —
+ o destaque das faces escondidas (functions\fn_otim_escondidas.ms) só
+ desenha as linhas marcadas que estão em INLAB_OTIM_PROPOSTAS.
 ================================================================================
 */
 
@@ -524,7 +529,19 @@ rollout InLabSecOtimizacao "Otimização" width:420
         INLAB_OTIM_PROPOSTAS = #()
         encherLista()
         btnComparar.enabled = (s == 2)
+        -- Some com o destaque das faces escondidas (o desenho só mostra as
+        -- linhas que estão na lista).
+        redrawViews()
     )
+
+    -- 24/09/2026 (issue #63): desmarcar uma peça do passo 3 tira o destaque
+    -- dela da viewport na hora.
+    on lvPropostas ItemChecked s e do
+        if rdoPasso.state == 3 do
+        (
+            lerMarcadas()
+            redrawViews()
+        )
 
     on btnCalcular pressed do
     (
@@ -537,6 +554,8 @@ rollout InLabSecOtimizacao "Otimização" width:420
             InLab_ProgressoParar()
             encherLista()
             pintarMedidor()
+            -- Destaque das faces escondidas (passo 3) lê a lista: redesenha já.
+            redrawViews()
             if INLAB_OTIM_PROPOSTAS.count > 0 do
                 InLab_Log ("Otimização · passo " + rdoPasso.state as string + ": " + INLAB_OTIM_PROPOSTAS.count as string +
                            " proposta(s). Desmarque o que não quiser e clique em Aplicar.")
