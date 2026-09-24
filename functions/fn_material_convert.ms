@@ -34,6 +34,28 @@
  UNDO: mesmo padrão das Funções 1 e 2 — os materiais ORIGINAIS ficam
  registrados e InLab_ReverterConversao() os reatribui.
 
+ CORREÇÃO 24/Set (issue #45): InLab_UltimaConversao zerava a cada chamada de
+ InLab_ConverterObjetos — Converter A e depois B fazia o Reverter perder A
+ (mesmo bug já corrigido em fn_renomear_produto.ms em 18/Set). Agora o
+ histórico ACUMULA e só o Reverter zera. Reconverter um nó já convertido
+ (material atual = glTF de uma rodada anterior não revertida) usa o Corona
+ ORIGINAL daquele registro — nunca o glTF — e ATUALIZA o registro existente
+ em vez de duplicar, para o Reverter sempre voltar ao Corona de verdade.
+ InLab_ReverterConversao também apaga os bakes criados em InLab_bake\
+ (só os arquivos que o próprio registro de conversão gravou ter criado —
+ nunca outro arquivo) e InLab_SetPropSafe loga a falha de setProperty em vez
+ de engolir o erro.
+
+ 24/Set (issue #51): InLab_BakeBaseComAlpha fecha os bitmaps (base, opacity
+ e destino) também quando a exceção vem no meio do laço — antes ficavam
+ abertos — e a mensagem de falha leva a exceção. O laço por pixel FICOU:
+ medido no Max 2024 (2048 px: ~9,7 s; 4096 px: ~47 s), o tempo é do
+ MaxScript por pixel, e a saída do MaxScript (System.Drawing/LockBits) não
+ reproduz o resultado: os bitmaps do Max guardam 16 bits por canal
+ (getPixels devolve 61,9105) e o alpha é a média desses valores arredondada
+ só no save; em 8 bits o alpha mudaria ±1 em parte dos pixels. Gravar o
+ alpha na linha da base em vez de criar uma cor por pixel deu o mesmo PNG e
+ o mesmo tempo, por isso não entrou.
  24/09/2026 (issue #52, limpeza): InLab_BitmapQuadrado removida — código
  morto, nenhuma chamada (InLab_BitmapDoTexmap é a função em uso).
 ================================================================================
@@ -54,11 +76,13 @@ struct ConversaoRecord
 (
     no,                 -- nó da cena
     materialOriginal,   -- material Corona original (preservado em memória)
-    materialNovo        -- material glTF atribuído
+    materialNovo,       -- material glTF atribuído
+    bakes = #()         -- caminhos de arquivo bakeados em InLab_bake\ para este registro
 )
 
 global InLab_UltimaConversao = #()
 global InLab_ClasseGLTF = undefined   -- cache da classe resolvida
+global InLab_BakesDestaConversao = #() -- acumulador temporário: bakes criados na conversão em andamento
 
 --------------------------------------------------------------------------------
 -- Resolve a classe do glTF Material testando os nomes conhecidos entre
@@ -121,7 +145,9 @@ fn InLab_SetPropSafe obj candidatos valor =
     for c in candidatos while usado == undefined do
         if isProperty obj c do
         (
-            try ( setProperty obj c valor ; usado = c ) catch()
+            try ( setProperty obj c valor ; usado = c )
+            catch ( InLab_Log ("InLab_SetPropSafe: falha ao setar '" + c as string + "' em " +
+                               (classof obj as string) + " — " + (getCurrentException()) as string) tipo:#err )
         )
     usado
 )
@@ -187,6 +213,7 @@ fn InLab_BakeTexmap texmap nomeBase tamanho precisaAlpha:false =
         save bm
         close bm
         ok = arq
+        append InLab_BakesDestaConversao arq
         InLab_Log (nomeBase + ": procedural bakeado em " + tamanho as string + "px → " + arq) tipo:#ok
     )
     catch ( InLab_Log (nomeBase + ": FALHA no renderMap — mapa mantido de fora.") tipo:#err )
@@ -279,16 +306,21 @@ fn InLab_BakeBaseComAlpha mapaBase corBase mapaOpac nomeBase tamanho =
 (
     local arq = (InLab_PastaBake()) + (InLab_NomeSeguro nomeBase) + ".png"
     local resultado = undefined
+    -- 24/Set (#51): declarados fora do try para o catch fechar o que abriu.
+    local bmBase = undefined, bmOpac = undefined, destino = undefined
     try
     (
-        local bmBase = if mapaBase != undefined then (InLab_BitmapDoTexmap mapaBase tamanho) else undefined
-        local bmOpac = InLab_BitmapDoTexmap mapaOpac tamanho
+        bmBase = if mapaBase != undefined then (InLab_BitmapDoTexmap mapaBase tamanho) else undefined
+        bmOpac = InLab_BitmapDoTexmap mapaOpac tamanho
         if bmOpac == undefined then
+        (
             InLab_Log (nomeBase + ": não foi possível avaliar o mapa de opacity — composição abortada.") tipo:#err
+            if bmBase != undefined do ( close bmBase ; bmBase = undefined ) -- 24/Set (#51): ficava aberto
+        )
         else
         (
             local corFundo = if corBase != undefined then corBase else white
-            local destino = bitmap tamanho tamanho color:corFundo
+            destino = bitmap tamanho tamanho color:corFundo
             local somaAlpha = 0.0
 
             for y = 0 to tamanho - 1 do
@@ -306,11 +338,13 @@ fn InLab_BakeBaseComAlpha mapaBase corBase mapaOpac nomeBase tamanho =
             )
 
             destino.filename = arq
-            try ( pngio.setAlpha true ) catch()
+            try ( pngio.setAlpha true ) catch ( InLab_Log (nomeBase + ": pngio.setAlpha indisponível — " + getCurrentException()) tipo:#warn )
             save destino
             close destino
-            if bmBase != undefined do close bmBase
+            destino = undefined
+            if bmBase != undefined do ( close bmBase ; bmBase = undefined )
             close bmOpac
+            bmOpac = undefined
 
             -- DIAGNÓSTICO: alpha médio do composto. ~0% = tudo transparente,
             -- ~100% = tudo opaco — ambos indicam avaliação errada do opacity.
@@ -322,9 +356,17 @@ fn InLab_BakeBaseComAlpha mapaBase corBase mapaOpac nomeBase tamanho =
                 InLab_Log (nomeBase + ": alpha médio extremo — verificar se o mapa de opacity avaliou corretamente.") tipo:#warn
             InLab_Log (nomeBase + ": PNG exigido pelo alpha — conflito com V-24, pendência Birô.") tipo:#warn
             resultado = arq
+            append InLab_BakesDestaConversao arq
         )
     )
-    catch ( InLab_Log (nomeBase + ": FALHA na composição base+alpha — verificar Listener.") tipo:#err )
+    catch
+    (
+        InLab_Log (nomeBase + ": FALHA na composição base+alpha — " + getCurrentException()) tipo:#err
+        -- 24/Set (#51): antes os bitmaps ficavam abertos (memória e arquivo) quando
+        -- a exceção vinha no meio do laço.
+        for bm in #(destino, bmBase, bmOpac) where bm != undefined do
+            try ( close bm ) catch ( InLab_Log (nomeBase + ": não foi possível fechar um bitmap da composição — " + getCurrentException()) tipo:#warn )
+    )
     resultado
 )
 
@@ -636,7 +678,10 @@ fn InLab_ConverterMaterialNode mtl tamanho fazerBake =
 --------------------------------------------------------------------------------
 fn InLab_ConverterObjetos objs tamanhoBake:1024 fazerBake:true =
 (
-    InLab_UltimaConversao = #()
+    -- NÃO zera InLab_UltimaConversao aqui — o histórico acumula entre
+    -- chamadas, só o Reverter zera (bug #45, mesmo padrão de
+    -- fn_renomear_produto.ms). Zerar aqui fazia "Converter A, depois B" e
+    -- Reverter perder A.
     local convertidos = 0
 
     if (InLab_ResolverClasseGLTF()) == undefined then 0
@@ -646,31 +691,55 @@ fn InLab_ConverterObjetos objs tamanhoBake:1024 fazerBake:true =
         -- MESMA instância convertida (preserva instancing e draw calls).
         local origens = #()
         local novos   = #()
+        local bakesGrupo = #()
 
         undo "InLab Converter Material" on
         (
             for o in objs where o.material != undefined do
             (
-                local orig = o.material
+                -- Nó já convertido nesta sessão (material atual = glTF de um
+                -- registro ainda não revertido)? O ORIGINAL de verdade é o
+                -- Corona daquele registro, nunca o glTF da rodada anterior.
+                local jaConvertido = undefined
+                for r in InLab_UltimaConversao where jaConvertido == undefined and r.no == o and r.materialNovo == o.material do
+                    jaConvertido = r
+
+                local orig = if jaConvertido != undefined then jaConvertido.materialOriginal else o.material
+
                 local idx = 0
                 for i = 1 to origens.count where origens[i] == orig do idx = i
 
                 local novo = undefined
-                if idx > 0 then novo = novos[idx]
+                local bakesDoGrupo = #()
+                if idx > 0 then ( novo = novos[idx]; bakesDoGrupo = bakesGrupo[idx] )
                 else
                 (
+                    InLab_BakesDestaConversao = #()
                     novo = InLab_ConverterMaterialNode orig tamanhoBake fazerBake
+                    bakesDoGrupo = InLab_BakesDestaConversao
                     append origens orig
                     append novos novo
+                    append bakesGrupo bakesDoGrupo
                 )
 
                 if novo != undefined do
                 (
-                    local rec = ConversaoRecord()
-                    rec.no               = o
-                    rec.materialOriginal = orig
-                    rec.materialNovo     = novo
-                    append InLab_UltimaConversao rec
+                    -- Atualiza o registro existente (mantém o Corona original)
+                    -- em vez de duplicar, para o Reverter não se perder.
+                    if jaConvertido != undefined then
+                    (
+                        jaConvertido.materialNovo = novo
+                        for b in bakesDoGrupo do appendIfUnique jaConvertido.bakes b
+                    )
+                    else
+                    (
+                        local rec = ConversaoRecord()
+                        rec.no               = o
+                        rec.materialOriginal = orig
+                        rec.materialNovo     = novo
+                        rec.bakes            = bakesDoGrupo
+                        append InLab_UltimaConversao rec
+                    )
                     o.material = novo
                     convertidos += 1
                     InLab_Log (o.name + ": material '" + orig.name + "' → '" + novo.name + "'.") tipo:#ok
@@ -692,17 +761,33 @@ fn InLab_ReverterConversao =
     else
     (
         local revertidos = 0
+        local bakesApagados = 0
         undo "InLab Reverter Conversão" on
         (
             for r in InLab_UltimaConversao do
+            (
                 if isValidNode r.no do
                 (
                     r.no.material = r.materialOriginal
                     revertidos += 1
                     InLab_Log (r.no.name + ": material original '" + r.materialOriginal.name + "' restaurado.") tipo:#ok
                 )
+                -- Apaga só os arquivos que ESTE registro gravou ter bakeado
+                -- em InLab_bake\ — nunca outro arquivo da pasta.
+                if r.bakes != undefined do
+                    for arq in r.bakes where doesFileExist arq do
+                    (
+                        try
+                        (
+                            deleteFile arq
+                            bakesApagados += 1
+                        )
+                        catch ( InLab_Log ("Falha ao apagar bake '" + arq + "'.") tipo:#err )
+                    )
+            )
         )
         InLab_UltimaConversao = #()
-        InLab_Log ("Reversão de materiais concluída: " + revertidos as string + " objeto(s).")
+        InLab_Log ("Reversão de materiais concluída: " + revertidos as string + " objeto(s) · " +
+                   bakesApagados as string + " bake(s) apagado(s).")
     )
 )
