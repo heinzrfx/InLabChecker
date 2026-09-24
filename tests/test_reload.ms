@@ -2,10 +2,12 @@
  tests\test_reload.ms — teste automatico do InLab_RecarregarPlugin (InLabChecker.ms, issue #52)
  RODAR NUMA CENA VAZIA (resetMaxFile #noPrompt): carrega o plugin INTEIRO (fileIn
  de InLabChecker.ms, igual "Scripting > Run Script"), abre e fecha a UI de verdade.
- PRE-REQUISITO: o arquivo functions\_teste_reload_quebrado.ms (fora do manifesto,
- com erro de sintaxe de proposito) precisa existir ANTES de rodar este teste — e
- apagado do disco DEPOIS (fora do Max, nao aqui: safe_mode do MCP bloqueia
- deleteFile/createFile no codigo enviado).
+ AUTOCONTIDO (24/Set/2026): o proprio teste cria functions\_teste_reload_quebrado.ms
+ (fora do manifesto, com erro de sintaxe de proposito) antes do reload que precisa
+ dele, e apaga o arquivo no final — em todo caminho, inclusive apos excecao no catch.
+ A restricao de safe_mode do MCP (createFile/copyFile bloqueados) vale so pra codigo
+ enviado direto por execute_maxscript; um teste carregado por fileIn pode usar
+ createFile/deleteFile normalmente (este arquivo ja usa createFile pra sua saida).
  Scripting > Run Script... > este arquivo.
  Resultado: <pasta temp do Max>\inlab_test_reload.txt (PASS/FAIL por item).
 */
@@ -27,11 +29,19 @@ global INLAB_TESTE_SAIDA, INLAB_TESTE_FALHAS
     )
 
     local moduloQuebrado = @"functions\_teste_reload_quebrado.ms"
+    local caminhoQuebrado = raiz + moduloQuebrado
     local modulosOriginais = undefined
 
     try
     (
-        checar "Arquivo quebrado de teste existe (pre-requisito)" (doesFileExist (raiz + moduloQuebrado))
+        -- Cria o modulo quebrado (fora do manifesto, erro de sintaxe de proposito)
+        -- ANTES do reload que precisa dele. Apagado no bloco de limpeza no final,
+        -- em todo caminho (sucesso ou catch).
+        local arqQuebrado = createFile caminhoQuebrado
+        format "-- modulo de teste com erro de sintaxe de proposito, criado por tests\\test_reload.ms\n" to:arqQuebrado
+        format "fn _testeReloadQuebrado a b = ( a + )\n" to:arqQuebrado
+        close arqQuebrado
+        checar "Arquivo quebrado de teste foi criado" (doesFileExist caminhoQuebrado)
 
         -- Carga real do plugin, igual "Scripting > Run Script" (CLAUDE.md).
         -- getSourceFileName() dentro de InLabChecker.ms resolve pra este fileIn.
@@ -89,6 +99,19 @@ global INLAB_TESTE_SAIDA, INLAB_TESTE_FALHAS
     -- Nunca deixa o painel aberto nem o messageBox desligado pro resto da sessao.
     try ( destroyDialog InLabChecker_Rollout ) catch()
     INLAB_RELOAD_MOSTRAR_MSGBOX = true
+
+    -- Apaga o modulo quebrado em TODO caminho (sucesso ou apos excecao no catch),
+    -- pra nao deixar lixo fora do manifesto no disco (CLAUDE.md: arquivo fora do
+    -- manifesto nao carrega, mas nao deve sobrar de um teste).
+    try
+    (
+        if doesFileExist caminhoQuebrado do
+        (
+            deleteFile caminhoQuebrado
+            checar "Arquivo quebrado de teste foi apagado no final" (not (doesFileExist caminhoQuebrado))
+        )
+    )
+    catch ( linha ("EXCECAO ao apagar modulo quebrado: " + getCurrentException()) )
 
     linha ("\n" + (if INLAB_TESTE_FALHAS == 0 then "TUDO OK" else (INLAB_TESTE_FALHAS as string + " FALHA(S)")))
     close INLAB_TESTE_SAIDA
