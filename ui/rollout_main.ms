@@ -75,6 +75,13 @@
  Auto UV, Clean UV e Real World Fix foram para a seção nova "UV e Texturas",
  sem mudar comportamento. A seção Produto repinta o medidor quando a família
  muda (InLab_OtimUI_Atualizar).
+
+ 24/Set/2026 (issue #47): botão "Find Objects" (Utilidades Rápidas) chamava
+ InLab_FindObjectsPesados, que não existia — implementada em
+ functions\fn_utilidades.ms. lblFindLimite (texto do critério) deixou de
+ depender só do `on InLabSecUtil open`: a seção Produto agora também chama
+ InLab_UtilUI_AtualizarLimite quando o dropdown Família muda, mesmo padrão
+ já usado pelo medidor da Otimização (InLab_OtimUI_Atualizar).
 ================================================================================
 */
 
@@ -90,6 +97,10 @@
 -- Repinta o medidor da Otimização. Definida depois de InLabSecOtimizacao;
 -- declarada aqui porque a seção Produto (abaixo) a chama quando a família muda.
 global InLab_OtimUI_Atualizar
+-- 24/Set/2026 (issue #47): mesmo padrão pro rótulo do limite do Find Objects
+-- (seção Utilidades Rápidas) — definida depois de InLabSecUtil, chamada
+-- daqui quando a família muda no dropdown.
+global InLab_UtilUI_AtualizarLimite
 global INLAB_OTIM_PROPOSTAS = #()
 
 global InLab_ProdutoAtivo = undefined -- árvore crua do JSON importado (formato de InLab_ParseJSON)
@@ -164,6 +175,7 @@ rollout InLabSecProduto "Produto" width:420
             )
             mostrarFamilia()
             if InLab_OtimUI_Atualizar != undefined do InLab_OtimUI_Atualizar()
+            if InLab_UtilUI_AtualizarLimite != undefined do InLab_UtilUI_AtualizarLimite()
         )
     )
 
@@ -231,6 +243,7 @@ rollout InLabSecProduto "Produto" width:420
     (
         InLab_DefinirFamiliaAtiva (familiaEscolhida())
         if InLab_OtimUI_Atualizar != undefined do InLab_OtimUI_Atualizar()
+        if InLab_UtilUI_AtualizarLimite != undefined do InLab_UtilUI_AtualizarLimite()
     )
 
     on InLabSecProduto open do mostrarFamilia()
@@ -512,12 +525,28 @@ rollout InLabSecUtil "Utilidades Rápidas" width:420
     button btnUCenter "Center Pivot" width:130
     button btnUBase "Base Pivot" width:130
 
-    label lblFind "Find Objects (polígonos acima do limite):" align:#left across:1
+    label lblFind "Objetos pesados da cena" align:#left across:1
     label lblFindLimite "limite: carregue uma família" align:#left
-    button btnUFind "Find Objects" width:395 height:24
+    button btnUFind "Find Objects" width:395 height:24 tooltip:(
+        "Seleciona os objetos acima de " + ((INLAB_FIND_FRACAO_POLYMAX * 100) as integer) as string +
+        "% do polyMax da família ativa (em triângulos). Sem família ativa: os " +
+        INLAB_FIND_TOP_N as string + " objetos mais pesados da cena.")
 
     label lblUDetach "Detach por Material (propaga IDs para os pedaços)" align:#left across:1
     button btnUDetach "Detach por Material na Seleção" width:395 height:24
+
+    -- 24/Set/2026 (issue #47): rótulo do limite do Find Objects — mesma
+    -- lógica do texto que InLab_FindObjectsPesados usa pra decidir o
+    -- critério (functions\fn_utilidades.ms), só pra exibição.
+    fn atualizarLimite =
+    (
+        lblFindLimite.text = if InLab_FamiliaAtiva != undefined then
+            ("limite: " + ((InLab_FamiliaAtiva.polyMax * INLAB_FIND_FRACAO_POLYMAX) as integer) as string +
+             " triângulos (" + ((INLAB_FIND_FRACAO_POLYMAX * 100) as integer) as string +
+             "% do polyMax de '" + InLab_FamiliaAtiva.nome + "')")
+        else
+            ("limite: sem família ativa — mostra os " + INLAB_FIND_TOP_N as string + " objetos mais pesados da cena")
+    )
 
     on btnUResetX pressed do
     (
@@ -544,10 +573,15 @@ rollout InLabSecUtil "Utilidades Rápidas" width:420
     -- Atualiza o rótulo do limite sempre que a seção é exibida — mantém o
     -- valor visível sincronizado com a família carregada (não é campo
     -- editável: vem sempre do polyMax, conforme decisão da equipe).
-    on InLabSecUtil open do
-        if InLab_FamiliaAtiva != undefined do
-            lblFindLimite.text = "limite: " + InLab_FamiliaAtiva.polyMax as string + " faces (polyMax de '" + InLab_FamiliaAtiva.nome + "')"
+    -- 24/Set/2026 (issue #47): não bastava mais só no open — InLab_UtilUI_
+    -- AtualizarLimite (definida abaixo) também é chamada pelo dropdown
+    -- Família (seção Produto) sempre que a família muda.
+    on InLabSecUtil open do atualizarLimite()
 )
+
+fn InLab_UtilUI_AtualizarLimite =
+    try ( InLabSecUtil.atualizarLimite() )
+    catch ( InLab_Log ("Utilidades: rótulo do limite não atualizou (" + getCurrentException() + ").") tipo:#warn )
 
 ----------------------------------------------------------------------
 -- SEÇÃO: Converter Material

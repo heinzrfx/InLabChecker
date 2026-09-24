@@ -8,15 +8,20 @@
  RODAR NUMA CENA VAZIA (File > New): cria e apaga os objetos de cada caso.
  Resultado: <pasta temp do Max>\inlab_test_utilidades.txt (PASS/FAIL por item).
 
- Extensão futura (issue #47, Find Objects): mesmo arquivo-alvo
- (functions\fn_utilidades.ms) e mesmo arquivo de teste — novos casos entram
- como uma seção nova abaixo, seguindo o padrão checar/rodar já montado aqui.
+ 24/Set/2026 (issue #47): seção "FIND OBJECTS PESADOS" — critério A da
+ decisão do humano (acima de 25% do polyMax da família ativa, em
+ triângulos) e o caso sem família ativa (N mais pesados da cena). Carrega
+ core\struct_familia.ms (FamiliaConfig, InLab_FamiliaAtiva) e
+ functions\fn_otim_nucleo.ms (InLab_Otim_Triangulos) a mais que os casos
+ de pivot acima.
 */
 -- Declarados ANTES do bloco: o bloco é compilado antes dos fileIn rodarem.
 global InLab_Log, InLab_EhGeometria, InLab_Instancias
 global InLab_ResetXFormSelecao, InLab_CentralizarPivot, InLab_BasePivot
 global InLab_RaizDoNo, InLab_GeometriasDescendentes, InLab_BBoxGeometrias, InLab_RaizesDaSelecao
 global InLab_RegistrarVerif, InLab_ResetarResultados, InLab_VerifResults, InLab_V17_PivotRaiz
+global FamiliaConfig, InLab_FamiliaAtiva, InLab_Otim_Triangulos
+global InLab_FindObjectsPesados, InLab_FindCompararPeso, INLAB_FIND_FRACAO_POLYMAX, INLAB_FIND_TOP_N
 global INLAB_TESTE_SAIDA, INLAB_TESTE_FALHAS
 (
     local dirTeste = getFilenamePath (getSourceFileName())
@@ -45,11 +50,12 @@ global INLAB_TESTE_SAIDA, INLAB_TESTE_FALHAS
 
     local logOriginal = InLab_Log
     local unidadeOriginal = units.SystemType
+    local familiaOriginal = InLab_FamiliaAtiva
 
     try
     (
-        for m in #(@"core\struct_result.ms", @"core\utils.ms",
-                   @"functions\fn_autouv.ms", @"functions\fn_utilidades.ms",
+        for m in #(@"core\struct_result.ms", @"core\struct_familia.ms", @"core\utils.ms",
+                   @"functions\fn_otim_nucleo.ms", @"functions\fn_autouv.ms", @"functions\fn_utilidades.ms",
                    @"verifications\verif_pivot.ms") do
             fileIn (raiz + m)
         -- Depois dos fileIn: core\log.ms (via nenhum aqui) não redefine nada;
@@ -139,6 +145,65 @@ global INLAB_TESTE_SAIDA, INLAB_TESTE_FALHAS
         checar "BasePivot grupo (cabeça selecionada): pivot correto (25,0,0)" (pertoP3 bgGrupo.pivot [25, 0, 0] 0.01)
         checar "BasePivot grupo (cabeça selecionada) → V-17 passa" ((statusV17 #(bg1, bg2)) == #pass)
         limparCena()
+
+        ---------------------------------------------------------- FIND OBJECTS PESADOS (issue #47)
+        checar "Find Objects: constante de fração = 25% do polyMax" (INLAB_FIND_FRACAO_POLYMAX == 0.25)
+        checar "Find Objects: constante N sem família = 5" (INLAB_FIND_TOP_N == 5)
+
+        -- Critério B (sem família ativa): os N objetos com mais triângulos da
+        -- cena. 7 caixas com lengthsegs diferentes → 7 pesos distintos; mede
+        -- com o mesmo helper que a função usa (InLab_Otim_Triangulos) em vez
+        -- de supor a fórmula de tessellation da caixa.
+        InLab_FamiliaAtiva = undefined
+        local semFamObjs = for i = 1 to 7 collect (Box length:10 width:10 height:10 lengthsegs:i name:("FindB" + i as string))
+        local paresReais = for o in semFamObjs collect #(o, InLab_Otim_Triangulos #(o))
+        qsort paresReais InLab_FindCompararPeso
+        local nomesEsperadosSemFam = for i = 1 to INLAB_FIND_TOP_N collect paresReais[i][1].name
+        clearSelection()
+        local nSemFam = InLab_FindObjectsPesados objs:semFamObjs
+        checar "Find Objects sem família: retorna INLAB_FIND_TOP_N" (nSemFam == INLAB_FIND_TOP_N)
+        local nomesSelSemFam = for o in (selection as array) collect o.name
+        checar "Find Objects sem família: seleciona os N mais pesados da cena" (nomesSelSemFam.count == nomesEsperadosSemFam.count and
+            (for n in nomesEsperadosSemFam where (findItem nomesSelSemFam n) == 0 collect n).count == 0)
+        limparCena()
+
+        -- Critério A (com família ativa): acima de INLAB_FIND_FRACAO_POLYMAX
+        -- do polyMax, em triângulos. polyMax calculado a partir dos pesos
+        -- REAIS medidos (não de uma fórmula suposta) pra cair exatamente
+        -- entre "média" e "pesada".
+        local leve   = Box length:10 width:10 height:10 lengthsegs:1  name:"FindLeve"
+        local media  = Box length:10 width:10 height:10 lengthsegs:5  name:"FindMedia"
+        local pesada = Box length:10 width:10 height:10 lengthsegs:20 name:"FindPesada"
+        local trisLeve   = InLab_Otim_Triangulos #(leve)
+        local trisMedia  = InLab_Otim_Triangulos #(media)
+        local trisPesada = InLab_Otim_Triangulos #(pesada)
+        checar "Find Objects: setup com 3 pesos distintos e crescentes" (trisLeve < trisMedia and trisMedia < trisPesada)
+        local cfgTeste = FamiliaConfig nome:"teste_find" polyMax:(((trisMedia + trisPesada) / 2.0) / INLAB_FIND_FRACAO_POLYMAX)
+        InLab_FamiliaAtiva = cfgTeste
+        clearSelection()
+        local nComFam = InLab_FindObjectsPesados objs:#(leve, media, pesada)
+        checar "Find Objects com família: só o objeto acima de 25% do polyMax" (nComFam == 1)
+        checar "Find Objects com família: seleciona só o objeto pesado" (selection.count == 1 and selection[1].name == "FindPesada")
+        limparCena()
+
+        -- Nenhum objeto acima do limite: nada selecionado, retorna 0.
+        local leve2 = Box length:10 width:10 height:10 lengthsegs:1 name:"FindLeve2"
+        local cfgAlto = FamiliaConfig nome:"teste_find_alto" polyMax:1000000000
+        InLab_FamiliaAtiva = cfgAlto
+        clearSelection()
+        local nNenhum = InLab_FindObjectsPesados objs:#(leve2)
+        checar "Find Objects com família: nenhum acima do limite retorna 0" (nNenhum == 0)
+        checar "Find Objects com família: nada fica selecionado" (selection.count == 0)
+        limparCena()
+
+        -- Helper sozinho não é geometria: não entra na contagem nem na seleção.
+        InLab_FamiliaAtiva = undefined
+        local ptFind = Point()
+        clearSelection()
+        local nHelper = InLab_FindObjectsPesados objs:#(ptFind)
+        checar "Find Objects: helper sozinho não conta como geometria, retorna 0" (nHelper == 0)
+        checar "Find Objects: helper sozinho não fica selecionado" (selection.count == 0)
+        limparCena()
     )
     catch
     (
@@ -149,6 +214,7 @@ global INLAB_TESTE_SAIDA, INLAB_TESTE_FALHAS
     try ( limparCena() ) catch ()
     units.SystemType = unidadeOriginal
     InLab_Log = logOriginal
+    InLab_FamiliaAtiva = familiaOriginal
     linha ("\n" + (if INLAB_TESTE_FALHAS == 0 then "TUDO OK" else (INLAB_TESTE_FALHAS as string + " FALHA(S)")))
     close INLAB_TESTE_SAIDA
     format "Teste concluído — %\n" arqSaida
