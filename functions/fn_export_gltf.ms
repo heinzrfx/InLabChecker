@@ -43,7 +43,7 @@
       a janela, forcei o foco de volta pro Max (windows.setForegroundWindow
       no HWND do Max) e chamei de novo o ramo "já aberta" — o foco
       continuava no Max (windows.getFocus() não mudava). Corrigido com
-      InLab_FocarJanelaExportador, que localiza o HWND da janela varrendo o
+      InLab_FocarJanelaExportadorRealTime, que localiza o HWND da janela varrendo o
       desktop (windows.getChildrenHWND (windows.getDesktopHWND()), texto
       "Real-Time Exporter" ou "Game Exporter" — nome varia por build) e usa
       windows.setForegroundWindow nesse HWND. O retorno de
