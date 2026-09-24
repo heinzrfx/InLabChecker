@@ -39,6 +39,18 @@
    (GetTriMeshFaceCount), enquanto core\utils.ms mede em faces do poly
    (getPolygonCount). Numa malha all-quad os dois diferem por 2x. Ver ressalva
    entregue à equipe sobre o polyMax das famílias.
+ - 24/09/2026 (issue #42): instâncias compartilham o stack — addModifier em
+   CADA instância selecionada empilhava um ProOptimizer por nó (2 instâncias
+   selecionadas = 2 modificadores no MESMO stack = reduz duas vezes). O laço
+   agora deduplica a seleção por instância ANTES de aplicar, com o helper
+   reutilizável InLab_DeduplicarInstancias(objs) de core\utils.ms (devolve um
+   array de InLab_GrupoInstancias #(no, instancias): "no" é o representante do
+   stack, "instancias" o array completo). Só o representante entra no laço —
+   addModifier/deleteModifier nele já vale para todas as instâncias do stack,
+   inclusive as que não estavam selecionadas. Isso também corrige o registro
+   do Reverter: 1 item por stack, não por nó. A issue #62 (fn_otim_fino.ms)
+   reusa o mesmo helper para não somar instância duas vezes no total de
+   triângulos da meta por peça.
 ================================================================================
 */
 
@@ -94,8 +106,17 @@ fn InLab_ProOptimizer objs percentual manterUV:true =
         -- Camada 1 de undo: bloco nomeado no histórico do Max.
         undo "InLab ProOptimizer" on
         (
-            for o in objs where InLab_EhGeometria o do
+            -- DEDUPLICAÇÃO POR INSTÂNCIA (issue #42): sem isto, 2 instâncias
+            -- selecionadas empilhavam 2 ProOptimizer no MESMO stack e reduziam
+            -- duas vezes. Só o representante de cada stack passa pelo laço.
+            local geo = for o in objs where InLab_EhGeometria o collect o
+            for grupo in InLab_DeduplicarInstancias geo do
             (
+                local o = grupo.no
+                if grupo.instancias.count > 1 do
+                    InLab_Log (o.name + ": " + grupo.instancias.count as string +
+                               " instância(s) do mesmo stack — otimizadas junto.") tipo:#info
+
                 -- MEDIÇÃO CONSISTENTE (bug 1): o ProOptimizer emite TRIÂNGULOS;
                 -- comparar quads (antes) com tris (depois) dava a ilusão de
                 -- "dobrar polígonos". Antes/depois agora medem sempre a
