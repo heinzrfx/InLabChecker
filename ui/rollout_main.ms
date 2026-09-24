@@ -76,6 +76,11 @@
  sem mudar comportamento. A seção Produto repinta o medidor quando a família
  muda (InLab_OtimUI_Atualizar).
 
+ 24/09/2026 (issue #54): seção Produto ganha "Ler objetos da seleção" + lista
+ objeto → nome + dropdown + "Renomear meshes" (InLab_Produto_RenomearMeshes).
+ "Aplicar nomes" passa a renomear só materiais e mapas; "Desfazer nomes"
+ volta os dois (mesmo histórico acumulado).
+
  24/Set/2026 (issue #47): botão "Find Objects" (Utilidades Rápidas) chamava
  InLab_FindObjectsPesados, que não existia — implementada em
  functions\fn_utilidades.ms. lblFindLimite (texto do critério) deixou de
@@ -90,7 +95,8 @@
 ----------------------------------------------------------------------
 -- Importa o export de nomenclatura da plataforma (Lovable + Supabase),
 -- escolhe o produto (pré-selecionado pelo nome do .max = cod_est), liga
--- cada parte a um material da seleção e aplica os nomes oficiais. A lógica
+-- cada parte a um material da seleção e aplica os nomes oficiais; cada
+-- objeto é ligado a um mesh_final à parte ("Renomear meshes", #54). A lógica
 -- toda está em functions\fn_renomear_produto.ms; aqui só fica o estado da
 -- tela. Lista + dropdown nativos em vez de tabela dotNet: o número de
 -- partes varia por produto e rollout não cria controles dinamicamente.
@@ -110,7 +116,11 @@ rollout InLabSecProduto "Produto" width:420
     local produtos = #()  -- itens de "produtos" do export importado
     local materiais = #() -- materiais lidos da seleção
     local ligacoes = #()  -- paralelo às partes do produto escolhido: material ou undefined
-    local objsLidos = #() -- objetos da última leitura — são eles que recebem o mesh_final
+    -- 24/09/2026 (#54): objetos têm lista própria (objeto → nome), mesmo
+    -- padrão da lista de partes. O Aplicar não renomeia mais objetos.
+    local objsMesh = #()   -- objetos lidos para "Renomear meshes"
+    local nomesMesh = #()  -- paralelo a objsMesh: mesh_final escolhido ou ""
+    local meshesProd = #() -- mesh_final distintos do produto escolhido
 
     label lblProdutoAtivo "Nenhum produto carregado." align:#left
     button btnImportarProduto "Importar JSON do Produto..." width:395 height:26
@@ -121,8 +131,12 @@ rollout InLabSecProduto "Produto" width:420
     button btnLerSelecao "Ler materiais da seleção" width:395 height:24
     listbox lbxPartes "Parte  →  material:" items:#() height:6 width:395
     dropdownlist ddlMaterial "Material da parte marcada:" items:#() width:395
-    button btnAplicar "Aplicar nomes" width:192 height:26 across:2
-    button btnDesfazer "Desfazer nomes" width:192 height:26
+    button btnAplicar "Aplicar nomes" width:395 height:26 tooltip:"Dá o nome oficial aos materiais ligados e aos mapas deles. Os objetos são renomeados em 'Renomear meshes', abaixo."
+    button btnLerObjetos "Ler objetos da seleção" width:395 height:24 tooltip:"Lista os objetos selecionados e sugere o nome de cada um: pelo material ligado acima ou pela semelhança do nome."
+    listbox lbxObjetos "Objeto  →  nome novo:" items:#() height:6 width:395
+    dropdownlist ddlMesh "Nome do objeto marcado:" items:#() width:395
+    button btnRenomearMeshes "Renomear meshes" width:192 height:26 across:2 tooltip:"Dá a cada objeto da lista o nome escolhido. Objeto sem nome escolhido fica como está."
+    button btnDesfazer "Desfazer nomes" width:192 height:26 tooltip:"Volta os nomes de materiais, mapas e objetos ao que eram antes de 'Aplicar nomes' e 'Renomear meshes'."
 
     fn produtoEscolhido =
         if ddlProduto.selection > 0 and ddlProduto.selection <= produtos.count then produtos[ddlProduto.selection] else undefined
@@ -144,6 +158,30 @@ rollout InLabSecProduto "Produto" width:420
         ddlMaterial.items = #("— nenhum —") + (for m in materiais collect m.name)
         local i = lbxPartes.selection
         ddlMaterial.selection = if i > 0 and ligacoes[i] != undefined then (findItem materiais ligacoes[i]) + 1 else 1
+    )
+
+    fn atualizarMeshes =
+    (
+        local sel = lbxObjetos.selection
+        lbxObjetos.items = for i = 1 to objsMesh.count collect
+        (
+            local o = objsMesh[i]
+            (if isValidNode o then o.name else "(apagado)") + "  →  " + (if nomesMesh[i] == "" then "(não renomear)" else nomesMesh[i])
+        )
+        if sel > 0 and sel <= objsMesh.count do lbxObjetos.selection = sel
+        ddlMesh.items = #("— não renomear —") + meshesProd
+        local i = lbxObjetos.selection
+        ddlMesh.selection = if i > 0 and nomesMesh[i] != "" then (findItem meshesProd nomesMesh[i]) + 1 else 1
+    )
+
+    -- Refaz a lista de nomes do produto e a pré-ligação dos objetos lidos
+    -- (produto trocado ou objetos lidos de novo).
+    fn sugerirMeshes =
+    (
+        local p = produtoEscolhido()
+        meshesProd = InLab_Produto_MeshesDoProduto p
+        nomesMesh = InLab_Produto_SugerirMeshes p ligacoes objsMesh
+        atualizarMeshes()
     )
 
     fn familiaEscolhida =
@@ -192,6 +230,7 @@ rollout InLabSecProduto "Produto" width:420
         ddlProduto.items = #()
         lblProdutoAtivo.text = "Nenhum produto carregado."
         sugerir()
+        sugerirMeshes()
     )
 
     on btnImportarProduto pressed do
@@ -228,6 +267,7 @@ rollout InLabSecProduto "Produto" width:420
                     ddlProduto.selection = idx
                 )
                 sugerir()
+                sugerirMeshes()
                 sugerirFamilia()
             )
         )
@@ -236,6 +276,7 @@ rollout InLabSecProduto "Produto" width:420
     on ddlProduto selected i do
     (
         sugerir()
+        sugerirMeshes()
         sugerirFamilia()
     )
 
@@ -253,7 +294,6 @@ rollout InLabSecProduto "Produto" width:420
         local objs = InLab_SelecaoValida()
         if objs.count > 0 do
         (
-            objsLidos = objs
             materiais = InLab_Produto_MateriaisDaSelecao objs
             sugerir()
             local n = 0
@@ -280,13 +320,59 @@ rollout InLabSecProduto "Produto" width:420
         local p = produtoEscolhido()
         if p == undefined then
             InLab_Log "Importe o JSON e escolha o produto antes de aplicar." tipo:#warn
-        else if objsLidos.count == 0 then
+        else if materiais.count == 0 then
             InLab_Log "Clique em 'Ler materiais da seleção' antes de aplicar." tipo:#warn
         else
         (
-            objsLidos = for o in objsLidos where isValidNode o collect o
-            InLab_Produto_Aplicar p ligacoes objsLidos
+            InLab_Produto_Aplicar p ligacoes
             atualizarTela()
+        )
+    )
+
+    on btnLerObjetos pressed do
+    (
+        local p = produtoEscolhido()
+        if p == undefined then
+            InLab_Log "Importe o JSON e escolha o produto antes de ler os objetos." tipo:#warn
+        else
+        (
+            local sel = InLab_SelecaoValida()
+            local objs = for o in sel where InLab_EhGeometria o collect o
+            if sel.count > 0 and objs.count == 0 then
+                InLab_Log "Nenhum objeto de geometria na seleção — nada lido." tipo:#warn
+            else if objs.count > 0 do
+            (
+                objsMesh = objs
+                sugerirMeshes()
+                InLab_Produto_MeshesDoProduto p avisar:true -- só p/ avisar partes sem mesh_final
+                local n = 0
+                for nm in nomesMesh where nm != "" do n += 1
+                InLab_Log (objs.count as string + " objeto(s) lido(s) · " + n as string + " com nome sugerido · " +
+                           meshesProd.count as string + " nome(s) no produto — confira antes de renomear.")
+            )
+        )
+    )
+
+    on lbxObjetos selected i do atualizarMeshes()
+
+    on ddlMesh selected j do
+    (
+        local i = lbxObjetos.selection
+        if i == 0 then
+            InLab_Log "Marque um objeto na lista antes de escolher o nome." tipo:#warn
+        else
+            nomesMesh[i] = if j == 1 then "" else meshesProd[j - 1]
+        atualizarMeshes()
+    )
+
+    on btnRenomearMeshes pressed do
+    (
+        if objsMesh.count == 0 then
+            InLab_Log "Clique em 'Ler objetos da seleção' antes de renomear." tipo:#warn
+        else
+        (
+            InLab_Produto_RenomearMeshes objsMesh nomesMesh
+            atualizarMeshes()
         )
     )
 
@@ -294,6 +380,7 @@ rollout InLabSecProduto "Produto" width:420
     (
         InLab_Produto_Reverter()
         atualizarTela()
+        atualizarMeshes()
     )
 )
 
