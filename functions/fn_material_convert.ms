@@ -45,6 +45,17 @@
  (só os arquivos que o próprio registro de conversão gravou ter criado —
  nunca outro arquivo) e InLab_SetPropSafe loga a falha de setProperty em vez
  de engolir o erro.
+
+ 24/Set (issue #51): InLab_BakeBaseComAlpha fecha os bitmaps (base, opacity
+ e destino) também quando a exceção vem no meio do laço — antes ficavam
+ abertos — e a mensagem de falha leva a exceção. O laço por pixel FICOU:
+ medido no Max 2024 (2048 px: ~9,7 s; 4096 px: ~47 s), o tempo é do
+ MaxScript por pixel, e a saída do MaxScript (System.Drawing/LockBits) não
+ reproduz o resultado: os bitmaps do Max guardam 16 bits por canal
+ (getPixels devolve 61,9105) e o alpha é a média desses valores arredondada
+ só no save; em 8 bits o alpha mudaria ±1 em parte dos pixels. Gravar o
+ alpha na linha da base em vez de criar uma cor por pixel deu o mesmo PNG e
+ o mesmo tempo, por isso não entrou.
 ================================================================================
 */
 
@@ -324,16 +335,21 @@ fn InLab_BakeBaseComAlpha mapaBase corBase mapaOpac nomeBase tamanho =
 (
     local arq = (InLab_PastaBake()) + (InLab_NomeSeguro nomeBase) + ".png"
     local resultado = undefined
+    -- 24/Set (#51): declarados fora do try para o catch fechar o que abriu.
+    local bmBase = undefined, bmOpac = undefined, destino = undefined
     try
     (
-        local bmBase = if mapaBase != undefined then (InLab_BitmapDoTexmap mapaBase tamanho) else undefined
-        local bmOpac = InLab_BitmapDoTexmap mapaOpac tamanho
+        bmBase = if mapaBase != undefined then (InLab_BitmapDoTexmap mapaBase tamanho) else undefined
+        bmOpac = InLab_BitmapDoTexmap mapaOpac tamanho
         if bmOpac == undefined then
+        (
             InLab_Log (nomeBase + ": não foi possível avaliar o mapa de opacity — composição abortada.") tipo:#err
+            if bmBase != undefined do ( close bmBase ; bmBase = undefined ) -- 24/Set (#51): ficava aberto
+        )
         else
         (
             local corFundo = if corBase != undefined then corBase else white
-            local destino = bitmap tamanho tamanho color:corFundo
+            destino = bitmap tamanho tamanho color:corFundo
             local somaAlpha = 0.0
 
             for y = 0 to tamanho - 1 do
@@ -351,11 +367,13 @@ fn InLab_BakeBaseComAlpha mapaBase corBase mapaOpac nomeBase tamanho =
             )
 
             destino.filename = arq
-            try ( pngio.setAlpha true ) catch()
+            try ( pngio.setAlpha true ) catch ( InLab_Log (nomeBase + ": pngio.setAlpha indisponível — " + getCurrentException()) tipo:#warn )
             save destino
             close destino
-            if bmBase != undefined do close bmBase
+            destino = undefined
+            if bmBase != undefined do ( close bmBase ; bmBase = undefined )
             close bmOpac
+            bmOpac = undefined
 
             -- DIAGNÓSTICO: alpha médio do composto. ~0% = tudo transparente,
             -- ~100% = tudo opaco — ambos indicam avaliação errada do opacity.
@@ -370,7 +388,14 @@ fn InLab_BakeBaseComAlpha mapaBase corBase mapaOpac nomeBase tamanho =
             append InLab_BakesDestaConversao arq
         )
     )
-    catch ( InLab_Log (nomeBase + ": FALHA na composição base+alpha — verificar Listener.") tipo:#err )
+    catch
+    (
+        InLab_Log (nomeBase + ": FALHA na composição base+alpha — " + getCurrentException()) tipo:#err
+        -- 24/Set (#51): antes os bitmaps ficavam abertos (memória e arquivo) quando
+        -- a exceção vinha no meio do laço.
+        for bm in #(destino, bmBase, bmOpac) where bm != undefined do
+            try ( close bm ) catch ( InLab_Log (nomeBase + ": não foi possível fechar um bitmap da composição — " + getCurrentException()) tipo:#warn )
+    )
     resultado
 )
 
