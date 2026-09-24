@@ -54,6 +54,16 @@
 
  REGISTRO: InLab_UltimoAjusteFino (FinoRecord por stack). Reverter remove
  exatamente esses modificadores; Comparar liga/desliga enabledInViews deles.
+ O modificador se chama INLAB_FINO_NOME_MOD ("InLab · Ajuste fino").
+
+ NUNCA EMPILHA (revisão de 24/09/2026): peça que já tem um ProOptimizer do
+ ajuste fino (no registro OU com esse nome no stack) não é recalculada nem
+ recebe um segundo — seria redução sobre redução, e o Reverter/Comparar
+ perderiam o primeiro. Calcular loga #warn "já tem ajuste fino — use Reverter
+ antes de recalcular" e trata a peça como resto fixo da cena. O registro
+ ACUMULA entre Aplicar; só o Reverter zera (e remove todos os registrados).
+ Erro inesperado numa peça é logado e não aborta o Aplicar: seleção, painel
+ e resumo sempre são restaurados/logados.
 
  HISTÓRICO:
  23/09/2026 (issue #60): versão provisória — percentual único pela meta,
@@ -68,7 +78,7 @@
 ================================================================================
 */
 
--- Um ProOptimizer aplicado pelo último Aplicar (um por stack).
+-- Um ProOptimizer aplicado pelo ajuste fino (um por stack).
 struct FinoRecord
 (
     no,             -- representante do stack
@@ -81,9 +91,14 @@ struct FinoRecord
 )
 
 -- Sem inicializador no `global`: recarregar o arquivo não pode apagar o
--- registro do último Aplicar (mesmo padrão de INLAB_OTIM_META_MANUAL).
+-- registro dos Aplicar (mesmo padrão de INLAB_OTIM_META_MANUAL). Acumula até
+-- o Reverter.
 global InLab_UltimoAjusteFino
 if InLab_UltimoAjusteFino == undefined do InLab_UltimoAjusteFino = #()
+
+-- Nome do ProOptimizer que o ajuste fino põe no stack (identifica a peça já
+-- ajustada mesmo depois de recarregar o plugin, quando o registro se perdeu).
+global INLAB_FINO_NOME_MOD = "InLab · Ajuste fino"
 
 -- Erro relativo aceito antes da segunda passada (spec 3.3).
 global INLAB_FINO_TOLERANCIA = 0.10
@@ -110,6 +125,18 @@ fn InLab_OtimFino_Area o =
     )
     catch ( InLab_Log (o.name + ": não medi a área (" + getCurrentException() + ") — peça fica no piso.") tipo:#warn )
     area
+)
+
+-- A peça (ou o stack dela) já tem um ProOptimizer do ajuste fino?
+global InLab_OtimFino_TemAjuste
+fn InLab_OtimFino_TemAjuste o =
+(
+    local tem = false
+    for m in o.modifiers where classof m == ProOptimizer and m.name == INLAB_FINO_NOME_MOD do tem = true
+    if not tem do
+        for r in InLab_UltimoAjusteFino where isValidNode r.no and r.modificador != undefined do
+            for m in o.modifiers where m == r.modificador do tem = true
+    tem
 )
 
 -- Piso de uma peça com `tris` triângulos: max(pct%, mínimo), nunca acima de tris.
@@ -168,7 +195,15 @@ fn InLab_OtimFino_Calcular objs =
     )
     else
     (
-        local grupos = InLab_DeduplicarInstancias geo
+        -- Peça já ajustada fica fora (nunca empilha) e conta como resto fixo
+        -- da cena no orçamento abaixo.
+        local grupos = #()
+        for g in InLab_DeduplicarInstancias geo do
+        (
+            if InLab_OtimFino_TemAjuste g.no then
+                InLab_Log (g.no.name + ": já tem ajuste fino — use Reverter antes de recalcular.") tipo:#warn
+            else append grupos g
+        )
         local tris = #(), areas = #(), pesos = #(), pisos = #()
         local custoGrupos = 0
         for g in grupos do
@@ -270,8 +305,9 @@ fn InLab_OtimFino_Aplicar propostas =
     )
     else
     (
-        InLab_UltimoAjusteFino = #()
+        -- O registro NÃO é zerado aqui: acumula até o Reverter (ver cabeçalho).
         local aplicados = 0
+        local varCalc = undefined
         local faltando = #()
         local selOriginal = selection as array
         local painelOriginal = getCommandPanelTaskMode()
@@ -287,74 +323,98 @@ fn InLab_OtimFino_Aplicar propostas =
             (
                 local o = p.no
                 append feitos o
-                local nInst = (InLab_InstanciasDoNo o).count
-                local meta = p.trisDepois
-                local triAntes = (GetTriMeshFaceCount o)[1]
-                local vertAntes = (GetTriMeshFaceCount o)[2]
-
-                -- CONTEXTO OBRIGATÓRIO DO .Calculate (ver cabeçalho e
-                -- fn_prooptimizer.ms): selecionado + Modify + corrente.
-                select o
-                setCommandPanelTaskMode #modify
-                try ( subObjectLevel = 0 ) catch ()
-                local po = ProOptimizer()
-                addModifier o po
-                try ( modPanel.setCurrentObject po ) catch ( InLab_Log (o.name + ": não pus o ProOptimizer como corrente no Modify (" + getCurrentException() + ").") tipo:#warn )
-
-                for f in (InLab_OtimFino_Proteger po o.name) where findItem faltando f == 0 do append faltando f
-
-                local calcOk = false
-                for c in #(#Calculate, #CalculationEnabled) while not calcOk do
-                    if isProperty po c do
-                        ( try ( setProperty po c true; calcOk = true )
-                          catch ( InLab_Log (o.name + ": ProOptimizer." + c as string + " falhou (" + getCurrentException() + ").") tipo:#warn ) )
-
-                if not calcOk then
-                (
-                    deleteModifier o po
-                    InLab_Log (o.name + ": ProOptimizer sem Calculate/CalculationEnabled nesta build — peça NÃO otimizada.") tipo:#err
-                )
+                if InLab_OtimFino_TemAjuste o then
+                    InLab_Log (o.name + ": já tem ajuste fino — não empilho outro (use Reverter antes).") tipo:#warn
                 else
                 (
-                    if isProperty po #KeepUV and not po.KeepUV do
-                        InLab_Log (o.name + ": sem UV no canal 1 — o ProOptimizer desligou KeepUV sozinho.") tipo:#info
-                    local pct = amax 0.1 (100.0 * meta / (amax 1 triAntes))
-                    local obtido = triAntes
-                    local passadas = 1
+                    local po = undefined
+                    local registrado = false
+                    -- Erro inesperado numa peça não pode abortar o Aplicar antes
+                    -- de restaurar seleção/painel e logar o resumo.
                     try
                     (
-                        po.VertexPercent = pct
-                        obtido = (GetTriMeshFaceCount o)[1]
-                        -- Segunda passada (spec 3.3): errou mais de 10%.
-                        if meta > 0 and (abs (obtido - meta)) > meta * INLAB_FINO_TOLERANCIA and obtido > 0 do
+                        local nInst = (InLab_InstanciasDoNo o).count
+                        local meta = p.trisDepois
+                        local triAntes = (GetTriMeshFaceCount o)[1]
+                        local vertAntes = (GetTriMeshFaceCount o)[2]
+
+                        -- CONTEXTO OBRIGATÓRIO DO .Calculate (ver cabeçalho e
+                        -- fn_prooptimizer.ms): selecionado + Modify + corrente.
+                        select o
+                        setCommandPanelTaskMode #modify
+                        try ( subObjectLevel = 0 )
+                        catch ( InLab_Log (o.name + ": não zerei o subObjectLevel (" + getCurrentException() + ").") tipo:#warn )
+                        po = ProOptimizer()
+                        po.name = INLAB_FINO_NOME_MOD
+                        addModifier o po
+                        try ( modPanel.setCurrentObject po ) catch ( InLab_Log (o.name + ": não pus o ProOptimizer como corrente no Modify (" + getCurrentException() + ").") tipo:#warn )
+
+                        for f in (InLab_OtimFino_Proteger po o.name) where findItem faltando f == 0 do append faltando f
+
+                        local calcOk = false
+                        for c in #(#Calculate, #CalculationEnabled) while not calcOk do
+                            if isProperty po c do
+                                ( try ( setProperty po c true; calcOk = true; if varCalc == undefined do varCalc = c )
+                                  catch ( InLab_Log (o.name + ": ProOptimizer." + c as string + " falhou (" + getCurrentException() + ").") tipo:#warn ) )
+
+                        if not calcOk then
                         (
-                            pct = amin 100.0 (amax 0.1 (pct * meta / obtido))
-                            po.VertexPercent = pct
-                            obtido = (GetTriMeshFaceCount o)[1]
-                            passadas = 2
+                            deleteModifier o po
+                            InLab_Log (o.name + ": ProOptimizer sem Calculate/CalculationEnabled nesta build — peça NÃO otimizada.") tipo:#err
+                        )
+                        else
+                        (
+                            if isProperty po #KeepUV and not po.KeepUV do
+                                InLab_Log (o.name + ": sem UV no canal 1 — o ProOptimizer desligou KeepUV sozinho.") tipo:#info
+                            local pct = amax 0.1 (100.0 * meta / (amax 1 triAntes))
+                            local obtido = triAntes
+                            local passadas = 1
+                            try
+                            (
+                                po.VertexPercent = pct
+                                obtido = (GetTriMeshFaceCount o)[1]
+                                -- Segunda passada (spec 3.3): errou mais de 10%.
+                                if meta > 0 and (abs (obtido - meta)) > meta * INLAB_FINO_TOLERANCIA and obtido > 0 do
+                                (
+                                    pct = amin 100.0 (amax 0.1 (pct * meta / obtido))
+                                    po.VertexPercent = pct
+                                    obtido = (GetTriMeshFaceCount o)[1]
+                                    passadas = 2
+                                )
+                            )
+                            catch ( InLab_Log (o.name + ": ProOptimizer.VertexPercent falhou (" + getCurrentException() + ").") tipo:#err )
+
+                            local vertDepois = (GetTriMeshFaceCount o)[2]
+                            if vertDepois >= vertAntes then
+                            (
+                                deleteModifier o po
+                                InLab_Log (o.name + ": ProOptimizer NÃO reduziu (" + vertAntes as string + " → " +
+                                           vertDepois as string + " vértices). Modificador removido — malha intacta.") tipo:#warn
+                            )
+                            else
+                            (
+                                append InLab_UltimoAjusteFino (FinoRecord no:o modificador:po instancias:nInst meta:meta trisAntes:triAntes trisDepois:obtido passadas:passadas)
+                                registrado = true
+                                aplicados += 1
+                                local erro = if meta > 0 then (100.0 * (obtido - meta) / meta) else 0.0
+                                local txt = o.name + (if nInst > 1 then (" (×" + nInst as string + " instâncias, 1 modificador)") else "") +
+                                            ": " + (InLab_Otim_Milhar triAntes) + " → " + (InLab_Otim_Milhar obtido) + " triângulos (meta " +
+                                            (InLab_Otim_Milhar meta) + ", " + (formattedPrint erro format:"+.1f") + "%, " +
+                                            (formattedPrint pct format:".1f") + "%" + (if passadas == 2 then ", 2ª passada" else "") + ")"
+                                if (abs erro) > INLAB_FINO_TOLERANCIA * 100.0 then
+                                    InLab_Log (txt + " — ainda fora dos " + (formattedPrint (INLAB_FINO_TOLERANCIA * 100.0) format:".0f") + "% (as proteções seguram a redução).") tipo:#warn
+                                else InLab_Log txt tipo:#ok
+                            )
                         )
                     )
-                    catch ( InLab_Log (o.name + ": ProOptimizer.VertexPercent falhou (" + getCurrentException() + ").") tipo:#err )
-
-                    local vertDepois = (GetTriMeshFaceCount o)[2]
-                    if vertDepois >= vertAntes then
+                    catch
                     (
-                        deleteModifier o po
-                        InLab_Log (o.name + ": ProOptimizer NÃO reduziu (" + vertAntes as string + " → " +
-                                   vertDepois as string + " vértices). Modificador removido — malha intacta.") tipo:#warn
-                    )
-                    else
-                    (
-                        append InLab_UltimoAjusteFino (FinoRecord no:o modificador:po instancias:nInst meta:meta trisAntes:triAntes trisDepois:obtido passadas:passadas)
-                        aplicados += 1
-                        local erro = if meta > 0 then (100.0 * (obtido - meta) / meta) else 0.0
-                        local txt = o.name + (if nInst > 1 then (" (×" + nInst as string + " instâncias, 1 modificador)") else "") +
-                                    ": " + (InLab_Otim_Milhar triAntes) + " → " + (InLab_Otim_Milhar obtido) + " triângulos (meta " +
-                                    (InLab_Otim_Milhar meta) + ", " + (formattedPrint erro format:"+.1f") + "%, " +
-                                    (formattedPrint pct format:".1f") + "%" + (if passadas == 2 then ", 2ª passada" else "") + ")"
-                        if (abs erro) > INLAB_FINO_TOLERANCIA * 100.0 then
-                            InLab_Log (txt + " — ainda fora dos " + (formattedPrint (INLAB_FINO_TOLERANCIA * 100.0) format:".0f") + "% (as proteções seguram a redução).") tipo:#warn
-                        else InLab_Log txt tipo:#ok
+                        InLab_Log (o.name + ": erro no ajuste fino (" + getCurrentException() + ") — peça NÃO otimizada.") tipo:#err
+                        -- Não deixa um ProOptimizer sem registro no stack.
+                        if po != undefined and not registrado do
+                            for m in o.modifiers where m == po do
+                                try ( deleteModifier o po )
+                                catch ( InLab_Log (o.name + ": não removi o ProOptimizer após o erro (" + getCurrentException() + ").") tipo:#err )
                     )
                 )
             )
@@ -368,6 +428,8 @@ fn InLab_OtimFino_Aplicar propostas =
         )
         catch ( InLab_Log ("Ajuste fino: não restaurei seleção/painel (" + getCurrentException() + ").") tipo:#warn )
 
+        if varCalc != undefined do
+            InLab_Log ("Ajuste fino: cálculo do ProOptimizer disparado por ." + varCalc as string + ".") tipo:#info
         if faltando.count > 0 do
             InLab_Log ("Ajuste fino: proteção(ões) inexistente(s) nesta build do ProOptimizer: " +
                        (for f in faltando collect f as string) as string + " — aplicado sem ela(s).") tipo:#warn
@@ -377,7 +439,8 @@ fn InLab_OtimFino_Aplicar propostas =
     )
 )
 
--- Remove exatamente os ProOptimizer do último Aplicar. Devolve quantos saíram.
+-- Remove exatamente os ProOptimizer registrados (todos os Aplicar desde o
+-- último Reverter). Devolve quantos saíram.
 global InLab_OtimFino_Reverter
 fn InLab_OtimFino_Reverter =
 (
@@ -411,7 +474,7 @@ fn InLab_OtimFino_Reverter =
     n
 )
 
--- Liga/desliga na viewport os ProOptimizer do último Aplicar (Comparar).
+-- Liga/desliga na viewport os ProOptimizer registrados (Comparar).
 global InLab_OtimFino_Comparar
 fn InLab_OtimFino_Comparar ligar =
 (

@@ -11,6 +11,7 @@ global InLab_Log, InLab_FamiliaAtiva, InLab_PrefGravar, InLab_PrefApagar
 global INLAB_OTIM_META_MANUAL, InLab_Otim_Triangulos
 global InLab_OtimFino_Calcular, InLab_OtimFino_Aplicar, InLab_OtimFino_Reverter, InLab_OtimFino_Comparar
 global InLab_OtimFino_DividirMeta, InLab_OtimFino_PisoPeca, InLab_UltimoAjusteFino, INLAB_FINO_TOLERANCIA
+global InLab_OtimFino_TemAjuste, OtimProposta
 global INLAB_TESTE_SAIDA, INLAB_TESTE_FALHAS
 (
     local dirTeste = getFilenamePath (getSourceFileName())
@@ -151,6 +152,32 @@ global INLAB_TESTE_SAIDA, INLAB_TESTE_FALHAS
              (for o in todos collect (InLab_Otim_Triangulos #(o))) as string == trisAntes as string)
         checar "Reverter de novo não faz nada" ((InLab_OtimFino_Reverter()) == 0)
         checar "Comparar sem nada aplicado devolve 0" ((InLab_OtimFino_Comparar false) == 0)
+
+        ---------------------------------------------------------------- NUNCA EMPILHA
+        -- Aplicar -> Calcular -> Aplicar -> Reverter (revisão de 24/09/2026).
+        fn contarFino objs = ( local n = 0; for o in objs do for m in o.modifiers where classof m == ProOptimizer do n += 1; n )
+        local pA = InLab_OtimFino_Calcular todos
+        local nA = InLab_OtimFino_Aplicar pA
+        local jaAjustados = for p in pA collect p.no
+        local pB = InLab_OtimFino_Calcular todos
+        checar "Recalcular não propõe peça que já tem ajuste fino" \
+            ((for p in pB where findItem jaAjustados p.no > 0 or p.no == bule2 collect p).count == 0)
+        -- Linha forjada para uma peça já ajustada: Aplicar não empilha.
+        append pB (OtimProposta no:esf alvo:esf prop:#VertexPercent antes:100.0 depois:50.0 trisAntes:trisAntes[1] trisDepois:(trisAntes[1] / 2))
+        local nB = InLab_OtimFino_Aplicar pB
+        checar ("Segundo Aplicar não empilha: no máximo 1 ProOptimizer por peça") \
+            ((for o in todos where (contarFino #(o)) > 1 collect o).count == 0)
+        checar ("Registro acumula os dois Aplicar (" + InLab_UltimoAjusteFino.count as string + " = " + nA as string + " + " + nB as string + ")") \
+            (InLab_UltimoAjusteFino.count == nA + nB and nA > 0)
+        -- Sem registro (plugin recarregado), o nome do modificador ainda identifica a peça.
+        local regGuardado = InLab_UltimoAjusteFino
+        InLab_UltimoAjusteFino = #()
+        checar "Peça ajustada reconhecida pelo nome do modificador, sem registro" (InLab_OtimFino_TemAjuste esf)
+        InLab_UltimoAjusteFino = regGuardado
+        local nRev2 = InLab_OtimFino_Reverter()
+        checar ("Reverter depois de dois Aplicar remove todos (" + nRev2 as string + ")") (nRev2 == nA + nB)
+        checar "Aplicar/Calcular/Aplicar/Reverter: 0 ProOptimizer e triângulos originais" \
+            ((contarFino todos) == 0 and (for o in todos collect (InLab_Otim_Triangulos #(o))) as string == trisAntes as string)
 
         ---------------------------------------------------------------- SEGUNDA PASSADA
         -- Tolerância apertada à força para exercitar a correção do percentual.
