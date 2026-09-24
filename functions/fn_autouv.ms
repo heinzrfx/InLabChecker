@@ -92,13 +92,26 @@
  sem aviso; o registro (AutoUVRecord) some com ele. m0.gutterMin e
  mi.aproveitamento (correção do gutter) passam a checar `undefined` antes de
  ler a propriedade — InLab_MedirUV devolve undefined quando o canal não
- existe, igual à guarda que já existia mais abaixo. InLab_ContagemCanal
- passa a `delete` o snapshotAsMesh que tirava (2× por objeto, vazava malha
- solta na cena). InLab_CanalDoModificadorUV passa a tentar também a
+ existe, igual à guarda que já existia mais abaixo. snapshotAsMesh devolve um
+ valor TriMesh (não cria nó na cena) que só some da memória no próximo
+ garbage collect do MAXScript; InLab_ContagemCanal passa a `delete` o valor
+ (2× por objeto) para liberar essa memória na hora em vez de esperar o GC.
+ InLab_CanalDoModificadorUV passa a tentar também a
  propriedade `Map_Channel` (confirmada no UVW_Xform desta build, além de
  `mapChannel`/`channel`/`mapID`) e loga qual delas leu o canal quando não é a
  primeira tentada; o Clean UV agora remove um UVW_Xform no canal de bake. O
  catch() mudo do UVW_Mapping_Clear passa a logar a exceção.
+
+ 24/Set (revisão 1 do PR #48): o catch() do deleteModifier no bloco de erro
+ inesperado também engolia a exceção — agora loga #err com o nome do objeto,
+ igual ao bloco de falha "normal". O "-- Unwrap órfão removido" só sai quando
+ o deleteModifier realmente funcionou. Um AutoUVRecord criado nesta rodada
+ (recNovo) que termina sem Unwrap sai de InLab_UltimoAutoUV — não tem nada a
+ reverter e só confundiria o Reverter; se o registro já existia (o Unwrap de
+ uma rodada anterior foi removido no início do laço e a nova tentativa também
+ falhou), fica um aviso de que só o Ctrl+Z restaura o objeto. Tirada a
+ segunda declaração `local metodo` (redundante — MAXScript já iça o nome pra
+ função inteira).
 ================================================================================
 */
 
@@ -190,7 +203,7 @@ fn InLab_ContagemCanal o canal =
         (meshop.getNumMapVerts m canal) as string + "/" + (meshop.getNumMapFaces m canal) as string
     else
         "sem canal"
-    delete m -- 24/Set (#48): snapshotAsMesh cria um nó solto na cena — 2 chamadas por objeto vazavam
+    delete m -- 24/Set (#48): snapshotAsMesh devolve um TriMesh (memória até o GC) — libera na hora
     resultado
 )
 
@@ -373,6 +386,7 @@ fn InLab_AutoUV objs angulo:55.0 resolucao:1024 =
 
                 -- Rodar de novo substitui o Unwrap anterior em vez de empilhar.
                 local rec = InLab_AutoUV_Registro o
+                local recNovo = (rec == undefined) -- fix#48/r1 (MINOR 4): se este registro nasce agora
                 if rec == undefined then
                 (
                     rec = AutoUVRecord no:o baseOriginal:(InLab_AutoUV_PrepararBase o)
@@ -445,7 +459,7 @@ fn InLab_AutoUV objs angulo:55.0 resolucao:1024 =
                     -- Malha grande: o flatten já empacota com folga no espaçamento e
                     -- o pack extra (18 s em 300 mil faces) não roda.
                     local espFlatten = if grande then padding * INLAB_UV_FOLGA_ESPACAMENTO else padding
-                    local metodo = undefined
+                    metodo = undefined -- fix#48/r1 (MINOR 2): já é local lá em cima; reatribuir aqui, sem "local" de novo
                     try ( uvw.flattenMap angulo normais espFlatten true 0 true true ; metodo = "Flatten " + (formattedPrint angulo format:".0f") + "°" )
                     catch ( InLab_Log (o.name + ": flattenMap falhou — " + getCurrentException()) tipo:#err )
 
@@ -555,10 +569,13 @@ fn InLab_AutoUV objs angulo:55.0 resolucao:1024 =
                     -- aviso. Remove aqui em vez de deixar no objeto.
                     if metodo == undefined do
                     (
+                        -- fix#48/r1 (MINOR 3): só loga "removido" se a remoção deu certo.
+                        local removido = true
                         try ( deleteModifier o uvw )
-                        catch ( InLab_Log (o.name + ": não foi possível remover o Unwrap órfão do canal " + INLAB_CANAL_UV_BAKE as string + ".") tipo:#err )
+                        catch ( InLab_Log (o.name + ": não foi possível remover o Unwrap órfão do canal " + INLAB_CANAL_UV_BAKE as string + ".") tipo:#err ; removido = false )
                         rec.modificador = undefined
-                        InLab_Log (o.name + ": Unwrap órfão removido do stack (etapa anterior falhou).") tipo:#warn
+                        if removido do
+                            InLab_Log (o.name + ": Unwrap órfão removido do stack (etapa anterior falhou).") tipo:#warn
                     )
                 )
                 catch
@@ -566,10 +583,31 @@ fn InLab_AutoUV objs angulo:55.0 resolucao:1024 =
                     InLab_Log (o.name + ": erro inesperado no Auto UV — " + getCurrentException()) tipo:#err
                     if uvw != undefined do
                     (
-                        try ( deleteModifier o uvw ) catch()
+                        -- fix#48/r1 (IMPORTANT 1): catch() mudo engolia o erro — loga com o nome do objeto.
+                        try ( deleteModifier o uvw )
+                        catch ( InLab_Log (o.name + ": não foi possível remover o Unwrap órfão do canal " + INLAB_CANAL_UV_BAKE as string + " depois do erro.") tipo:#err )
                         rec.modificador = undefined
                     )
                 )
+
+                -- fix#48/r1 (MINOR 4): a rodada falhou para este objeto (rec.modificador
+                -- continua undefined pela limpeza acima) — um registro CRIADO agora não
+                -- tem nada a reverter (baseOriginal também é sempre undefined na Fase 3) e
+                -- só confundiria o Reverter mais tarde; sai de InLab_UltimoAutoUV. Um
+                -- registro que já existia (Auto UV anterior bem-sucedido, removido no topo
+                -- do laço antes desta tentativa) fica — mas o objeto ficou sem nenhum
+                -- Unwrap do Auto UV, então avisa que só o Ctrl+Z devolve o anterior.
+                if rec.modificador == undefined do
+                (
+                    if recNovo then
+                    (
+                        local idx = findItem InLab_UltimoAutoUV rec
+                        if idx > 0 do deleteItem InLab_UltimoAutoUV idx
+                    )
+                    else
+                        InLab_Log (o.name + ": Auto UV falhou nesta rodada e o Unwrap anterior já tinha sido substituído — só o Ctrl+Z restaura este objeto.") tipo:#warn
+                )
+
                 InLab_FecharGrupos gruposAbertos
             )
         )

@@ -245,17 +245,24 @@ global INLAB_TESTE_SAIDA, INLAB_TESTE_FALHAS
         join criados #(fRuim, fVizinho, fGrp)
 
         -- Captura os logs desta chamada (além de continuar gravando no arquivo)
-        -- para conferir a mensagem de erro com o nome do objeto.
+        -- para conferir a mensagem de erro com o nome do objeto. try/catch aqui
+        -- (fix#48/r1, MINOR 7): InLab_Log e InLab_AutoUV_ForcarFalha voltam ao
+        -- normal em qualquer caminho, mesmo se InLab_AutoUV lançar algo inesperado.
         local logsCapturados = #()
         local logDoTeste = InLab_Log
-        InLab_Log = fn _logCaptura msg tipo:#info =
+        local nOk = 0
+        try
         (
-            append logsCapturados #(tipo, msg)
-            format "      [LOG %] %\n" tipo msg to:INLAB_TESTE_SAIDA
-            flush INLAB_TESTE_SAIDA
+            InLab_Log = fn _logCaptura msg tipo:#info =
+            (
+                append logsCapturados #(tipo, msg)
+                format "      [LOG %] %\n" tipo msg to:INLAB_TESTE_SAIDA
+                flush INLAB_TESTE_SAIDA
+            )
+            InLab_AutoUV_ForcarFalha = fRuim.name
+            nOk = InLab_AutoUV #(fOk, fRuim) angulo:55.0 resolucao:1024
         )
-        InLab_AutoUV_ForcarFalha = fRuim.name
-        local nOk = InLab_AutoUV #(fOk, fRuim) angulo:55.0 resolucao:1024
+        catch ( linha ("      EXCEÇÃO na seção 7 (falha forçada): " + getCurrentException()) )
         InLab_AutoUV_ForcarFalha = undefined
         InLab_Log = logDoTeste
 
@@ -269,20 +276,34 @@ global INLAB_TESTE_SAIDA, INLAB_TESTE_FALHAS
         checar "Falha forçada: objeto continua no grupo" (fRuim.parent == fGrp)
         checar "Falha forçada: erro no log com o nome do objeto" erroComNome
 
-        -- 8. CLEAN UV remove UVW_Xform no canal de bake (issue #48): sondado via
-        -- MCP nesta build — a propriedade de canal do UVW_Xform é Map_Channel
-        -- (mapChannel/channel/mapID não existem nele).
+        -- 8. CLEAN UV remove UVW_Xform no canal de bake, mantém no canal 1
+        -- (issue #48): sondado via MCP nesta build — a propriedade de canal do
+        -- UVW_Xform é Map_Channel (mapChannel/channel/mapID não existem nele).
+        -- Caso negativo (fix#48/r1, MINOR 7): um UVW_Xform no canal 1 (material)
+        -- no MESMO objeto não pode ser removido pelo Clean UV.
         local cX = Box name:"uv_xform" length:12 width:12 height:12 mapcoords:true pos:[80, 260, 0]
         convertToPoly cX
         append criados cX
         max modify mode
         select cX
-        local mx = UVW_Xform()
-        addModifier cX mx
-        mx.Map_Channel = INLAB_CANAL_UV_BAKE
-        checar "UVW_Xform: InLab_CanalDoModificadorUV lê o canal pela Map_Channel" ((InLab_CanalDoModificadorUV mx) == INLAB_CANAL_UV_BAKE)
+        local mxBake = UVW_Xform()
+        addModifier cX mxBake
+        mxBake.Map_Channel = INLAB_CANAL_UV_BAKE
+        select cX
+        local mxMat = UVW_Xform()
+        addModifier cX mxMat
+        mxMat.Map_Channel = INLAB_CANAL_UV_MATERIAL
+        checar "UVW_Xform: InLab_CanalDoModificadorUV lê o canal de bake pela Map_Channel" ((InLab_CanalDoModificadorUV mxBake) == INLAB_CANAL_UV_BAKE)
+        checar "UVW_Xform: InLab_CanalDoModificadorUV lê o canal 1 pela Map_Channel" ((InLab_CanalDoModificadorUV mxMat) == INLAB_CANAL_UV_MATERIAL)
         InLab_CleanUV #(cX)
-        checar "Clean UV remove o UVW_Xform do canal de bake" (not (temModificador cX UVW_Xform))
+        local temBake = false, temMat = false
+        for md in cX.modifiers where isKindOf md UVW_Xform do
+        (
+            if md == mxBake do temBake = true
+            if md == mxMat do temMat = true
+        )
+        checar "Clean UV remove o UVW_Xform do canal de bake" (not temBake)
+        checar "Clean UV mantém o UVW_Xform do canal 1 (material)" temMat
 
         -- Ctrl+Z nativo NÃO é testável daqui: rodado de dentro do script,
         -- `max undo` desfaz o script inteiro. Conferir à mão pela UI.
