@@ -92,6 +92,24 @@
       Export, não na abertura. O log avisa que a seleção foi limpa e que o
       usuário precisa reselecionar depois de fechar o exportador, se for
       usar outra função do plugin.
+
+ REVISÃO 24/Set (fix round 1, issue #49) — duas correções de code review:
+   a. LOG DE FOCO ASSIMÉTRICO: o ramo "já aberta" logava #warn quando o foco
+      não era confirmado, mas o ramo "recém-aberta" (depois de
+      GameExporterOpenDialog()) não tinha `else` nenhum — uma falha de foco
+      ali não deixava rastro no log. A sequência localizar → focar → logar
+      virou UM SÓ helper (InLab_TrazerExportadorAoFocoComLog jaAberta),
+      chamado pelos dois ramos: o parâmetro jaAberta só muda o texto da
+      mensagem, a decisão #ok/#warn é sempre a mesma (só #ok com foco
+      confirmado de verdade).
+   b. FILTRO POR DONO: InLab_LocalizarJanelaExportadorRealTime varria TODO o
+      desktop pelo título, sem restringir à instância atual do Max — em tese
+      casaria com o exportador de outra instância aberta em paralelo.
+      Sondado antes de mexer (padrão de InLab_FecharPaineisOrfaos em
+      ui\rollout_main.ms, que já filtra por w[3] == maxHwnd): abri a janela e
+      comparei h[3] (o campo "dono" do array de windows.getChildrenHWND) com
+      windows.getMAXHWND() — bateu (h[3] == maxHwnd). A busca agora exige
+      esse filtro também.
 ================================================================================
 */
 
@@ -187,11 +205,19 @@ fn InLab_LocalizarJanelaExportadorRealTime =
         -- função continuaria achando a janela escondida e reportando foco
         -- confirmado numa janela que o usuário não vê. Confirmado na sondagem
         -- da issue #49.
+        -- DONO = a janela principal do Max (padrão de InLab_FecharPaineisOrfaos
+        -- em ui\rollout_main.ms, w[3] == maxHwnd): sondado na revisão da issue
+        -- #49 — o HWND do Real-Time Exporter tem h[3] == windows.getMAXHWND()
+        -- (confirmado com GameExporterOpenDialog() aberto e a varredura do
+        -- desktop imediatamente depois). Restringe a busca às janelas desta
+        -- instância do Max, evitando casar com o exportador de outra
+        -- instância aberta em paralelo.
+        local maxHwnd = windows.getMAXHWND()
         local filhos = windows.getChildrenHWND (windows.getDesktopHWND())
         for h in filhos while hwnd == undefined do
         (
             local txt = toLower (trimRight (trimLeft (h[5] as string)))
-            if (txt == "real-time exporter" or txt == "game exporter") and (windows.isWindowVisible h[1]) do
+            if (txt == "real-time exporter" or txt == "game exporter") and (windows.isWindowVisible h[1]) and h[3] == maxHwnd do
                 hwnd = h[1]
         )
     )
@@ -218,6 +244,35 @@ fn InLab_FocarJanelaExportadorRealTime hwnd =
         )
         catch ( InLab_Log ("Falha ao tentar focar a janela do exportador: " + (getCurrentException())) tipo:#err )
     )
+    focado
+)
+
+--------------------------------------------------------------------------------
+-- Localiza + foca + loga o resultado — sequência única usada pelos dois ramos
+-- de InLab_AbrirExportadorRealTime (janela já aberta / recém-aberta). Antes
+-- da revisão da issue #49 essa lógica estava duplicada e ASSIMÉTRICA: o ramo
+-- "já aberta" logava #warn quando o foco não era confirmado, mas o ramo
+-- "recém-aberta" não tinha `else` nenhum — uma falha de foco logo depois de
+-- abrir a janela não deixava rastro nenhum no log. jaAberta muda só o TEXTO
+-- da mensagem (contexto "já estava aberto" vs janela recém-criada); a decisão
+-- #ok/#warn é sempre a mesma: só #ok quando o foco foi confirmado de verdade
+-- (ver InLab_FocarJanelaExportadorRealTime). Retorna o mesmo booleano de
+-- InLab_FocarJanelaExportadorRealTime (foco confirmado ou não).
+--------------------------------------------------------------------------------
+fn InLab_TrazerExportadorAoFocoComLog jaAberta =
+(
+    local hwnd = InLab_LocalizarJanelaExportadorRealTime()
+    local focado = InLab_FocarJanelaExportadorRealTime hwnd
+    if focado then
+        InLab_Log (if jaAberta then
+                       "Real-Time Exporter já estava aberto — janela trazida ao foco."
+                   else
+                       "Real-Time Exporter trazido ao foco.") tipo:#ok
+    else
+        InLab_Log (if jaAberta then
+                       "Real-Time Exporter já estava aberto, mas não foi possível confirmar que a janela foi trazida ao foco."
+                   else
+                       "Real-Time Exporter aberto, mas não foi possível confirmar que a janela foi trazida ao foco.") tipo:#warn
     focado
 )
 
@@ -263,11 +318,7 @@ fn InLab_AbrirExportadorRealTime objs somenteSelecao:true =
     local jaAberta = try ( GameExporterShown() ) catch ( undefined )
     if jaAberta == true then
     (
-        local hwnd = InLab_LocalizarJanelaExportadorRealTime()
-        if InLab_FocarJanelaExportadorRealTime hwnd then
-            InLab_Log "Real-Time Exporter já estava aberto — janela trazida ao foco." tipo:#ok
-        else
-            InLab_Log "Real-Time Exporter já estava aberto, mas não foi possível confirmar que a janela foi trazida ao foco." tipo:#warn
+        InLab_TrazerExportadorAoFocoComLog true
         true
     )
     else
@@ -278,9 +329,7 @@ fn InLab_AbrirExportadorRealTime objs somenteSelecao:true =
             InLab_Log ("Real-Time Exporter aberto" +
                        (if somenteSelecao then " · seleção atual (" + objs.count as string + " objeto(s))" else " · cena inteira") +
                        " — escolha formato/compressão/caminho na própria janela.") tipo:#ok
-            local hwnd = InLab_LocalizarJanelaExportadorRealTime()
-            if InLab_FocarJanelaExportadorRealTime hwnd then
-                InLab_Log "Real-Time Exporter trazido ao foco." tipo:#ok
+            InLab_TrazerExportadorAoFocoComLog false
             true
         )
         else
