@@ -10,10 +10,23 @@
  Conteúdo:
    - seleção segura de objetos
    - filtro de geometria válida
+   - deduplicação por instância (stack compartilhado)
    - contagem de polígonos (objeto e conjunto)
    - tamanho de arquivo em MB (base para V-01/V-02)
    - unidade do sistema (base para V-19)
    - formatadores para o log
+
+ 24/09/2026 (issue #42): `InLab_InstanciasDoNo`/`InLab_DeduplicarInstancias` —
+ helper de deduplicação por instância, para laços que aplicam modificador
+ (stack compartilhado: aplicar em cada instância empilha o modificador uma vez
+ por nó) ou medem por peça única. Mesma técnica de `InLab_Instancias`
+ (functions\fn_autouv.ms: InstanceMgr.GetInstances), mas mora aqui porque
+ fn_prooptimizer.ms e fn_otim_fino.ms (issue #62) carregam ANTES de
+ fn_autouv.ms no manifesto (INLAB_MODULOS, InLabChecker.ms) — usar
+ InLab_Instancias dali exigiria pré-declarar o global e criaria uma
+ dependência "carrega antes, mas usa depois". core\utils.ms carrega primeiro
+ que tudo isso, então os dois convivem sem se atropelar. Consumido por
+ functions\fn_prooptimizer.ms (InLab_ProOptimizer).
 ================================================================================
 */
 
@@ -57,6 +70,39 @@ fn InLab_ContarPoligonos objs =
     local total = 0
     for o in objs do total += InLab_ContarPoligonosObj o
     total
+)
+
+--------------------------------------------------------------------------------
+-- INSTÂNCIAS (issue #42) — ver nota no cabeçalho sobre por que não é
+-- InLab_Instancias de fn_autouv.ms.
+--------------------------------------------------------------------------------
+
+-- Nós que compartilham o stack com "o" (inclui o próprio "o").
+fn InLab_InstanciasDoNo o =
+(
+    local inst = #()
+    InstanceMgr.GetInstances o &inst
+    if inst.count == 0 do inst = #(o)
+    inst
+)
+
+-- Um representante por grupo de instâncias dentro de "objs" (mesmo stack
+-- compartilhado), na ordem de entrada. "no" é o 1º nó do grupo que aparece em
+-- objs; "instancias" é o array completo (InLab_InstanciasDoNo), pra quem
+-- chama logar quantas vieram junto. Structs em vez de 2 arrays paralelos:
+-- quem usa só "no" (laço que aplica 1x por stack) ignora "instancias".
+struct InLab_GrupoInstancias (no, instancias)
+fn InLab_DeduplicarInstancias objs =
+(
+    local vistos = #()
+    local grupos = #()
+    for o in objs where findItem vistos o == 0 do
+    (
+        local inst = InLab_InstanciasDoNo o
+        append grupos (InLab_GrupoInstancias no:o instancias:inst)
+        join vistos inst
+    )
+    grupos
 )
 
 --------------------------------------------------------------------------------
