@@ -75,6 +75,54 @@
  Auto UV, Clean UV e Real World Fix foram para a seção nova "UV e Texturas",
  sem mudar comportamento. A seção Produto repinta o medidor quando a família
  muda (InLab_OtimUI_Atualizar).
+
+ 24/09/2026 (issue #54): seção Produto ganha "Ler objetos da seleção" + lista
+ objeto → nome + dropdown + "Renomear meshes" (InLab_Produto_RenomearMeshes).
+ "Aplicar nomes" passa a renomear só materiais e mapas; "Desfazer nomes"
+ volta os dois (mesmo histórico acumulado).
+
+ 24/Set/2026 (issue #47): botão "Find Objects" (Utilidades Rápidas) chamava
+ InLab_FindObjectsPesados, que não existia — implementada em
+ functions\fn_utilidades.ms. lblFindLimite (texto do critério) deixou de
+ depender só do `on InLabSecUtil open`: a seção Produto agora também chama
+ InLab_UtilUI_AtualizarLimite quando o dropdown Família muda, mesmo padrão
+ já usado pelo medidor da Otimização (InLab_OtimUI_Atualizar).
+
+ 24/09/2026 (issue #56): saem os radiobuttons "Fixar à esquerda/à direita"
+ (rdoLado) — só reposicionavam a janela, não faziam docking de verdade, e
+ confundiam o artista. O painel agora abre ONDE FOI FECHADO da última vez,
+ lembrado em preferências (core\prefs.ms, chaves "painelX"/"painelY", mesmo
+ ini de autoCheck etc.). Substituem InLab_LadoPainel/InLab_PosicionarPainel:
+   - InLab_PosicaoValida (pura, testável sem o Max) valida um ponto x,y
+     contra uma lista de áreas de trabalho — usada tanto no produto quanto
+     no teste com áreas inventadas;
+   - InLab_AreasDeTrabalho lê os monitores de verdade (Screen.AllScreens);
+   - InLab_PosicaoPainelPadrao é o topo-à-direita de sempre (fallback);
+   - InLab_PosicaoPainelLer devolve sempre uma posição válida: lembrada se
+     existir e caber na área de trabalho atual, senão o padrão — cobre
+     monitor desligado/removido e resolução menor depois de gravar;
+   - InLab_PosicaoPainelGravar recebe o rollout (não fixo em
+     InLabChecker_Rollout, pra dar de testar com um rollout qualquer) e
+     grava a posição atual da janela nas preferências.
+ ACHADO NA SONDAGEM: um Rollout aberto não tem propriedade `.pos` legível
+ nem gravável ("Unknown property: pos") — só `pos:` no momento do
+ createDialog funciona. O antigo `InLabChecker_Rollout.pos = [x, area.Top]`
+ (rdoLado changed) sempre lançava essa exceção, engolida pelo try/catch ao
+ redor — nunca tinha reposicionado nada de verdade depois da abertura. Pra
+ LER a posição de um diálogo já aberto, InLab_PosicaoPainelGravar usa a API
+ nativa de janela (InLab_RolloutHWND + windows.getWindowPos), mesma família
+ de InLab_FecharPaineisOrfaos logo abaixo.
+ A posição agora é aplicada no `createDialog` (InLab_AbrirUI, via pos:),
+ não mais dentro de `on open` — sem essa migração não havia risco de frame
+ no lugar errado (motivo do "ANTES de qualquer outra coisa" antigo), porque
+ createDialog já nasce posicionado. `on close` grava a posição atual antes
+ de fechar. subSecoes sobe os 24px do radio removido (pos:[4,88] →
+ pos:[4,64]); a altura do diálogo cai de 604 para 580 (mesma conta de
+ sempre: 64 + 508 do subRollout + 8 de margem — reconferida no Max).
+ ui\splash.ms também lia InLab_LadoPainel (removida): como o splash está
+ desligado e não tem mais um "lado" fixo pra herdar, ele volta a abrir
+ sempre no topo à direita (mesmo padrão do painel principal na primeira
+ vez) — ajuste mínimo só pra não quebrar se alguém religar o splash depois.
 ================================================================================
 */
 
@@ -83,13 +131,18 @@
 ----------------------------------------------------------------------
 -- Importa o export de nomenclatura da plataforma (Lovable + Supabase),
 -- escolhe o produto (pré-selecionado pelo nome do .max = cod_est), liga
--- cada parte a um material da seleção e aplica os nomes oficiais. A lógica
+-- cada parte a um material da seleção e aplica os nomes oficiais; cada
+-- objeto é ligado a um mesh_final à parte ("Renomear meshes", #54). A lógica
 -- toda está em functions\fn_renomear_produto.ms; aqui só fica o estado da
 -- tela. Lista + dropdown nativos em vez de tabela dotNet: o número de
 -- partes varia por produto e rollout não cria controles dinamicamente.
 -- Repinta o medidor da Otimização. Definida depois de InLabSecOtimizacao;
 -- declarada aqui porque a seção Produto (abaixo) a chama quando a família muda.
 global InLab_OtimUI_Atualizar
+-- 24/Set/2026 (issue #47): mesmo padrão pro rótulo do limite do Find Objects
+-- (seção Utilidades Rápidas) — definida depois de InLabSecUtil, chamada
+-- daqui quando a família muda no dropdown.
+global InLab_UtilUI_AtualizarLimite
 global INLAB_OTIM_PROPOSTAS = #()
 
 global InLab_ProdutoAtivo = undefined -- árvore crua do JSON importado (formato de InLab_ParseJSON)
@@ -99,7 +152,11 @@ rollout InLabSecProduto "Produto" width:420
     local produtos = #()  -- itens de "produtos" do export importado
     local materiais = #() -- materiais lidos da seleção
     local ligacoes = #()  -- paralelo às partes do produto escolhido: material ou undefined
-    local objsLidos = #() -- objetos da última leitura — são eles que recebem o mesh_final
+    -- 24/09/2026 (#54): objetos têm lista própria (objeto → nome), mesmo
+    -- padrão da lista de partes. O Aplicar não renomeia mais objetos.
+    local objsMesh = #()   -- objetos lidos para "Renomear meshes"
+    local nomesMesh = #()  -- paralelo a objsMesh: mesh_final escolhido ou ""
+    local meshesProd = #() -- mesh_final distintos do produto escolhido
 
     label lblProdutoAtivo "Nenhum produto carregado." align:#left
     button btnImportarProduto "Importar JSON do Produto..." width:395 height:26
@@ -110,8 +167,12 @@ rollout InLabSecProduto "Produto" width:420
     button btnLerSelecao "Ler materiais da seleção" width:395 height:24
     listbox lbxPartes "Parte  →  material:" items:#() height:6 width:395
     dropdownlist ddlMaterial "Material da parte marcada:" items:#() width:395
-    button btnAplicar "Aplicar nomes" width:192 height:26 across:2
-    button btnDesfazer "Desfazer nomes" width:192 height:26
+    button btnAplicar "Aplicar nomes" width:395 height:26 tooltip:"Dá o nome oficial aos materiais ligados e aos mapas deles. Os objetos são renomeados em 'Renomear meshes', abaixo."
+    button btnLerObjetos "Ler objetos da seleção" width:395 height:24 tooltip:"Lista os objetos selecionados e sugere o nome de cada um: pelo material ligado acima ou pela semelhança do nome."
+    listbox lbxObjetos "Objeto  →  nome novo:" items:#() height:6 width:395
+    dropdownlist ddlMesh "Nome do objeto marcado:" items:#() width:395
+    button btnRenomearMeshes "Renomear meshes" width:192 height:26 across:2 tooltip:"Dá a cada objeto da lista o nome escolhido. Objeto sem nome escolhido fica como está."
+    button btnDesfazer "Desfazer nomes" width:192 height:26 tooltip:"Volta os nomes de materiais, mapas e objetos ao que eram antes de 'Aplicar nomes' e 'Renomear meshes'."
 
     fn produtoEscolhido =
         if ddlProduto.selection > 0 and ddlProduto.selection <= produtos.count then produtos[ddlProduto.selection] else undefined
@@ -133,6 +194,30 @@ rollout InLabSecProduto "Produto" width:420
         ddlMaterial.items = #("— nenhum —") + (for m in materiais collect m.name)
         local i = lbxPartes.selection
         ddlMaterial.selection = if i > 0 and ligacoes[i] != undefined then (findItem materiais ligacoes[i]) + 1 else 1
+    )
+
+    fn atualizarMeshes =
+    (
+        local sel = lbxObjetos.selection
+        lbxObjetos.items = for i = 1 to objsMesh.count collect
+        (
+            local o = objsMesh[i]
+            (if isValidNode o then o.name else "(apagado)") + "  →  " + (if nomesMesh[i] == "" then "(não renomear)" else nomesMesh[i])
+        )
+        if sel > 0 and sel <= objsMesh.count do lbxObjetos.selection = sel
+        ddlMesh.items = #("— não renomear —") + meshesProd
+        local i = lbxObjetos.selection
+        ddlMesh.selection = if i > 0 and nomesMesh[i] != "" then (findItem meshesProd nomesMesh[i]) + 1 else 1
+    )
+
+    -- Refaz a lista de nomes do produto e a pré-ligação dos objetos lidos
+    -- (produto trocado ou objetos lidos de novo).
+    fn sugerirMeshes =
+    (
+        local p = produtoEscolhido()
+        meshesProd = InLab_Produto_MeshesDoProduto p
+        nomesMesh = InLab_Produto_SugerirMeshes p ligacoes objsMesh
+        atualizarMeshes()
     )
 
     fn familiaEscolhida =
@@ -164,6 +249,7 @@ rollout InLabSecProduto "Produto" width:420
             )
             mostrarFamilia()
             if InLab_OtimUI_Atualizar != undefined do InLab_OtimUI_Atualizar()
+            if InLab_UtilUI_AtualizarLimite != undefined do InLab_UtilUI_AtualizarLimite()
         )
     )
 
@@ -180,6 +266,7 @@ rollout InLabSecProduto "Produto" width:420
         ddlProduto.items = #()
         lblProdutoAtivo.text = "Nenhum produto carregado."
         sugerir()
+        sugerirMeshes()
     )
 
     on btnImportarProduto pressed do
@@ -216,6 +303,7 @@ rollout InLabSecProduto "Produto" width:420
                     ddlProduto.selection = idx
                 )
                 sugerir()
+                sugerirMeshes()
                 sugerirFamilia()
             )
         )
@@ -224,6 +312,7 @@ rollout InLabSecProduto "Produto" width:420
     on ddlProduto selected i do
     (
         sugerir()
+        sugerirMeshes()
         sugerirFamilia()
     )
 
@@ -231,6 +320,7 @@ rollout InLabSecProduto "Produto" width:420
     (
         InLab_DefinirFamiliaAtiva (familiaEscolhida())
         if InLab_OtimUI_Atualizar != undefined do InLab_OtimUI_Atualizar()
+        if InLab_UtilUI_AtualizarLimite != undefined do InLab_UtilUI_AtualizarLimite()
     )
 
     on InLabSecProduto open do mostrarFamilia()
@@ -240,7 +330,6 @@ rollout InLabSecProduto "Produto" width:420
         local objs = InLab_SelecaoValida()
         if objs.count > 0 do
         (
-            objsLidos = objs
             materiais = InLab_Produto_MateriaisDaSelecao objs
             sugerir()
             local n = 0
@@ -267,13 +356,59 @@ rollout InLabSecProduto "Produto" width:420
         local p = produtoEscolhido()
         if p == undefined then
             InLab_Log "Importe o JSON e escolha o produto antes de aplicar." tipo:#warn
-        else if objsLidos.count == 0 then
+        else if materiais.count == 0 then
             InLab_Log "Clique em 'Ler materiais da seleção' antes de aplicar." tipo:#warn
         else
         (
-            objsLidos = for o in objsLidos where isValidNode o collect o
-            InLab_Produto_Aplicar p ligacoes objsLidos
+            InLab_Produto_Aplicar p ligacoes
             atualizarTela()
+        )
+    )
+
+    on btnLerObjetos pressed do
+    (
+        local p = produtoEscolhido()
+        if p == undefined then
+            InLab_Log "Importe o JSON e escolha o produto antes de ler os objetos." tipo:#warn
+        else
+        (
+            local sel = InLab_SelecaoValida()
+            local objs = for o in sel where InLab_EhGeometria o collect o
+            if sel.count > 0 and objs.count == 0 then
+                InLab_Log "Nenhum objeto de geometria na seleção — nada lido." tipo:#warn
+            else if objs.count > 0 do
+            (
+                objsMesh = objs
+                sugerirMeshes()
+                InLab_Produto_MeshesDoProduto p avisar:true -- só p/ avisar partes sem mesh_final
+                local n = 0
+                for nm in nomesMesh where nm != "" do n += 1
+                InLab_Log (objs.count as string + " objeto(s) lido(s) · " + n as string + " com nome sugerido · " +
+                           meshesProd.count as string + " nome(s) no produto — confira antes de renomear.")
+            )
+        )
+    )
+
+    on lbxObjetos selected i do atualizarMeshes()
+
+    on ddlMesh selected j do
+    (
+        local i = lbxObjetos.selection
+        if i == 0 then
+            InLab_Log "Marque um objeto na lista antes de escolher o nome." tipo:#warn
+        else
+            nomesMesh[i] = if j == 1 then "" else meshesProd[j - 1]
+        atualizarMeshes()
+    )
+
+    on btnRenomearMeshes pressed do
+    (
+        if objsMesh.count == 0 then
+            InLab_Log "Clique em 'Ler objetos da seleção' antes de renomear." tipo:#warn
+        else
+        (
+            InLab_Produto_RenomearMeshes objsMesh nomesMesh
+            atualizarMeshes()
         )
     )
 
@@ -281,6 +416,7 @@ rollout InLabSecProduto "Produto" width:420
     (
         InLab_Produto_Reverter()
         atualizarTela()
+        atualizarMeshes()
     )
 )
 
@@ -512,12 +648,28 @@ rollout InLabSecUtil "Utilidades Rápidas" width:420
     button btnUCenter "Center Pivot" width:130
     button btnUBase "Base Pivot" width:130
 
-    label lblFind "Find Objects (polígonos acima do limite):" align:#left across:1
+    label lblFind "Objetos pesados da cena" align:#left across:1
     label lblFindLimite "limite: carregue uma família" align:#left
-    button btnUFind "Find Objects" width:395 height:24
+    button btnUFind "Find Objects" width:395 height:24 tooltip:(
+        "Seleciona os objetos acima de " + ((INLAB_FIND_FRACAO_POLYMAX * 100) as integer) as string +
+        "% do polyMax da família ativa (em triângulos). Sem família ativa: os " +
+        INLAB_FIND_TOP_N as string + " objetos mais pesados da cena.")
 
     label lblUDetach "Detach por Material (propaga IDs para os pedaços)" align:#left across:1
     button btnUDetach "Detach por Material na Seleção" width:395 height:24
+
+    -- 24/Set/2026 (issue #47): rótulo do limite do Find Objects — mesma
+    -- lógica do texto que InLab_FindObjectsPesados usa pra decidir o
+    -- critério (functions\fn_utilidades.ms), só pra exibição.
+    fn atualizarLimite =
+    (
+        lblFindLimite.text = if InLab_FamiliaAtiva != undefined then
+            ("limite: " + ((InLab_FamiliaAtiva.polyMax * INLAB_FIND_FRACAO_POLYMAX) as integer) as string +
+             " triângulos (" + ((INLAB_FIND_FRACAO_POLYMAX * 100) as integer) as string +
+             "% do polyMax de '" + InLab_FamiliaAtiva.nome + "')")
+        else
+            ("limite: sem família ativa — mostra os " + INLAB_FIND_TOP_N as string + " objetos mais pesados da cena")
+    )
 
     on btnUResetX pressed do
     (
@@ -544,10 +696,15 @@ rollout InLabSecUtil "Utilidades Rápidas" width:420
     -- Atualiza o rótulo do limite sempre que a seção é exibida — mantém o
     -- valor visível sincronizado com a família carregada (não é campo
     -- editável: vem sempre do polyMax, conforme decisão da equipe).
-    on InLabSecUtil open do
-        if InLab_FamiliaAtiva != undefined do
-            lblFindLimite.text = "limite: " + InLab_FamiliaAtiva.polyMax as string + " faces (polyMax de '" + InLab_FamiliaAtiva.nome + "')"
+    -- 24/Set/2026 (issue #47): não bastava mais só no open — InLab_UtilUI_
+    -- AtualizarLimite (definida abaixo) também é chamada pelo dropdown
+    -- Família (seção Produto) sempre que a família muda.
+    on InLabSecUtil open do atualizarLimite()
 )
+
+fn InLab_UtilUI_AtualizarLimite =
+    try ( InLabSecUtil.atualizarLimite() )
+    catch ( InLab_Log ("Utilidades: rótulo do limite não atualizou (" + getCurrentException() + ").") tipo:#warn )
 
 ----------------------------------------------------------------------
 -- SEÇÃO: Converter Material
@@ -658,25 +815,124 @@ rollout InLabSecLog "Log de Sessão" width:420
 ----------------------------------------------------------------------
 -- ROLLOUT PRINCIPAL
 ----------------------------------------------------------------------
--- AJUSTE 10/Set — janela principal (e o splash, ver ui\splash.ms) não
--- abriam no TOPO da tela (referência ArchToolz): só havia reposicionamento
--- em X, e só reagindo à MUDANÇA do radiobutton — a abertura inicial caía
--- onde o Max/Windows decidisse (o comentário logo abaixo, em InLab_AbrirUI,
--- já dizia "posicionada conforme a última preferência de lado", mas isso
--- nunca tinha sido implementado de fato). Agora:
---   - global InLab_LadoPainel guarda a preferência (1=esquerda, 2=direita),
---     sobrevive a reloads dentro da mesma sessão do Max;
---   - InLab_PosicionarPainel fixa X (esquerda/direita) E Y (sempre no topo
---     do WorkingArea) — usada tanto na abertura quanto na mudança do rádio;
---   - InLab_MostrarSplash (ui\splash.ms) lê o MESMO InLab_LadoPainel, então
---     splash e janela principal sempre abrem no mesmo canto.
-global InLab_LadoPainel = 2 -- 1 = esquerda, 2 = direita (default = direita, igual ao radiobutton)
+-- POSIÇÃO DO PAINEL (issue #56) — lembrada nas preferências em vez de um
+-- "lado" fixo. Ver o AJUSTE 24/09/2026 no cabeçalho do arquivo.
+------------------------------------------------------------------
+-- Largura fixa do diálogo — usada só pro fallback padrão (topo à direita).
+global INLAB_PAINEL_LARGURA = 446
 
-fn InLab_PosicionarPainel lado =
+-- Quantos px do canto superior esquerdo do painel têm que caber dentro de
+-- alguma área de trabalho pra posição contar como válida. Não é a largura
+-- inteira do painel: só o suficiente pra garantir uma pegada (barra de
+-- título) visível — o resto pode sobrar fora da tela sem problema.
+global INLAB_PAINEL_MARGEM_VISIVEL = 80
+
+-- PURA — testável sem o Max/dotNet: 'areas' é um array de arrays
+-- #(esquerda, topo, direita, baixo), uma por monitor (formato que
+-- InLab_AreasDeTrabalho devolve). x/y é o canto superior esquerdo do
+-- painel. Cobre monitor desligado/removido e resolução menor depois de
+-- a posição ter sido gravada.
+global InLab_PosicaoValida
+fn InLab_PosicaoValida x y areas =
+(
+    local ok = false
+    if x != undefined and y != undefined and areas != undefined do
+        for a in areas where (x >= a[1] and x <= (a[3] - INLAB_PAINEL_MARGEM_VISIVEL) \
+                and y >= a[2] and y <= (a[4] - INLAB_PAINEL_MARGEM_VISIVEL)) do ok = true
+    ok
+)
+
+-- Enumera os monitores de verdade no formato que InLab_PosicaoValida espera
+-- (WorkingArea, não Bounds: não conta a barra de tarefas como área útil).
+-- Falha (sessão sem dotNet, sem monitor) devolve array vazio — toda posição
+-- vira inválida e InLab_PosicaoPainelLer cai no padrão; nunca trava.
+global InLab_AreasDeTrabalho
+fn InLab_AreasDeTrabalho =
+(
+    local areas = #()
+    try
+    (
+        for tela in (dotNetClass "System.Windows.Forms.Screen").AllScreens do
+        (
+            local wa = tela.WorkingArea
+            append areas #(wa.Left, wa.Top, wa.Right, wa.Bottom)
+        )
+    )
+    catch ( InLab_Log ("Preferências: falha ao ler os monitores (" + getCurrentException() + ").") tipo:#warn )
+    areas
+)
+
+-- Padrão de sempre: topo à direita da tela PRIMÁRIA. Usado na 1ª execução,
+-- com posição inválida ou com o ini corrompido.
+-- Devolve Point2 (não Array): é o que .pos e o parâmetro pos: de
+-- createDialog esperam — ver InLab_AbrirUI e InLab_PosicaoPainelGravar.
+global InLab_PosicaoPainelPadrao
+fn InLab_PosicaoPainelPadrao =
 (
     local area = (dotNetClass "System.Windows.Forms.Screen").PrimaryScreen.WorkingArea
-    local x = if lado == 1 then area.Left else (area.Right - 446)
-    try ( InLabChecker_Rollout.pos = [x, area.Top] ) catch()
+    [area.Right - INLAB_PAINEL_LARGURA, area.Top]
+)
+
+-- Lê a posição lembrada nas preferências; sem preferência gravada, com
+-- valor não numérico ou fora da área de trabalho atual, cai no padrão.
+-- Sempre devolve uma posição válida (Point2) — quem chama nunca precisa
+-- checar.
+global InLab_PosicaoPainelLer
+fn InLab_PosicaoPainelLer =
+(
+    local pos = InLab_PosicaoPainelPadrao()
+    local xs = InLab_PrefLer "painelX" ""
+    local ys = InLab_PrefLer "painelY" ""
+    if xs != "" and ys != "" do
+    (
+        local x = undefined
+        local y = undefined
+        try ( x = xs as integer; y = ys as integer ) catch ()
+        if x != undefined and y != undefined and (InLab_PosicaoValida x y (InLab_AreasDeTrabalho())) do
+            pos = [x, y]
+    )
+    pos
+)
+
+-- ACHADO NA SONDAGEM (24/09/2026): um Rollout aberto por createDialog NÃO
+-- tem propriedade `.pos` legível nem gravável ("Unknown property: pos") —
+-- só `pos:` no MOMENTO do createDialog funciona (é o que InLab_AbrirUI usa
+-- pra abrir já no lugar certo). O antigo `InLabChecker_Rollout.pos = [x,
+-- area.Top]` (rdoLado changed) sempre lançava essa mesma exceção e o
+-- try/catch ao redor engolia — nunca tinha reposicionado nada de verdade,
+-- só o X inicial da abertura é que colava. Pra LER a posição atual de um
+-- diálogo já aberto (grava no on close) tem que ir pela API nativa de
+-- janela do struct `windows` (mesma família de InLab_FecharPaineisOrfaos,
+-- abaixo, e da sondagem do header documentada no CLAUDE.md): acha o HWND
+-- pelo título exato do rollout e lê windows.getWindowPos.
+global InLab_RolloutHWND
+fn InLab_RolloutHWND rlt =
+(
+    local hwnd = undefined
+    local titulo = rlt.title
+    local maxHwnd = windows.getMAXHWND()
+    for w in (windows.getChildrenHWND (windows.getDesktopHWND()))
+        where w[3] == maxHwnd and w[4] == "MAXScriptDialog" and w[5] == titulo do
+        hwnd = w[1]
+    hwnd
+)
+
+-- Grava a posição atual de 'rlt' nas preferências (chamada no on close).
+-- Recebe o rollout em vez de usar InLabChecker_Rollout fixo — dá pra testar
+-- com um rollout qualquer, sem abrir o painel inteiro.
+global InLab_PosicaoPainelGravar
+fn InLab_PosicaoPainelGravar rlt =
+(
+    local ok = false
+    try
+    (
+        local caixa = windows.getWindowPos (InLab_RolloutHWND rlt)
+        InLab_PrefGravar "painelX" (caixa.x as integer)
+        InLab_PrefGravar "painelY" (caixa.y as integer)
+        ok = true
+    )
+    catch ( InLab_Log ("Preferências: falha ao gravar a posição do painel (" + getCurrentException() + ").") tipo:#warn )
+    ok
 )
 
 rollout InLabChecker_Rollout ("InLabChecker · InLab Artefacto · v" + INLAB_VERSAO) width:446
@@ -690,25 +946,19 @@ rollout InLabChecker_Rollout ("InLabChecker · InLab Artefacto · v" + INLAB_VER
     ------------------------------------------------------------------
     dotNetControl pnlHeader "System.Windows.Forms.Panel" pos:[0,0] width:446 height:56
 
-    ------------------------------------------------------------------
-    -- LADO DO PAINEL — reposicionamento na borda da tela (não é docking
-    -- real; ver ressalva entregue à equipe).
-    ------------------------------------------------------------------
-    radiobuttons rdoLado labels:#("Fixar à esquerda", "Fixar à direita") default:2 columns:2 pos:[8,64]
-
-    subRollout subSecoes width:438 height:508 pos:[4,88]
+    -- POSIÇÃO DO PAINEL (issue #56): não é mais um controle da tela — sai
+    -- daqui o antigo bloco "LADO DO PAINEL" com o radiobutton rdoLado.
+    -- subSecoes sobe os 24px que o radio ocupava (pos:[4,88] → pos:[4,64]).
+    -- A posição em si (x/y da janela) é lida das preferências e aplicada
+    -- direto no createDialog (InLab_AbrirUI, via pos:) — ver o AJUSTE
+    -- 24/09/2026 no cabeçalho do arquivo.
+    subRollout subSecoes width:438 height:508 pos:[4,64]
 
     ------------------------------------------------------------------
     -- EVENTOS
     ------------------------------------------------------------------
     on InLabChecker_Rollout open do
     (
-        -- Sincroniza o rádio com a preferência lembrada e fixa a janela no
-        -- topo do lado certo — ANTES de qualquer outra coisa, pra não haver
-        -- frame em que a janela aparece no lugar errado.
-        rdoLado.state = InLab_LadoPainel
-        InLab_PosicionarPainel InLab_LadoPainel
-
         -- GUARDA OBRIGATÓRIA: os 8 AddSubRollout vêm DEPOIS. Sem o try/catch,
         -- uma falha no header (arte corrompida, dotNet fora do ar) abriria o
         -- painel sem nenhuma seção — o plugin inteiro inutilizado por causa de
@@ -759,6 +1009,12 @@ rollout InLabChecker_Rollout ("InLabChecker · InLab Artefacto · v" + INLAB_VER
     -- próxima abertura do painel repinta o estado certo.
     on InLabChecker_Rollout close do
     (
+        -- Lembra onde o artista deixou o painel (issue #56) — grava ANTES de
+        -- zerar as globais do header, mas a ordem entre as duas não importa
+        -- de fato (não se tocam): só documentando que .pos ainda é válido
+        -- aqui, o controle só morre depois que on close termina.
+        InLab_PosicaoPainelGravar InLabChecker_Rollout
+
         InLab_LogUI = undefined
         InLab_Header_Pnl = undefined
         InLab_Header_Marca = undefined
@@ -767,18 +1023,10 @@ rollout InLabChecker_Rollout ("InLabChecker · InLab Artefacto · v" + INLAB_VER
         InLab_Header_BtnReload = undefined
         InLab_Header_Pastilha = undefined
     )
-
-    -- Reposiciona a janela na borda esquerda/direita da tela de trabalho
-    -- (sempre no topo) e lembra a preferência pra próxima abertura/reload.
-    on rdoLado changed sel do
-    (
-        InLab_LadoPainel = sel
-        InLab_PosicionarPainel sel
-    )
 )
 
 -- Fecha instância anterior (se existir) e abre a janela já posicionada
--- conforme a última preferência de lado (padrão: direita).
+-- conforme a última posição lembrada (padrão: topo à direita).
 --
 -- global explícito aqui: o fileIn deste arquivo pode acontecer de DENTRO
 -- de InLab_RecarregarPlugin() (reload), um escopo de função aninhado, o
@@ -815,11 +1063,13 @@ fn InLab_AbrirUI =
     try (destroyDialog InLabChecker_Rollout) catch()
     InLab_FecharPaineisOrfaos()
     -- InLab_MostrarSplash()
-    -- AJUSTE 22/Set (header-kit-ui, Tarefa 5) — 604 MEDIDO no Max (não mais
-    -- estimado): com o header (56px) + rádio de lado (pos:[8,64]) + subSecoes
-    -- (altura 508, pos:[4,88]), sobra abaixo do subRollout = 604 - (88+508) =
-    -- 8px (dentro da faixa pedida de 4-10px). Substitui o valor de 600 do
-    -- AJUSTE 15/Set (barra do topo/progresso removidas), que nunca tinha sido
-    -- de fato conferido no Max — o comentário anterior dizia isso mesmo.
-    createDialog InLabChecker_Rollout 446 604
+    -- AJUSTE 24/09/2026 (issue #56) — 580 MEDIDO no Max (não mais estimado):
+    -- com o header (56px) + subSecoes (altura 508, pos:[4,64], sem mais o
+    -- radiobutton de lado que ocupava 24px acima dele), sobra abaixo do
+    -- subRollout = 580 - (64+508) = 8px (mesma folga de sempre). Substitui o
+    -- 604 do AJUSTE 22/Set, que incluía os 24px do radiobutton removido.
+    -- A posição (x/y da janela) some daqui: agora é InLab_PosicaoPainelLer(),
+    -- lida das preferências e aplicada de uma vez via pos: — sem o "pula pro
+    -- canto" que existia dentro de on open.
+    createDialog InLabChecker_Rollout 446 580 pos:(InLab_PosicaoPainelLer())
 )

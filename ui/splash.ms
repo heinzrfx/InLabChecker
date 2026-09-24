@@ -25,6 +25,15 @@
  partir do WorkingArea (canto superior direito, mesmo canto-padrão do
  InLabChecker_Rollout — ver "AJUSTE 10/Set" espelhado em rollout_main.ms),
  em vez de depender do posicionamento automático do SO.
+
+ AJUSTE 24/09/2026 (issue #56): o painel principal deixou de ter um "lado"
+ fixo (rdoLado/InLab_LadoPainel saíram — ver cabeçalho de rollout_main.ms);
+ a posição agora é livre, lembrada nas preferências, e pode acabar em
+ qualquer canto da tela. Sem um "lado" pra herdar, o splash — DESLIGADO,
+ mas tem que continuar montando sem erro se religado — volta a abrir
+ sempre no topo à direita, o mesmo padrão de primeira execução do painel
+ principal (InLab_PosicaoPainelPadrao, rollout_main.ms). Não lê mais
+ nenhum global do painel principal.
 ================================================================================
 */
 
@@ -87,16 +96,13 @@ fn InLab_MostrarSplash =
 (
     try ( destroyDialog InLabSplash ) catch()
 
-    -- Topo da tela, no MESMO lado (esquerda/direita) que InLabChecker_Rollout
-    -- vai abrir — lê o InLab_LadoPainel definido em rollout_main.ms, pra
-    -- splash e janela principal ficarem sempre alinhados. InLab_LadoPainel
-    -- só existe depois que rollout_main.ms carrega (ordem do manifesto em
-    -- InLabChecker.ms) — como splash.ms só LÊ o global dentro da função,
-    -- não na definição, isso resolve certo em tempo de execução; o "2" é
-    -- só um default de segurança caso a função seja chamada antes disso.
+    -- Topo à direita da tela — mesmo canto-padrão de primeira execução do
+    -- InLabChecker_Rollout (issue #56: o painel principal não tem mais um
+    -- "lado" fixo pra herdar, a posição dele é livre e lembrada nas
+    -- preferências; o splash, desligado, só precisa continuar montando sem
+    -- erro se for religado, não precisa acompanhar posição nenhuma).
     local area = (dotNetClass "System.Windows.Forms.Screen").PrimaryScreen.WorkingArea
-    local lado = if InLab_LadoPainel != undefined then InLab_LadoPainel else 2
-    local x = if lado == 1 then area.Left else (area.Right - 360)
+    local x = area.Right - 360
     local y = area.Top
 
     createDialog InLabSplash 360 220 pos:[x, y] style:#(#style_border) modal:false

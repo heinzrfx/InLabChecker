@@ -13,15 +13,45 @@
     com flip: no Max 2024 o próprio ResetXForm já acerta o sentido das faces
     (testado; com o flip a malha ficava do avesso).
 
- 2. InLab_CentralizarPivot — move o pivot de cada objeto para o centro
-    geométrico (bounding box). Nota: as regras de pivot por família
-    (V-17/27/28/31/32) têm critérios próprios — esta função é utilitário
-    de modelagem, não substitui a verificação.
+ 2. InLab_CentralizarPivot — move o pivot para o centro geométrico
+    (bounding box) da geometria.
 
- 3. InLab_BasePivot — move o pivot para a base do objeto: centro XY e
-    fundo (min.z) do bounding box, mesmo critério da V-17. Não move o
-    objeto para Z=0 do mundo. (22/Set/2026: o botão "Base Pivot" chamava
-    esta função, que não existia — erro na linha 301 de rollout_main.ms.)
+ 3. InLab_BasePivot — move o pivot para a base da geometria: centro XY e
+    fundo (min.z) do bounding box. Mesmo critério de X/Y/Z que a V-17
+    (verifications\verif_pivot.ms) cobra — mas não move o objeto para
+    Z=0 do mundo: se o produto está flutuando, o pivot vai para a base
+    ONDE ELE ESTÁ, e a V-17 vai acusar o desvio de Z.
+
+ 24/Set/2026 (issue #50): Center/Base Pivot não filtravam por
+ InLab_EhGeometria — helpers e CABEÇAS DE GRUPO na seleção também tinham o
+ pivot movido a partir do bounding box do próprio helper (sem sentido: o
+ bbox de um Dummy/cabeça de grupo não é o do produto).
+ Decidido na issue: Base Pivot num produto AGRUPADO move o pivot da CABEÇA
+ DO GRUPO (é o nó que a V-17 verifica — verif_pivot.ms > InLab_RaizesGeometria,
+ raiz = topo da hierarquia por .parent), calculado a partir do bounding box
+ das geometrias DESCENDENTES do grupo (não o bbox do helper).
+ As duas funções agora:
+   - sobem de cada objeto selecionado até a raiz da hierarquia (mesma regra
+     da V-17: sobe por .parent; objeto solto é raiz de si mesmo; membro de
+     grupo aberto ou fechado resolve para a cabeça do grupo);
+   - juntam as geometrias descendentes dessa raiz (InLab_EhGeometria) para
+     o bounding box — a cabeça do grupo em si NUNCA entra no bbox nem é
+     tratada como geometria;
+   - movem o pivot só da raiz (uma vez por produto, não por peça).
+ Raiz sem geometria (helper solto, grupo vazio) não tem pivot alterado —
+ loga aviso e não conta no total.
+
+ 24/Set/2026 (issue #47): InLab_FindObjectsPesados não existia (só no
+ histórico) — botão "Find Objects" da seção Utilidades Rápidas dava erro de
+ runtime. Decisão do humano registrada na issue: critério A — objeto pesado
+ é quem passa de INLAB_FIND_FRACAO_POLYMAX (25%) do polyMax da família
+ ativa; sem família ativa, mostra os INLAB_FIND_TOP_N (5) objetos com mais
+ triângulos da cena, já que não há teto pra comparar.
+ Unidade = TRIÂNGULOS (InLab_Otim_Triangulos, functions\fn_otim_nucleo.ms,
+ carregado antes deste módulo no manifesto — issue #60 moveu V-03/V-05 de
+ polígonos do Max pra triângulos, a mesma contagem que o GLB exporta; usar
+ outra unidade aqui deixaria o rótulo do limite (ui\rollout_main.ms) e as
+ verificações discordando sobre o mesmo polyMax).
 ================================================================================
 */
 
@@ -56,16 +86,80 @@ fn InLab_ResetXFormSelecao objs =
     n
 )
 
+-- Nó do TOPO da hierarquia de `no` (sobe por .parent até não ter mais pai).
+-- Mesma regra usada pela V-17 (verifications\verif_pivot.ms >
+-- InLab_RaizesGeometria) para achar a "raiz" de um produto: objeto solto é
+-- raiz de si mesmo; membro de grupo (aberto ou fechado) resolve para a
+-- cabeça do grupo, que é quem a V-17 confere.
+fn InLab_RaizDoNo no =
+(
+    local topo = no
+    while topo.parent != undefined do topo = topo.parent
+    topo
+)
+
+-- Geometrias (InLab_EhGeometria) que descendem de `raiz`, incluindo ela
+-- mesma se for geometria. Cabeça de grupo/Dummy nunca entra no resultado —
+-- só o que teria ido para `geometry` na verificação normal.
+fn InLab_GeometriasDescendentes raiz =
+(
+    local geoms = #()
+    local pilha = #(raiz)
+    while pilha.count > 0 do
+    (
+        local atual = pilha[pilha.count]
+        deleteItem pilha pilha.count
+        if InLab_EhGeometria atual do appendIfUnique geoms atual
+        for c in atual.children do append pilha c
+    )
+    geoms
+)
+
+-- Bounding box [min, max] da união de `geoms` (arrays de nós de geometria).
+fn InLab_BBoxGeometrias geoms =
+(
+    local bMin = undefined
+    local bMax = undefined
+    for o in geoms do
+    (
+        if bMin == undefined then ( bMin = copy o.min; bMax = copy o.max )
+        else
+        (
+            bMin = [amin bMin.x o.min.x, amin bMin.y o.min.y, amin bMin.z o.min.z]
+            bMax = [amax bMax.x o.max.x, amax bMax.y o.max.y, amax bMax.z o.max.z]
+        )
+    )
+    #(bMin, bMax)
+)
+
+-- Raízes ÚNICAS (InLab_RaizDoNo) dos objetos de `objs`, na ordem em que
+-- aparecem — sem repetir quando duas peças selecionadas resolvem para a
+-- mesma cabeça de grupo.
+fn InLab_RaizesDaSelecao objs =
+(
+    local raizes = #()
+    for o in objs do appendIfUnique raizes (InLab_RaizDoNo o)
+    raizes
+)
+
 fn InLab_CentralizarPivot objs =
 (
     local n = 0
     undo "InLab Centralizar Pivot" on
     (
-        for o in objs do
+        for raiz in (InLab_RaizesDaSelecao objs) do
         (
-            o.pivot = o.center
-            n += 1
-            InLab_Log (o.name + ": pivot centralizado no bounding box.") tipo:#ok
+            local geoms = InLab_GeometriasDescendentes raiz
+            if geoms.count == 0 then
+                InLab_Log (raiz.name + ": sem geometria (helper ou grupo vazio) — pivot não alterado.") tipo:#warn
+            else
+            (
+                local bb = InLab_BBoxGeometrias geoms
+                local centro = [(bb[1].x + bb[2].x) / 2.0, (bb[1].y + bb[2].y) / 2.0, (bb[1].z + bb[2].z) / 2.0]
+                raiz.pivot = centro
+                n += 1
+                InLab_Log (raiz.name + ": pivot centralizado no bounding box (" + geoms.count as string + " geometria(s)).") tipo:#ok
+            )
         )
     )
     InLab_Log ("Centralizar pivot: " + n as string + " objeto(s).")
@@ -77,13 +171,75 @@ fn InLab_BasePivot objs =
     local n = 0
     undo "InLab Base Pivot" on
     (
-        for o in objs do
+        for raiz in (InLab_RaizesDaSelecao objs) do
         (
-            o.pivot = [o.center.x, o.center.y, o.min.z]
-            n += 1
-            InLab_Log (o.name + ": pivot na base (centro XY, fundo do bounding box).") tipo:#ok
+            local geoms = InLab_GeometriasDescendentes raiz
+            if geoms.count == 0 then
+                InLab_Log (raiz.name + ": sem geometria (helper ou grupo vazio) — pivot não alterado.") tipo:#warn
+            else
+            (
+                local bb = InLab_BBoxGeometrias geoms
+                raiz.pivot = [(bb[1].x + bb[2].x) / 2.0, (bb[1].y + bb[2].y) / 2.0, bb[1].z]
+                n += 1
+                InLab_Log (raiz.name + ": pivot na base (centro XY, fundo do bounding box; " + geoms.count as string + " geometria(s)).") tipo:#ok
+            )
         )
     )
     InLab_Log ("Base pivot: " + n as string + " objeto(s).")
     n
+)
+
+--------------------------------------------------------------------------------
+-- FIND OBJECTS PESADOS (issue #47)
+--------------------------------------------------------------------------------
+
+-- Fração do polyMax da família ativa que define "pesado" (critério A da
+-- decisão do humano, issue #47, 24/Set/2026).
+global INLAB_FIND_FRACAO_POLYMAX = 0.25
+
+-- Sem família ativa não há polyMax pra comparar: mostra os N objetos com
+-- mais triângulos da cena (decisão do humano, issue #47).
+global INLAB_FIND_TOP_N = 5
+
+-- Compara dois pares #(objeto, triângulos) pra ordenar DECRESCENTE por
+-- triângulos (qsort pede uma função de 2 argumentos; a diferença já serve
+-- de valor de comparação).
+fn InLab_FindCompararPeso a b = (b[2] - a[2])
+
+-- Acha e seleciona os objetos "pesados" da cena (ou de `objs`, se passado —
+-- usado pelo teste; o botão da UI chama sem argumento e cai na cena
+-- inteira, igual ao medidor da seção Otimização).
+-- Critério A (issue #47): com família ativa, pesado é quem passa de
+-- INLAB_FIND_FRACAO_POLYMAX do polyMax da família, em triângulos. Sem
+-- família ativa: os INLAB_FIND_TOP_N objetos com mais triângulos da cena.
+fn InLab_FindObjectsPesados objs:undefined =
+(
+    if objs == undefined do objs = InLab_ObjetosVerificacao()
+    local pares = for o in objs where InLab_EhGeometria o collect #(o, InLab_Otim_Triangulos #(o))
+    qsort pares InLab_FindCompararPeso
+    local achados = #()
+    if pares.count == 0 then
+        InLab_Log "Find Objects: cena sem geometria." tipo:#warn
+    else if InLab_FamiliaAtiva != undefined then
+    (
+        local limite = InLab_FamiliaAtiva.polyMax * INLAB_FIND_FRACAO_POLYMAX
+        achados = for p in pares where p[2] > limite collect p
+        if achados.count == 0 do
+            InLab_Log ("Find Objects: nenhum objeto acima de " + (limite as integer) as string +
+                       " triângulos (" + ((INLAB_FIND_FRACAO_POLYMAX * 100) as integer) as string +
+                       "% do polyMax de '" + InLab_FamiliaAtiva.nome + "').") tipo:#info
+    )
+    else
+    (
+        achados = for i = 1 to (amin INLAB_FIND_TOP_N pares.count) collect pares[i]
+        InLab_Log ("Find Objects: sem família ativa — mostrando os " + achados.count as string +
+                   " objeto(s) mais pesado(s) da cena.") tipo:#info
+    )
+    if achados.count > 0 do
+    (
+        select (for a in achados collect a[1])
+        for a in achados do InLab_Log (a[1].name + ": " + a[2] as string + " triângulo(s).") tipo:#warn
+    )
+    InLab_Log ("Find Objects: " + achados.count as string + " objeto(s) pesado(s).")
+    achados.count
 )
