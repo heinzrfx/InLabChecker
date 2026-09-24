@@ -10,7 +10,7 @@
    - LEVANTAR os "botões de peso" do stack vivo de cada nó da seleção:
      iterações de TurboSmooth/MeshSmooth/OpenSubdiv e do NURMS do Editable
      Poly, segmentos de Chamfer/Shell/Lathe/Extrude, lados/segmentos das
-     primitivas e passos/lados de spline renderizável. Nomes de propriedade
+     primitivas e passos de spline (sob Extrude/Lathe). Nomes de propriedade
      sondados no Max 2024 (24/09/2026); cada um é conferido com isProperty
      e, se faltar no build, é pulado com log.
    - FICAM FORA: modificador desligado (enabled ou enabledInViews falso),
@@ -33,13 +33,15 @@
      até o total da CENA chegar no centro da faixa, sem descer do mínimo; se
      tudo chega no piso antes, loga quanto falta (entra no passo 2).
    - Degrau: 1 para iterações e segmentos; para lados e segmentos de peças
-     redondas (lados, esfera, toro, Lathe, lados de spline) ~1/8 do valor,
+     redondas (lados, esfera, toro, Lathe) ~1/8 do valor,
      sempre PAR (mín. 2): não gasta dezenas de medições em 64 → 12 e mantém
      a paridade (64 → 56 → 50 ... → 12, sem 15 lados).
-   - Splines renderizáveis contam triângulos aqui (InLab_OtimOrigem_TrisNo):
-     InLab_Otim_Triangulos só conta GeometryClass, e uma Line renderizável
-     sem modificador é Shape. O total do cálculo usa este contador para a
-     economia da spline não ficar fora da conta.
+   - CONTAGEM = a do medidor (InLab_Otim_Triangulos, só GeometryClass) no
+     total da cena, na faixa e no log "cena X → Y": a proposta cai na faixa
+     que o medidor e a V-03/V-04 mostram. Spline renderizável sem
+     modificador é Shape e o medidor ainda não a conta: fica fora, com uma
+     linha #info por spline (revisão de 24/09/2026 — antes havia um contador
+     próprio que incluía a spline, e o "cai na faixa" valia só nele).
    - Laço limitado por INLAB_OTIM_ORIGEM_MAX_AVAL avaliações e
      INLAB_OTIM_ORIGEM_MAX_SEG segundos (CLAUDE.md, "Desempenho"): passou,
      para com o que já tem e loga.
@@ -108,7 +110,7 @@ global INLAB_OTIM_ORIGEM_TABELA = #(
 -- Chaves de piso que este passo usa (para o log dos pisos em uso).
 global INLAB_OTIM_ORIGEM_CHAVES = #("turbosmooth", "meshsmooth", "opensubdiv", "nurms", "chamfer", "shell",
                                     "lathe", "extrude", "lados", "alturasegs", "esfera", "torus_segs",
-                                    "torus_lados", "fillet", "boxsegs", "spline_passos", "spline_lados",
+                                    "torus_lados", "fillet", "boxsegs", "spline_passos",
                                     "dano_subdiv", "dano_outros")
 
 global InLab_OtimOrigem_NomeProp
@@ -126,7 +128,6 @@ fn InLab_OtimOrigem_NomeProp prop =
         "widthsegs":        "segs de largura"
         "Fillet_Segments":  "segs do arredondado"
         "steps":            "passos"
-        "render_sides":     "lados da espessura"
         default:            (prop as string)
     )
 )
@@ -134,46 +135,8 @@ fn InLab_OtimOrigem_NomeProp prop =
 global InLab_OtimOrigem_SplineRenderizavel
 fn InLab_OtimOrigem_SplineRenderizavel o =
 (
-    superclassof o == Shape and \
-        ((try (o.render_displayRenderMesh == true) catch (false)) or (try (o.render_renderable == true) catch (false)))
+    superclassof o == Shape and         ((try (o.render_displayRenderMesh == true) catch (false)) or (try (o.render_renderable == true) catch (false)))
 )
-
--- Triângulos de UM nó, forçando a avaliação (classof). Geometria como
--- InLab_Otim_Triangulos; spline renderizável pelo snapshot (a malha de render).
-global InLab_OtimOrigem_TrisNo
-fn InLab_OtimOrigem_TrisNo o =
-(
-    if not isValidNode o then 0
-    else
-    (
-        classof o
-        if InLab_EhGeometria o then (GetTriMeshFaceCount o)[1]
-        else if InLab_OtimOrigem_SplineRenderizavel o then
-        (
-            local n = 0
-            try
-            (
-                local m = snapshotAsMesh o
-                n = m.numfaces
-                delete m
-            )
-            catch ( InLab_Log (o.name + ": não medi a spline renderizável (" + getCurrentException() + ").") tipo:#warn )
-            n
-        )
-        else 0
-    )
-)
-
-global InLab_OtimOrigem_TrisNos
-fn InLab_OtimOrigem_TrisNos nos =
-(
-    local t = 0
-    for o in nos do t += InLab_OtimOrigem_TrisNo o
-    t
-)
-
-global InLab_OtimOrigem_Conta
-fn InLab_OtimOrigem_Conta o = isValidNode o and (InLab_EhGeometria o or InLab_OtimOrigem_SplineRenderizavel o)
 
 global InLab_OtimOrigem_Ativo
 fn InLab_OtimOrigem_Ativo m =
@@ -208,7 +171,7 @@ fn InLab_OtimOrigem_NovoBotao o alvo prop chave subdiv redondo botoes =
         )
         else
         (
-            local nos = for n in (refs.dependentNodes alvo) where InLab_OtimOrigem_Conta n collect n
+            local nos = for n in (refs.dependentNodes alvo) where isValidNode n and InLab_EhGeometria n collect n
             if (findItem nos o) == 0 do append nos o
             local b = OtimOrigemBotao alvo:alvo prop:prop chave:chave subdiv:subdiv redondo:redondo dono:o nos:nos \
                         original:v valor:v piso:((InLab_Otim_Piso chave) as integer) \
@@ -280,8 +243,6 @@ fn InLab_OtimOrigem_Levantar o botoes =
         else
         (
             InLab_OtimOrigem_NovoBotao o base #steps "spline_passos" false false botoes
-            if InLab_OtimOrigem_SplineRenderizavel o do
-                InLab_OtimOrigem_NovoBotao o base #render_sides "spline_lados" false true botoes
         )
     )
     else
@@ -311,9 +272,9 @@ fn InLab_OtimOrigem_MedirProx b =
     else
     (
         local nv = amax b.piso (b.valor - (InLab_OtimOrigem_Degrau b))
-        local antes = InLab_OtimOrigem_TrisNos b.nos
+        local antes = InLab_Otim_Triangulos b.nos
         setProperty b.alvo b.prop nv
-        local depois = InLab_OtimOrigem_TrisNos b.nos
+        local depois = InLab_Otim_Triangulos b.nos
         setProperty b.alvo b.prop b.valor
         if antes - depois > 0 then b.prox = #(nv, antes - depois)
         else b.esgotado = true
@@ -345,14 +306,19 @@ fn InLab_OtimOrigem_Calcular objs =
     InLab_OtimOrigem_LogPisos()
 
     local botoes = #()
-    for o in objs where InLab_OtimOrigem_Conta o do InLab_OtimOrigem_Levantar o botoes
+    for o in objs where isValidNode o do
+    (
+        if InLab_EhGeometria o then InLab_OtimOrigem_Levantar o botoes
+        else if InLab_OtimOrigem_SplineRenderizavel o do
+            InLab_Log (o.name + ": spline renderizável fica fora — o medidor ainda não conta spline renderizável.") tipo:#info
+    )
     if botoes.count == 0 then
     (
         InLab_Log "Reduzir na origem: nenhum botão de peso na seleção (stack sem subdivisão, chanfro, primitiva etc.)." tipo:#info
         return #()
     )
 
-    local total = InLab_OtimOrigem_TrisNos (for o in objects where InLab_OtimOrigem_Conta o collect o)
+    local total = InLab_Otim_Triangulos (for o in geometry collect o)
     local totalInicial = total
     local alvo = faixa[3]
     local minimo = faixa[1]
@@ -370,7 +336,7 @@ fn InLab_OtimOrigem_Calcular objs =
     (
         try
         (
-            for b in botoes do b.trisAntes = InLab_OtimOrigem_TrisNos b.nos
+            for b in botoes do b.trisAntes = InLab_Otim_Triangulos b.nos
             for b in botoes do aval += InLab_OtimOrigem_MedirProx b
             while total > alvo do
             (

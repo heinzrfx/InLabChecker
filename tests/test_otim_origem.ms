@@ -1,8 +1,9 @@
 /*
  tests\test_otim_origem.ms — teste automático do passo 1 da otimização (issue #61)
  Cobre functions\fn_otim_origem.ms (spec 2026-09-23-otimizacao-design.md, seção 6):
- cena com TurboSmooth, Chamfer, Shell, Cylinder instanciado, spline renderizável,
- modificador desligado e base sob deformador. Proposta cai na faixa; pisos
+ cena com TurboSmooth, Chamfer, Shell, Cylinder instanciado, spline renderizável
+ (fica fora: o medidor não a conta), spline sob Extrude, modificador desligado,
+ base sob deformador e Chamfer sob TurboSmooth. Proposta cai na faixa; pisos
  respeitados (padrão e .ini); levantamento não deixa nada alterado (inclusive
  com exceção no meio); instância conta uma vez só e multiplica a economia;
  Aplicar/Reverter voltam os valores exatos.
@@ -11,14 +12,16 @@
 */
 global InLab_Log, InLab_FamiliaAtiva, InLab_PrefGravar, InLab_PrefApagar
 global INLAB_OTIM_META_MANUAL, InLab_Otim_Piso, InLab_Otim_Calcular, InLab_Otim_Aplicar, InLab_Otim_Reverter
-global InLab_OtimOrigem_TrisNos, InLab_OtimOrigem_TrisNo, InLab_OtimOrigem_NovoBotao, InLab_UltimaOtimOrigem
-global INLAB_TESTE_SAIDA, INLAB_TESTE_FALHAS, INLAB_TESTE_CHAMADAS
+global InLab_Otim_Triangulos, InLab_OtimOrigem_Calcular, InLab_OtimOrigem_NovoBotao, InLab_UltimaOtimOrigem
+global INLAB_TESTE_SAIDA, INLAB_TESTE_FALHAS
+global INLAB_TESTE_TRIS_REAL, INLAB_TESTE_VIGIAR, INLAB_TESTE_ORIG, INLAB_TESTE_ALTERADO
 (
     local dirTeste = getFilenamePath (getSourceFileName())
     local raiz = substring dirTeste 1 (dirTeste.count - 6) -- tira "tests\"
     local arqSaida = (getDir #temp) + "\\inlab_test_otim_origem.txt"
     INLAB_TESTE_SAIDA = createFile arqSaida encoding:#utf8
     INLAB_TESTE_FALHAS = 0
+    INLAB_TESTE_TRIS_REAL = undefined
     fn linha s = ( format "%\n" s to:INLAB_TESTE_SAIDA; flush INLAB_TESTE_SAIDA )
     fn checar nome ok =
     (
@@ -66,7 +69,7 @@ global INLAB_TESTE_SAIDA, INLAB_TESTE_FALHAS, INLAB_TESTE_CHAMADAS
         local d2 = instance d
         d2.pos = [320, 0, 0]
         d2.name = "D_Cil_inst"
-        -- E: spline renderizável.
+        -- E: spline renderizável SEM modificador (Shape: o medidor não conta, fica fora).
         local e = Line name:"E_Spline"
         addNewSpline e
         addKnot e 1 #corner #line [400, 0, 0]
@@ -85,12 +88,30 @@ global INLAB_TESTE_SAIDA, INLAB_TESTE_FALHAS, INLAB_TESTE_CHAMADAS
         -- G: Cylinder 32 lados sob Bend (segmentos definem a forma).
         local g = Cylinder radius:5 height:60 sides:32 heightsegs:20 pos:[600, 0, 0] name:"G_Bend"
         addModifier g (Bend angle:45)
+        -- E2: spline sob Extrude (nó é geometria: os passos da spline valem).
+        local e2 = Line name:"E2_Extrude"
+        addNewSpline e2
+        addKnot e2 1 #corner #line [700, 0, 0]
+        addKnot e2 1 #smooth #curve [750, 0, 0]
+        addKnot e2 1 #corner #line [750, 50, 0]
+        updateShape e2
+        e2.steps = 12
+        local ex = Extrude amount:20
+        addModifier e2 ex
+        -- H: Chamfer SOB TurboSmooth ligado (gaiola: o Chamfer fica, o TS vale).
+        local h = Box length:30 width:30 height:30 pos:[800, 0, 0] name:"H_ChamferTS"
+        local chH = Chamfer()
+        addModifier h chH
+        chH.segments = 4
+        local tsH = TurboSmooth iterations:2
+        addModifier h tsH
 
         -- Valores originais de todos os botões (para "nada alterado").
         local vigiar = #(#(ts, #iterations), #(ts, #renderIterations), #(ch, #segments), #(sh, #segments),
                          #(d.baseobject, #sides), #(d.baseobject, #heightsegs), #(d.baseobject, #capsegs),
                          #(e.baseobject, #steps), #(e.baseobject, #render_sides), #(tsOff, #iterations),
-                         #(a.baseobject, #lengthsegs), #(g.baseobject, #sides), #(g.baseobject, #heightsegs))
+                         #(a.baseobject, #lengthsegs), #(g.baseobject, #sides), #(g.baseobject, #heightsegs),
+                         #(e2.baseobject, #steps), #(ex, #segs), #(chH, #segments), #(tsH, #iterations))
         local originais = for v in vigiar collect getProperty v[1] v[2]
         fn tudoOriginal vigiar originais =
         (
@@ -99,8 +120,8 @@ global INLAB_TESTE_SAIDA, INLAB_TESTE_FALHAS, INLAB_TESTE_CHAMADAS
             ok
         )
         local todos = for o in objects collect o
-        local total0 = InLab_OtimOrigem_TrisNos todos
-        checar ("Spline renderizável conta triângulos (" + (InLab_OtimOrigem_TrisNo e) as string + ")") ((InLab_OtimOrigem_TrisNo e) > 0)
+        -- Mesma contagem do medidor (só GeometryClass).
+        local total0 = InLab_Otim_Triangulos todos
 
         ---------------------------------------------------------------- SEM FAIXA
         InLab_FamiliaAtiva = undefined
@@ -115,7 +136,7 @@ global INLAB_TESTE_SAIDA, INLAB_TESTE_FALHAS, INLAB_TESTE_CHAMADAS
         local props = InLab_Otim_Calcular 1 todos
         checar ("Calcular propõe ajustes (" + props.count as string + ")") (props.count > 0)
         checar "Levantamento não deixa nada alterado (valores)" (tudoOriginal vigiar originais)
-        checar "Levantamento não deixa nada alterado (triângulos)" ((InLab_OtimOrigem_TrisNos todos) == total0)
+        checar "Levantamento não deixa nada alterado (triângulos)" ((InLab_Otim_Triangulos todos) == total0)
         local economia = 0
         for p in props do economia += (p.trisAntes - p.trisDepois)
         local estimado = total0 - economia
@@ -124,8 +145,11 @@ global INLAB_TESTE_SAIDA, INLAB_TESTE_FALHAS, INLAB_TESTE_CHAMADAS
         checar "Modificador desligado ignorado" ((for p in props where p.alvo == tsOff collect p).count == 0)
         checar "Base sob TurboSmooth não é proposta (gaiola)" ((for p in props where p.alvo == a.baseobject collect p).count == 0)
         checar "Base sob Bend não é proposta (define a forma)" ((for p in props where p.alvo == g.baseobject collect p).count == 0)
-        local pd = for p in props where p.alvo == d.baseobject and p.prop == #sides collect p
-        checar "Instância: um botão só para o cilindro compartilhado" (pd.count <= 1)
+        checar "Chamfer sob TurboSmooth ligado não é proposto (gaiola)" ((for p in props where p.alvo == chH collect p).count == 0)
+        checar "Spline renderizável sem modificador fica fora (medidor não conta)" ((for p in props where p.alvo == e.baseobject collect p).count == 0)
+        local repetido = false
+        for i = 1 to props.count do for j = i + 1 to props.count where props[i].alvo == props[j].alvo and props[i].prop == props[j].prop do repetido = true
+        checar "Nenhum botão (alvo + propriedade) proposto duas vezes" (not repetido)
         local okPiso = true
         for p in props where p.depois < 1 or p.depois >= p.antes do okPiso = false
         checar "Toda proposta baixa e fica >= 1" okPiso
@@ -136,14 +160,13 @@ global INLAB_TESTE_SAIDA, INLAB_TESTE_FALHAS, INLAB_TESTE_CHAMADAS
         local okVal = true
         for p in props where (getProperty p.alvo p.prop) != p.depois do okVal = false
         checar "Valores aplicados = propostos" okVal
-        local totalReal = InLab_OtimOrigem_TrisNos todos
+        local totalReal = InLab_Otim_Triangulos todos
         checar ("Total real = estimado (" + totalReal as string + ")") (totalReal == estimado)
         local pts = for p in props where p.alvo == ts collect p
-        if pts.count == 1 do
-            checar "renderIterations desce junto com iterations" (ts.renderIterations == pts[1].depois)
+        checar ("renderIterations desce junto com iterations (" + ts.renderIterations as string + ")") (pts.count == 1 and pts[1].depois < 3 and ts.renderIterations == pts[1].depois)
         local nRev = InLab_Otim_Reverter 1
         checar ("Reverter volta os valores exatos (" + nRev as string + ")") (tudoOriginal vigiar originais)
-        checar "Reverter volta os triângulos" ((InLab_OtimOrigem_TrisNos todos) == total0)
+        checar "Reverter volta os triângulos" ((InLab_Otim_Triangulos todos) == total0)
         checar "Reverter de novo não faz nada" ((InLab_Otim_Reverter 1) == 0)
         for p in props do p.marcada = false
         checar "Aplicar sem linha marcada não faz nada" ((InLab_Otim_Aplicar 1 props) == 0 and (tudoOriginal vigiar originais))
@@ -158,34 +181,39 @@ global INLAB_TESTE_SAIDA, INLAB_TESTE_FALHAS, INLAB_TESTE_CHAMADAS
         checar "Piso: Chamfer para em 1" ((depoisDe pp ch #segments) == (InLab_Otim_Piso "chamfer"))
         checar "Piso: Shell para em 1" ((depoisDe pp sh #segments) == (InLab_Otim_Piso "shell"))
         checar "Piso: lados do cilindro param em 12" ((depoisDe pp d.baseobject #sides) == (InLab_Otim_Piso "lados"))
-        checar "Piso: passos da spline param em 2" ((depoisDe pp e.baseobject #steps) == (InLab_Otim_Piso "spline_passos"))
-        checar "Piso: lados da spline param em 6" ((depoisDe pp e.baseobject #render_sides) == (InLab_Otim_Piso "spline_lados"))
+        checar "Piso: passos da spline sob Extrude param em 2" ((depoisDe pp e2.baseobject #steps) == (InLab_Otim_Piso "spline_passos"))
+        checar "Piso do .ini: TurboSmooth já em 2 não é proposto" ((depoisDe pp tsH #iterations) == undefined)
+        checar "Tudo no piso: spline renderizável e Chamfer sob TS continuam fora" ((depoisDe pp e.baseobject #steps) == undefined and (depoisDe pp chH #segments) == undefined)
         local pi = for p in pp where p.alvo == d.baseobject and p.prop == #sides collect p
         checar "Instância: lados do cilindro propostos uma vez só" (pi.count == 1)
-        checar "Instância: economia conta os 2 nós" (pi.count == 1 and pi[1].trisAntes == (InLab_OtimOrigem_TrisNos #(d, d2)) and pi[1].trisAntes == 2 * (InLab_OtimOrigem_TrisNo d))
+        checar "Instância: economia conta os 2 nós" (pi.count == 1 and pi[1].trisAntes == (InLab_Otim_Triangulos #(d, d2)) and pi[1].trisAntes == 2 * (InLab_Otim_Triangulos #(d)))
         local okMin = true
         for p in pp where p.depois < 1 do okMin = false
         checar "Nenhuma proposta abaixo de 1" okMin
         for k in chavesIni do InLab_PrefApagar k
 
         ---------------------------------------------------------------- EXCEÇÃO NO MEIO
+        -- O contador falso lança só quando um botão vigiado JÁ ESTÁ alterado
+        -- (depois do setProperty da medição), para exercitar a restauração.
         InLab_FamiliaAtiva = fam
-        local trisOrig = InLab_OtimOrigem_TrisNos
-        INLAB_TESTE_CHAMADAS = 0
-        InLab_OtimOrigem_TrisNos = fn _trisFalha nos =
+        INLAB_TESTE_TRIS_REAL = InLab_Otim_Triangulos
+        INLAB_TESTE_VIGIAR = vigiar
+        INLAB_TESTE_ORIG = originais
+        INLAB_TESTE_ALTERADO = false
+        InLab_Otim_Triangulos = fn _trisFalha objs =
         (
-            INLAB_TESTE_CHAMADAS += 1
-            if INLAB_TESTE_CHAMADAS > 12 do throw "falha simulada"
-            local t = 0
-            for o in nos do t += InLab_OtimOrigem_TrisNo o
-            t
+            for i = 1 to INLAB_TESTE_VIGIAR.count where (getProperty INLAB_TESTE_VIGIAR[i][1] INLAB_TESTE_VIGIAR[i][2]) != INLAB_TESTE_ORIG[i] do
+                INLAB_TESTE_ALTERADO = true
+            if INLAB_TESTE_ALTERADO do throw "falha simulada"
+            INLAB_TESTE_TRIS_REAL objs
         )
         local px = #(1)
-        try ( px = InLab_Otim_Calcular 1 todos ) catch ( px = #(1) )
-        InLab_OtimOrigem_TrisNos = trisOrig
+        try ( px = InLab_OtimOrigem_Calcular todos ) catch ( px = #(1) )
+        InLab_Otim_Triangulos = INLAB_TESTE_TRIS_REAL
+        checar "Exceção no meio: lançada com um botão alterado" INLAB_TESTE_ALTERADO
         checar "Exceção no meio do cálculo: nada proposto" (px.count == 0)
-        checar "Exceção no meio do cálculo: nada alterado" (tudoOriginal vigiar originais)
-        checar "Exceção no meio do cálculo: triângulos iguais" ((InLab_OtimOrigem_TrisNos todos) == total0)
+        checar "Exceção no meio do cálculo: tudo restaurado" (tudoOriginal vigiar originais)
+        checar "Exceção no meio do cálculo: triângulos iguais" ((InLab_Otim_Triangulos todos) == total0)
 
         limparCena()
     )
@@ -200,6 +228,7 @@ global INLAB_TESTE_SAIDA, INLAB_TESTE_FALHAS, INLAB_TESTE_CHAMADAS
     InLab_FamiliaAtiva = undefined
     INLAB_OTIM_META_MANUAL = undefined
     InLab_UltimaOtimOrigem = #()
+    if INLAB_TESTE_TRIS_REAL != undefined do InLab_Otim_Triangulos = INLAB_TESTE_TRIS_REAL
     InLab_Log = logOriginal
     linha ("\n" + (if INLAB_TESTE_FALHAS == 0 then "TUDO OK" else (INLAB_TESTE_FALHAS as string + " FALHA(S)")))
     close INLAB_TESTE_SAIDA
