@@ -1,15 +1,18 @@
 /*
  tests\test_renomear_produto.ms — teste automático de functions\fn_renomear_produto.ms
- RODAR NUMA CENA VAZIA (File > New): cria 4 caixas + materiais de teste e
+ RODAR NUMA CENA VAZIA (File > New): cria caixas + materiais de teste e
  apaga as caixas no final. Scripting > Run Script... > este arquivo.
  Resultado: <pasta temp do Max>\inlab_test_renomear.txt (PASS/FAIL por item).
 */
 -- Declarados ANTES do bloco: o bloco é compilado antes dos fileIn rodarem.
 global InLab_ParseJSON, InLab_JSON_Obter, InLab_Log
 global InLab_Produto_Lista, InLab_Produto_IndicePorCodigo, InLab_Produto_Texto
+global InLab_Produto_ParteValida
 global InLab_Produto_Rotulo, InLab_Produto_Normalizar, InLab_Produto_Canal
 global InLab_Produto_MateriaisDaSelecao, InLab_Produto_SugerirLigacoes
-global InLab_Produto_Aplicar, InLab_Produto_Reverter
+global InLab_Produto_Aplicar, InLab_Produto_Reverter, InLab_Produto_Renomear
+global InLab_Produto_MeshesDoProduto, InLab_Produto_SugerirMeshes, InLab_Produto_RenomearMeshes
+global InLab_Produto_NomeLembraMesh
 global INLAB_TESTE_SAIDA, INLAB_TESTE_FALHAS
 (
     local dirTeste = getFilenamePath (getSourceFileName())
@@ -25,7 +28,19 @@ global INLAB_TESTE_SAIDA, INLAB_TESTE_FALHAS
     )
 
     local logOriginal = InLab_Log
-    InLab_Log = fn _logTeste msg tipo:#info = ( format "      [LOG %] %\n" tipo msg to:INLAB_TESTE_SAIDA; flush INLAB_TESTE_SAIDA )
+    local logsCapturados = #() -- #(tipo, msg) de cada InLab_Log — p/ conferir log por objeto/material (issue #46)
+    InLab_Log = fn _logTeste msg tipo:#info =
+    (
+        format "      [LOG %] %\n" tipo msg to:INLAB_TESTE_SAIDA
+        flush INLAB_TESTE_SAIDA
+        append logsCapturados #(tipo, msg)
+    )
+    fn logTem tipoAlvo trecho =
+    (
+        local achou = false
+        for l in logsCapturados where not achou and l[1] == tipoAlvo and (findString l[2] trecho) != undefined do achou = true
+        achou
+    )
     local criados = #()
 
     try
@@ -85,13 +100,14 @@ global INLAB_TESTE_SAIDA, INLAB_TESTE_FALHAS
         -- 4. CONFLITO: mesmo material em duas partes bloqueia tudo
         local todos = #(mTampo, mExt, mInt, mGav)
         local nomesAntes = (for m in todos collect m.name) as string
-        checar "Conflito: Aplicar devolve false" ((InLab_Produto_Aplicar produtos[1] #(mTampo, mExt, mInt, mTampo) criados) == false)
+        checar "Conflito: Aplicar devolve false" ((InLab_Produto_Aplicar produtos[1] #(mTampo, mExt, mInt, mTampo)) == false)
         checar "Conflito: nenhum material renomeado" ((for m in todos collect m.name) as string == nomesAntes)
         checar "Conflito: nenhum objeto renomeado" (b1.name == "obj_tampo")
 
         -- 5. APLICAR
         lig[4] = mGav
-        checar "Aplicar devolve true" ((InLab_Produto_Aplicar produtos[1] lig criados) == true)
+        logsCapturados = #()
+        checar "Aplicar devolve true" ((InLab_Produto_Aplicar produtos[1] lig) == true)
         checar "Material Tampo" (mTampo.name == "ART_P_Tampo")
         checar "Material Encosto Externo" (mExt.name == "ART_T_Encosto_Externo")
         checar "Material Encosto Interno" (mInt.name == "ART_T_Encosto_Interno")
@@ -108,29 +124,129 @@ global INLAB_TESTE_SAIDA, INLAB_TESTE_FALHAS
         checar "Mapa difuso = material_id_canal" (bmpDif.name == "ART_P_Tampo_" + canalDif)
         checar "Mapa bump (Normal_Bump)" (nb.name == "ART_P_Tampo_" + canalBump)
         checar "Mapa dentro do Normal_Bump ganha _2" (bmpNorm.name == "ART_P_Tampo_" + canalBump + "_2")
-        checar "Objeto tampo → 0001" (b1.name == "0001")
-        checar "Objeto encosto (multi) → 0001" (b2.name == "0001")
-        checar "Objeto gaveta → ART_C_Gavetas" (b3.name == "ART_C_Gavetas")
-        checar "Objeto misto (2 meshes) NÃO renomeado" (b4.name == "obj_misto")
+        -- #54: Aplicar renomeia SÓ materiais e mapas; objetos são do Renomear meshes
+        checar "Aplicar NÃO renomeia objetos (#54)" (b1.name == "obj_tampo" and b2.name == "obj_encosto" and b3.name == "obj_gaveta" and b4.name == "obj_misto")
+        checar "Log #ok por material renomeado (issue #46)" (logTem #ok "ART_P_Tampo")
+        checar "Nenhum log de objeto renomeado no Aplicar (#54)" (not (logTem #ok "objeto renomeado"))
 
         -- 6. REVERTER
         InLab_Produto_Reverter()
         checar "Reverter: material" (mTampo.name == "tampo_madeira" and mGav.name == "Material #99")
         checar "Reverter: mapas" (bmpDif.name == "dif_qualquer" and bmpNorm.name == "norm_qualquer")
-        checar "Reverter: objetos" (b1.name == "obj_tampo" and b3.name == "obj_gaveta")
 
         -- 7. APLICAR DUAS VEZES COM LIGAÇÃO TROCADA E REVERTER (bug 18/Set no
         -- teste da UI: cada Aplicar zerava o histórico, e o Desfazer não achava
         -- nada — ficaram dois materiais ART_P_Base na cena)
-        InLab_Produto_Aplicar produtos[1] lig criados
-        InLab_Produto_Aplicar produtos[1] #(mGav, mExt, mInt, undefined) criados
+        InLab_Produto_Aplicar produtos[1] lig
+        InLab_Produto_Aplicar produtos[1] #(mGav, mExt, mInt, undefined)
         checar "2ª aplicação: Tampo agora é o material da gaveta" (mGav.name == "ART_P_Tampo")
         InLab_Produto_Reverter()
         checar "Reverter após 2 aplicações: materiais originais" (mTampo.name == "tampo_madeira" and mGav.name == "Material #99" and mExt.name == "Encosto Externo couro")
         checar "Reverter após 2 aplicações: mapas originais" (bmpDif.name == "dif_qualquer" and nb.name == "nb_qualquer")
-        checar "Reverter após 2 aplicações: objetos originais" (b1.name == "obj_tampo" and b2.name == "obj_encosto" and b3.name == "obj_gaveta")
         InLab_Produto_Reverter()
         checar "Reverter de novo: nada muda" (mTampo.name == "tampo_madeira" and b1.name == "obj_tampo")
+
+        -- 8. PARTE INVÁLIDA: material_id ou mesh_final vazio/null (issue #46)
+        -- "Pe": material_id "" (mas mesh_final válido) — material não pode
+        -- ser renomeado p/ "", mas o mesh_final entra na lista de nomes.
+        -- "Base": mesh_final null (mas material_id válido) — o material é
+        -- renomeado normalmente, mas o mesh_final fica fora da lista (#54).
+        local js2 = "{\"produtos\": [{\"cod_est\": \"0002\", \"partes\": [" +
+            "{\"nome_parte\": \"Pe\", \"qualificador\": \"\", \"tipo\": \"P\", \"material_id\": \"\", \"mesh_final\": \"0002\"}, " +
+            "{\"nome_parte\": \"Base\", \"qualificador\": \"\", \"tipo\": \"P\", \"material_id\": \"ART_P_Base\", \"mesh_final\": null}]}]}"
+        local produtos2 = InLab_Produto_Lista (InLab_ParseJSON js2)
+        local partes2 = InLab_JSON_Obter produtos2[1] "partes"
+        checar "ParteValida: material_id vazio é inválido" (not (InLab_Produto_ParteValida partes2[1] "material_id"))
+        checar "ParteValida: mesh_final null é inválido" (not (InLab_Produto_ParteValida partes2[2] "mesh_final"))
+        checar "ParteValida: material_id preenchido é válido" (InLab_Produto_ParteValida partes2[2] "material_id")
+        checar "ParteValida: mesh_final preenchido é válido" (InLab_Produto_ParteValida partes2[1] "mesh_final")
+
+        local mPe = StandardMaterial name:"pe_material"
+        local mBase = StandardMaterial name:"base_material"
+        local bPe = Box name:"obj_pe" material:mPe pos:[160,0,0]
+        local bBase = Box name:"obj_base" material:mBase pos:[200,0,0]
+        append criados bPe
+        append criados bBase
+
+        logsCapturados = #()
+        checar "Aplicar (partes inválidas) devolve true" ((InLab_Produto_Aplicar produtos2[1] #(mPe, mBase)) == true)
+        checar "material_id vazio: material NÃO renomeado" (mPe.name == "pe_material")
+        checar "material_id vazio: material NÃO fica com nome vazio" (mPe.name != "")
+        checar "mesh_final null: material da parte é renomeado normalmente" (mBase.name == "ART_P_Base")
+        checar "Log #warn p/ parte com material_id vazio" (logTem #warn "material_id")
+        logsCapturados = #()
+        local meshes2 = InLab_Produto_MeshesDoProduto produtos2[1] avisar:true
+        checar "MeshesDoProduto: mesh_final null fica fora, o válido entra" (meshes2.count == 1 and meshes2[1] == "0002")
+        checar "Log #warn p/ parte com mesh_final vazio" (logTem #warn "mesh_final")
+        local sug2 = InLab_Produto_SugerirMeshes produtos2[1] #(mPe, mBase) #(bPe, bBase)
+        checar "Sugestão: material da parte sem mesh_final não sugere nome vazio" (sug2[1] == "0002" and sug2[2] == "")
+
+        InLab_Produto_Reverter()
+        checar "Reverter (partes inválidas): material Pe volta" (mPe.name == "pe_material")
+        checar "Reverter (partes inválidas): material Base volta" (mBase.name == "base_material")
+
+        -- 9. REVERTER com alvo apagado da cena: o catch tem que logar, não
+        -- engolir em silêncio (issue #46).
+        local bTemp = Box name:"obj_temp" pos:[240,0,0]
+        InLab_Produto_Renomear bTemp "NOME_TEMP"
+        checar "Renomear direto: nome mudou" (bTemp.name == "NOME_TEMP")
+        delete bTemp
+        logsCapturados = #()
+        InLab_Produto_Reverter()
+        checar "Reverter com alvo apagado: catch loga (não engole em silêncio)" (logTem #warn "obj_temp")
+
+        -- 10. RENOMEAR MESHES (issue #54): objeto ligado direto a um
+        -- mesh_final, sem depender de material.
+        local meshes = InLab_Produto_MeshesDoProduto produtos[1]
+        checar "MeshesDoProduto: 2 distintos, na ordem" (meshes.count == 2 and meshes[1] == "0001" and meshes[2] == "ART_C_Gavetas")
+        checar "MeshesDoProduto: produto undefined → #()" ((InLab_Produto_MeshesDoProduto undefined).count == 0)
+        checar "NomeLembraMesh: gaveta ↔ ART_C_Gavetas (sem o s)" (InLab_Produto_NomeLembraMesh "Gaveta_Esquerda" "ART_C_Gavetas")
+        checar "NomeLembraMesh: tampo não lembra ART_C_Gavetas" (not (InLab_Produto_NomeLembraMesh "obj_tampo" "ART_C_Gavetas"))
+        checar "NomeLembraMesh: prefixo art não conta" (not (InLab_Produto_NomeLembraMesh "arte_final" "ART_C_Gavetas"))
+
+        local bSolta = Box name:"peca_solta" pos:[280,0,0]            -- sem material
+        local bGavE = Box name:"Gaveta_Esquerda" pos:[320,0,0]        -- sem material
+        local bGavD = Box name:"gaveta direita" pos:[360,0,0]         -- sem material
+        local bPronto = Box name:"0001" pos:[400,0,0]                 -- já tem o nome
+        join criados #(bSolta, bGavE, bGavD, bPronto)
+
+        local objsM = #(b1, b2, b3, b4, bSolta, bGavE, bGavD, bPronto)
+        local sug = InLab_Produto_SugerirMeshes produtos[1] lig objsM
+        checar "Sugestão por material: tampo → 0001" (sug[1] == "0001")
+        checar "Sugestão por material: encosto (multi) → 0001" (sug[2] == "0001")
+        checar "Sugestão por material: gaveta → ART_C_Gavetas" (sug[3] == "ART_C_Gavetas")
+        checar "Sugestão: misto (2 meshes, nome sem pista) → nenhuma" (sug[4] == "")
+        checar "Sugestão: sem material e nome sem pista → nenhuma" (sug[5] == "")
+        checar "Sugestão por nome: Gaveta_Esquerda → ART_C_Gavetas" (sug[6] == "ART_C_Gavetas")
+        checar "Sugestão por nome: 'gaveta direita' → ART_C_Gavetas" (sug[7] == "ART_C_Gavetas")
+        checar "Sugestão: nome já igual a um mesh_final" (sug[8] == "0001")
+        local sugSemMat = InLab_Produto_SugerirMeshes produtos[1] #() objsM
+        checar "Sugestão sem materiais lidos: tampo sem pista → nenhuma" (sugSemMat[1] == "")
+        checar "Sugestão sem materiais lidos: por nome ainda funciona" (sugSemMat[6] == "ART_C_Gavetas")
+
+        -- Aplicar nomes ANTES, depois Renomear meshes: o Desfazer volta os dois.
+        InLab_Produto_Aplicar produtos[1] lig
+        logsCapturados = #()
+        local escolhidos = #("0001", "0001", "ART_C_Gavetas", "", "ART_C_Gavetas", "ART_C_Gavetas", "ART_C_Gavetas", "0001")
+        local nRen = InLab_Produto_RenomearMeshes objsM escolhidos
+        checar "RenomearMeshes: devolve 6 renomeados (misto sem nome, 0001 já igual)" (nRen == 6)
+        checar "Objeto sem material → mesh_final escolhido (aceite #54)" (bSolta.name == "ART_C_Gavetas")
+        checar "2+ meshes sem depender de material: gavetas" (bGavE.name == "ART_C_Gavetas" and bGavD.name == "ART_C_Gavetas")
+        checar "2+ meshes: tampo e encosto → 0001" (b1.name == "0001" and b2.name == "0001")
+        checar "Objeto sem nome escolhido NÃO renomeado" (b4.name == "obj_misto")
+        checar "Log #ok por objeto renomeado" ((logTem #ok "era 'peca_solta'") and (logTem #ok "era 'obj_tampo'"))
+        checar "Log #warn p/ objeto sem nome escolhido" (logTem #warn "obj_misto")
+        checar "Log de resumo" (logTem #ok "Renomear meshes: 6 objeto(s)")
+
+        InLab_Produto_Reverter()
+        checar "Desfazer depois de Aplicar + Renomear meshes: objetos" (b1.name == "obj_tampo" and b2.name == "obj_encosto" and b3.name == "obj_gaveta" and bSolta.name == "peca_solta" and bGavE.name == "Gaveta_Esquerda" and bGavD.name == "gaveta direita" and bPronto.name == "0001")
+        checar "Desfazer depois de Aplicar + Renomear meshes: materiais" (mTampo.name == "tampo_madeira" and mGav.name == "Material #99" and bmpDif.name == "dif_qualquer")
+
+        -- Objeto apagado entre a leitura e o Renomear: pulado com aviso.
+        local bSome = Box name:"obj_some" pos:[440,0,0]
+        delete bSome
+        logsCapturados = #()
+        checar "RenomearMeshes: objeto apagado é pulado com aviso" ((InLab_Produto_RenomearMeshes #(bSome) #("0001")) == 0 and (logTem #warn "não existe mais"))
 
         -- Ctrl+Z nativo NÃO é testável daqui: rodado de dentro do script,
         -- `max undo` desfaz o script inteiro (inclusive a criação das caixas),
