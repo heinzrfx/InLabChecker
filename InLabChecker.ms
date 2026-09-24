@@ -17,6 +17,14 @@
 
  COMO EXECUTAR NO 3DS MAX:
     Scripting > Run Script... > selecionar este arquivo (InLabChecker.ms)
+
+ 24/09/2026 (issue #52): o reload engolia a exceção do fileIn — só "falha em
+ <módulo>" ia pro Listener, sem o erro real, e a UI ficava fechada sem
+ explicação nenhuma. Agora InLab_RecarregarPlugin loga getCurrentException()
+ no Listener E mostra messageBox com módulo + erro. INLAB_RELOAD_MOSTRAR_MSGBOX
+ (global, default true) deixa esse messageBox pulável — teste automatizado
+ seta false e lê o texto construído em InLab_UltimoErroReload, já que um
+ messageBox trava o Max.
 ================================================================================
 */
 (
@@ -32,8 +40,15 @@
 
         global InLab_AbrirUI
         global InLab_RecarregarPlugin
-        global InLab_Log            
+        global InLab_Log
         global InLabChecker_Rollout
+
+        -- 24/09/2026 (issue #52): reload passa a mostrar o erro REAL (não só
+        -- "falha em <módulo>"). INLAB_RELOAD_MOSTRAR_MSGBOX existe pra teste
+        -- automatizado poder desligar o messageBox (que trava o Max) e ler o
+        -- texto construído em InLab_UltimoErroReload.
+        global INLAB_RELOAD_MOSTRAR_MSGBOX = true
+        global InLab_UltimoErroReload = undefined
 
         ------------------------------------------------------------------
         -- MANIFESTO DE MÓDULOS — global agora, pra ser reaproveitado pelo
@@ -118,7 +133,8 @@
             (
                 local msg = "Reload abortado — arquivo(s) ausente(s):\n"
                 for a in ausentes do msg += "  • " + a + "\n"
-                messageBox msg title:"InLabChecker — Reload"
+                InLab_UltimoErroReload = msg
+                if INLAB_RELOAD_MOSTRAR_MSGBOX do messageBox msg title:"InLabChecker — Reload"
                 false
             )
             else
@@ -129,7 +145,11 @@
                     try ( fileIn (INLAB_ROOT + m) )
                     catch
                     (
-                        format "InLabChecker Reload — falha em %\n" m
+                        local erro = getCurrentException()
+                        local msg = "InLabChecker Reload — falha em " + m + ":\n" + erro
+                        format "%\n" msg
+                        InLab_UltimoErroReload = msg
+                        if INLAB_RELOAD_MOSTRAR_MSGBOX do messageBox msg title:"InLabChecker — Reload"
                         falhou = true
                     )
                 )

@@ -1,6 +1,6 @@
 # Instalação do InLabChecker
 
-Para 3ds Max 2024. Não precisa ser administrador. Leva uns 5 minutos e é feito uma vez só por máquina: depois disso o plugin se atualiza pelo próprio painel.
+Para 3ds Max 2024 (também roda no 2027 — ver nota no fim do passo 2). Não precisa ser administrador. Leva uns 5 minutos e é feito uma vez só por máquina: depois disso o plugin se atualiza pelo próprio painel.
 
 ## Do que você precisa
 
@@ -18,6 +18,8 @@ Na página da última release (<https://github.com/heinzrfx/InLabChecker/release
 ```
 %LOCALAPPDATA%\Autodesk\3dsMax\2024 - 64bit\ENU\scripts
 ```
+
+No 3ds Max 2027, o caminho é o mesmo trocando `2024` por `2027` — repita os passos 2 a 6 nessa segunda pasta se usar as duas versões do Max na mesma máquina (instalação separada por versão, de propósito: cada build pode expor APIs diferentes).
 
 **3. Crie ali uma pasta chamada `InLabChecker`** (exatamente assim, com o I, o L e o C maiúsculos).
 
@@ -52,7 +54,7 @@ Se a pasta `startup` não existir, crie.
 2. Aba **Toolbars**, lista **Category**: escolha **InLab**.
 3. Arraste **InLabChecker** da lista para uma barra de ferramentas do Max.
 
-**7. Clique no botão.** O painel abre, e a primeira linha do log mostra a versão instalada: `Sessão InLabChecker v0.13 · ...`.
+**7. Clique no botão.** O painel abre, e a primeira linha do log mostra a versão instalada: `Sessão InLabChecker v<versão> · ...`.
 
 Se o botão aparecer sem a lâmpada (só o texto ou um quadrado vazio), feche e abra o Max de novo: o ícone é copiado na primeira abertura e a barra só o mostra na seguinte.
 
