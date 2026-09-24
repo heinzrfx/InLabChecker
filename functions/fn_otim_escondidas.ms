@@ -9,9 +9,11 @@
  os 3 cantos recuados 10% para o centro — tem que passar, em cada amostra,
  num destes testes contra OUTRA peça:
    - CONTATO: raio de `amostra - normal * tol` pela normal bate na outra peça
-     a até 2 * tol (tol = 0,5 mm, units.decodeValue "0.5mm").
+     a até 2 * tol (tol = 0,5 mm, units.decodeValue "0.5mm"), numa face
+     virada para o lado contrário.
    - DENTRO: paridade ímpar de acertos (deduplicados pela distância) em pelo
-     menos 2 de 3 direções "tortas" (não alinhadas a eixo).
+     menos 2 de 3 direções "tortas" (não alinhadas a eixo), só contra peça de
+     malha fechada.
  Cada amostra pode ser coberta por uma peça diferente (face sob dois
  assentos vizinhos); se uma amostra fica descoberta, a face NÃO entra (face
  parcial nunca entra). Motivo na lista: "dentro" se todas as amostras
@@ -81,7 +83,9 @@
  (cadeira + móveis, 125 peças, 114.948 triângulos) = 22,7 s no Calcular,
  12.753 faces em 98 peças, e 16,2 s no Aplicar (select + painel Modify por
  peça). Nas duas cenas o raio pela normal de TODA face marcada bate em outra
- peça, e a captura antes/depois de aplicar é igual.
+ peça, e a captura antes/depois de aplicar é igual. Depois da revisão
+ (malha fechada, normal contrária, escondidas fora): sofá 21,3 s, mesmas
+ 28.497 faces; 01.max 24,3 s, 12.699 faces em 82 peças.
 
  REGISTRO: InLab_UltimasEscondidas (EscondidasRecord por stack), acumula até
  o Reverter, que remove exatamente os dois modificadores registrados. Sem
@@ -91,6 +95,23 @@
  HISTÓRICO:
  23/09/2026 (issue #60): versão mínima, só para a tela e o manifesto.
  24/09/2026 (issue #63): o passo de verdade (este cabeçalho).
+ 24/09/2026 (issue #63, revisão): oclusores fora das hipóteses da spec
+ podiam apagar face visível. Agora:
+   - peça escondida (isHidden) ou não renderizável não cobre ninguém (não
+     vai para o GLB);
+   - DENTRO só contra malha FECHADA (meshop.getOpenEdges vazio no snapshot):
+     plano ou casca inclinada por cima de uma peça dava paridade ímpar nas 3
+     direções tortas. Malha aberta ainda cobre por contato; um #info no fim
+     lista as peças abertas;
+   - CONTATO só se a face atingida está virada para o lado contrário
+     (normal · normal < 0): decalque ou embutido coplanar virado para o mesmo
+     lado não esconde nada. A normal vem do snapshot guardado junto com a
+     grade (getFaceNormal de getHitFace) porque getHitNormal devolve a normal
+     INVERTIDA no Max 2024. Os números da spec (32, 50, 224, 84, zeros)
+     continuam exatos;
+   - Reverter também busca os modificadores pelo nome no mesmo clique (antes
+     só sem registro), e os snapshots são apagados no caminho de erro.
+ Os passos 1 e 2 pulam peça com o passo 3 aplicado (fn_otim_nucleo.ms).
 
  `global` antes de cada fn (mesmo já declarada em fn_otim_nucleo.ms): este
  arquivo pode ser carregado sozinho por InLab_RecarregarPlugin() — padrão de
@@ -175,19 +196,34 @@ fn InLab_OtimEscondidas_TemModificador o =
 
 -- Quantas distâncias diferentes (raio pela diagonal de um quad bate em 2
 -- triângulos na mesma distância).
+-- "a, b, c e mais 4" (log).
+global InLab_OtimEscondidas_ListaNomes
+fn InLab_OtimEscondidas_ListaNomes nomes maxN =
+(
+    local t = ""
+    for i = 1 to (amin nomes.count maxN) do t += (if i > 1 then ", " else "") + nomes[i]
+    if nomes.count > maxN do t += " e mais " + (nomes.count - maxN) as string
+    t
+)
+
 global InLab_OtimEscondidas_Distintas
 fn InLab_OtimEscondidas_Distintas ds eps =
 (
     sort ds
     local n = 0
     local ult = undefined
-    for d in ds do
+    -- intersectRay às vezes devolve acertos com distância inf.0 (raio pelo
+    -- vértice comum de vários triângulos, sondado em 24/09/2026): não contam.
+    for d in ds where d < 1e30 do
         if ult == undefined or (d - ult) > eps do ( n += 1; ult = d )
     n
 )
 
--- Grade de uma peça (cache: #(nós, grades)). DeleteMesh deste passo desligado
--- durante o buildGrid (ver cabeçalho).
+-- Grade de uma peça. cache = #(nós, entradas); entrada = #(grade, malha em
+-- mundo, fechada) ou undefined se a grade falhou. A malha (snapshot do mesmo
+-- momento do buildGrid, mesmos índices) dá a normal da face atingida no teste
+-- de contato; `fechada` (sem aresta aberta) libera o teste de paridade.
+-- DeleteMesh deste passo desligado durante o buildGrid (ver cabeçalho).
 global InLab_OtimEscondidas_Grade
 fn InLab_OtimEscondidas_Grade o cache =
 (
@@ -195,51 +231,63 @@ fn InLab_OtimEscondidas_Grade o cache =
     if i > 0 then cache[2][i]
     else
     (
-        local rm = undefined
+        local ent = undefined
         local apg = (InLab_OtimEscondidas_Mods o)[2]
         local estava = if apg != undefined then apg.enabled else false
         try
         (
             if apg != undefined do apg.enabled = false
-            rm = RayMeshGridIntersect()
-            local nf = (GetTriMeshFaceCount o)[1]
-            rm.Initialize (amin INLAB_ESC_GRADE_MAX (amax 10 ((INLAB_ESC_GRADE_K * (pow (amax 1 nf) (1.0 / 3.0))) as integer)))
+            local malha = snapshotAsMesh o
+            local fechada = (meshop.getOpenEdges malha).numberSet == 0
+            local rm = RayMeshGridIntersect()
+            rm.Initialize (amin INLAB_ESC_GRADE_MAX (amax 10 ((INLAB_ESC_GRADE_K * (pow (amax 1 malha.numfaces) (1.0 / 3.0))) as integer)))
             rm.addNode o
             rm.buildGrid()
+            ent = #(rm, malha, fechada)
         )
         catch
         (
             InLab_Log (o.name + ": não montei a grade de raios (" + getCurrentException() + ") — a peça não cobre ninguém.") tipo:#warn
-            rm = undefined
+            ent = undefined
         )
         if apg != undefined do
             try ( apg.enabled = estava )
             catch ( InLab_Log (o.name + ": não religuei o DeleteMesh das faces escondidas (" + getCurrentException() + ").") tipo:#err )
         append cache[1] o
-        append cache[2] rm
-        rm
+        append cache[2] ent
+        ent
     )
 )
 
 global InLab_OtimEscondidas_LiberarGrades
 fn InLab_OtimEscondidas_LiberarGrades cache =
 (
-    for rm in cache[2] where rm != undefined do
-        try ( rm.free() ) catch ( InLab_Log ("Faces escondidas: não liberei uma grade (" + getCurrentException() + ").") tipo:#warn )
+    for ent in cache[2] where ent != undefined do
+    (
+        try ( ent[1].free() ) catch ( InLab_Log ("Faces escondidas: não liberei uma grade (" + getCurrentException() + ").") tipo:#warn )
+        try ( delete ent[2] ) catch ( InLab_Log ("Faces escondidas: não apaguei uma malha temporária (" + getCurrentException() + ").") tipo:#warn )
+    )
     cache[1] = #()
     cache[2] = #()
 )
 
--- A amostra p (normal n da face) está coberta pela peça da grade rm?
+-- A amostra p (normal n da face) está coberta pela peça da entrada `ent`?
 -- Devolve 0 (não), 1 (contato) ou 2 (dentro).
+-- CONTATO só com face de frente contrária (normal da face atingida · n < 0):
+-- decalque ou embutido coplanar virado para o mesmo lado não esconde nada.
+-- A normal vem da malha guardada (getFaceNormal da face atingida), não de
+-- getHitNormal, que no Max 2024 devolve a normal INVERTIDA (sondado em
+-- 24/09/2026). DENTRO só contra malha fechada (paridade de malha aberta —
+-- plano, casca — não diz nada).
 global InLab_OtimEscondidas_Cobre
-fn InLab_OtimEscondidas_Cobre rm p n tol eps =
+fn InLab_OtimEscondidas_Cobre ent p n tol eps =
 (
+    local rm = ent[1]
     local r = 0
     local k = rm.intersectRay (p - n * tol) n true
     for i = 1 to k while r == 0 do
-        if (rm.getHitDist i) <= 2.0 * tol do r = 1
-    if r == 0 do
+        if (rm.getHitDist i) <= 2.0 * tol and (dot (getFaceNormal ent[2] (rm.getHitFace i)) n) < 0 do r = 1
+    if r == 0 and ent[3] do
     (
         local sim = 0, nao = 0
         for d in INLAB_ESC_DIRECOES while sim < 2 and nao < 2 do
@@ -282,7 +330,7 @@ fn InLab_OtimEscondidas_DetectarNo o outros animados cache tol zMin =
     )
     local cand = filtrar outros o omin omax tol
     local candAnim = filtrar animados o omin omax tol
-    if cand[1].count > 0 do
+    if cand[1].count > 0 do try
     (
         local grades = for c in cand[1] collect (InLab_OtimEscondidas_Grade c cache)
         local gradesAnim = for c in candAnim[1] collect (InLab_OtimEscondidas_Grade c cache)
@@ -329,6 +377,12 @@ fn InLab_OtimEscondidas_DetectarNo o outros animados cache tol zMin =
                 )
             )
         )
+    )
+    catch
+    (
+        -- Quem chama loga; aqui só não deixa o snapshot para trás.
+        delete m
+        throw()
     )
     #(faces, dentro, m.numfaces, nAnim, nFundo, m)
 )
@@ -388,7 +442,8 @@ fn InLab_OtimEscondidas_Calcular objs =
     InLab_OtimEscondidas_LimparDestaque()
     local t0 = timeStamp()
     local tol = units.decodeValue "0.5mm"
-    local cena = for o in geometry where InLab_EhGeometria o collect o
+    -- Peça escondida ou não renderizável não vai para o GLB: não cobre ninguém.
+    local cena = for o in geometry where InLab_EhGeometria o and not o.isHidden and o.renderable collect o
     local animSet = for o in cena where InLab_OtimEscondidas_Animado o collect o
     local estaticos = #(#(), #(), #())
     local animados = #(#(), #(), #())
@@ -420,6 +475,8 @@ fn InLab_OtimEscondidas_Calcular objs =
     local nDestaque = 0, nForaDestaque = 0
     local cancelado = false
     local totalFaces = 0, totalAnim = 0
+    -- Snapshots do grupo em andamento: fora do try para o catch apagar.
+    local malhas = #()
     progressStart "Faces escondidas"
     try
     (
@@ -433,7 +490,7 @@ fn InLab_OtimEscondidas_Calcular objs =
                 InLab_ProgressoIniciar ("Faces escondidas: " + rep.name + " (" + gi as string + " de " + grupos.count as string + ")")
                 local faces = undefined, dentro = undefined
                 local nF = 0, nAnim = 0
-                local malhas = #()
+                malhas = #()
                 for o in nos do
                 (
                     local r = InLab_OtimEscondidas_DetectarNo o estaticos animados cache tol zMin
@@ -481,16 +538,23 @@ fn InLab_OtimEscondidas_Calcular objs =
                         InLab_Log (nomeInst + ": a peça INTEIRA está escondida — confira se ela precisa existir.") tipo:#warn
                 )
                 for mm in malhas do delete mm
+                malhas = #()
             )
         )
     )
     catch
     (
         InLab_Log ("Faces escondidas: erro no cálculo (" + getCurrentException() + ") — nada proposto.") tipo:#err
+        for mm in malhas do
+            try ( delete mm ) catch ( InLab_Log ("Faces escondidas: não apaguei uma malha temporária (" + getCurrentException() + ").") tipo:#warn )
         props = #()
         InLab_OtimEscondidas_Destaque = #()
     )
     progressEnd()
+    local abertas = for i = 1 to cache[1].count where cache[2][i] != undefined and not cache[2][i][3] collect cache[1][i].name
+    if abertas.count > 0 do
+        InLab_Log ("Faces escondidas: " + abertas.count as string + " peça(s) de malha aberta só cobrem por contato, nunca por dentro (" +
+                   (InLab_OtimEscondidas_ListaNomes abertas 8) + ").") tipo:#info
     InLab_OtimEscondidas_LiberarGrades cache
     if cancelado do
     (
@@ -632,13 +696,19 @@ fn InLab_OtimEscondidas_Reverter =
 (
     InLab_OtimEscondidas_LimparDestaque()
     local n = 0
-    -- Sem registro: procura pelo nome (plugin recarregado / cena reaberta).
-    local alvos = #()
-    if InLab_UltimasEscondidas.count > 0 then
-        alvos = for r in InLab_UltimasEscondidas collect #(r.no, #(r.modSelecao, r.modApagar))
-    else
-        for g in InLab_DeduplicarInstancias (for o in geometry where InLab_OtimEscondidas_TemModificador o collect o) do
-            append alvos #(g.no, InLab_OtimEscondidas_Mods g.no)
+    -- Registro + busca pelo NOME no mesmo clique: pega o que o registro não
+    -- tem (plugin recarregado, cena reaberta, registro velho com nós que já
+    -- não existem).
+    local alvos = for r in InLab_UltimasEscondidas collect #(r.no, #(r.modSelecao, r.modApagar))
+    local cobertos = #()
+    for r in InLab_UltimasEscondidas where isValidNode r.no do join cobertos (InLab_InstanciasDoNo r.no)
+    -- Laço simples: `cobertos` num `where` de for...collect aninhado dava
+    -- "Bad free thunk local member index" (MaxScript, 24/09/2026).
+    local soPeloNome = #()
+    for o in geometry do
+        if findItem cobertos o == 0 and (InLab_OtimEscondidas_TemModificador o) do append soPeloNome o
+    for g in InLab_DeduplicarInstancias soPeloNome do
+        append alvos #(g.no, InLab_OtimEscondidas_Mods g.no)
     if alvos.count == 0 then
         InLab_Log "Faces escondidas: nada aplicado para reverter." tipo:#warn
     else

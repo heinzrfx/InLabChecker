@@ -440,6 +440,9 @@ rollout InLabSecProduto "Produto" width:420
 rollout InLabSecOtimizacao "Otimização" width:420
 (
     local comparando = false
+    -- true enquanto encherLista() adiciona linhas: Items.Add de linha já
+    -- marcada dispara ItemChecked, e cada disparo redesenharia a viewport.
+    local enchendo = false
 
     dotNetControl lblMedidor "System.Windows.Forms.Label" width:395 height:24
     spinner spnMeta "Meta (triângulos):" range:[1000, 5000000, 100000] type:#integer fieldWidth:70 align:#left enabled:false
@@ -469,13 +472,19 @@ rollout InLabSecOtimizacao "Otimização" width:420
 
     fn encherLista =
     (
-        lvPropostas.Items.Clear()
-        for p in INLAB_OTIM_PROPOSTAS do
+        enchendo = true
+        try
         (
-            local it = dotNetObject "System.Windows.Forms.ListViewItem" p.rotulo
-            it.Checked = p.marcada
-            lvPropostas.Items.Add it
+            lvPropostas.Items.Clear()
+            for p in INLAB_OTIM_PROPOSTAS do
+            (
+                local it = dotNetObject "System.Windows.Forms.ListViewItem" p.rotulo
+                it.Checked = p.marcada
+                lvPropostas.Items.Add it
+            )
         )
+        catch ( InLab_Log ("Otimização: lista não foi preenchida (" + getCurrentException() + ").") tipo:#err )
+        enchendo = false
     )
 
     fn lerMarcadas =
@@ -537,7 +546,7 @@ rollout InLabSecOtimizacao "Otimização" width:420
     -- 24/09/2026 (issue #63): desmarcar uma peça do passo 3 tira o destaque
     -- dela da viewport na hora.
     on lvPropostas ItemChecked s e do
-        if rdoPasso.state == 3 do
+        if rdoPasso.state == 3 and not enchendo do
         (
             lerMarcadas()
             redrawViews()

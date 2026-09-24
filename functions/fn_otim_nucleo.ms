@@ -19,6 +19,16 @@
  UNIDADE: triângulos por NÓ (instância conta uma vez por nó, como o GLB
  exporta). É o que o site carrega e não muda antes/depois do ProOptimizer
  (decisão do brainstorm de 23/09/2026).
+
+ 24/09/2026 (issue #63, revisão): o passo 3 apaga faces por ÍNDICE
+ (Mesh_Select + DeleteMesh no topo do stack). Qualquer mudança ABAIXO dele
+ (passo 1 aplicado ou revertido, passo 2 revertido) muda a triangulação e o
+ DeleteMesh passaria a apagar as faces erradas em silêncio. Por isso o
+ despachante dos passos 1 e 2 (Calcular, Aplicar e Reverter) pula toda peça
+ (stack) com o passo 3 aplicado e loga #warn "<nome>: tem o passo 3 aplicado
+ — reverta o passo 3 antes". No Reverter, as entradas puladas continuam no
+ registro do passo, para reverter depois do passo 3. Ctrl+Z do passo 1/2 por
+ cima do passo 3 não passa por aqui (limite conhecido).
 ================================================================================
 */
 
@@ -27,6 +37,8 @@
 global InLab_OtimOrigem_Calcular, InLab_OtimOrigem_Aplicar, InLab_OtimOrigem_Reverter
 global InLab_OtimFino_Calcular, InLab_OtimFino_Aplicar, InLab_OtimFino_Reverter, InLab_OtimFino_Comparar
 global InLab_OtimEscondidas_Calcular, InLab_OtimEscondidas_Aplicar, InLab_OtimEscondidas_Reverter
+global InLab_OtimEscondidas_TemModificador
+global InLab_UltimaOtimOrigem, InLab_UltimoAjusteFino
 
 -- Uma linha da lista de revisão. `alvo`/`prop`/`antes`/`depois` descrevem o
 -- ajuste (ex.: um TurboSmooth, #iterations, 3, 2); cada passo usa o que precisa.
@@ -188,13 +200,58 @@ fn InLab_Otim_Restaurar registro =
 --------------------------------------------------------------------------------
 -- DESPACHANTE: a UI só chama estas três. passo = 1 (origem), 2 (fino), 3 (escondidas).
 --------------------------------------------------------------------------------
+
+-- Nó com o passo 3 aplicado? Chamada só em tempo de execução
+-- (fn_otim_escondidas.ms carrega depois deste arquivo).
+global InLab_Otim_TemPasso3
+fn InLab_Otim_TemPasso3 o =
+    isValidNode o and InLab_OtimEscondidas_TemModificador != undefined and (InLab_OtimEscondidas_TemModificador o)
+
+-- Nós afetados por um alvo de ajuste (nó, modificador ou objeto base).
+global InLab_Otim_NosDoAlvo
+fn InLab_Otim_NosDoAlvo alvo =
+(
+    if alvo == undefined then #()
+    else if isValidNode alvo then #(alvo)
+    else ( try ( for n in (refs.dependentNodes alvo) where isValidNode n collect n ) catch ( #() ) )
+)
+
+-- Primeiro nó com o passo 3 entre `nos`, ou undefined.
+global InLab_Otim_Passo3Em
+fn InLab_Otim_Passo3Em nos =
+(
+    local r = undefined
+    for n in nos where r == undefined and (InLab_Otim_TemPasso3 n) do r = n
+    r
+)
+
+global InLab_Otim_AvisarPasso3
+fn InLab_Otim_AvisarPasso3 o avisados =
+(
+    if findItem avisados o == 0 do
+    (
+        append avisados o
+        InLab_Log (o.name + ": tem o passo 3 aplicado — reverta o passo 3 antes.") tipo:#warn
+    )
+)
+
+-- Tira da lista de objetos os que têm o passo 3 (passos 1 e 2, Calcular).
+global InLab_Otim_SemPasso3
+fn InLab_Otim_SemPasso3 objs =
+(
+    local avisados = #()
+    local r = #()
+    for o in objs do
+        if InLab_Otim_TemPasso3 o then InLab_Otim_AvisarPasso3 o avisados else append r o
+    r
+)
 global InLab_Otim_Calcular
 fn InLab_Otim_Calcular passo objs =
 (
     case passo of
     (
-        1: InLab_OtimOrigem_Calcular objs
-        2: InLab_OtimFino_Calcular objs
+        1: InLab_OtimOrigem_Calcular (InLab_Otim_SemPasso3 objs)
+        2: InLab_OtimFino_Calcular (InLab_Otim_SemPasso3 objs)
         3: InLab_OtimEscondidas_Calcular objs
         default: ( InLab_Log ("Otimização: passo " + passo as string + " não existe.") tipo:#err; #() )
     )
@@ -203,6 +260,18 @@ fn InLab_Otim_Calcular passo objs =
 global InLab_Otim_Aplicar
 fn InLab_Otim_Aplicar passo propostas =
 (
+    -- Passos 1 e 2: linha que mexe numa peça com o passo 3 fica fora.
+    if passo == 1 or passo == 2 do
+    (
+        local avisados = #()
+        propostas = for p in propostas collect
+        (
+            local nos = InLab_Otim_NosDoAlvo p.alvo
+            if isValidNode p.no do appendIfUnique nos p.no
+            local o3 = InLab_Otim_Passo3Em nos
+            if o3 != undefined then ( InLab_Otim_AvisarPasso3 o3 avisados; dontCollect ) else p
+        )
+    )
     case passo of
     (
         1: InLab_OtimOrigem_Aplicar propostas
@@ -212,13 +281,44 @@ fn InLab_Otim_Aplicar passo propostas =
     )
 )
 
+-- Reverter dos passos 1 e 2 sem mexer em peça com o passo 3: as entradas
+-- dessas peças saem do registro durante o Reverter e voltam para ele depois
+-- (revertidas quando o passo 3 sair).
+global InLab_Otim_ReverterSemPasso3
+fn InLab_Otim_ReverterSemPasso3 passo =
+(
+    local reg = if passo == 1 then InLab_UltimaOtimOrigem else InLab_UltimoAjusteFino
+    if reg == undefined do reg = #()
+    local avisados = #()
+    local livres = #(), presos = #()
+    for r in reg do
+    (
+        local nos = if passo == 1 then (InLab_Otim_NosDoAlvo r[1]) else (if isValidNode r.no then (InLab_InstanciasDoNo r.no) else #())
+        local o3 = InLab_Otim_Passo3Em nos
+        if o3 != undefined then ( InLab_Otim_AvisarPasso3 o3 avisados; append presos r ) else append livres r
+    )
+    local n = 0
+    if presos.count > 0 and livres.count == 0 then
+        InLab_Log ("Otimização · passo " + passo as string + ": nada revertido — todas as peças têm o passo 3.") tipo:#warn
+    else
+    (
+        if passo == 1 then ( InLab_UltimaOtimOrigem = livres; n = InLab_OtimOrigem_Reverter() )
+        else ( InLab_UltimoAjusteFino = livres; n = InLab_OtimFino_Reverter() )
+    )
+    if presos.count > 0 do
+    (
+        if passo == 1 then InLab_UltimaOtimOrigem = presos else InLab_UltimoAjusteFino = presos
+    )
+    n
+)
+
 global InLab_Otim_Reverter
 fn InLab_Otim_Reverter passo =
 (
     case passo of
     (
-        1: InLab_OtimOrigem_Reverter()
-        2: InLab_OtimFino_Reverter()
+        1: InLab_Otim_ReverterSemPasso3 1
+        2: InLab_Otim_ReverterSemPasso3 2
         3: InLab_OtimEscondidas_Reverter()
         default: ( InLab_Log ("Otimização: passo " + passo as string + " não existe.") tipo:#err; 0 )
     )

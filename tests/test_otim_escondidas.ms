@@ -4,6 +4,10 @@
  números exatos (32, 50, 224, 84, zeros); peça animada excluída (e a face que
  encosta nela); fundo nunca marcado; instâncias (interseção, 1 modificador);
  modificador aplicado e removido pelo Reverter.
+ Revisão (24/09/2026): oclusor aberto (plano inclinado) não marca "dentro";
+ peça escondida ou não renderizável não cobre; decalque coplanar virado para
+ o mesmo lado não esconde nem é escondido; passos 1 e 2 pulam peça com o
+ passo 3 (Calcular, Aplicar e Reverter pelo despachante).
  RODAR NUMA CENA VAZIA (File > New).
  Resultado: <pasta temp do Max>\inlab_test_otim_escondidas.txt (PASS/FAIL por item).
 */
@@ -11,7 +15,9 @@ global InLab_Log, InLab_Otim_Triangulos, OtimProposta
 global InLab_OtimEscondidas_Calcular, InLab_OtimEscondidas_Aplicar, InLab_OtimEscondidas_Reverter
 global InLab_UltimasEscondidas, InLab_OtimEscondidas_Destaque, InLab_OtimEscondidas_Mods, InLab_OtimEscondidas_LimparDestaque
 global INLAB_ESC_NOME_MOD, INLAB_ESC_NOME_SEL
-global INLAB_TESTE_SAIDA, INLAB_TESTE_FALHAS
+global INLAB_TESTE_SAIDA, INLAB_TESTE_FALHAS, INLAB_TESTE_AVISOS
+global INLAB_OTIM_META_MANUAL, InLab_FamiliaAtiva, InLab_UltimaOtimOrigem, InLab_UltimoAjusteFino
+global InLab_Otim_Calcular, InLab_Otim_Aplicar, InLab_Otim_Reverter
 (
     local dirTeste = getFilenamePath (getSourceFileName())
     local raiz = substring dirTeste 1 (dirTeste.count - 6) -- tira "tests\"
@@ -33,9 +39,15 @@ global INLAB_TESTE_SAIDA, INLAB_TESTE_FALHAS
     try
     (
         for m in #(@"core\versao.ms", @"core\prefs.ms", @"core\struct_result.ms", @"core\struct_familia.ms",
-                   @"core\log.ms", @"core\utils.ms", @"functions\fn_otim_nucleo.ms", @"functions\fn_otim_escondidas.ms") do
+                   @"core\log.ms", @"core\utils.ms", @"functions\fn_otim_nucleo.ms", @"functions\fn_otim_origem.ms",
+                   @"functions\fn_otim_fino.ms", @"functions\fn_otim_escondidas.ms") do
             fileIn (raiz + m)
-        InLab_Log = fn _logTeste msg tipo:#info = ( format "      [LOG %] %\n" tipo msg to:INLAB_TESTE_SAIDA; flush INLAB_TESTE_SAIDA )
+        INLAB_TESTE_AVISOS = ""
+        InLab_Log = fn _logTeste msg tipo:#info =
+        (
+            if tipo == #warn do INLAB_TESTE_AVISOS += msg + "\n"
+            format "      [LOG %] %\n" tipo msg to:INLAB_TESTE_SAIDA; flush INLAB_TESTE_SAIDA
+        )
         limparCena()
         InLab_UltimasEscondidas = #()
         unidadeOriginal = units.SystemType
@@ -73,6 +85,23 @@ global INLAB_TESTE_SAIDA, INLAB_TESTE_FALHAS
         local inst2 = instance inst1
         inst2.name = "esc_inst_2"
         inst2.pos = [510, 0, 10] -- solta no ar: a face de baixo não está escondida nela
+
+        ---------------------------------------------------------------- OCLUSORES FORA DA SPEC
+        -- Plano (malha aberta) inclinado por cima de uma caixa: as 3 direções
+        -- tortas sobem e batem 1 vez no plano (paridade ímpar) — não é "dentro".
+        local sobPlano = Box name:"esc_sob_plano" length:4 width:4 height:4 pos:[1200, 0, 0]
+        local plano = Plane name:"esc_plano" length:200 width:200 pos:[1200, 0, 8]
+        rotate plano (angleaxis 10 [1, 0, 0])
+        -- Peça escondida e peça não renderizável envolvendo uma caixa: não cobrem.
+        local sobOculta = Box name:"esc_sob_oculta" length:4 width:4 height:4 pos:[700, 0, 0.5]
+        local oculta = Box name:"esc_oculta" length:10 width:10 height:10 pos:[700, 0, 0]
+        hide oculta
+        local sobNaoRender = Box name:"esc_sob_naorender" length:4 width:4 height:4 pos:[800, 0, 0.5]
+        local naoRender = Box name:"esc_naorender" length:10 width:10 height:10 pos:[800, 0, 0]
+        naoRender.renderable = false
+        -- Decalque 0,1 mm acima do topo de uma base, virado para o mesmo lado.
+        local baseDecal = Box name:"esc_base_decal" length:10 width:10 height:2 lengthsegs:2 widthsegs:2 pos:[900, 0, 0]
+        local decal = Plane name:"esc_decal" length:4 width:4 lengthsegs:1 widthsegs:1 pos:[900, 0, 2.01]
 
         local todos = for o in geometry collect o
         local trisAntes = for o in todos collect (InLab_Otim_Triangulos #(o))
@@ -118,6 +147,13 @@ global INLAB_TESTE_SAIDA, INLAB_TESTE_FALHAS
         checar ("Fundo nunca marcado (" + noFundo as string + " face(s) de baixo em Z=0)") (noFundo == 0)
 
         checar "Instâncias: face escondida só numa instância não entra" ((propDe props inst1) == undefined and (propDe props inst2) == undefined)
+
+        checar ("Plano aberto inclinado não marca a caixa embaixo como 'dentro' (" + (nFaces props sobPlano) as string + ")") \
+            ((propDe props sobPlano) == undefined and (propDe props plano) == undefined)
+        checar ("Peça escondida não cobre (" + (nFaces props sobOculta) as string + ")") ((propDe props sobOculta) == undefined)
+        checar ("Peça não renderizável não cobre (" + (nFaces props sobNaoRender) as string + ")") ((propDe props sobNaoRender) == undefined)
+        checar ("Decalque coplanar: nem o decalque nem a base (" + (nFaces props decal) as string + ", " + (nFaces props baseDecal) as string + ")") \
+            ((propDe props decal) == undefined and (propDe props baseDecal) == undefined)
 
         local nPts = 0
         for e in InLab_OtimEscondidas_Destaque do nPts += e[2].count
@@ -186,6 +222,53 @@ global INLAB_TESTE_SAIDA, INLAB_TESTE_FALHAS
         InLab_OtimEscondidas_Aplicar pR
         InLab_UltimasEscondidas = #()
         checar "Reverter sem registro remove pelo nome" ((InLab_OtimEscondidas_Reverter()) == 1 and esfera.modifiers.count == 0)
+
+        ---------------------------------------------------------------- PASSOS 1 E 2 PULAM PEÇA COM O PASSO 3
+        -- Passo 3 apaga por índice: mexer abaixo dele desloca as faces.
+        limparCena()
+        InLab_UltimasEscondidas = #()
+        InLab_UltimaOtimOrigem = #()
+        InLab_UltimoAjusteFino = #()
+        InLab_FamiliaAtiva = undefined
+        local suporte = Box name:"esc_suporte" length:20 width:20 height:2 pos:[0, 0, 0]
+        local vaso = Cylinder name:"esc_vaso" radius:3 height:10 sides:64 heightsegs:1 capsegs:1 pos:[0, 0, 2]
+        INLAB_OTIM_META_MANUAL = 150
+        local p1 = InLab_Otim_Calcular 1 #(suporte, vaso)
+        local p1Vaso = for p in p1 where p.no == vaso collect p
+        checar ("Passo 1 propõe baixar os lados do vaso (" + p1.count as string + ")") (p1Vaso.count > 0)
+        InLab_Otim_Aplicar 1 p1
+        local ladosReduzidos = vaso.sides
+        checar ("Passo 1 aplicado: lados " + ladosReduzidos as string + " < 64") (ladosReduzidos < 64)
+        local p3 = InLab_Otim_Calcular 3 #(vaso)
+        local n3 = InLab_Otim_Aplicar 3 p3
+        checar ("Passo 3 aplicado no vaso (" + n3 as string + ")") (n3 == 1)
+        local trisVaso = InLab_Otim_Triangulos #(vaso)
+
+        INLAB_TESTE_AVISOS = ""
+        InLab_Otim_Reverter 1
+        checar ("Reverter do passo 1 não mexe no vaso com passo 3 (lados " + vaso.sides as string + ")") \
+            (vaso.sides == ladosReduzidos and (InLab_Otim_Triangulos #(vaso)) == trisVaso)
+        checar "Reverter do passo 1 avisa 'tem o passo 3 aplicado'" ((findString INLAB_TESTE_AVISOS "esc_vaso: tem o passo 3 aplicado") != undefined)
+        checar "Entrada do vaso continua no registro do passo 1" (InLab_UltimaOtimOrigem.count > 0)
+
+        INLAB_TESTE_AVISOS = ""
+        local c1 = InLab_Otim_Calcular 1 #(vaso)
+        checar "Calcular do passo 1 pula o vaso e avisa" (c1.count == 0 and (findString INLAB_TESTE_AVISOS "esc_vaso: tem o passo 3 aplicado") != undefined)
+        INLAB_TESTE_AVISOS = ""
+        InLab_Otim_Aplicar 1 p1Vaso
+        checar "Aplicar do passo 1 (linha velha) pula o vaso" (vaso.sides == ladosReduzidos and (findString INLAB_TESTE_AVISOS "tem o passo 3 aplicado") != undefined)
+
+        INLAB_TESTE_AVISOS = ""
+        INLAB_OTIM_META_MANUAL = 50
+        local c2 = InLab_Otim_Calcular 2 #(suporte, vaso)
+        checar "Calcular do passo 2 pula o vaso e avisa" ((for p in c2 where p.no == vaso collect p).count == 0 and
+                                                          (findString INLAB_TESTE_AVISOS "esc_vaso: tem o passo 3 aplicado") != undefined)
+
+        -- Depois de reverter o passo 3, o passo 1 volta normalmente.
+        InLab_Otim_Reverter 3
+        InLab_Otim_Reverter 1
+        checar ("Sem o passo 3, Reverter do passo 1 volta os lados (" + vaso.sides as string + ")") (vaso.sides == 64)
+        INLAB_OTIM_META_MANUAL = undefined
 
         InLab_OtimEscondidas_LimparDestaque()
         limparCena()
