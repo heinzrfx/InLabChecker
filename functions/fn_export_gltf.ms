@@ -35,6 +35,81 @@
  exporta a partir da seleção atual do Max) e loga o resultado.
  InLab_ExportGLTF (headless) fica mantida abaixo pra uso futuro (ex.: export
  em lote sem interação), mas o botão da UI agora chama a função nova.
+
+ FIX 24/Set (issue #49) — MODO "CENA INTEIRA" E FOCO DA JANELA:
+ sondagem no Max (2024) confirmou os dois pontos da issue:
+   1. FOCO FALSO: com a janela já aberta (GameExporterShown() == true), o
+      código só logava "trazida ao foco" sem chamar nada. Reproduzido: abri
+      a janela, forcei o foco de volta pro Max (windows.setForegroundWindow
+      no HWND do Max) e chamei de novo o ramo "já aberta" — o foco
+      continuava no Max (windows.getFocus() não mudava). Corrigido com
+      InLab_FocarJanelaExportadorRealTime, que localiza o HWND da janela varrendo o
+      desktop (windows.getChildrenHWND (windows.getDesktopHWND()), texto
+      "Real-Time Exporter" ou "Game Exporter" — nome varia por build) e usa
+      windows.setForegroundWindow nesse HWND. O retorno de
+      setForegroundWindow não é confiável (voltou false na sondagem mesmo
+      quando o foco mudou de fato) — a confirmação real é comparar
+      windows.getFocus() com o HWND depois da chamada. Só loga "trazida ao
+      foco" quando essa comparação bate; senão loga aviso.
+      DUAS PEGADINHAS achadas na varredura do desktop (tests\test_export_gltf.ms
+      pegou as duas por acaso, num teste rodado com o Editor de Script aberto
+      numa aba com este arquivo): (a) o campo de texto que
+      windows.getChildrenHWND devolve para um controle MXS_Scintilla é o
+      CONTEÚDO inteiro dele, não uma legenda — um findString "contém" pelo
+      título "Real-Time Exporter" achava esse editor (que tinha a frase no
+      código) em vez da janela; a comparação virou EXATA (trim + ==). (b)
+      GameExporterHideDialog() só ESCONDE a janela — o HWND sobrevive e
+      continua aparecendo na varredura do desktop mesmo depois de "fechada";
+      sem filtrar por windows.isWindowVisible, a função continuava achando
+      (e "focando") uma janela escondida.
+   2. "CENA INTEIRA" NÃO MEXIA NA SELEÇÃO: confirmado que o modo cena
+      inteira não limpava nem tocava a seleção do Max antes de abrir a
+      janela — só o modo "Somente seleção" fazia `select objs`. A janela do
+      Real-Time Exporter é um app Qt à parte (classe "Qt5151QWindowIcon" no
+      Max 2024) sem controles filhos expostos como HWND — não dá pra ler
+      nem setar por Win32 a opção de escopo dela (dropdown "Export All" /
+      outra, visto por captura de tela com windows.snapshot). Também não
+      existe API de script pra isso: GameExporter (UtilityPlugin) não expõe
+      properties (getPropNames vazio) e não há GameExporterSetOptions nem
+      GameExporterGetOptions nesta build; sem arquivo .ini em plugcfg pra
+      essa opção (não persiste aí). Sondagem com 1 objeto selecionado e com
+      seleção vazia mostrou o dropdown sempre em "Export All" nos dois
+      casos — ou seja, ele NÃO reflete a seleção do Max no momento em que a
+      janela abre; pode ser um valor lembrado da sessão anterior (mudado
+      manualmente pelo usuário) que só é lido de fato quando o Export é
+      clicado. Não deu pra confirmar isso sem clicar dentro da janela
+      (arriscado via script: só dava pra mirar coordenada de tela, sem
+      controle Win32 dedicado, podendo acertar Export/Help por engano) —
+      pendente de teste humano (comparar o .glb exportado com o dropdown em
+      cada opção). Como não existe alavanca de script pra "opção
+      equivalente no exportador" (aceite, opção B), a correção usa a opção
+      A do aceite: limpar a seleção do Max antes de abrir em modo "Cena
+      inteira", pra pelo menos eliminar o cenário claro do bug (seleção
+      antiga sobrando "vazar" pro export). A seleção limpa NÃO é restaurada
+      automaticamente: a janela é modeless (o usuário clica Export quando
+      quiser, não durante esta chamada), e restaurar a seleção de imediato
+      reintroduziria o mesmo risco caso a leitura seja feita no clique do
+      Export, não na abertura. O log avisa que a seleção foi limpa e que o
+      usuário precisa reselecionar depois de fechar o exportador, se for
+      usar outra função do plugin.
+
+ REVISÃO 24/Set (fix round 1, issue #49) — duas correções de code review:
+   a. LOG DE FOCO ASSIMÉTRICO: o ramo "já aberta" logava #warn quando o foco
+      não era confirmado, mas o ramo "recém-aberta" (depois de
+      GameExporterOpenDialog()) não tinha `else` nenhum — uma falha de foco
+      ali não deixava rastro no log. A sequência localizar → focar → logar
+      virou UM SÓ helper (InLab_TrazerExportadorAoFocoComLog jaAberta),
+      chamado pelos dois ramos: o parâmetro jaAberta só muda o texto da
+      mensagem, a decisão #ok/#warn é sempre a mesma (só #ok com foco
+      confirmado de verdade).
+   b. FILTRO POR DONO: InLab_LocalizarJanelaExportadorRealTime varria TODO o
+      desktop pelo título, sem restringir à instância atual do Max — em tese
+      casaria com o exportador de outra instância aberta em paralelo.
+      Sondado antes de mexer (padrão de InLab_FecharPaineisOrfaos em
+      ui\rollout_main.ms, que já filtra por w[3] == maxHwnd): abri a janela e
+      comparei h[3] (o campo "dono" do array de windows.getChildrenHWND) com
+      windows.getMAXHWND() — bateu (h[3] == maxHwnd). A busca agora exige
+      esse filtro também.
 ================================================================================
 */
 
@@ -104,21 +179,146 @@ fn InLab_ExportGLTF caminho somenteSelecao:true =
 )
 
 --------------------------------------------------------------------------------
+-- Localiza o HWND da janela nativa do Real-Time Exporter varrendo os filhos
+-- do desktop (padrão de sondagem do MCP — ver CLAUDE.md, pegadinhas de
+-- dotNetControl/sondagem). O texto do título varia por build ("Real-Time
+-- Exporter" a partir do Max 2023, "Game Exporter" em builds antigas).
+-- Retorna o HWND (integer) ou undefined se não achar.
+--------------------------------------------------------------------------------
+fn InLab_LocalizarJanelaExportadorRealTime =
+(
+    local hwnd = undefined
+    try
+    (
+        -- COMPARAÇÃO EXATA (não findString/contém): o campo de texto que
+        -- windows.getChildrenHWND devolve para alguns controles (ex.: um
+        -- MXS_Scintilla — o Editor de Script aberto em paralelo) é o
+        -- CONTEÚDO inteiro do controle, não uma legenda curta. Sondagem da
+        -- issue #49: com o Editor de Script aberto numa aba que tinha o
+        -- comentário "Real-Time Exporter" no código-fonte, um findString
+        -- (contém) casava com esse editor em vez da janela do exportador —
+        -- falso positivo. O título real da janela do exportador é EXATO:
+        -- "Real-Time Exporter" (Max 2023+) ou "Game Exporter" (mais antigo).
+        -- GameExporterHideDialog() só ESCONDE a janela (windows.isWindowVisible
+        -- vira false) — o HWND continua existindo e aparece na varredura do
+        -- desktop mesmo depois de "fechada". Sem o filtro de visibilidade, a
+        -- função continuaria achando a janela escondida e reportando foco
+        -- confirmado numa janela que o usuário não vê. Confirmado na sondagem
+        -- da issue #49.
+        -- DONO = a janela principal do Max (padrão de InLab_FecharPaineisOrfaos
+        -- em ui\rollout_main.ms, w[3] == maxHwnd): sondado na revisão da issue
+        -- #49 — o HWND do Real-Time Exporter tem h[3] == windows.getMAXHWND()
+        -- (confirmado com GameExporterOpenDialog() aberto e a varredura do
+        -- desktop imediatamente depois). Restringe a busca às janelas desta
+        -- instância do Max, evitando casar com o exportador de outra
+        -- instância aberta em paralelo.
+        local maxHwnd = windows.getMAXHWND()
+        local filhos = windows.getChildrenHWND (windows.getDesktopHWND())
+        for h in filhos while hwnd == undefined do
+        (
+            local txt = toLower (trimRight (trimLeft (h[5] as string)))
+            if (txt == "real-time exporter" or txt == "game exporter") and (windows.isWindowVisible h[1]) and h[3] == maxHwnd do
+                hwnd = h[1]
+        )
+    )
+    catch ( InLab_Log ("Falha ao varrer o desktop procurando a janela do exportador: " + (getCurrentException())) tipo:#err )
+    hwnd
+)
+
+--------------------------------------------------------------------------------
+-- Traz a janela do exportador (HWND já localizado) para o foco de verdade,
+-- via windows.setForegroundWindow. O retorno dessa chamada NÃO é confiável
+-- (sondagem no Max 2024: voltou false mesmo quando o foco mudou de fato) —
+-- a confirmação é comparar windows.getFocus() com o HWND alvo depois da
+-- chamada. Retorna true só quando essa comparação confirma o foco.
+--------------------------------------------------------------------------------
+fn InLab_FocarJanelaExportadorRealTime hwnd =
+(
+    local focado = false
+    if hwnd != undefined do
+    (
+        try
+        (
+            windows.setForegroundWindow hwnd
+            focado = (windows.getFocus() == hwnd)
+        )
+        catch ( InLab_Log ("Falha ao tentar focar a janela do exportador: " + (getCurrentException())) tipo:#err )
+    )
+    focado
+)
+
+--------------------------------------------------------------------------------
+-- Localiza + foca + loga o resultado — sequência única usada pelos dois ramos
+-- de InLab_AbrirExportadorRealTime (janela já aberta / recém-aberta). Antes
+-- da revisão da issue #49 essa lógica estava duplicada e ASSIMÉTRICA: o ramo
+-- "já aberta" logava #warn quando o foco não era confirmado, mas o ramo
+-- "recém-aberta" não tinha `else` nenhum — uma falha de foco logo depois de
+-- abrir a janela não deixava rastro nenhum no log. jaAberta muda só o TEXTO
+-- da mensagem (contexto "já estava aberto" vs janela recém-criada); a decisão
+-- #ok/#warn é sempre a mesma: só #ok quando o foco foi confirmado de verdade
+-- (ver InLab_FocarJanelaExportadorRealTime). Retorna o mesmo booleano de
+-- InLab_FocarJanelaExportadorRealTime (foco confirmado ou não).
+--------------------------------------------------------------------------------
+fn InLab_TrazerExportadorAoFocoComLog jaAberta =
+(
+    local hwnd = InLab_LocalizarJanelaExportadorRealTime()
+    local focado = InLab_FocarJanelaExportadorRealTime hwnd
+    if focado then
+        InLab_Log (if jaAberta then
+                       "Real-Time Exporter já estava aberto — janela trazida ao foco."
+                   else
+                       "Real-Time Exporter trazido ao foco.") tipo:#ok
+    else
+        InLab_Log (if jaAberta then
+                       "Real-Time Exporter já estava aberto, mas não foi possível confirmar que a janela foi trazida ao foco."
+                   else
+                       "Real-Time Exporter aberto, mas não foi possível confirmar que a janela foi trazida ao foco.") tipo:#warn
+    focado
+)
+
+--------------------------------------------------------------------------------
 -- Abre a janela NATIVA do Real-Time Exporter (GameExporter) em vez de
 -- exportar direto por script. somenteSelecao:true seleciona objs na
 -- viewport ANTES de abrir — a janela nativa exporta a partir da seleção
 -- atual do Max, então isso garante que ela já abre com o escopo certo.
+--
+-- somenteSelecao:false ("Cena inteira") LIMPA a seleção do Max antes de
+-- abrir (issue #49): não existe API de script pra marcar direto a opção de
+-- escopo dentro da janela (GameExporter não expõe properties nesta build,
+-- sem GameExporterSetOptions) — limpar a seleção evita o cenário confirmado
+-- na sondagem em que uma seleção antiga, deixada de uma ação anterior,
+-- "vaza" pro export mesmo em modo cena inteira. A seleção limpa NÃO é
+-- restaurada automaticamente — a janela é modeless e fica aberta esperando
+-- o usuário clicar Export quando quiser, então restaurar aqui reintroduziria
+-- o mesmo risco. Ver cabeçalho do arquivo (FIX 24/Set) pro detalhe da
+-- sondagem.
+--
 -- Retorna true se a janela abriu (ou já estava aberta), false se a API
 -- global não existir nesta build (Max < 2017 — sem Real-Time Exporter).
 --------------------------------------------------------------------------------
 fn InLab_AbrirExportadorRealTime objs somenteSelecao:true =
 (
-    if somenteSelecao and objs != undefined and objs.count > 0 do select objs
+    if somenteSelecao then
+    (
+        if objs != undefined and objs.count > 0 do select objs
+    )
+    else
+    (
+        local qtdAntes = selection.count
+        if qtdAntes > 0 do
+        (
+            clearSelection()
+            InLab_Log ("Cena inteira: seleção anterior (" + qtdAntes as string +
+                       " objeto(s)) limpa antes de abrir o exportador — evita que a janela " +
+                       "exporte só essa seleção. Não é restaurada automaticamente; reselecione " +
+                       "depois de fechar o exportador, se precisar.") tipo:#warn
+        )
+    )
 
     local jaAberta = try ( GameExporterShown() ) catch ( undefined )
     if jaAberta == true then
     (
-        InLab_Log "Real-Time Exporter já estava aberto — janela trazida ao foco." tipo:#ok
+        InLab_TrazerExportadorAoFocoComLog true
         true
     )
     else
@@ -129,6 +329,7 @@ fn InLab_AbrirExportadorRealTime objs somenteSelecao:true =
             InLab_Log ("Real-Time Exporter aberto" +
                        (if somenteSelecao then " · seleção atual (" + objs.count as string + " objeto(s))" else " · cena inteira") +
                        " — escolha formato/compressão/caminho na própria janela.") tipo:#ok
+            InLab_TrazerExportadorAoFocoComLog false
             true
         )
         else
