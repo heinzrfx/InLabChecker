@@ -10,6 +10,7 @@ global InLab_Log, InLab_EhGeometria
 global InLab_MedirUV, InLab_AssinaturaCanal, InLab_UVMetricasTexto
 global InLab_AutoUV, InLab_CleanUV, InLab_ReverterAutoUV, InLab_PaddingUV, InLab_UltimoAutoUV
 global InLab_IlhasDoUnwrap, InLab_DistorcaoIlhas, InLab_UnfoldComGuarda
+global InLab_AutoUV_ForcarFalha, InLab_CanalDoModificadorUV
 global INLAB_CANAL_UV_MATERIAL, INLAB_CANAL_UV_BAKE, INLAB_UV_MEDIR_MAX_FACES, INLAB_UV_DISTORCAO_MAX_SOLVE
 global INLAB_TESTE_SAIDA, INLAB_TESTE_FALHAS
 (
@@ -227,6 +228,61 @@ global INLAB_TESTE_SAIDA, INLAB_TESTE_FALHAS
         checar "Malha grande: canal 1 idêntico" ((InLab_AssinaturaCanal esfG INLAB_CANAL_UV_MATERIAL) == esfAntes)
         checar "Malha grande: nada fora do 0–1 e 0 sobrepostas" (mG != undefined and mG.foraDe01 == 0 and mG.sobrepostas == 0)
         checar "Malha grande: gutter >= padding com a folga" (mG != undefined and (mG.gutterMin == undefined or mG.gutterMin >= (InLab_PaddingUV 1024) * 0.98))
+
+        -- 7. FALHA FORÇADA NO MEIO DA RODADA (issue #48): InLab_AutoUV_ForcarFalha
+        -- injeta uma exceção depois que o Unwrap já entrou no stack do objeto, para
+        -- provar que (a) os outros objetos da rodada seguem sendo processados,
+        -- (b) o grupo acima do objeto que falhou fecha de novo, (c) o erro sai no
+        -- log com o nome do objeto e (d) o Unwrap que já tinha entrado no stack não
+        -- fica órfão.
+        local fOk = Box name:"uv_falha_ok" length:15 width:15 height:15 mapcoords:true pos:[0, 260, 0]
+        convertToPoly fOk
+        local fRuim = Box name:"uv_falha_ruim" length:15 width:15 height:15 pos:[40, 260, 0]
+        local fVizinho = Box name:"uv_falha_vizinho" length:10 width:10 height:10 pos:[40, 290, 0]
+        local fGrp = group #(fRuim, fVizinho) name:"uv_falha_grp"
+        setGroupOpen fGrp false
+        append criados fOk
+        join criados #(fRuim, fVizinho, fGrp)
+
+        -- Captura os logs desta chamada (além de continuar gravando no arquivo)
+        -- para conferir a mensagem de erro com o nome do objeto.
+        local logsCapturados = #()
+        local logDoTeste = InLab_Log
+        InLab_Log = fn _logCaptura msg tipo:#info =
+        (
+            append logsCapturados #(tipo, msg)
+            format "      [LOG %] %\n" tipo msg to:INLAB_TESTE_SAIDA
+            flush INLAB_TESTE_SAIDA
+        )
+        InLab_AutoUV_ForcarFalha = fRuim.name
+        local nOk = InLab_AutoUV #(fOk, fRuim) angulo:55.0 resolucao:1024
+        InLab_AutoUV_ForcarFalha = undefined
+        InLab_Log = logDoTeste
+
+        local erroComNome = false
+        for l in logsCapturados where l[1] == #err and (matchPattern l[2] pattern:("*" + fRuim.name + "*")) do erroComNome = true
+
+        checar "Falha forçada: o objeto bom conta como processado, o ruim não" (nOk == 1)
+        checar "Falha forçada: objeto bom recebeu o Unwrap normalmente" (temModificador fOk Unwrap_UVW)
+        checar "Falha forçada: objeto ruim NÃO fica com Unwrap órfão" (not (temModificador fRuim Unwrap_UVW))
+        checar "Falha forçada: grupo fecha de novo" (not (isOpenGroupHead fGrp))
+        checar "Falha forçada: objeto continua no grupo" (fRuim.parent == fGrp)
+        checar "Falha forçada: erro no log com o nome do objeto" erroComNome
+
+        -- 8. CLEAN UV remove UVW_Xform no canal de bake (issue #48): sondado via
+        -- MCP nesta build — a propriedade de canal do UVW_Xform é Map_Channel
+        -- (mapChannel/channel/mapID não existem nele).
+        local cX = Box name:"uv_xform" length:12 width:12 height:12 mapcoords:true pos:[80, 260, 0]
+        convertToPoly cX
+        append criados cX
+        max modify mode
+        select cX
+        local mx = UVW_Xform()
+        addModifier cX mx
+        mx.Map_Channel = INLAB_CANAL_UV_BAKE
+        checar "UVW_Xform: InLab_CanalDoModificadorUV lê o canal pela Map_Channel" ((InLab_CanalDoModificadorUV mx) == INLAB_CANAL_UV_BAKE)
+        InLab_CleanUV #(cX)
+        checar "Clean UV remove o UVW_Xform do canal de bake" (not (temModificador cX UVW_Xform))
 
         -- Ctrl+Z nativo NÃO é testável daqui: rodado de dentro do script,
         -- `max undo` desfaz o script inteiro. Conferir à mão pela UI.
