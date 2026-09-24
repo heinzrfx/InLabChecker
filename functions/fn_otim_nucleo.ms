@@ -29,6 +29,9 @@
  — reverta o passo 3 antes". No Reverter, as entradas puladas continuam no
  registro do passo, para reverter depois do passo 3. Ctrl+Z do passo 1/2 por
  cima do passo 3 não passa por aqui (limite conhecido).
+ Revisão 2: o Aplicar do passo 1 troca o registro inteiro; as entradas de
+ peças com o passo 3 são recolocadas no INÍCIO do registro novo, para não
+ se perderem antes do Reverter.
 ================================================================================
 */
 
@@ -272,13 +275,30 @@ fn InLab_Otim_Aplicar passo propostas =
             if o3 != undefined then ( InLab_Otim_AvisarPasso3 o3 avisados; dontCollect ) else p
         )
     )
-    case passo of
+    -- O Aplicar do passo 1 TROCA o registro inteiro: as entradas presas
+    -- (peças com o passo 3, guardadas pelo Reverter) sumiriam. Elas voltam
+    -- para o INÍCIO do registro novo — são mais antigas, e a restauração em
+    -- ordem inversa as volta por último (revisão 2, 24/09/2026).
+    local regAntes = if passo == 1 then InLab_UltimaOtimOrigem else undefined
+    local presos = #()
+    if regAntes != undefined do
+        for r in regAntes where (InLab_Otim_Passo3Em (InLab_Otim_NosDoAlvo r[1])) != undefined do append presos r
+    local res = case passo of
     (
         1: InLab_OtimOrigem_Aplicar propostas
         2: InLab_OtimFino_Aplicar propostas
         3: InLab_OtimEscondidas_Aplicar propostas
         default: ( InLab_Log ("Otimização: passo " + passo as string + " não existe.") tipo:#err; 0 )
     )
+    -- Comparação de array em MaxScript é por referência: mudou = registro novo.
+    if presos.count > 0 and InLab_UltimaOtimOrigem != regAntes do
+    (
+        local novo = copy presos #nomap
+        join novo InLab_UltimaOtimOrigem
+        InLab_UltimaOtimOrigem = novo
+        InLab_Log ("Reduzir na origem: " + presos.count as string + " valor(es) de peça(s) com o passo 3 continuam guardados para o Reverter.") tipo:#info
+    )
+    res
 )
 
 -- Reverter dos passos 1 e 2 sem mexer em peça com o passo 3: as entradas

@@ -8,6 +8,8 @@
  peça escondida ou não renderizável não cobre; decalque coplanar virado para
  o mesmo lado não esconde nem é escondido; passos 1 e 2 pulam peça com o
  passo 3 (Calcular, Aplicar e Reverter pelo despachante).
+ Revisão 2: peça em camada oculta / não renderizável não cobre; valor do
+ passo 1 preso por uma peça com passo 3 sobrevive a um novo Aplicar do passo 1.
  RODAR NUMA CENA VAZIA (File > New).
  Resultado: <pasta temp do Max>\inlab_test_otim_escondidas.txt (PASS/FAIL por item).
 */
@@ -102,6 +104,18 @@ global InLab_Otim_Calcular, InLab_Otim_Aplicar, InLab_Otim_Reverter
         -- Decalque 0,1 mm acima do topo de uma base, virado para o mesmo lado.
         local baseDecal = Box name:"esc_base_decal" length:10 width:10 height:2 lengthsegs:2 widthsegs:2 pos:[900, 0, 0]
         local decal = Plane name:"esc_decal" length:4 width:4 lengthsegs:1 widthsegs:1 pos:[900, 0, 2.01]
+        -- Peça oculta ou não renderizável PELA CAMADA (o nó em si está normal).
+        for n in #("esc_camada_oculta", "esc_camada_naorender") do try ( LayerManager.deleteLayerByName n ) catch ()
+        local camOculta = LayerManager.newLayerFromName "esc_camada_oculta"
+        local camNaoRender = LayerManager.newLayerFromName "esc_camada_naorender"
+        local sobCamOculta = Box name:"esc_sob_cam_oculta" length:4 width:4 height:4 pos:[1000, 0, 0.5]
+        local cxCamOculta = Box name:"esc_cx_cam_oculta" length:10 width:10 height:10 pos:[1000, 0, 0]
+        camOculta.addNode cxCamOculta
+        camOculta.ishidden = true
+        local sobCamNaoRender = Box name:"esc_sob_cam_naorender" length:4 width:4 height:4 pos:[1050, 0, 0.5]
+        local cxCamNaoRender = Box name:"esc_cx_cam_naorender" length:10 width:10 height:10 pos:[1050, 0, 0]
+        camNaoRender.addNode cxCamNaoRender
+        camNaoRender.renderable = false
 
         local todos = for o in geometry collect o
         local trisAntes = for o in todos collect (InLab_Otim_Triangulos #(o))
@@ -152,6 +166,8 @@ global InLab_Otim_Calcular, InLab_Otim_Aplicar, InLab_Otim_Reverter
             ((propDe props sobPlano) == undefined and (propDe props plano) == undefined)
         checar ("Peça escondida não cobre (" + (nFaces props sobOculta) as string + ")") ((propDe props sobOculta) == undefined)
         checar ("Peça não renderizável não cobre (" + (nFaces props sobNaoRender) as string + ")") ((propDe props sobNaoRender) == undefined)
+        checar ("Peça em camada oculta não cobre (" + (nFaces props sobCamOculta) as string + ")") ((propDe props sobCamOculta) == undefined)
+        checar ("Peça em camada não renderizável não cobre (" + (nFaces props sobCamNaoRender) as string + ")") ((propDe props sobCamNaoRender) == undefined)
         checar ("Decalque coplanar: nem o decalque nem a base (" + (nFaces props decal) as string + ", " + (nFaces props baseDecal) as string + ")") \
             ((propDe props decal) == undefined and (propDe props baseDecal) == undefined)
 
@@ -268,10 +284,29 @@ global InLab_Otim_Calcular, InLab_Otim_Aplicar, InLab_Otim_Reverter
         InLab_Otim_Reverter 3
         InLab_Otim_Reverter 1
         checar ("Sem o passo 3, Reverter do passo 1 volta os lados (" + vaso.sides as string + ")") (vaso.sides == 64)
+
+        -- Passo 1 em A -> passo 3 em A -> passo 1 em B -> Reverter passo 3 ->
+        -- Reverter passo 1 volta A e B (a entrada presa de A não se perde).
+        local vasoB = Cylinder name:"esc_vaso_b" radius:3 height:10 sides:64 heightsegs:1 capsegs:1 pos:[50, 0, 0]
+        InLab_UltimaOtimOrigem = #()
+        INLAB_OTIM_META_MANUAL = 150
+        InLab_Otim_Aplicar 1 (InLab_Otim_Calcular 1 #(vaso))
+        local ladosA = vaso.sides
+        InLab_Otim_Aplicar 3 (InLab_Otim_Calcular 3 #(vaso))
+        InLab_Otim_Aplicar 1 (InLab_Otim_Calcular 1 #(vasoB))
+        local ladosB = vasoB.sides
+        checar ("Passo 1 em A e em B aplicado (A " + ladosA as string + ", B " + ladosB as string + ")") \
+            (ladosA < 64 and ladosB < 64 and vaso.sides == ladosA and (InLab_OtimEscondidas_Mods vaso)[2] != undefined)
+        InLab_Otim_Reverter 3
+        InLab_Otim_Reverter 1
+        checar ("Reverter do passo 1 volta A e B (A " + vaso.sides as string + ", B " + vasoB.sides as string + ")") \
+            (vaso.sides == 64 and vasoB.sides == 64)
         INLAB_OTIM_META_MANUAL = undefined
 
         InLab_OtimEscondidas_LimparDestaque()
         limparCena()
+        for n in #("esc_camada_oculta", "esc_camada_naorender") do
+            try ( LayerManager.deleteLayerByName n ) catch ( linha ("      camada " + n + " não apagada: " + getCurrentException()) )
     )
     catch
     (

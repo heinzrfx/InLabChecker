@@ -98,7 +98,9 @@
  24/09/2026 (issue #63, revisão): oclusores fora das hipóteses da spec
  podiam apagar face visível. Agora:
    - peça escondida (isHidden) ou não renderizável não cobre ninguém (não
-     vai para o GLB);
+     vai para o GLB) — inclusive pela camada ou camada pai (revisão 2,
+     InLab_OtimEscondidas_VaiProGLB); o snapshot da grade é apagado também
+     quando a grade falha;
    - DENTRO só contra malha FECHADA (meshop.getOpenEdges vazio no snapshot):
      plano ou casca inclinada por cima de uma peça dava paridade ímpar nas 3
      direções tortas. Malha aberta ainda cobre por contato; um #info no fim
@@ -196,6 +198,23 @@ fn InLab_OtimEscondidas_TemModificador o =
 
 -- Quantas distâncias diferentes (raio pela diagonal de um quad bate em 2
 -- triângulos na mesma distância).
+-- A peça é visível e renderizável, inclusive pela CAMADA (e camadas pai)?
+-- Sondado no Max 2024 (24/09/2026): isHidden / isHiddenInVpt já refletem a
+-- camada oculta (e a camada pai oculta), mas `renderable` do nó NÃO reflete
+-- a camada não renderizável — por isso a subida pelas camadas.
+global InLab_OtimEscondidas_VaiProGLB
+fn InLab_OtimEscondidas_VaiProGLB o =
+(
+    local ok = not o.isHidden and not o.isHiddenInVpt and o.renderable
+    local cam = try ( o.layer ) catch ( InLab_Log (o.name + ": não li a camada (" + getCurrentException() + ").") tipo:#warn; undefined )
+    while ok and cam != undefined do
+    (
+        if cam.ishidden or not cam.renderable do ok = false
+        cam = try ( cam.getParent() ) catch ( InLab_Log (o.name + ": não li a camada pai (" + getCurrentException() + ").") tipo:#warn; undefined )
+    )
+    ok
+)
+
 -- "a, b, c e mais 4" (log).
 global InLab_OtimEscondidas_ListaNomes
 fn InLab_OtimEscondidas_ListaNomes nomes maxN =
@@ -234,10 +253,12 @@ fn InLab_OtimEscondidas_Grade o cache =
         local ent = undefined
         local apg = (InLab_OtimEscondidas_Mods o)[2]
         local estava = if apg != undefined then apg.enabled else false
+        -- Fora do try: se a grade falhar depois do snapshot, o catch apaga.
+        local malha = undefined
         try
         (
             if apg != undefined do apg.enabled = false
-            local malha = snapshotAsMesh o
+            malha = snapshotAsMesh o
             local fechada = (meshop.getOpenEdges malha).numberSet == 0
             local rm = RayMeshGridIntersect()
             rm.Initialize (amin INLAB_ESC_GRADE_MAX (amax 10 ((INLAB_ESC_GRADE_K * (pow (amax 1 malha.numfaces) (1.0 / 3.0))) as integer)))
@@ -249,6 +270,8 @@ fn InLab_OtimEscondidas_Grade o cache =
         (
             InLab_Log (o.name + ": não montei a grade de raios (" + getCurrentException() + ") — a peça não cobre ninguém.") tipo:#warn
             ent = undefined
+            if malha != undefined do
+                try ( delete malha ) catch ( InLab_Log (o.name + ": não apaguei a malha temporária (" + getCurrentException() + ").") tipo:#warn )
         )
         if apg != undefined do
             try ( apg.enabled = estava )
@@ -443,7 +466,7 @@ fn InLab_OtimEscondidas_Calcular objs =
     local t0 = timeStamp()
     local tol = units.decodeValue "0.5mm"
     -- Peça escondida ou não renderizável não vai para o GLB: não cobre ninguém.
-    local cena = for o in geometry where InLab_EhGeometria o and not o.isHidden and o.renderable collect o
+    local cena = for o in geometry where InLab_EhGeometria o and (InLab_OtimEscondidas_VaiProGLB o) collect o
     local animSet = for o in cena where InLab_OtimEscondidas_Animado o collect o
     local estaticos = #(#(), #(), #())
     local animados = #(#(), #(), #())
