@@ -31,13 +31,17 @@
  21/Set: meshop.getMapSupport dá erro de runtime com canal acima de
  meshop.getNumMaps - 1 (não devolve false). InLab_UV_TemCanal confere o
  intervalo antes.
+ 28/Set (issue #5): sobreposição com grade esparsa (Dictionary, célula do
+ tamanho médio de um triângulo), um teste por par e atalho para vizinhos
+ pela aresta — mesmo resultado, 2,1 s → 0,3 s no Box064. Tentativa com a
+ mediana em vez da média: célula pequena demais, face grande em milhares de
+ células, travou o Max. Não repetir.
 ================================================================================
 */
 
 global INLAB_UV_EPS = 1e-6
 global INLAB_UV_TOL_SOBREPOSICAO = 1e-5
 global INLAB_UV_GUTTER_BUSCA = 0.02
-global INLAB_UV_GRADE_SOBREPOSICAO = 64
 
 struct UVMetricas
 (
@@ -208,47 +212,93 @@ fn InLab_MedirUV obj canal =
             vMin = amin vMin p.y ; vMax = amax vMax p.y
         )
 
-        -- 5. SOBREPOSIÇÃO: grade N×N sobre o bbox, eixo separador por par
+        -- 5. SOBREPOSIÇÃO: grade esparsa sobre o bbox, eixo separador por par
+        -- 28/Set (issue #5): 2,6 s no Box008 e 1,8 s no Box064 (972 triângulos)
+        -- com a grade fixa 64×64. Três mudanças, mesmo resultado:
+        --  - célula do tamanho médio da caixa de um triângulo, guardada num
+        --    Dictionary (só as células ocupadas): ilha pequena num 0–1 quase
+        --    vazio não junta mais centenas de faces por célula;
+        --  - cada par é testado numa célula só, a do canto mínimo da interseção
+        --    das caixas (antes: uma vez por célula que os dois ocupam);
+        --  - triângulos que dividem uma aresta com os terceiros vértices em
+        --    lados opostos dela não se sobrepõem (o eixo separador daria
+        --    sobreposição 0, "separados") e pulam o teste completo.
         local sobreEntreIlhas = false
         if nF > 1 do
         (
-            local N = INLAB_UV_GRADE_SOBREPOSICAO
-            local tamU = (amax (uMax - uMin) INLAB_UV_EPS) / N
-            local tamV = (amax (vMax - vMin) INLAB_UV_EPS) / N
-            local celulas = for i = 1 to N * N collect #()
             local caixas = #()
+            local somaTam = 0.0, nTam = 0
             for f = 1 to nF where areaUV[f] > 1e-12 do
             (
                 local c = cantos[f]
                 local a = uv[c[1]], b = uv[c[2]], d = uv[c[3]]
                 caixas[f] = #(amin #(a.x, b.x, d.x), amin #(a.y, b.y, d.y), amax #(a.x, b.x, d.x), amax #(a.y, b.y, d.y))
-                for i = (InLab_UV_Celula caixas[f][1] uMin tamU N) to (InLab_UV_Celula caixas[f][3] uMin tamU N) do
-                    for j = (InLab_UV_Celula caixas[f][2] vMin tamV N) to (InLab_UV_Celula caixas[f][4] vMin tamV N) do
-                        append celulas[(j - 1) * N + i] f
+                somaTam += amax (caixas[f][3] - caixas[f][1]) (caixas[f][4] - caixas[f][2])
+                nTam += 1
+            )
+            -- Célula ≥ 1/2048 do bbox: limita o nº de células de uma face grande.
+            -- Média, não mediana: com a mediana a célula ficou pequena demais e
+            -- face grande passou a ocupar milhares de células (ficou mais lento).
+            local tam = amax INLAB_UV_EPS (if nTam > 0 then somaTam / nTam else 1.0)
+            tam = amax tam ((amax (uMax - uMin) (vMax - vMin)) / 2048.0)
+            local nx = (ceil ((amax (uMax - uMin) INLAB_UV_EPS) / tam)) as integer + 1
+            local ny = (ceil ((amax (vMax - vMin) INLAB_UV_EPS) / tam)) as integer + 1
+            local celulas = Dictionary #integer
+            local celMin = #() -- #(i, j) da célula do canto mínimo da caixa
+            for f = 1 to nF where caixas[f] != undefined do
+            (
+                local i0 = InLab_UV_Celula caixas[f][1] uMin tam nx
+                local j0 = InLab_UV_Celula caixas[f][2] vMin tam ny
+                celMin[f] = #(i0, j0)
+                for i = i0 to (InLab_UV_Celula caixas[f][3] uMin tam nx) do
+                    for j = j0 to (InLab_UV_Celula caixas[f][4] vMin tam ny) do
+                    (
+                        local k = (j - 1) * nx + i
+                        if hasDictValue celulas k then append celulas[k] f else celulas[k] = #(f)
+                    )
             )
             local sobre = #{}
             sobre.count = nF
-            for cel in celulas where cel.count > 1 do
-                for p = 1 to cel.count - 1 do
-                    for q = p + 1 to cel.count do
-                    (
-                        local f1 = cel[p], f2 = cel[q]
-                        if not (sobre[f1] and sobre[f2]) do
+            for k in celulas.keys do
+            (
+                local cel = celulas[k]
+                if cel.count > 1 do
+                (
+                    local ci = mod (k - 1) nx + 1, cj = (k - 1) / nx + 1
+                    for p = 1 to cel.count - 1 do
+                        for q = p + 1 to cel.count do
                         (
+                            local f1 = cel[p], f2 = cel[q]
                             local b1 = caixas[f1], b2 = caixas[f2]
-                            if b1[1] < b2[3] and b2[1] < b1[3] and b1[2] < b2[4] and b2[2] < b1[4] do
+                            -- Caixas se cruzam, esta é a célula dona do par, e o par ainda importa.
+                            if b1[1] < b2[3] and b2[1] < b1[3] and b1[2] < b2[4] and b2[2] < b1[4] and                                (amax celMin[f1][1] celMin[f2][1]) == ci and (amax celMin[f1][2] celMin[f2][2]) == cj and                                not (sobre[f1] and sobre[f2]) do
                             (
-                                local t1 = for k in cantos[f1] collect uv[k]
-                                local t2 = for k in cantos[f2] collect uv[k]
-                                if InLab_UV_TriSobrepoe t1 t2 do
+                                local c1 = cantos[f1], c2 = cantos[f2]
+                                local comuns = for v in c1 where findItem c2 v > 0 collect v
+                                local opostos = false
+                                if comuns.count == 2 do
                                 (
-                                    sobre[f1] = true
-                                    sobre[f2] = true
-                                    if ilhaFace[f1] != ilhaFace[f2] do sobreEntreIlhas = true
+                                    local o1 = (for v in c1 where findItem comuns v == 0 collect v)[1]
+                                    local o2 = (for v in c2 where findItem comuns v == 0 collect v)[1]
+                                    local s1 = InLab_UV_AreaSinal uv[comuns[1]] uv[comuns[2]] uv[o1]
+                                    local s2 = InLab_UV_AreaSinal uv[comuns[1]] uv[comuns[2]] uv[o2]
+                                    opostos = (s1 * s2) < 0.0
+                                )
+                                if not opostos do
+                                (
+                                    local t1 = for v in c1 collect uv[v]
+                                    local t2 = for v in c2 collect uv[v]
+                                    if InLab_UV_TriSobrepoe t1 t2 do
+                                    (
+                                        sobre[f1] = true
+                                        sobre[f2] = true
+                                        if ilhaFace[f1] != ilhaFace[f2] do sobreEntreIlhas = true
+                                    )
                                 )
                             )
                         )
-                    )
+                )
+            )
             res.sobrepostas = sobre.numberSet
         )
 

@@ -202,7 +202,7 @@ global INLAB_TESTE_SAIDA, INLAB_TESTE_FALHAS
         local iFlat = indicesUV uR npR
         local limOrig = INLAB_UV_DISTORCAO_MAX_SOLVE
         INLAB_UV_DISTORCAO_MAX_SOLVE = 0.5
-        local revR = InLab_UnfoldComGuarda uR npR
+        local revR = InLab_UnfoldComGuarda uR npR angulo:55.0 espacamento:0.01
         INLAB_UV_DISTORCAO_MAX_SOLVE = limOrig
         local iDep = indicesUV uR npR
         checar "Reversão: o solve renumerou vértices (pré-condição do teste)" ((for f = 1 to npR where (iFlat[f] as string) != (iDep[f] as string) collect f).count > 0)
