@@ -11,6 +11,7 @@ global InLab_Log, InLab_VerifResults, InLab_ResetarResultados, InLab_AprovacaoFi
 global INLAB_LIMITES_PROVISORIOS, InLab_ObterFamilia, InLab_RodarVerificacoes
 global InLab_V17_PivotRaiz, InLab_V18_EixosPivot, InLab_V11_Modificadores, InLab_V12_XForm
 global InLab_V21_NomesValidos, InLab_V22_SufixosSequenciais, InLab_V30_Keyframes, InLab_V03_Poligonos
+global InLab_V01_PesoMax, InLab_SalvarAntesDeVerificar
 global INLAB_TESTE_SAIDA, INLAB_TESTE_FALHAS
 (
     local dirTeste = getFilenamePath (getSourceFileName())
@@ -161,6 +162,27 @@ global INLAB_TESTE_SAIDA, INLAB_TESTE_FALHAS
         checar ("V-03 conta triângulos: '" + m03 + "'") ((findString m03 "12 triângulos") != undefined)
         checar "V-03 abaixo da faixa vira advertência (limite provisório)" ((statusDe "V-03") == #warning)
         limparCena()
+
+        ---------------------------------------------------------------- V-01 (issue #33)
+        -- caminho:/pendente: injetados para não salvar a cena da sessão.
+        local cfgV01 = InLab_ObterFamilia "corpo_unico"
+        local arqPeq = getSourceFileName()             -- arquivo pequeno que existe
+        fn rodar01 cfg c p = ( InLab_ResetarResultados(); InLab_V01_PesoMax cfg caminho:c pendente:p; statusDe "V-01" )
+        checar "V-01: cena nunca salva vira advertência" ((rodar01 cfgV01 "" false) == #warning)
+        checar ("V-01: cena nunca salva diz 'não medido' ('" + mensagemDe "V-01" + "')") ((findString (mensagemDe "V-01") "não medido") != undefined)
+        checar "V-01: cena nunca salva não reprova" (InLab_AprovacaoFinal())
+        checar "V-01: alterações pendentes vira advertência (não mede o arquivo antigo)" ((rodar01 cfgV01 arqPeq true) == #warning)
+        checar ("V-01: alterações pendentes explica ('" + mensagemDe "V-01" + "')") ((findString (mensagemDe "V-01") "alterações não salvas") != undefined)
+        checar "V-01: cena salva e em dia mede e passa" ((rodar01 cfgV01 arqPeq false) == #pass)
+        checar ("V-01: mensagem traz o teto ('" + mensagemDe "V-01" + "')") ((findString (mensagemDe "V-01") "teto") != undefined)
+        -- Pergunta antes da rodada (cena de teste nunca salva). #yes salvaria a
+        -- cena da sessão: fica para o teste manual.
+        if maxFileName == "" do
+        (
+            checar "Salvar antes: 'Não' segue sem salvar" (InLab_SalvarAntesDeVerificar resposta:#no)
+            checar "Salvar antes: 'Cancelar' não roda" (not (InLab_SalvarAntesDeVerificar resposta:#cancel))
+            checar "Salvar antes: nada foi salvo" (maxFileName == "")
+        )
 
         ---------------------------------------------------------------- APROVAÇÃO
         INLAB_LIMITES_PROVISORIOS = true

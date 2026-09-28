@@ -33,6 +33,10 @@
            como a spec v1.0 define. (Estava checando duplicata de nome, sem
            relação com o V-22 real — essa checagem de duplicata foi removida
            por ora, pode voltar como um V extra se for útil.)
+
+ 28/09/2026 (issue #33): InLab_SalvarAntesDeVerificar — o botão pergunta se
+ quer salvar quando a cena nunca foi salva ou tem alterações pendentes, para
+ a V-01 medir o arquivo certo (sem salvar, ela sai "não medido").
 ================================================================================
 */
 
@@ -44,6 +48,56 @@ global InLab_TampoAcessorioProduto = false
 fn InLab_ObjetosVerificacao =
 (
     for o in geometry where InLab_EhGeometria o collect o
+)
+
+-- 28/09/2026 (issue #33): chamada pelo botão ANTES de InLab_RodarVerificacoes.
+-- Cena nunca salva ou com alterações pendentes: pergunta se quer salvar, para
+-- a V-01 medir o arquivo certo. Sim → salva (Salvar Como na cena nova); Não →
+-- roda assim mesmo e a V-01 sai "não medido"; Cancelar → não roda.
+-- Devolve true para seguir, false para cancelar. resposta: só para teste
+-- (pula a caixa de diálogo, que é modal).
+fn InLab_SalvarAntesDeVerificar resposta:unsupplied =
+(
+    local nuncaSalva = (maxFileName == "")
+    if not nuncaSalva and not (getSaveRequired()) then true
+    else
+    (
+        if resposta == unsupplied do
+            resposta = yesNoCancelBox ((if nuncaSalva then "A cena ainda não foi salva." else "A cena tem alterações não salvas.") + \
+                "\n\nSalvar antes de verificar? Sem salvar, o peso do arquivo (V-01) não é medido.") title:"InLab · Verificações"
+        case resposta of
+        (
+            #yes:
+            (
+                local caminho = if nuncaSalva then getMaxSaveFileName() else (maxFilePath + maxFileName)
+                if caminho == undefined then
+                (
+                    InLab_Log "Salvar cancelado — verificação cancelada." tipo:#warn
+                    false
+                )
+                else if saveMaxFile caminho quiet:true then
+                (
+                    InLab_Log ("Cena salva antes de verificar: " + caminho) tipo:#ok
+                    true
+                )
+                else
+                (
+                    InLab_Log ("Não foi possível salvar em " + caminho + " — V-01 não será medida.") tipo:#err
+                    true
+                )
+            )
+            #no:
+            (
+                InLab_Log "Verificando sem salvar — V-01 (peso do arquivo) não será medida." tipo:#warn
+                true
+            )
+            default:
+            (
+                InLab_Log "Verificação cancelada." tipo:#info
+                false
+            )
+        )
+    )
 )
 
 fn InLab_RodarVerificacoes cfg tampoAcessorio:false =
