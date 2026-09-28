@@ -199,21 +199,10 @@ fn InLab_OtimEscondidas_TemModificador o =
 -- Quantas distâncias diferentes (raio pela diagonal de um quad bate em 2
 -- triângulos na mesma distância).
 -- A peça é visível e renderizável, inclusive pela CAMADA (e camadas pai)?
--- Sondado no Max 2024 (24/09/2026): isHidden / isHiddenInVpt já refletem a
--- camada oculta (e a camada pai oculta), mas `renderable` do nó NÃO reflete
--- a camada não renderizável — por isso a subida pelas camadas.
+-- 28/09/2026 (issue #35): a regra mudou para InLab_VaiProGLB (core\utils.ms),
+-- que a verificação EX-01 também usa.
 global InLab_OtimEscondidas_VaiProGLB
-fn InLab_OtimEscondidas_VaiProGLB o =
-(
-    local ok = not o.isHidden and not o.isHiddenInVpt and o.renderable
-    local cam = try ( o.layer ) catch ( InLab_Log (o.name + ": não li a camada (" + getCurrentException() + ").") tipo:#warn; undefined )
-    while ok and cam != undefined do
-    (
-        if cam.ishidden or not cam.renderable do ok = false
-        cam = try ( cam.getParent() ) catch ( InLab_Log (o.name + ": não li a camada pai (" + getCurrentException() + ").") tipo:#warn; undefined )
-    )
-    ok
-)
+fn InLab_OtimEscondidas_VaiProGLB o = InLab_VaiProGLB o
 
 -- "a, b, c e mais 4" (log).
 global InLab_OtimEscondidas_ListaNomes

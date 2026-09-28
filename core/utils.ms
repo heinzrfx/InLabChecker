@@ -28,6 +28,11 @@
  que tudo isso, então os dois convivem sem se atropelar. Consumido por
  functions\fn_prooptimizer.ms (InLab_ProOptimizer) e functions\fn_otim_fino.ms
  (InLab_OtimFino_Calcular/_Aplicar, issue #62).
+
+ 28/09/2026 (issue #35): `InLab_EhGeometria` exclui Bones, Biped e CAT
+ (GeometryClass, mas nunca produto); objeto oculto continua contando.
+ `InLab_VaiProGLB` (oculto/não renderizável, também pela camada) veio de
+ functions\fn_otim_escondidas.ms para ser usada também pela EX-01.
 ================================================================================
 */
 
@@ -48,12 +53,38 @@ fn InLab_SelecaoValida =
     else selection as array
 )
 
+-- Classes de esqueleto que são GeometryClass mas nunca são produto
+-- (Bone, Biped, CAT). Resolvidas por nome: CAT pode não estar instalado.
+global INLAB_CLASSES_ESQUELETO = for n in #("BoneGeometry", "Biped_Object", "CATBone", "HubObject") \
+    where (try ((execute n) != undefined) catch false) collect (execute n)
+
 -- true se o nó é geometria renderizável (exclui targets de câmera/luz,
 -- helpers, shapes não renderizáveis etc.). Usado como filtro antes de
 -- contagens de polígono e das verificações de malha.
+-- 28/09/2026 (issue #35): Bones/Biped/CAT não contam. Oculto CONTA (o glTF
+-- pode exportá-lo); a verificação EX-01 avisa (verif_geometria.ms).
 fn InLab_EhGeometria obj =
 (
-    superclassof obj == GeometryClass and not (isKindOf obj TargetObject)
+    superclassof obj == GeometryClass and not (isKindOf obj TargetObject) and \
+        (for c in INLAB_CLASSES_ESQUELETO where classof obj == c collect c).count == 0
+)
+
+-- true se o nó vai para o GLB: não oculto (nem pela camada ou camada pai) e
+-- renderizável. Sondado no Max 2024 (24/09/2026): isHidden / isHiddenInVpt
+-- já refletem a camada oculta (e a camada pai oculta), mas `renderable` do nó
+-- NÃO reflete a camada não renderizável — por isso a subida pelas camadas.
+-- 28/09/2026 (issue #35): veio de fn_otim_escondidas.ms para ser usada
+-- também pela EX-01.
+fn InLab_VaiProGLB o =
+(
+    local ok = not o.isHidden and not o.isHiddenInVpt and o.renderable
+    local cam = try ( o.layer ) catch ( InLab_Log (o.name + ": não li a camada (" + getCurrentException() + ").") tipo:#warn; undefined )
+    while ok and cam != undefined do
+    (
+        if cam.ishidden or not cam.renderable do ok = false
+        cam = try ( cam.getParent() ) catch ( InLab_Log (o.name + ": não li a camada pai (" + getCurrentException() + ").") tipo:#warn; undefined )
+    )
+    ok
 )
 
 -- Conta os polígonos de UM objeto. getPolygonCount retorna #(faces, verts);

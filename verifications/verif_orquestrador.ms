@@ -33,6 +33,9 @@
            como a spec v1.0 define. (Estava checando duplicata de nome, sem
            relação com o V-22 real — essa checagem de duplicata foi removida
            por ora, pode voltar como um V extra se for útil.)
+
+ 28/09/2026 (issue #35): Bones/Biped/CAT saem do universo (InLab_EhGeometria);
+ objeto oculto continua contando e a EX-01 (verif_geometria.ms) avisa.
 ================================================================================
 */
 
@@ -80,6 +83,7 @@ fn InLab_RodarVerificacoes cfg tampoAcessorio:false =
         InLab_V06_SugestaoAttach objetos
         InLab_V11_Modificadores objetos
         InLab_V12_XForm objetos
+        InLab_VEx01_Ocultos objetos
 
         -- ===== Grupos 4–7 · próximas entregas =====
         InLab_Log "Grupos 4–7 (animação avançada, UV, geometria pesada, materiais) ainda não implementados — relatório parcial." tipo:#warn
