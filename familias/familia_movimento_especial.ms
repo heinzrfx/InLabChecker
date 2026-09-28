@@ -24,6 +24,7 @@ cfgMovimentoEspecial.maxSkpMB         = undefined
 cfgMovimentoEspecial.polyMin          = 100000                                      -- V-03/04
 cfgMovimentoEspecial.polyMax          = 200000
 cfgMovimentoEspecial.drawCallsRule    = "1 por parte"                               -- V-05
+cfgMovimentoEspecial.maxDrawCalls     = 20  -- V-05 · provisório (benchmark 28/09/2026, docs/superpowers/specs/2026-09-28-draw-calls-benchmark.md)
 cfgMovimentoEspecial.requiresInterior = false
 cfgMovimentoEspecial.tampoAcessorio   = false
 cfgMovimentoEspecial.materialTypes    = #("zona_acabamento", "palha")               -- V-37 + V-35

@@ -25,6 +25,7 @@ cfgGiroAssento.maxSkpMB         = undefined                                 -- (
 cfgGiroAssento.polyMin          = 80000                                     -- V-03/04
 cfgGiroAssento.polyMax          = 150000
 cfgGiroAssento.drawCallsRule    = "conjunto_giratorio_1 + base_1 + rodizios" -- V-05 / V-33
+cfgGiroAssento.maxDrawCalls     = 12  -- V-05 · provisório (benchmark 28/09/2026, docs/superpowers/specs/2026-09-28-draw-calls-benchmark.md)
 cfgGiroAssento.requiresInterior = false
 cfgGiroAssento.tampoAcessorio   = false
 cfgGiroAssento.materialTypes    = #("zona_acabamento")                      -- V-37

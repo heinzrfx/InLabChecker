@@ -13,6 +13,7 @@ global InLab_V17_PivotRaiz, InLab_V18_EixosPivot, InLab_V11_Modificadores, InLab
 global InLab_V21_NomesValidos, InLab_V22_SufixosSequenciais, InLab_V30_Keyframes, InLab_V03_Poligonos
 global InLab_EhGeometria, InLab_ObjetosVerificacao, InLab_VEx01_Ocultos
 global InLab_V01_PesoMax, InLab_SalvarAntesDeVerificar
+global InLab_DrawCallsDoNo, InLab_V05_DrawCalls, InLab_TetoDrawCalls, InLab_PrefGravar, InLab_PrefApagar
 global INLAB_TESTE_SAIDA, INLAB_TESTE_FALHAS
 (
     local dirTeste = getFilenamePath (getSourceFileName())
@@ -178,6 +179,50 @@ global INLAB_TESTE_SAIDA, INLAB_TESTE_FALHAS
         with animate on ( at time 10 k1.pos = [0, -30, 0] )
         checar "V-30: família animada com keys passa" ((rodar30 cfgAnim #(k1)) == #pass)
         checar "V-30: família estática com keys vira advertência" ((rodar30 cfgEst #(k1)) == #warning)
+        limparCena()
+
+        ---------------------------------------------------------------- V-05 (draw calls, issue #32)
+        -- Draw call = material usado pelas faces, por objeto (primitive do glTF).
+        local d1 = Box length:40 width:40 height:40                     -- sem material
+        checar "Draw calls: Box sem material = 1" ((InLab_DrawCallsDoNo d1) == 1)
+        d1.material = Standardmaterial()
+        checar "Draw calls: Box com 1 material = 1" ((InLab_DrawCallsDoNo d1) == 1)
+        d1.material = Multimaterial numsubs:3                            -- Box tem IDs 1..6
+        checar ("Draw calls: Box com Multi/Sub de 3 = 3 (" + (InLab_DrawCallsDoNo d1) as string + ")") ((InLab_DrawCallsDoNo d1) == 3)
+        convertToPoly d1
+        polyop.setFaceMatID d1 #{1..(polyop.getNumFaces d1)} 1
+        checar "Draw calls: Multi/Sub com só o ID 1 usado = 1" ((InLab_DrawCallsDoNo d1) == 1)
+        polyop.setFaceMatID d1 #{1} 2
+        checar "Draw calls: Multi/Sub com IDs 1 e 2 usados = 2" ((InLab_DrawCallsDoNo d1) == 2)
+        limparCena()
+
+        -- Giro de assento: conjunto + base + rodízios atachados = 3 objetos.
+        local cfgGiro = copy (InLab_ObterFamilia "giro_assento")
+        cfgGiro.maxDrawCalls = 4
+        local gz = #(Box name:"Conjunto_Giratorio", Box name:"Base" pos:[0,0,-50], Box name:"Rodizios" pos:[0,0,-60])
+        InLab_ResetarResultados(); InLab_V05_DrawCalls cfgGiro gz
+        checar ("V-05: giro com conjunto + base + rodízios passa ('" + mensagemDe "V-05" + "')") ((statusDe "V-05") == #pass)
+        checar "V-05: mensagem fala em draw calls e teto" ((findString (mensagemDe "V-05") "draw call") != undefined and (findString (mensagemDe "V-05") "teto 4") != undefined)
+        gz[1].material = Multimaterial numsubs:3                         -- 3 + 1 + 1 = 5
+        INLAB_LIMITES_PROVISORIOS = false
+        InLab_ResetarResultados(); InLab_V05_DrawCalls cfgGiro gz
+        checar ("V-05: Multi/Sub estoura o teto e reprova ('" + mensagemDe "V-05" + "')") ((statusDe "V-05") == #fail)
+        checar "V-05: mensagem aponta o objeto com mais draw calls" ((findString (mensagemDe "V-05") "Conjunto_Giratorio") != undefined)
+        INLAB_LIMITES_PROVISORIOS = provOriginal
+        -- Teto alterável pelo ini, sem mexer no código.
+        InLab_PrefGravar "maxDrawCalls_giro_assento" "8"
+        checar "V-05: teto do ini vale no lugar do da família" ((InLab_TetoDrawCalls cfgGiro) == 8)
+        InLab_ResetarResultados(); InLab_V05_DrawCalls cfgGiro gz
+        checar ("V-05: com teto 8 do ini passa ('" + mensagemDe "V-05" + "')") ((statusDe "V-05") == #pass and (findString (mensagemDe "V-05") "ini") != undefined)
+        InLab_PrefGravar "maxDrawCalls_giro_assento" "abc"
+        checar "V-05: valor inválido no ini é ignorado" ((InLab_TetoDrawCalls cfgGiro) == 4)
+        InLab_PrefApagar "maxDrawCalls_giro_assento"
+        -- Família sem teto definido: advertência, não reprova.
+        cfgGiro.maxDrawCalls = undefined
+        InLab_ResetarResultados(); InLab_V05_DrawCalls cfgGiro gz
+        checar "V-05: família sem teto vira advertência" ((statusDe "V-05") == #warning)
+        for nome in #("corpo_unico", "pernas_tampo", "estrutura_estofado", "estrutura_modular", "translacao", "rotacao", "giro_assento", "movimento_especial") do
+            checar ("V-05: família '" + nome + "' tem teto inteiro") (isKindOf (InLab_ObterFamilia nome).maxDrawCalls Integer)
         limparCena()
 
         ---------------------------------------------------------------- V-03 (triângulos)

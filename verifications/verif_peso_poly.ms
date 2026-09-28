@@ -13,6 +13,10 @@
 
  28/09/2026 (issue #33): V-01 não mede mais arquivo velho nem reprova cena
  nunca salva — as duas viram advertência "não medido" (ver a função).
+
+ 28/09/2026 (issue #32): V-05 passou a contar draw calls reais (materiais
+ usados, somados por objeto) contra `maxDrawCalls` da família, que o ini pode
+ sobrescrever. Tetos: docs\superpowers\specs\2026-09-28-draw-calls-benchmark.md.
 ================================================================================
 */
 
@@ -85,19 +89,82 @@ fn InLab_V04_PoligonosPorParte cfg objetos =
     )
 )
 
--- V-05 · Draw calls por regra da família (spec v2.0 · seção 2.3).
--- Famílias com regra FIXA são validadas numericamente. Famílias "1 por parte"
--- não têm como ser validadas ainda: o número de partes esperadas depende da
--- nomenclatura oficial (validNames), que está pendente — mesmo caso do V-20.
+-- Draw calls de UM nó no GLB: cada material usado pelas faces vira um
+-- primitive (1 draw call). Sem material ou material simples = 1. Multi/Sub =
+-- nº de sub-materiais que alguma face usa de fato (slot sem face não é
+-- exportado). ID fora de materialIDList cai no slot pelo módulo, como o Max
+-- faz no viewport. Instância conta por nó: glTF básico não tem instancing.
+-- 28/09/2026 (issue #32).
+fn InLab_DrawCallsDoNo o =
+(
+    local mat = o.material
+    if classof mat != Multimaterial or mat.numsubs == 0 then 1
+    else
+    (
+        local slots = #()
+        local malha = snapshotAsMesh o
+        try
+        (
+            local ids = #()
+            for f = 1 to malha.numfaces while slots.count < mat.numsubs do
+            (
+                local id = getFaceMatID malha f
+                if findItem ids id == 0 do
+                (
+                    append ids id
+                    local k = findItem mat.materialIDList id
+                    if k == 0 do k = (mod (id - 1) mat.numsubs) as integer + 1
+                    appendIfUnique slots k
+                )
+            )
+        )
+        catch ( InLab_Log (o.name + ": não li os IDs de material (" + getCurrentException() + ") — contado como 1 draw call.") tipo:#warn )
+        delete malha
+        amax #(1, slots.count)
+    )
+)
+
+-- Teto de draw calls da família. O ini de preferências (core\prefs.ms,
+-- chave "maxDrawCalls_<família>") vale no lugar do valor da família: dá para
+-- ajustar sem editar o código, e o ini sobrevive às atualizações do plugin.
+-- Valor inválido no ini é ignorado com aviso. undefined = família sem teto.
+fn InLab_TetoDrawCalls cfg =
+(
+    local chave = "maxDrawCalls_" + cfg.nome
+    local txt = InLab_PrefLer chave ""
+    local v = if txt == "" then undefined else (try (txt as integer) catch undefined)
+    if txt != "" and (v == undefined or v < 1) do
+    (
+        InLab_Log ("Preferência " + chave + " = '" + txt + "' não é um inteiro ≥ 1 — usando o teto da família.") tipo:#warn
+        v = undefined
+    )
+    if v != undefined then v else cfg.maxDrawCalls
+)
+
+-- V-05 · Draw calls (spec v2.0 · seção 2.3).
+-- 28/09/2026 (issue #32): conta DRAW CALLS REAIS do GLB — soma dos materiais
+-- usados por objeto (InLab_DrawCallsDoNo) — contra um teto numérico por
+-- família (cfg.maxDrawCalls, sobrescrevível pelo ini). Antes contava objetos
+-- (≤ 2) só em 3 famílias, e o giro de assento com rodízios sempre estourava.
+-- Decisão da issue: rodízios atachados = 1 objeto. Os tetos saíram de um
+-- benchmark de guias públicos (ver familias\*.ms) e são provisórios até o
+-- Birô validar.
 fn InLab_V05_DrawCalls cfg objetos =
 (
-    local n = objetos.count
-    case cfg.nome of
+    local teto = InLab_TetoDrawCalls cfg
+    local porNo = for o in objetos collect #(InLab_DrawCallsDoNo o, o.name)
+    local total = 0
+    for p in porNo do total += p[1]
+    local maior = undefined
+    for p in porNo where p[1] > 1 and (maior == undefined or p[1] > maior[1]) do maior = p
+    local msg = total as string + " draw call(s) em " + objetos.count as string + " objeto(s)"
+    if maior != undefined do msg += " · maior: " + maior[2] + " (" + maior[1] as string + " materiais)"
+    if teto == undefined then
+        InLab_RegistrarVerif "V-05" "Draw calls" false (msg + " · família sem teto definido") critico:false
+    else
     (
-        "corpo_unico":    InLab_RegistrarVerif "V-05" "Draw calls" (n <= 2) (n as string + " objeto(s) · regra: " + cfg.drawCallsRule) provisorio:true
-        "pernas_tampo":   InLab_RegistrarVerif "V-05" "Draw calls" (n <= 2) (n as string + " objeto(s) · regra: " + cfg.drawCallsRule) provisorio:true
-        "giro_assento":   InLab_RegistrarVerif "V-05" "Draw calls" (n <= 2) (n as string + " objeto(s) · regra: " + cfg.drawCallsRule) provisorio:true
-        default:          InLab_RegistrarVerif "V-05" "Draw calls" true (n as string + " objeto(s) · regra: '" + cfg.drawCallsRule + "' — não verificável numericamente até nomenclatura oficial (valid_names) definir as partes esperadas") critico:false
+        msg += " · teto " + teto as string + (if teto != cfg.maxDrawCalls then " (ini)" else "") + " · regra: " + cfg.drawCallsRule
+        InLab_RegistrarVerif "V-05" "Draw calls" (total <= teto) msg provisorio:true
     )
 )
 

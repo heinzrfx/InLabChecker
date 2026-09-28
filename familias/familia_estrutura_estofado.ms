@@ -21,6 +21,7 @@ cfgEstruturaEstofado.maxSkpMB         = undefined
 cfgEstruturaEstofado.polyMin          = 80000                  -- V-03/04
 cfgEstruturaEstofado.polyMax          = 150000
 cfgEstruturaEstofado.drawCallsRule    = "1 por parte"          -- V-05
+cfgEstruturaEstofado.maxDrawCalls     = 10  -- V-05 · provisório (benchmark 28/09/2026, docs/superpowers/specs/2026-09-28-draw-calls-benchmark.md)
 cfgEstruturaEstofado.requiresInterior = false
 cfgEstruturaEstofado.tampoAcessorio   = false
 cfgEstruturaEstofado.materialTypes    = #("zona_acabamento", "palha")   -- V-37 + V-35
