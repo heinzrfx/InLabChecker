@@ -11,6 +11,7 @@ global InLab_Log, InLab_VerifResults, InLab_ResetarResultados, InLab_AprovacaoFi
 global INLAB_LIMITES_PROVISORIOS, InLab_ObterFamilia, InLab_RodarVerificacoes
 global InLab_V17_PivotRaiz, InLab_V18_EixosPivot, InLab_V11_Modificadores, InLab_V12_XForm
 global InLab_V21_NomesValidos, InLab_V22_SufixosSequenciais, InLab_V30_Keyframes, InLab_V03_Poligonos
+global InLab_EhGeometria, InLab_ObjetosVerificacao, InLab_VEx01_Ocultos
 global InLab_V01_PesoMax, InLab_SalvarAntesDeVerificar
 global INLAB_TESTE_SAIDA, INLAB_TESTE_FALHAS
 (
@@ -112,6 +113,31 @@ global INLAB_TESTE_SAIDA, INLAB_TESTE_FALHAS
         checar "V-12: scale 100% passa" ((rodar InLab_V12_XForm #(s1) "V-12") == #pass)
         s1.scale = [1.5, 1.5, 1.5]
         checar "V-12: scale 150% reprova" ((rodar InLab_V12_XForm #(s1) "V-12") == #fail)
+        limparCena()
+
+        ---------------------------------------------------------------- GEOMETRIA (issue #35)
+        -- Bones/Biped não são produto; oculto conta e gera advertência EX-01.
+        local gBox = Box length:40 width:40 height:40
+        local gBone = BoneSys.createBone [0,0,0] [0,0,50] [0,1,0]
+        checar "Geometria: Box conta" (InLab_EhGeometria gBox)
+        checar "Geometria: Bone não conta" (not (InLab_EhGeometria gBone))
+        biped.createNew 100 -90 [200,0,0]
+        local bipeds = for o in objects where classof o == Biped_Object collect o
+        checar ("Geometria: Biped não conta (" + bipeds.count as string + " peças)") (bipeds.count > 0 and (for o in bipeds where InLab_EhGeometria o collect o).count == 0)
+        checar "Geometria: universo da verificação é só o Box" ((InLab_ObjetosVerificacao()).count == 1)
+        checar "EX-01: nada oculto passa" ((rodar InLab_VEx01_Ocultos #(gBox) "EX-01") == #pass)
+        hide gBox
+        checar "Geometria: Box oculto continua contando" ((InLab_ObjetosVerificacao()).count == 1)
+        checar "EX-01: Box oculto vira advertência" ((rodar InLab_VEx01_Ocultos #(gBox) "EX-01") == #warning)
+        checar ("EX-01: mensagem cita o objeto ('" + mensagemDe "EX-01" + "')") ((findString (mensagemDe "EX-01") gBox.name) != undefined)
+        checar "EX-01: não reprova" (InLab_AprovacaoFinal())
+        unhide gBox
+        local camOculta = LayerManager.newLayerFromName "InLab_teste_oculta"
+        camOculta.addNode gBox
+        camOculta.ishidden = true
+        checar "EX-01: Box em camada oculta vira advertência" ((rodar InLab_VEx01_Ocultos #(gBox) "EX-01") == #warning)
+        (LayerManager.getLayer 0).addNode gBox
+        LayerManager.deleteLayerByName "InLab_teste_oculta"
         limparCena()
 
         ---------------------------------------------------------------- V-21

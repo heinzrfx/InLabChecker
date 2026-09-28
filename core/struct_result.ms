@@ -12,9 +12,10 @@
    Itens critico:false aparecem no relatório mas não bloqueiam a aprovação.
    Implementados hoje como não críticos: V-02 (SKP, externa), V-04 (enquanto
    limitesPorParte estiver vazio), V-05 (famílias sem regra numérica), V-06,
-   V-20, V-22 e V-30 em família estática. Previstos na spec: V-33, V-37 a V-40.
+   V-20, V-22, V-30 em família estática e EX-01 (extra, fora da spec:
+   objeto oculto). Previstos na spec: V-33, V-37 a V-40.
    Falha em limite provisorio:true também vira não crítica (ver abaixo).
-   (Lista atualizada em 23/09/2026, issue #35.)
+   (Lista atualizada em 28/09/2026, issue #35.)
 ================================================================================
 */
 
