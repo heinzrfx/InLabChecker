@@ -799,7 +799,7 @@ rollout InLabSecFase4 "Verificações (grupos 1-3 ativos)" width:420
     (
         if InLab_FamiliaAtiva == undefined then
             InLab_Log "Escolha a família no dropdown Família da seção Produto antes de verificar." tipo:#warn
-        else
+        else if InLab_SalvarAntesDeVerificar() do
         (
             InLab_ProgressoIniciar "Rodando verificações..."
             InLab_RodarVerificacoes InLab_FamiliaAtiva tampoAcessorio:chkTampoAcess.checked
