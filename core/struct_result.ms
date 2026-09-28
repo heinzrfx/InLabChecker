@@ -26,6 +26,7 @@ struct VerifResult
     status   = #pass,   -- #pass / #fail / #warning
     mensagem = "",      -- texto explicativo que vai para o relatório
     critico  = true,    -- true = bloqueia aprovação; false = advertência
+    provisorio = false, -- limite ainda não validado pelo Birô (vai para o relatório, issue #37)
 
     -- Converte o status (name) em texto legível para log/relatório.
     fn statusTexto =
@@ -100,6 +101,7 @@ fn InLab_RegistrarVerif idV nomeV passou msgTexto critico:true provisorio:false 
     r.nome     = nomeV
     r.mensagem = msgTexto
     r.critico  = critico
+    r.provisorio = provisorio
 
     if passou then r.status = #pass
     else if provisorio and INLAB_LIMITES_PROVISORIOS then
