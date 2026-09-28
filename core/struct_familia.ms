@@ -31,7 +31,8 @@ struct FamiliaConfig
     polyMin          = 0,          -- faixa de polígonos (V-03/04)
     polyMax          = 0,
     maxRatioVT       = 1.2,        -- V-07: ratio v/t máximo (spec 2.2 · provisório para todas as famílias)
-    drawCallsRule    = "",         -- string descritiva; a regra é codificada na verificação (V-05), não interpretada em runtime
+    drawCallsRule    = "",         -- string descritiva da composição esperada (só texto, não é interpretada)
+    maxDrawCalls     = undefined,  -- V-05: teto de draw calls (materiais usados, somados por objeto). Provisório; o ini pode sobrescrever (maxDrawCalls_<nome>)
     requiresInterior = false,      -- V-39: interior modelado obrigatório (Translação/Rotação)
     tampoAcessorio   = false,      -- V-38: só relevante para Pernas+Tampo
     materialTypes    = #(),        -- ex.: #("zona_acabamento"), #("palha"), #("cristal") → V-35/36/37
@@ -50,7 +51,7 @@ struct FamiliaConfig
         if maxSkpMB != undefined do pesoTxt += "  ·  SKP: até " + maxSkpMB as string + " MB"
         append L pesoTxt
         append L ("Polígonos: " + polyMin as string + " a " + polyMax as string + " · ratio v/t máx " + maxRatioVT as string)
-        append L ("Draw calls: " + drawCallsRule)
+        append L ("Draw calls: até " + (if maxDrawCalls == undefined then "?" else maxDrawCalls as string) + " · " + drawCallsRule)
         append L ("Interior modelado (V-39): " + (if requiresInterior then "obrigatório" else "não se aplica"))
         append L ("Tampo acessório (V-38): " + (if tampoAcessorio then "sim" else "não"))
         append L ("Materiais especiais: " + (if materialTypes.count > 0 then (materialTypes as string) else "nenhum"))

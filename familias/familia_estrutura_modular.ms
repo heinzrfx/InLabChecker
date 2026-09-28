@@ -22,6 +22,7 @@ cfgEstruturaModular.maxSkpMB         = undefined
 cfgEstruturaModular.polyMin          = 70000                   -- V-03/04
 cfgEstruturaModular.polyMax          = 160000
 cfgEstruturaModular.drawCallsRule    = "1 por parte"           -- V-05
+cfgEstruturaModular.maxDrawCalls     = 16  -- V-05 · provisório (benchmark 28/09/2026, docs/superpowers/specs/2026-09-28-draw-calls-benchmark.md)
 cfgEstruturaModular.requiresInterior = false
 cfgEstruturaModular.tampoAcessorio   = false
 cfgEstruturaModular.materialTypes    = #("zona_acabamento")    -- V-37 · premissa assumida (ver cabeçalho)

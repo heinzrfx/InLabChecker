@@ -25,6 +25,7 @@ cfgRotacao.maxSkpMB         = undefined
 cfgRotacao.polyMin          = 100000                                        -- V-03/04
 cfgRotacao.polyMax          = 200000
 cfgRotacao.drawCallsRule    = "1 por parte"                                 -- V-05
+cfgRotacao.maxDrawCalls     = 16  -- V-05 · provisório (benchmark 28/09/2026, docs/superpowers/specs/2026-09-28-draw-calls-benchmark.md)
 cfgRotacao.requiresInterior = true                                          -- V-39
 cfgRotacao.tampoAcessorio   = false
 cfgRotacao.materialTypes    = #()

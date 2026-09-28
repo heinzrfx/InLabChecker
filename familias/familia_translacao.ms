@@ -22,6 +22,7 @@ cfgTranslacao.maxSkpMB         = undefined
 cfgTranslacao.polyMin          = 100000                            -- V-03/04
 cfgTranslacao.polyMax          = 200000
 cfgTranslacao.drawCallsRule    = "1 por parte"                     -- V-05 (considera partes animadas sincronizadas)
+cfgTranslacao.maxDrawCalls     = 20  -- V-05 · provisório (benchmark 28/09/2026, docs/superpowers/specs/2026-09-28-draw-calls-benchmark.md)
 cfgTranslacao.requiresInterior = true                              -- V-39
 cfgTranslacao.tampoAcessorio   = false
 cfgTranslacao.materialTypes    = #()

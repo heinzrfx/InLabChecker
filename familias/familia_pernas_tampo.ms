@@ -24,6 +24,7 @@ cfgPernasTampo.maxSkpMB         = undefined                    -- sem limite SKP
 cfgPernasTampo.polyMin          = 40000                        -- V-03/04 · POR BLOCO
 cfgPernasTampo.polyMax          = 100000
 cfgPernasTampo.drawCallsRule    = "1 estrutura + 1 tampo"      -- V-05
+cfgPernasTampo.maxDrawCalls     = 8  -- V-05 · provisório (benchmark 28/09/2026, docs/superpowers/specs/2026-09-28-draw-calls-benchmark.md)
 cfgPernasTampo.requiresInterior = false
 cfgPernasTampo.tampoAcessorio   = false                        -- V-38 · toggle por produto (ver cabeçalho)
 cfgPernasTampo.materialTypes    = #("cristal")                 -- V-36
