@@ -40,6 +40,9 @@
 
  28/09/2026 (issue #35): Bones/Biped/CAT saem do universo (InLab_EhGeometria);
  objeto oculto continua contando e a EX-01 (verif_geometria.ms) avisa.
+
+ 28/09/2026 (issue #37): codEst:/nomeProduto: (produto escolhido na UI) vão
+ para o relatório em arquivo (report_generator.ms: JSON + HTML).
 ================================================================================
 */
 
@@ -103,7 +106,7 @@ fn InLab_SalvarAntesDeVerificar resposta:unsupplied =
     )
 )
 
-fn InLab_RodarVerificacoes cfg tampoAcessorio:false =
+fn InLab_RodarVerificacoes cfg tampoAcessorio:false codEst:"" nomeProduto:"" =
 (
     InLab_TampoAcessorioProduto = tampoAcessorio
     InLab_ResetarResultados()
@@ -142,6 +145,6 @@ fn InLab_RodarVerificacoes cfg tampoAcessorio:false =
         -- ===== Grupos 4–7 · próximas entregas =====
         InLab_Log "Grupos 4–7 (animação avançada, UV, geometria pesada, materiais) ainda não implementados — relatório parcial." tipo:#warn
 
-        InLab_GerarRelatorio cfg
+        InLab_GerarRelatorio cfg codEst:codEst nomeProduto:nomeProduto
     )
 )

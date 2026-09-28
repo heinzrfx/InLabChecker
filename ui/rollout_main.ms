@@ -801,8 +801,12 @@ rollout InLabSecFase4 "Verificações (grupos 1-3 ativos)" width:420
             InLab_Log "Escolha a família no dropdown Família da seção Produto antes de verificar." tipo:#warn
         else if InLab_SalvarAntesDeVerificar() do
         (
+            -- Produto escolhido na seção Produto vai para o relatório (issue #37).
+            local p = try (InLabSecProduto.produtoEscolhido()) catch undefined
+            local cod = if p == undefined then "" else InLab_Produto_Texto p "cod_est"
+            local nomeP = if p == undefined then "" else InLab_Produto_Texto p "nome"
             InLab_ProgressoIniciar "Rodando verificações..."
-            InLab_RodarVerificacoes InLab_FamiliaAtiva tampoAcessorio:chkTampoAcess.checked
+            InLab_RodarVerificacoes InLab_FamiliaAtiva tampoAcessorio:chkTampoAcess.checked codEst:cod nomeProduto:nomeP
             InLab_ProgressoParar()
         )
     )
