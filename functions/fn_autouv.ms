@@ -74,6 +74,9 @@
  Unfold3DSolve com guarda por ilha (InLab_UnfoldComGuarda): distorção
  ~1,05× e densidade ~1,00× nas peças da issue; as ilhas que o solve
  degenera (Box008, até 80×) voltam às posições do flatten.
+ 28/Set (issue #5): a volta ao flatten não guarda nem regrava mais posição
+ por canto (4,4 s no Box008): refaz o flatten inteiro e resolve só as ilhas
+ boas. Mesmo resultado, ver o comentário de InLab_UnfoldComGuarda.
  22/Set: o parâmetro seamsOcultas: saiu (nunca teve efeito, só avisava no
  log). A ocultação das seams ficou para uma issue própria.
 
@@ -341,27 +344,44 @@ fn InLab_DistorcaoIlhas uvw ilhas =
 -- 22/Set: o solve RENUMERA os vértices UV das faces (Box050: 78 de 294 faces;
 -- é uma permutação, os mesmos vértices em uso). Voltar por índice de vértice
 -- gravava as posições nos vértices errados (distorção 3 930×, 18 invertidos em
--- 7 peças da cadeira). A posição do flatten é guardada por CANTO de face e
+-- 7 peças da cadeira). A posição do flatten era guardada por CANTO de face e
 -- gravada no vértice que o canto aponta depois do solve.
+-- 28/Set (issue #5): sem captura nem reversão por canto. Guardar 30 mil cantos
+-- e reverter 11 ilhas pela interface do Unwrap custava ~4,4 s no Box008 (1,7 s
+-- só em getVertexIndexFromFace). Agora: solve em tudo; se alguma ilha
+-- degenerou, o flatten da malha inteira é refeito (determinístico: mesmas
+-- ilhas, mesmas posições) e o solve roda de novo só nas faces das ilhas boas
+-- (o solve respeita a seleção e resolve cada ilha independente: diferença
+-- ≤ 0,0002 na distorção). Flatten só das faces ruins NÃO serve: o flatten
+-- agrupa diferente quando recebe parte da malha (11 ilhas viraram 23). Mesmo
+-- resultado da guarda antiga no Box008 (44 ilhas, pior 1,80×), 6,6 s → ~2 s;
+-- peça sem ilha degenerada não paga nada além do solve.
+-- angulo:/espacamento: têm que ser os do flatten que veio antes.
 --------------------------------------------------------------------------------
-fn InLab_UnfoldComGuarda uvw np =
+fn InLab_UnfoldComGuarda uvw np angulo:55.0 espacamento:0.01 =
 (
+    local normais = #([1,0,0], [-1,0,0], [0,1,0], [0,-1,0], [0,0,1], [0,0,-1])
     local ilhas = InLab_IlhasDoUnwrap uvw np
-    local cantosFlat = for f = 1 to np collect
-        (for k = 1 to (uvw.numberPointsInFace f) collect uvw.getVertexPosition 0 (uvw.getVertexIndexFromFace f k))
     uvw.selectFaces #{1..np}
     local ok = try ( uvw.Unfold3DSolve() ; true ) catch ( InLab_Log ("Unfold3DSolve: " + getCurrentException()) tipo:#warn ; false )
     if not ok then -1
     else
     (
         local dist = InLab_DistorcaoIlhas uvw ilhas
+        local boas = #{}
         local revertidas = 0
-        for i = 1 to ilhas.count where dist[i] > INLAB_UV_DISTORCAO_MAX_SOLVE do
+        for i = 1 to ilhas.count do
+            if dist[i] > INLAB_UV_DISTORCAO_MAX_SOLVE then revertidas += 1 else boas += ilhas[i]
+        if revertidas > 0 do
         (
-            for f in ilhas[i] do
-                for k = 1 to cantosFlat[f].count do
-                    uvw.setVertexPosition 0 (uvw.getVertexIndexFromFace f k) cantosFlat[f][k]
-            revertidas += 1
+            uvw.selectFaces #{1..np}
+            uvw.flattenMap angulo normais espacamento true 0 true true
+            -- Seleção vazia faria o solve pegar a malha toda: só roda com ilha boa.
+            if boas.numberSet > 0 do
+            (
+                uvw.selectFaces boas
+                uvw.Unfold3DSolve()
+            )
         )
         uvw.selectFaces #{1..np}
         revertidas
@@ -484,7 +504,7 @@ fn InLab_AutoUV objs angulo:55.0 resolucao:1024 =
                         ------------------------------------------------------
                         if not grande do
                         (
-                            local rev = InLab_UnfoldComGuarda uvw nPolysUV
+                            local rev = InLab_UnfoldComGuarda uvw nPolysUV angulo:angulo espacamento:espFlatten
                             if rev < 0 then
                                 InLab_Log (o.name + ": Unfold3DSolve indisponível — fica o flatten.") tipo:#warn
                             else
