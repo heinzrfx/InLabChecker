@@ -10,15 +10,28 @@
  (`InLab_ContarPoligonos`) para triângulos (`InLab_Otim_Triangulos`,
  functions\fn_otim_nucleo.ms) — a mesma unidade que o GLB carrega. A V-05
  conta objetos (draw calls) e não muda.
+
+ 28/09/2026 (issue #33): V-01 não mede mais arquivo velho nem reprova cena
+ nunca salva — as duas viram advertência "não medido" (ver a função).
 ================================================================================
 */
 
 -- V-01 · Peso do arquivo .max vs teto da família.
-fn InLab_V01_PesoMax cfg =
+-- 28/09/2026 (issue #33): só mede o arquivo em disco quando ele é a cena
+-- atual. Cena nunca salva ou com alterações pendentes (getSaveRequired) vira
+-- advertência "não medido" em vez de FAIL crítico (nunca salva) ou de medir
+-- o arquivo antigo em silêncio (pendente). O pedido de salvar fica antes da
+-- rodada, em InLab_SalvarAntesDeVerificar (verif_orquestrador.ms).
+-- caminho:/pendente: só para teste (padrão: a cena atual).
+fn InLab_V01_PesoMax cfg caminho:unsupplied pendente:unsupplied =
 (
-    local mb = InLab_TamanhoCenaMB()
+    if caminho == unsupplied do caminho = maxFilePath + maxFileName
+    if pendente == unsupplied do pendente = getSaveRequired()
+    local mb = InLab_TamanhoArquivoMB caminho
     if mb == undefined then
-        InLab_RegistrarVerif "V-01" "Peso do arquivo MAX" false "cena não salva — salvar antes de verificar" critico:true
+        InLab_RegistrarVerif "V-01" "Peso do arquivo MAX" false "não medido — cena nunca salva" critico:false
+    else if pendente then
+        InLab_RegistrarVerif "V-01" "Peso do arquivo MAX" false ("não medido — cena com alterações não salvas (o arquivo em disco, " + InLab_FormatarMB mb + ", é do último save)") critico:false
     else
         InLab_RegistrarVerif "V-01" "Peso do arquivo MAX" (mb <= cfg.maxFileMB) ((InLab_FormatarMB mb) + " · teto " + cfg.maxFileMB as string + " MB") provisorio:true
 )
