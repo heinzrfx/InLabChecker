@@ -647,13 +647,13 @@ rollout InLabSecUV "UV e Texturas" width:420
     dropdownlist ddlResolucaoUV "Resolução do bake:" items:#("1024", "2048", "4096") selection:1 width:120 align:#left
     button btnF2 "Auto UV" width:130 height:24 align:#left offset:[2,0] across:2 tooltip:"Cria um UV próprio para bake de textura e sombra nos objetos selecionados, sem mexer no UV do material."
     spinner spnAnguloUV "" range:[10, 90, 55] type:#float fieldWidth:45 align:#left offset:[-63,3] tooltip:"Ângulo de corte (°). Quanto maior, menos cortes no UV."
-    button btnF2Clean "Limpar UV" width:195 height:24 align:#left offset:[2,0] across:2 tooltip:"Remove o UV de bake dos objetos selecionados. O UV do material fica."
-    button btnF2Reverter "Desfazer UV" width:195 height:24 align:#right offset:[-1,0] tooltip:"Volta os objetos ao que eram antes do Auto UV."
-
     -- 22/Set: o Check Texture e o Verificar Escala saíram da aba (as funções
     -- continuam em functions\, a V-19 usa INLAB_UNIDADE_PADRAO). No lugar,
-    -- o Real World Fix (functions\fn_realworldfix.ms).
-    button btnRWFix "Real World Fix" width:130 height:24 align:#left offset:[2,0] across:1 tooltip:"Troca a escala real dos mapas por uma que funciona na web."
+    -- o Real World Fix (functions\fn_realworldfix.ms), no trio com Limpar e
+    -- Desfazer UV (30/09/2026, #58).
+    button btnF2Clean "Limpar UV" width:130 height:24 across:3 tooltip:"Remove o UV de bake dos objetos selecionados. O UV do material fica."
+    button btnF2Reverter "Desfazer UV" width:130 height:24 offset:[-1,0] tooltip:"Volta os objetos ao que eram antes do Auto UV."
+    button btnRWFix "Real World Fix" width:130 height:24 offset:[-1,0] tooltip:"Troca a escala real dos mapas por uma que funciona na web."
 
     on btnF2 pressed do
     (
