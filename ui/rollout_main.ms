@@ -692,7 +692,7 @@ rollout InLabSecUtil "Utilidades Rápidas" width:420
     label lblFindLimite "limite: escolha a família" align:#left
     button btnUFind "Find Objects" width:395 height:24 tooltip:(
         "Seleciona os objetos acima de " + ((INLAB_FIND_FRACAO_POLYMAX * 100) as integer) as string +
-        "% do polyMax da família ativa (em triângulos). Sem família ativa: os " +
+        "% do máximo de triângulos da família. Sem família: os " +
         INLAB_FIND_TOP_N as string + " objetos mais pesados da cena.")
 
     button btnUDetach "Separar por material" width:395 height:24 across:1 tooltip:"Divide cada objeto selecionado em um objeto por material."
@@ -705,7 +705,7 @@ rollout InLabSecUtil "Utilidades Rápidas" width:420
         lblFindLimite.text = if InLab_FamiliaAtiva != undefined then
             ("limite: " + ((InLab_FamiliaAtiva.polyMax * INLAB_FIND_FRACAO_POLYMAX) as integer) as string +
              " triângulos (" + ((INLAB_FIND_FRACAO_POLYMAX * 100) as integer) as string +
-             "% do polyMax de '" + InLab_FamiliaAtiva.nome + "')")
+             "% do máximo da família '" + InLab_FamiliaAtiva.nome + "')")
         else
             ("limite: sem família ativa — mostra os " + INLAB_FIND_TOP_N as string + " objetos mais pesados da cena")
     )
