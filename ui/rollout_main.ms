@@ -175,7 +175,7 @@ rollout InLabSecProduto "Produto" width:420
     local meshesProd = #() -- mesh_final distintos do produto escolhido
 
     label lblProdutoAtivo "Nenhum produto carregado." align:#left
-    button btnImportarProduto "Importar informações do produto" width:395 height:26 tooltip:"Abre o arquivo do produto exportado da plataforma (.json)."
+    button btnImportarProduto "Importar informações do produto" width:395 height:24 tooltip:"Abre o arquivo do produto exportado da plataforma (.json)."
     dropdownlist ddlProduto "Produto:" items:#() width:395
     -- 23/09/2026: família que as verificações e o "Alvo da família" usam.
     -- Item 1 = nenhuma; os demais seguem a ordem de InLab_Familias.
@@ -183,12 +183,12 @@ rollout InLabSecProduto "Produto" width:420
     button btnLerSelecao "Ler materiais" width:395 height:24 tooltip:"Lista os materiais dos objetos selecionados."
     listbox lbxPartes "Parte  →  material:" items:#() height:6 width:395
     dropdownlist ddlMaterial "Material da parte:" items:#() width:395
-    button btnAplicar "Renomear materiais" width:395 height:26 tooltip:"Dá o nome oficial aos materiais ligados e aos mapas deles. Os objetos são renomeados em 'Renomear objetos', abaixo."
+    button btnAplicar "Renomear materiais" width:395 height:24 tooltip:"Dá o nome oficial aos materiais ligados e aos mapas deles. Os objetos são renomeados em 'Renomear objetos', abaixo."
     button btnLerObjetos "Ler objetos" width:395 height:24 tooltip:"Lista os objetos selecionados e sugere o nome de cada um: pelo material ligado acima ou pela semelhança do nome."
     listbox lbxObjetos "Objeto  →  nome novo:" items:#() height:6 width:395
     dropdownlist ddlMesh "Nome do objeto:" items:#() width:395
-    button btnRenomearMeshes "Renomear objetos" width:192 height:26 across:2 tooltip:"Dá a cada objeto da lista o nome escolhido. Objeto sem nome escolhido fica como está."
-    button btnDesfazer "Desfazer nomes" width:192 height:26 tooltip:"Volta os nomes de materiais, mapas e objetos ao que eram antes de 'Renomear materiais' e 'Renomear objetos'."
+    button btnRenomearMeshes "Renomear objetos" width:195 height:24 align:#left offset:[2,0] across:2 tooltip:"Dá a cada objeto da lista o nome escolhido. Objeto sem nome escolhido fica como está."
+    button btnDesfazer "Desfazer nomes" width:195 height:24 align:#right offset:[-1,0] tooltip:"Volta os nomes de materiais, mapas e objetos ao que eram antes de 'Renomear materiais' e 'Renomear objetos'."
 
     fn produtoEscolhido =
         if ddlProduto.selection > 0 and ddlProduto.selection <= produtos.count then produtos[ddlProduto.selection] else undefined
@@ -457,9 +457,9 @@ rollout InLabSecOtimizacao "Otimização" width:420
     radiobuttons rdoPasso labels:#("1 · Reduzir", "2 · Ajuste fino", "3 · Faces ocultas") default:2 columns:3
     button btnCalcular "Calcular" width:395 height:24 tooltip:"Mostra o que o passo propõe para a seleção. Nada muda até Aplicar."
     dotNetControl lvPropostas "System.Windows.Forms.ListView" width:395 height:150
-    button btnAplicar "Aplicar" width:126 height:24 across:3 tooltip:"Aplica só as linhas marcadas."
-    button btnComparar "Comparar" width:126 height:24 tooltip:"Liga e desliga o ajuste fino na tela para ver o antes e o depois."
-    button btnReverter "Desfazer" width:126 height:24 tooltip:"Desfaz o último Aplicar deste passo."
+    button btnAplicar "Aplicar" width:130 height:24 offset:[1,0] across:3 tooltip:"Aplica só as linhas marcadas."
+    button btnComparar "Comparar" width:130 height:24 offset:[-1,0] tooltip:"Liga e desliga o ajuste fino na tela para ver o antes e o depois."
+    button btnReverter "Desfazer" width:130 height:24 offset:[-1,0] tooltip:"Desfaz o último Aplicar deste passo."
 
     fn pintarMedidor =
     (
@@ -645,15 +645,15 @@ rollout InLabSecUV "UV e Texturas" width:420
     -- World Fix: o nome fica no botão, o detalhe no tooltip. O ângulo do
     -- flatten fica sem rótulo, ao lado do botão Auto UV.
     dropdownlist ddlResolucaoUV "Resolução do bake:" items:#("1024", "2048", "4096") selection:1 width:120 align:#left
-    button btnF2 "Auto UV" width:330 height:24 align:#left across:2 tooltip:"Cria um UV próprio para bake de textura e sombra nos objetos selecionados, sem mexer no UV do material."
-    spinner spnAnguloUV "" range:[10, 90, 55] type:#float fieldWidth:45 align:#right offset:[0,3] tooltip:"Ângulo de corte (°). Quanto maior, menos cortes no UV."
-    button btnF2Clean "Limpar UV" width:192 height:24 across:2 tooltip:"Remove o UV de bake dos objetos selecionados. O UV do material fica."
-    button btnF2Reverter "Desfazer UV" width:192 height:24 tooltip:"Volta os objetos ao que eram antes do Auto UV."
+    button btnF2 "Auto UV" width:130 height:24 align:#left offset:[2,0] across:2 tooltip:"Cria um UV próprio para bake de textura e sombra nos objetos selecionados, sem mexer no UV do material."
+    spinner spnAnguloUV "" range:[10, 90, 55] type:#float fieldWidth:45 align:#left offset:[-63,3] tooltip:"Ângulo de corte (°). Quanto maior, menos cortes no UV."
+    button btnF2Clean "Limpar UV" width:195 height:24 align:#left offset:[2,0] across:2 tooltip:"Remove o UV de bake dos objetos selecionados. O UV do material fica."
+    button btnF2Reverter "Desfazer UV" width:195 height:24 align:#right offset:[-1,0] tooltip:"Volta os objetos ao que eram antes do Auto UV."
 
     -- 22/Set: o Check Texture e o Verificar Escala saíram da aba (as funções
     -- continuam em functions\, a V-19 usa INLAB_UNIDADE_PADRAO). No lugar,
     -- o Real World Fix (functions\fn_realworldfix.ms).
-    button btnRWFix "Real World Fix" width:395 height:24 across:1 tooltip:"Troca a escala real dos mapas por uma que funciona na web."
+    button btnRWFix "Real World Fix" width:130 height:24 align:#left offset:[2,0] across:1 tooltip:"Troca a escala real dos mapas por uma que funciona na web."
 
     on btnF2 pressed do
     (
@@ -684,9 +684,9 @@ rollout InLabSecUV "UV e Texturas" width:420
 ----------------------------------------------------------------------
 rollout InLabSecUtil "Utilidades Rápidas" width:420
 (
-    button btnUResetX "Reset XForm" width:130 across:3
-    button btnUCenter "Center Pivot" width:130
-    button btnUBase "Base Pivot" width:130
+    button btnUResetX "Reset XForm" width:130 height:24 across:3
+    button btnUCenter "Center Pivot" width:130 height:24
+    button btnUBase "Base Pivot" width:130 height:24
 
     label lblFind "Objetos pesados da cena" align:#left across:1
     label lblFindLimite "limite: escolha a família" align:#left
@@ -753,8 +753,8 @@ rollout InLabSecF5 "Converter Material" width:420
     dropdownlist ddlConversao items:#("Corona → glTF (Physical / Legacy / VRay)") selection:1 width:395
     dropdownlist ddlBakeRes items:#("512", "1024", "2048", "4096") selection:2 width:90 align:#left across:2 tooltip:"Resolução do bake."
     checkbox chkBakeProc "Bake de mapas procedurais" checked:true align:#right
-    button btnF5 "Converter" width:192 across:2 tooltip:"Converte os materiais dos objetos selecionados."
-    button btnF5Rev "Desfazer" width:192 tooltip:"Volta os materiais originais."
+    button btnF5 "Converter" width:195 height:24 align:#left offset:[2,0] across:2 tooltip:"Converte os materiais dos objetos selecionados."
+    button btnF5Rev "Desfazer" width:195 height:24 align:#right offset:[-1,0] tooltip:"Volta os materiais originais."
 
     on btnF5 pressed do
     (
@@ -801,7 +801,7 @@ rollout InLabSecF6 "Exportar" width:420
 rollout InLabSecFase4 "Verificações" width:420
 (
     checkbox chkTampoAcess "Produto com tampo acessório" checked:false tooltip:"Só para mesas (família Pernas + Tampo)."
-    button btnVerificar "Verificar" width:395 height:26 tooltip:"Confere o produto e salva o relatório ao lado do arquivo."
+    button btnVerificar "Verificar" width:395 height:24 tooltip:"Confere o produto e salva o relatório ao lado do arquivo."
 
     on btnVerificar pressed do
     (
@@ -826,8 +826,8 @@ rollout InLabSecFase4 "Verificações" width:420
 rollout InLabSecLog "Log de Sessão" width:420
 (
     dotNetControl rtbLog "System.Windows.Forms.RichTextBox" width:398 height:220
-    button btnLimpar "Limpar" width:192 across:2
-    button btnSalvar "Salvar" width:192
+    button btnLimpar "Limpar" width:195 height:24 align:#left offset:[2,0] across:2
+    button btnSalvar "Salvar" width:195 height:24 align:#right offset:[-1,0]
 
     on InLabSecLog open do
     (
