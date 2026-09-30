@@ -32,7 +32,7 @@ global INLAB_TESTE_SAIDA, INLAB_TESTE_FALHAS
     (
         for m in #(@"core\versao.ms", @"core\prefs.ms", @"core\struct_result.ms", @"core\struct_familia.ms",
                    @"core\log.ms", @"core\utils.ms", @"familias\familia_corpo_unico.ms",
-                   @"functions\fn_prooptimizer.ms", @"functions\fn_otim_nucleo.ms",
+                   @"functions\fn_otim_nucleo.ms",
                    @"functions\fn_otim_origem.ms", @"functions\fn_otim_fino.ms", @"functions\fn_otim_escondidas.ms") do
             fileIn (raiz + m)
         -- Depois dos fileIn: core\log.ms redefine InLab_Log.

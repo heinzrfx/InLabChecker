@@ -26,8 +26,8 @@
  InLab_Instancias dali exigiria pré-declarar o global e criaria uma
  dependência "carrega antes, mas usa depois". core\utils.ms carrega primeiro
  que tudo isso, então os dois convivem sem se atropelar. Consumido por
- functions\fn_prooptimizer.ms (InLab_ProOptimizer) e functions\fn_otim_fino.ms
- (InLab_OtimFino_Calcular/_Aplicar, issue #62).
+ functions\fn_otim_fino.ms (InLab_OtimFino_Calcular/_Aplicar, issue #62) e,
+ até 30/09/2026, pelo fn_prooptimizer.ms (apagado).
 
  28/09/2026 (issue #35): `InLab_EhGeometria` exclui Bones, Biped e CAT
  (GeometryClass, mas nunca produto); objeto oculto continua contando.

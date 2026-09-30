@@ -84,7 +84,7 @@
             -- renomeação pelo JSON de produto — depende de fn_json.ms.
             @"functions\fn_renomear_produto.ms",
             -- fn_prooptimizer.ms saiu em 24/09/2026 (issue #62): o passo 2
-            -- (fn_otim_fino.ms) tem o próprio ProOptimizer. Arquivo fica até #52.
+            -- (fn_otim_fino.ms) tem o próprio ProOptimizer. Arquivo apagado em 30/09/2026.
             -- Otimização em 3 passos (issue #60): núcleo antes dos passos.
             @"functions\fn_otim_nucleo.ms",
             @"functions\fn_otim_origem.ms",
