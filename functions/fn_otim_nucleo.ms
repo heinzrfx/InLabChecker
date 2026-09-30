@@ -159,7 +159,7 @@ global InLab_Otim_TextoMedidor
 fn InLab_Otim_TextoMedidor total faixa =
 (
     local t = "Triângulos: " + (InLab_Otim_Milhar total)
-    if faixa == undefined then t + "  ·  escolha a família (seção Produto) ou digite a meta"
+    if faixa == undefined then t + "  ·  escolha a família ou digite a meta"
     else if faixa[1] == 0 then t + "  ·  meta: " + (InLab_Otim_Milhar faixa[2])
     else t + "  ·  faixa da família: " + (InLab_Otim_Milhar faixa[1]) + " a " + (InLab_Otim_Milhar faixa[2])
 )

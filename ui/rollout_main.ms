@@ -131,6 +131,14 @@
  Calcular, ao trocar de passo e ao marcar/desmarcar uma linha do passo 3 —
  o destaque das faces escondidas (functions\fn_otim_escondidas.ms) só
  desenha as linhas marcadas que estão em INLAB_OTIM_PROPOSTAS.
+
+ 30/09/2026 (issue #58): textos da UI simplificados, tabela aprovada em
+ docs\superpowers\specs\2026-09-28-textos-ui.md. Regra: o nome fica no
+ botão (1 a 3 palavras) e o detalhe vai para o tooltip, sem rótulo
+ explicativo em cima (como o ArchToolz). "Desfazer" no lugar de "Reverter".
+ Saíram os rótulos lblF2 (Auto UV), lblF34 (Real World Fix) e lblUDetach;
+ o ângulo do flatten (spnAnguloUV) ficou sem rótulo, ao lado do Auto UV.
+ Saiu o botão "Fechar Plugin" do Log: a janela fecha pelo X.
 ================================================================================
 */
 
@@ -167,20 +175,20 @@ rollout InLabSecProduto "Produto" width:420
     local meshesProd = #() -- mesh_final distintos do produto escolhido
 
     label lblProdutoAtivo "Nenhum produto carregado." align:#left
-    button btnImportarProduto "Importar JSON do Produto..." width:395 height:26
+    button btnImportarProduto "Importar informações do produto" width:395 height:26 tooltip:"Abre o arquivo do produto exportado da plataforma (.json)."
     dropdownlist ddlProduto "Produto:" items:#() width:395
     -- 23/09/2026: família que as verificações e o "Alvo da família" usam.
     -- Item 1 = nenhuma; os demais seguem a ordem de InLab_Familias.
-    dropdownlist ddlFamilia "Família (verificações):" items:#() width:395
-    button btnLerSelecao "Ler materiais da seleção" width:395 height:24
+    dropdownlist ddlFamilia "Família:" items:#() width:395
+    button btnLerSelecao "Ler materiais" width:395 height:24 tooltip:"Lista os materiais dos objetos selecionados."
     listbox lbxPartes "Parte  →  material:" items:#() height:6 width:395
-    dropdownlist ddlMaterial "Material da parte marcada:" items:#() width:395
-    button btnAplicar "Aplicar nomes" width:395 height:26 tooltip:"Dá o nome oficial aos materiais ligados e aos mapas deles. Os objetos são renomeados em 'Renomear meshes', abaixo."
-    button btnLerObjetos "Ler objetos da seleção" width:395 height:24 tooltip:"Lista os objetos selecionados e sugere o nome de cada um: pelo material ligado acima ou pela semelhança do nome."
+    dropdownlist ddlMaterial "Material da parte:" items:#() width:395
+    button btnAplicar "Renomear materiais" width:395 height:26 tooltip:"Dá o nome oficial aos materiais ligados e aos mapas deles. Os objetos são renomeados em 'Renomear objetos', abaixo."
+    button btnLerObjetos "Ler objetos" width:395 height:24 tooltip:"Lista os objetos selecionados e sugere o nome de cada um: pelo material ligado acima ou pela semelhança do nome."
     listbox lbxObjetos "Objeto  →  nome novo:" items:#() height:6 width:395
-    dropdownlist ddlMesh "Nome do objeto marcado:" items:#() width:395
-    button btnRenomearMeshes "Renomear meshes" width:192 height:26 across:2 tooltip:"Dá a cada objeto da lista o nome escolhido. Objeto sem nome escolhido fica como está."
-    button btnDesfazer "Desfazer nomes" width:192 height:26 tooltip:"Volta os nomes de materiais, mapas e objetos ao que eram antes de 'Aplicar nomes' e 'Renomear meshes'."
+    dropdownlist ddlMesh "Nome do objeto:" items:#() width:395
+    button btnRenomearMeshes "Renomear objetos" width:192 height:26 across:2 tooltip:"Dá a cada objeto da lista o nome escolhido. Objeto sem nome escolhido fica como está."
+    button btnDesfazer "Desfazer nomes" width:192 height:26 tooltip:"Volta os nomes de materiais, mapas e objetos ao que eram antes de 'Renomear materiais' e 'Renomear objetos'."
 
     fn produtoEscolhido =
         if ddlProduto.selection > 0 and ddlProduto.selection <= produtos.count then produtos[ddlProduto.selection] else undefined
@@ -363,9 +371,9 @@ rollout InLabSecProduto "Produto" width:420
     (
         local p = produtoEscolhido()
         if p == undefined then
-            InLab_Log "Importe o JSON e escolha o produto antes de aplicar." tipo:#warn
+            InLab_Log "Importe as informações do produto e escolha o produto antes de renomear os materiais." tipo:#warn
         else if materiais.count == 0 then
-            InLab_Log "Clique em 'Ler materiais da seleção' antes de aplicar." tipo:#warn
+            InLab_Log "Clique em 'Ler materiais' antes de renomear." tipo:#warn
         else
         (
             InLab_Produto_Aplicar p ligacoes
@@ -377,7 +385,7 @@ rollout InLabSecProduto "Produto" width:420
     (
         local p = produtoEscolhido()
         if p == undefined then
-            InLab_Log "Importe o JSON e escolha o produto antes de ler os objetos." tipo:#warn
+            InLab_Log "Importe as informações do produto e escolha o produto antes de ler os objetos." tipo:#warn
         else
         (
             local sel = InLab_SelecaoValida()
@@ -412,7 +420,7 @@ rollout InLabSecProduto "Produto" width:420
     on btnRenomearMeshes pressed do
     (
         if objsMesh.count == 0 then
-            InLab_Log "Clique em 'Ler objetos da seleção' antes de renomear." tipo:#warn
+            InLab_Log "Clique em 'Ler objetos' antes de renomear." tipo:#warn
         else
         (
             InLab_Produto_RenomearMeshes objsMesh nomesMesh
@@ -446,12 +454,12 @@ rollout InLabSecOtimizacao "Otimização" width:420
 
     dotNetControl lblMedidor "System.Windows.Forms.Label" width:395 height:24
     spinner spnMeta "Meta (triângulos):" range:[1000, 5000000, 100000] type:#integer fieldWidth:70 align:#left enabled:false
-    radiobuttons rdoPasso labels:#("1 · Reduzir", "2 · Ajuste fino", "3 · Escondidas") default:2 columns:3
+    radiobuttons rdoPasso labels:#("1 · Reduzir", "2 · Ajuste fino", "3 · Faces ocultas") default:2 columns:3
     button btnCalcular "Calcular" width:395 height:24 tooltip:"Mostra o que o passo propõe para a seleção. Nada muda até Aplicar."
     dotNetControl lvPropostas "System.Windows.Forms.ListView" width:395 height:150
     button btnAplicar "Aplicar" width:126 height:24 across:3 tooltip:"Aplica só as linhas marcadas."
     button btnComparar "Comparar" width:126 height:24 tooltip:"Liga e desliga o ajuste fino na tela para ver o antes e o depois."
-    button btnReverter "Reverter" width:126 height:24 tooltip:"Desfaz o último Aplicar deste passo."
+    button btnReverter "Desfazer" width:126 height:24 tooltip:"Desfaz o último Aplicar deste passo."
 
     fn pintarMedidor =
     (
@@ -633,18 +641,19 @@ rollout InLabSecUV "UV e Texturas" width:420
     -- de INLAB_UV_RESOLUCOES (functions\fn_autouv.ms).
     -- 22/Set: saiu o checkbox "Preferir seams em regiões ocultas", que nunca
     -- teve efeito. Volta quando a sondagem da Tarefa 7b der resultado.
-    label lblF2 "Auto UV  (canal 3 · bake de textura e AO)" align:#left
-    spinner spnAnguloUV "Ângulo flatten (°):" range:[10, 90, 55] type:#float fieldWidth:40 align:#left
+    -- 30/09/2026 (issue #58): saem os rótulos de cima do Auto UV e do Real
+    -- World Fix: o nome fica no botão, o detalhe no tooltip. O ângulo do
+    -- flatten fica sem rótulo, ao lado do botão Auto UV.
     dropdownlist ddlResolucaoUV "Resolução do bake:" items:#("1024", "2048", "4096") selection:1 width:120 align:#left
-    button btnF2 "Auto UV na Seleção" width:126 across:3
-    button btnF2Clean "Clean UV" width:126
-    button btnF2Reverter "Reverter Auto UV" width:126
+    button btnF2 "Auto UV" width:330 height:24 align:#left across:2 tooltip:"Cria um UV próprio para bake de textura e sombra nos objetos selecionados, sem mexer no UV do material."
+    spinner spnAnguloUV "" range:[10, 90, 55] type:#float fieldWidth:45 align:#right offset:[0,3] tooltip:"Ângulo de corte (°). Quanto maior, menos cortes no UV."
+    button btnF2Clean "Limpar UV" width:192 height:24 across:2 tooltip:"Remove o UV de bake dos objetos selecionados. O UV do material fica."
+    button btnF2Reverter "Desfazer UV" width:192 height:24 tooltip:"Volta os objetos ao que eram antes do Auto UV."
 
     -- 22/Set: o Check Texture e o Verificar Escala saíram da aba (as funções
     -- continuam em functions\, a V-19 usa INLAB_UNIDADE_PADRAO). No lugar,
     -- o Real World Fix (functions\fn_realworldfix.ms).
-    label lblF34 "Real World Fix  (tira o Real-World Map Size · WebGL)" align:#left across:1
-    button btnRWFix "Real World Fix" width:390 height:25
+    button btnRWFix "Real World Fix" width:395 height:24 across:1 tooltip:"Troca a escala real dos mapas por uma que funciona na web."
 
     on btnF2 pressed do
     (
@@ -680,14 +689,13 @@ rollout InLabSecUtil "Utilidades Rápidas" width:420
     button btnUBase "Base Pivot" width:130
 
     label lblFind "Objetos pesados da cena" align:#left across:1
-    label lblFindLimite "limite: carregue uma família" align:#left
+    label lblFindLimite "limite: escolha a família" align:#left
     button btnUFind "Find Objects" width:395 height:24 tooltip:(
         "Seleciona os objetos acima de " + ((INLAB_FIND_FRACAO_POLYMAX * 100) as integer) as string +
         "% do polyMax da família ativa (em triângulos). Sem família ativa: os " +
         INLAB_FIND_TOP_N as string + " objetos mais pesados da cena.")
 
-    label lblUDetach "Detach por Material (propaga IDs para os pedaços)" align:#left across:1
-    button btnUDetach "Detach por Material na Seleção" width:395 height:24
+    button btnUDetach "Separar por material" width:395 height:24 across:1 tooltip:"Divide cada objeto selecionado em um objeto por material."
 
     -- 24/Set/2026 (issue #47): rótulo do limite do Find Objects — mesma
     -- lógica do texto que InLab_FindObjectsPesados usa pra decidir o
@@ -743,10 +751,10 @@ fn InLab_UtilUI_AtualizarLimite =
 rollout InLabSecF5 "Converter Material" width:420
 (
     dropdownlist ddlConversao items:#("Corona → glTF (Physical / Legacy / VRay)") selection:1 width:395
-    dropdownlist ddlBakeRes items:#("512", "1024", "2048", "4096") selection:2 width:90 align:#left across:2
+    dropdownlist ddlBakeRes items:#("512", "1024", "2048", "4096") selection:2 width:90 align:#left across:2 tooltip:"Resolução do bake."
     checkbox chkBakeProc "Bake de mapas procedurais" checked:true align:#right
-    button btnF5 "Converter Materiais da Seleção" width:192 across:2
-    button btnF5Rev "Reverter Conversão" width:192
+    button btnF5 "Converter" width:192 across:2 tooltip:"Converte os materiais dos objetos selecionados."
+    button btnF5Rev "Desfazer" width:192 tooltip:"Volta os materiais originais."
 
     on btnF5 pressed do
     (
@@ -772,7 +780,7 @@ rollout InLabSecF5 "Converter Material" width:420
 rollout InLabSecF6 "Exportar" width:420
 (
     radiobuttons rdoEscopoExp labels:#("Somente seleção", "Cena inteira") default:1 columns:2
-    button btnF6 "Abrir Real-Time Exporter..." width:395 height:24
+    button btnF6 "Exportar GLB..." width:395 height:24 tooltip:"Abre o exportador do Max com as opções da InLab."
 
     on btnF6 pressed do
     (
@@ -790,10 +798,10 @@ rollout InLabSecF6 "Exportar" width:420
 ----------------------------------------------------------------------
 -- SEÇÃO: Verificações (sem mudanças de lógica — só reordenada)
 ----------------------------------------------------------------------
-rollout InLabSecFase4 "Verificações (grupos 1-3 ativos)" width:420
+rollout InLabSecFase4 "Verificações" width:420
 (
-    checkbox chkTampoAcess "Produto com tampo acessório (V-38 · Pernas+Tampo)" checked:false
-    button btnVerificar "Rodar Verificações" width:395 height:26
+    checkbox chkTampoAcess "Produto com tampo acessório" checked:false tooltip:"Só para mesas (família Pernas + Tampo)."
+    button btnVerificar "Verificar" width:395 height:26 tooltip:"Confere o produto e salva o relatório ao lado do arquivo."
 
     on btnVerificar pressed do
     (
@@ -818,9 +826,8 @@ rollout InLabSecFase4 "Verificações (grupos 1-3 ativos)" width:420
 rollout InLabSecLog "Log de Sessão" width:420
 (
     dotNetControl rtbLog "System.Windows.Forms.RichTextBox" width:398 height:220
-    button btnLimpar "Limpar" width:126 across:3
-    button btnSalvar "Salvar .txt" width:126
-    button btnFechar "Fechar Plugin" width:126
+    button btnLimpar "Limpar" width:192 across:2
+    button btnSalvar "Salvar" width:192
 
     on InLabSecLog open do
     (
@@ -844,7 +851,6 @@ rollout InLabSecLog "Log de Sessão" width:420
             else InLab_Log "Falha ao salvar o log em ambos os caminhos — reportar." tipo:#err
         )
     )
-    on btnFechar pressed do destroyDialog InLabChecker_Rollout
 )
 
 ----------------------------------------------------------------------
