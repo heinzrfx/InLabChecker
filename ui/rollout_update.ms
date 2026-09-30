@@ -12,11 +12,11 @@
  .pos e .width conforme o estado. Os 6 estados seguem o mockup
  (https://claude.ai/artifact/BmdGKqEzK5qiDALMdcC99L):
    #ocioso     verde   "Você está na versão mais recente."  Procurar; Voltar (se há .bak)
-   #checando   neutra  "Consultando o GitHub..."             Procurar (desabilitado)
-   #disponivel âmbar   "vX disponível · N KB" + data         Atualizar; Notas; Ignorar
+   #checando   neutra  "Procurando atualização..."           Procurar (desabilitado)
+   #disponivel âmbar   "vX disponível · N KB" + data         Atualizar; Novidades; Ignorar
    #baixando / #aplicando  progresso + barra                 Cancelar
    pós-sucesso verde   "Atualizado para vX" + 3 linhas       Procurar; Voltar para a vY
-   #erro       vermelha a causa + 3 linhas                   Tentar de novo; Copiar log
+   #erro       vermelha a causa + 3 linhas                   Tentar de novo; Copiar erro
  As cores vêm de ui\kit.ms (OK/WARN/ERR/INFO/PROGRESSO), nunca literais.
  A caixa de status tem 62 px (3 linhas + padding): a causa de um #erro ("pacote
  incompleto, falta(m) 1 módulo(s): verifications\verif_uv.ms.") quebra em
@@ -33,6 +33,10 @@
  A TARJA DA SPEC NÃO EXISTE: quem avisa é a pastilha do header (ver a nota de
  obsoleto na spec do updater, seção 4). O clique na pastilha em #disponivel ou
  #erro abre esta seção (InLab_SecUpdate_Mostrar).
+
+ 30/09/2026 (issue #58): textos mais curtos (spec 2026-09-28-textos-ui.md):
+ "Última busca", "Procurar atualização", "Atualizar", "Novidades", "Copiar
+ erro" e "Procurando atualização...".
 ================================================================================
 */
 
@@ -46,11 +50,11 @@ rollout InLabSecUpdate "Atualização" width:420 height:200
 (
     checkbox chkAuto "Procurar atualizações automaticamente" pos:[10,6] checked:true
     label lblInstalada "Instalada: v" pos:[10,28] width:200 align:#left
-    label lblChecagem "Checagem: nunca" pos:[210,28] width:198 align:#right
+    label lblChecagem "Última busca: nunca" pos:[210,28] width:198 align:#right
     dotNetControl lblStatus "System.Windows.Forms.Label" pos:[10,48] width:398 height:62
     progressbar pbDown pos:[10,116] width:398 height:10 value:0 visible:false
     dotNetControl lblHist "System.Windows.Forms.Label" pos:[10,116] width:398 height:44
-    button btnA "Procurar atualização agora" pos:[10,168] width:398 height:24
+    button btnA "Procurar atualização" pos:[10,168] width:398 height:24
     button btnB "" pos:[214,168] width:90 height:24 visible:false
     button btnC "" pos:[318,168] width:90 height:24 visible:false
 
@@ -96,7 +100,7 @@ fn InLab_SecUpdate_Botoes botoes =
 (
     local r = InLabSecUpdate
     local ctrls = #(r.btnA, r.btnB, r.btnC)
-    -- 2 botões: o 2º é largo ("Voltar para a v0.12", "Copiar log do erro");
+    -- 2 botões: o 2º é largo ("Voltar para a v0.12", "Copiar erro");
     -- 3 botões: Notas e Ignorar cabem em 90.
     local fixa = if botoes.count == 2 then 150 else 90
     local larg = #(0, fixa, fixa)
@@ -147,7 +151,7 @@ fn InLab_SecUpdate_Atualizar =
 
         r.lblInstalada.text = "Instalada: v" + INLAB_VERSAO
         r.lblChecagem.text = if ocupado then "Aplicando: v" + u.versaoRemota
-                             else "Checagem: " + (InLab_UpdateUltimaChecagemTexto())
+                             else "Última busca: " + (InLab_UpdateUltimaChecagemTexto())
         r.chkAuto.enabled = not ocupado
         r.pbDown.visible = ocupado
         r.pbDown.value = if u.estado == #aplicando then 100 else u.pct
@@ -159,8 +163,8 @@ fn InLab_SecUpdate_Atualizar =
         (
             #checando:
             (
-                InLab_SecUpdate_Caixa #PROGRESSO "Consultando o GitHub em segundo plano..." ""
-                InLab_SecUpdate_Botoes #(#("Procurar atualização agora", #procurar, false))
+                InLab_SecUpdate_Caixa #PROGRESSO "Procurando atualização..." ""
+                InLab_SecUpdate_Botoes #(#("Procurar atualização", #procurar, false))
             )
             #disponivel:
             (
@@ -168,7 +172,7 @@ fn InLab_SecUpdate_Atualizar =
                 local l1 = "v" + u.versaoRemota + " disponível" + (if tam != "" then " · " + tam else "") + (if u.ignorada then " (ignorada)" else "")
                 local l2 = (if u.publicadaEm != "" then "Publicada em " + u.publicadaEm + " · " else "") + "nada foi baixado ainda"
                 InLab_SecUpdate_Caixa #WARN l1 l2
-                InLab_SecUpdate_Botoes #(#("Atualizar agora", #aplicar, true), #("Notas", #notas, u.notasUrl != ""), \
+                InLab_SecUpdate_Botoes #(#("Atualizar", #aplicar, true), #("Novidades", #notas, u.notasUrl != ""), \
                                          #((if u.ignorada then "Ignorada" else "Ignorar"), #ignorar, not u.ignorada))
             )
             #baixando:
@@ -186,7 +190,7 @@ fn InLab_SecUpdate_Atualizar =
                 InLab_SecUpdate_Caixa #ERR u.msgErro ("Você continua na v" + INLAB_VERSAO + ".")
                 r.lblHist.Text = InLab_SecUpdate_Hist()
                 r.lblHist.visible = true
-                InLab_SecUpdate_Botoes #(#("Tentar de novo", #tentar, true), #("Copiar log do erro", #copiar, true))
+                InLab_SecUpdate_Botoes #(#("Tentar de novo", #tentar, true), #("Copiar erro", #copiar, true))
             )
             default:   -- #ocioso, com ou sem aviso de sucesso
             (
@@ -199,7 +203,7 @@ fn InLab_SecUpdate_Atualizar =
                 else if u.msgErro != "" then InLab_SecUpdate_Caixa #INFO u.msgErro ""
                 else if u.versaoRemota == "" then InLab_SecUpdate_Caixa #INFO "Ainda não procurou atualização nesta sessão." ""
                 else InLab_SecUpdate_Caixa #OK "Você está na versão mais recente." ""
-                local bs = #(#("Procurar atualização agora", #procurar, true))
+                local bs = #(#("Procurar atualização", #procurar, true))
                 if botaoVoltar != undefined do append bs botaoVoltar
                 InLab_SecUpdate_Botoes bs
             )

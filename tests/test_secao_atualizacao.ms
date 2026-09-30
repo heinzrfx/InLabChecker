@@ -88,7 +88,7 @@ global INLAB_TESTE_SAIDA, INLAB_TESTE_FALHAS
         checar "Disponivel: ambar" (corIgual r.lblStatus.BackColor (InLab_Kit_Cor #WARN_FUNDO))
         checar "Disponivel: versao, tamanho e data" (matchPattern r.lblStatus.Text pattern:"*v99.0 dispon*1,3 MB*22/09/2026*")
         bs = botoes r
-        checar "Disponivel: Atualizar, Notas, Ignorar" (bs.count == 3 and bs[1][1] == "Atualizar agora" and bs[2][1] == "Notas" and bs[3][1] == "Ignorar")
+        checar "Disponivel: Atualizar, Novidades, Ignorar" (bs.count == 3 and bs[1][1] == "Atualizar" and bs[2][1] == "Novidades" and bs[3][1] == "Ignorar")
         checar "Disponivel: acoes dos botoes" (INLAB_SECUPDATE_ACOES[1] == #aplicar and INLAB_SECUPDATE_ACOES[2] == #notas and INLAB_SECUPDATE_ACOES[3] == #ignorar)
         checar "Disponivel: botoes nao se sobrepoem" (r.btnA.pos.x + r.btnA.width <= r.btnB.pos.x and r.btnB.pos.x + r.btnB.width <= r.btnC.pos.x and r.btnC.pos.x + r.btnC.width <= 408)
         u.ignorada = true
@@ -126,7 +126,7 @@ global INLAB_TESTE_SAIDA, INLAB_TESTE_FALHAS
         checar "Erro: vermelho com a causa" (corIgual r.lblStatus.BackColor (InLab_Kit_Cor #ERR_FUNDO) and matchPattern r.lblStatus.Text pattern:"*verif_uv.ms*")
         checar "Erro: diz em que versao o artista continua" (matchPattern r.lblStatus.Text pattern:("*continua na v" + INLAB_VERSAO + "*"))
         bs = botoes r
-        checar "Erro: Tentar de novo e Copiar log" (bs.count == 2 and bs[1][1] == "Tentar de novo" and bs[2][1] == "Copiar log do erro")
+        checar "Erro: Tentar de novo e Copiar erro" (bs.count == 2 and bs[1][1] == "Tentar de novo" and bs[2][1] == "Copiar erro")
         checar "Erro: acoes #tentar e #copiar" (INLAB_SECUPDATE_ACOES[1] == #tentar and INLAB_SECUPDATE_ACOES[2] == #copiar)
         -- A causa quebra em linhas: o texto medido tem que caber na caixa.
         local g = r.lblStatus.CreateGraphics()

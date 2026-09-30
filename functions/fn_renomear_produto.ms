@@ -395,7 +395,7 @@ fn InLab_Produto_Aplicar produto ligacoes =
             )
         )
         InLab_Log ("Renomeação: " + nMat as string + " material(is), " + nMap as string + " mapa(s) · " +
-                   nAviso as string + " aviso(s). Objetos: use 'Renomear meshes'.") tipo:#ok
+                   nAviso as string + " aviso(s). Objetos: use 'Renomear objetos'.") tipo:#ok
         true
     )
 )
@@ -510,7 +510,7 @@ fn InLab_Produto_RenomearMeshes objs nomes =
             )
         )
     )
-    InLab_Log ("Renomear meshes: " + nObj as string + " objeto(s) renomeado(s) · " + nAviso as string + " aviso(s).") tipo:#ok
+    InLab_Log ("Renomear objetos: " + nObj as string + " objeto(s) renomeado(s) · " + nAviso as string + " aviso(s).") tipo:#ok
     nObj
 )
 

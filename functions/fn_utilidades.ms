@@ -227,7 +227,7 @@ fn InLab_FindObjectsPesados objs:undefined =
         if achados.count == 0 do
             InLab_Log ("Find Objects: nenhum objeto acima de " + (limite as integer) as string +
                        " triângulos (" + ((INLAB_FIND_FRACAO_POLYMAX * 100) as integer) as string +
-                       "% do polyMax de '" + InLab_FamiliaAtiva.nome + "').") tipo:#info
+                       "% do máximo da família '" + InLab_FamiliaAtiva.nome + "').") tipo:#info
     )
     else
     (

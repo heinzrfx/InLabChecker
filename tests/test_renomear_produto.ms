@@ -236,7 +236,7 @@ global INLAB_TESTE_SAIDA, INLAB_TESTE_FALHAS
         checar "Objeto sem nome escolhido NÃO renomeado" (b4.name == "obj_misto")
         checar "Log #ok por objeto renomeado" ((logTem #ok "era 'peca_solta'") and (logTem #ok "era 'obj_tampo'"))
         checar "Log #warn p/ objeto sem nome escolhido" (logTem #warn "obj_misto")
-        checar "Log de resumo" (logTem #ok "Renomear meshes: 6 objeto(s)")
+        checar "Log de resumo" (logTem #ok "Renomear objetos: 6 objeto(s)")
 
         InLab_Produto_Reverter()
         checar "Desfazer depois de Aplicar + Renomear meshes: objetos" (b1.name == "obj_tampo" and b2.name == "obj_encosto" and b3.name == "obj_gaveta" and bSolta.name == "peca_solta" and bGavE.name == "Gaveta_Esquerda" and bGavD.name == "gaveta direita" and bPronto.name == "0001")
