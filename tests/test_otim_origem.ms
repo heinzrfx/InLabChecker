@@ -37,7 +37,7 @@ global INLAB_TESTE_TRIS_REAL, INLAB_TESTE_VIGIAR, INLAB_TESTE_ORIG, INLAB_TESTE_
     try
     (
         for m in #(@"core\versao.ms", @"core\prefs.ms", @"core\struct_result.ms", @"core\struct_familia.ms",
-                   @"core\log.ms", @"core\utils.ms", @"functions\fn_prooptimizer.ms", @"functions\fn_otim_nucleo.ms",
+                   @"core\log.ms", @"core\utils.ms", @"functions\fn_otim_nucleo.ms",
                    @"functions\fn_otim_origem.ms", @"functions\fn_otim_fino.ms", @"functions\fn_otim_escondidas.ms") do
             fileIn (raiz + m)
         InLab_Log = fn _logTeste msg tipo:#info = ( format "      [LOG %] %\n" tipo msg to:INLAB_TESTE_SAIDA; flush INLAB_TESTE_SAIDA )

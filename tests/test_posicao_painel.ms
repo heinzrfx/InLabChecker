@@ -69,7 +69,7 @@ rollout _rTesteFake "" width:100 height:60
             @"familias\familia_translacao.ms", @"familias\familia_rotacao.ms",
             @"familias\familia_giro_assento.ms", @"familias\familia_movimento_especial.ms",
             @"functions\fn_json.ms", @"functions\fn_updater.ms",
-            @"functions\fn_renomear_produto.ms", @"functions\fn_prooptimizer.ms",
+            @"functions\fn_renomear_produto.ms",
             @"functions\fn_otim_nucleo.ms", @"functions\fn_otim_origem.ms",
             @"functions\fn_otim_fino.ms", @"functions\fn_otim_escondidas.ms",
             @"functions\fn_realworldscale.ms", @"functions\fn_checktexture.ms",

@@ -70,7 +70,7 @@
  usando InLab_ProOptimizer de fn_prooptimizer.ms.
  24/09/2026 (issue #62): meta por peça por área, piso, proteções, segunda
  passada e registro próprio. Não usa mais fn_prooptimizer.ms, que saiu do
- manifesto (o arquivo e tests\test_prooptimizer.ms ficam até a limpeza #52).
+ manifesto e foi apagado em 30/09/2026, junto com tests\test_prooptimizer.ms.
 
  `global` antes de cada fn (mesmo já declarada em fn_otim_nucleo.ms): este
  arquivo pode ser carregado sozinho por InLab_RecarregarPlugin() — padrão de
