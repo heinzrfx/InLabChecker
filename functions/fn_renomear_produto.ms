@@ -62,6 +62,12 @@
    - o objeto da subparte so3d carrega o material da parte-MÃE: a subparte
      sai da lista de materiais (InLab_Produto_PartesDeMaterial). `ligacoes`
      passa a ser paralelo a essa lista, não a todas as partes.
+
+ 02/10/2026 (issue #93, cópias de bloco_3d): ver o bloco "CÓPIAS DE bloco_3d".
+ O bloqueio de ok_3d passa por InLab_Produto_MotivoBloqueio, que também pula
+ a cópia cuja base não está liberada. Voltar do nome da cópia para o do
+ master NÃO é pelo Desfazer (ele desfaz a sessão inteira, inclusive a
+ renomeação do master): é escolher o master de novo e "Renomear objetos".
 ================================================================================
 */
 
@@ -150,13 +156,6 @@ fn InLab_Produto_PartesDeMaterial produto =
     if isKindOf partes Array then (for p in partes where not (InLab_Produto_Booleano p "so3d") collect p) else #()
 )
 
--- Loga o aviso do produto não liberado. Quem chama pula a operação.
-global InLab_Produto_AvisarNaoLiberado
-fn InLab_Produto_AvisarNaoLiberado produto =
-(
-    InLab_Log ("Produto " + (InLab_Produto_Texto produto "cod_est") + " está com 3D não liberado na plataforma (ok_3d = false) — pulado, nada foi renomeado.") tipo:#warn
-)
-
 -- Índice (1-based) do produto com esse cod_est; 0 se não houver.
 global InLab_Produto_IndicePorCodigo
 fn InLab_Produto_IndicePorCodigo produtos cod =
@@ -164,6 +163,88 @@ fn InLab_Produto_IndicePorCodigo produtos cod =
     local idx = 0
     for i = 1 to produtos.count where idx == 0 and (InLab_Produto_Texto produtos[i] "cod_est") == cod do idx = i
     idx
+)
+
+--------------------------------------------------------------------------------
+-- CÓPIAS DE bloco_3d (02/10/2026, issue #93)
+--------------------------------------------------------------------------------
+-- bloco_3d.papel = "copia" + duplicar_renomear: a cópia não tem .max próprio.
+-- Ela sai do .max do master (base_codest) com a mesh renomeada para o cod_est
+-- da cópia e os MESMOS material_id (Bianca, respostas v3) — copiar o GLB não
+-- basta, porque a mesh de dentro muda de nome. O plugin já faz isso com o
+-- que existe: cópia escolhida no dropdown → "Renomear objetos" → exportar.
+-- Aqui ficam só a leitura do bloco, o bloqueio (a cópia segue a base) e os
+-- avisos do log.
+
+-- cod_est do master se o produto é cópia de OUTRO produto; "" se não é.
+global InLab_Produto_BaseDaCopia
+fn InLab_Produto_BaseDaCopia produto =
+(
+    local bloco = if produto == undefined then undefined else InLab_JSON_Obter produto "bloco_3d"
+    local base = InLab_Produto_Texto bloco "base_codest"
+    if (toLower (InLab_Produto_Texto bloco "papel")) == "copia" and base != "" and base != (InLab_Produto_Texto produto "cod_est") then base else ""
+)
+
+-- Produtos da lista que são cópia do cod_est dado.
+global InLab_Produto_CopiasDe
+fn InLab_Produto_CopiasDe produtos cod =
+(
+    if cod == "" then #() else (for p in produtos where (InLab_Produto_BaseDaCopia p) == cod collect p)
+)
+
+-- "" se o produto pode ser renomeado; senão o motivo do bloqueio: o próprio
+-- produto com ok_3d = false, ou cópia cuja base está com ok_3d = false (sem
+-- master exportado não há o que copiar). Base fora da lista não bloqueia —
+-- não dá para saber — e InLab_Produto_AvisosDeBloco avisa.
+global InLab_Produto_MotivoBloqueio
+fn InLab_Produto_MotivoBloqueio produtos produto =
+(
+    local motivo = ""
+    if produto != undefined do
+    (
+        local cod = InLab_Produto_Texto produto "cod_est"
+        if not (InLab_Produto_Liberado3D produto) then
+            motivo = "Produto " + cod + " está com 3D não liberado na plataforma (ok_3d = false)"
+        else
+        (
+            local base = InLab_Produto_BaseDaCopia produto
+            local idx = if base == "" then 0 else InLab_Produto_IndicePorCodigo produtos base
+            if idx > 0 and not (InLab_Produto_Liberado3D produtos[idx]) do
+                motivo = "Produto " + cod + " é cópia do " + base + ", que está com 3D não liberado na plataforma (ok_3d = false): a cópia segue a base"
+        )
+    )
+    motivo
+)
+
+-- Log da escolha do produto: bloqueio, de qual master a cópia sai e quais
+-- cópias saem deste master.
+global InLab_Produto_AvisosDeBloco
+fn InLab_Produto_AvisosDeBloco produtos produto =
+(
+    if produto != undefined do
+    (
+        local cod = InLab_Produto_Texto produto "cod_est"
+        local motivo = InLab_Produto_MotivoBloqueio produtos produto
+        if motivo != "" do
+            InLab_Log (motivo + " — os botões de renomear vão pular este produto.") tipo:#warn
+        local base = InLab_Produto_BaseDaCopia produto
+        if base != "" do
+        (
+            if (InLab_Produto_IndicePorCodigo produtos base) == 0 do
+                InLab_Log ("Produto " + cod + " é cópia do " + base + ", que não está neste arquivo de produtos — confira se o master já foi exportado.") tipo:#warn
+            if motivo == "" do
+                InLab_Log ("Produto " + cod + " é cópia do " + base + ": sai do .max do master, com os mesmos materiais. Use 'Renomear objetos' (o objeto passa a se chamar " + cod +
+                           ") e exporte. Para voltar, escolha o " + base + " em Produto e use 'Renomear objetos' de novo.") tipo:#info
+        )
+        local copias = InLab_Produto_CopiasDe produtos cod
+        if copias.count > 0 do
+        (
+            local lista = ""
+            for i = 1 to copias.count do lista += (if i > 1 then ", " else "") + (InLab_Produto_Texto copias[i] "cod_est")
+            InLab_Log ("Produto " + cod + " é base de " + copias.count as string + " cópia(s): " + lista +
+                       ". Depois de exportar este, escolha cada cópia em Produto, use 'Renomear objetos' e exporte de novo.") tipo:#info
+        )
+    )
 )
 
 -- Rótulo da parte na UI. O qualificador entra porque o nome sozinho repete
@@ -398,10 +479,12 @@ fn InLab_Produto_Renomear alvo novoNome =
 -- ligacoes: paralelo a InLab_Produto_PartesDeMaterial (material ou undefined).
 -- Renomeia só materiais e mapas (24/09/2026, #54): objetos são renomeados
 -- por InLab_Produto_RenomearMeshes. Devolve false (e não renomeia NADA) se
--- um material estiver ligado a mais de uma parte.
+-- um material estiver ligado a mais de uma parte. produtos: (opcional) a
+-- lista do export, para o bloqueio de cópia cuja base não está liberada (#93).
 global InLab_Produto_Aplicar
-fn InLab_Produto_Aplicar produto ligacoes =
+fn InLab_Produto_Aplicar produto ligacoes produtos:#() =
 (
+    local motivo = InLab_Produto_MotivoBloqueio produtos produto
     local partes = InLab_Produto_PartesDeMaterial produto
 
     local conflito = false
@@ -413,9 +496,9 @@ fn InLab_Produto_Aplicar produto ligacoes =
                        (InLab_Produto_Rotulo partes[i]) + " e " + (InLab_Produto_Rotulo partes[j]) + ".") tipo:#err
         )
 
-    if not (InLab_Produto_Liberado3D produto) then
+    if motivo != "" then
     (
-        InLab_Produto_AvisarNaoLiberado produto
+        InLab_Log (motivo + " — pulado, nada foi renomeado.") tipo:#warn
         false
     )
     else if conflito then
@@ -572,13 +655,15 @@ fn InLab_Produto_SugerirMeshes produto ligacoes objs =
 
 -- nomes: paralelo a `objs` (mesh_final escolhido, ou "" / undefined = não
 -- renomear). Renomeia guardando no histórico do Desfazer. Devolve o número
--- de objetos renomeados. produto: (opcional) com ok_3d = false → avisa e
--- não renomeia nada (02/10/2026).
+-- de objetos renomeados. produto: / produtos: (opcionais) produto bloqueado
+-- (ok_3d = false, ou cópia de base não liberada — InLab_Produto_MotivoBloqueio)
+-- → avisa e não renomeia nada (02/10/2026).
 global InLab_Produto_RenomearMeshes
-fn InLab_Produto_RenomearMeshes objs nomes produto:undefined =
+fn InLab_Produto_RenomearMeshes objs nomes produto:undefined produtos:#() =
 (
     local nObj = 0, nAviso = 0
-    if not (InLab_Produto_Liberado3D produto) then InLab_Produto_AvisarNaoLiberado produto
+    local motivo = InLab_Produto_MotivoBloqueio produtos produto
+    if motivo != "" then InLab_Log (motivo + " — pulado, nada foi renomeado.") tipo:#warn
     else
     (
     undo "InLab: Renomear meshes" on
