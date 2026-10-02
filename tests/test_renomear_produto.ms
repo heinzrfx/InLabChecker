@@ -183,7 +183,8 @@ global INLAB_TESTE_SAIDA, INLAB_TESTE_FALHAS
         checar "MeshesDoProduto: mesh_final null fica fora, o válido entra" (meshes2.count == 1 and meshes2[1] == "0002")
         checar "Log #warn p/ parte com mesh_final vazio" (logTem #warn "mesh_final")
         local sug2 = InLab_Produto_SugerirMeshes produtos2[1] #(mPe, mBase) #(bPe, bBase)
-        checar "Sugestão: material da parte sem mesh_final não sugere nome vazio" (sug2[1] == "0002" and sug2[2] == "")
+        -- 02/10/2026: produto com um nome de objeto só → todo objeto recebe esse nome.
+        checar "Sugestão: material da parte sem mesh_final não sugere nome vazio; cai no nome único do produto" (sug2[1] == "0002" and sug2[2] == "0002")
 
         InLab_Produto_Reverter()
         checar "Reverter (partes inválidas): material Pe volta" (mPe.name == "pe_material")
@@ -308,9 +309,9 @@ global INLAB_TESTE_SAIDA, INLAB_TESTE_FALHAS
         checar "ok_3d=false: RenomearMeshes devolve 0" ((InLab_Produto_RenomearMeshes #(bBloq) #("0004") produto:produtos3[2]) == 0)
         checar "ok_3d=false: objeto NÃO renomeado, com #warn" (bBloq.name == "obj_bloq" and (logTem #warn "0004"))
 
-        -- Export real v3 (opcional; 02/10/2026, era o v2): nenhum nome de objeto com "|" e todo nome
+        -- Export real v5 (opcional; 02/10/2026, já foi v2 e v3): nenhum nome de objeto com "|" e todo nome
         -- existe em meshes[] do próprio produto.
-        local arqV2 = @"G:\Meu Drive\Trabalhos\2026\Artefacto\InlabChecker\produtos teste plugin rafa v3.json"
+        local arqV2 = @"G:\Meu Drive\Trabalhos\2026\Artefacto\InlabChecker\produtos_teste_plugin_rafa_v5.json"
         if doesFileExist arqV2 then
         (
             local prodsV2 = InLab_Produto_Lista (InLab_ParseJSON (InLab_JSON_LerArquivoUTF8 arqV2))
@@ -322,9 +323,9 @@ global INLAB_TESTE_SAIDA, INLAB_TESTE_FALHAS
                 for n in (InLab_Produto_MeshesDoProduto p) where (findString n "|") != undefined or (findItem oficiais n) == 0 do
                     append ruins ((InLab_Produto_Texto p "cod_est") + ":" + n)
             )
-            checar ("Export v3: " + prodsV2.count as string + " produtos, nomes de objeto fora de meshes[]: " + ruins as string) (prodsV2.count > 0 and ruins.count == 0)
+            checar ("Export v5: " + prodsV2.count as string + " produtos, nomes de objeto fora de meshes[]: " + ruins as string) (prodsV2.count > 0 and ruins.count == 0)
         )
-        else linha "SKIP  Export v3 não encontrado"
+        else linha "SKIP  Export v5 não encontrado"
 
         -- 12. CÓPIAS DE bloco_3d (issue #93): a cópia sai do .max do master,
         -- com a mesh renomeada para o cod_est dela e os mesmos material_id.
@@ -364,6 +365,16 @@ global INLAB_TESTE_SAIDA, INLAB_TESTE_FALHAS
         logsCapturados = #()
         InLab_Produto_AvisosDeBloco produtos4 produtos4[4]
         checar "Avisos: produto não liberado → #warn" (logTem #warn "0013")
+
+        -- Produto com UM nome de objeto (asset cru: nomes genéricos, sem
+        -- material ligado) → todos os objetos recebem esse nome.
+        local bCru1 = Box name:"Cylinder002" pos:[600,0,0]
+        local bCru2 = Box name:"Shape019" pos:[640,0,0]
+        join criados #(bCru1, bCru2)
+        local sugCru = InLab_Produto_SugerirMeshes produtos4[1] #() #(bCru1, bCru2)
+        checar ("Nome único: asset cru recebe o cod_est (" + sugCru as string + ")") (sugCru[1] == "0010" and sugCru[2] == "0010")
+        local sugCru2 = InLab_Produto_SugerirMeshes produtos[1] #() #(bCru1)
+        checar "Nome único: produto com 2 nomes não chuta" (sugCru2[1] == "")
 
         -- Ida e volta: objeto do master vira a cópia e volta, sem Desfazer.
         local mBloco = StandardMaterial name:"ART_P_Estrutura"

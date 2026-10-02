@@ -138,3 +138,22 @@ Pontos para devolver:
 3. **Luang (07119245):** continua com as 6 partes sem mesh (a definir com a Bia).
 
 No plugin, com o v3: só a Vanity Desk fica sem sugestão de família; Banqueta, Buffet e Sofá saem com sugestão provisória; os 3 produtos com `ok_3d = false` são pulados e nenhuma cópia fica bloqueada pela base.
+
+## JSON v5 (`produtos_teste_plugin_rafa_v5.json`, exportado 02/10/2026 18:20 UTC)
+
+Mesmos 66 produtos. Os três pontos devolvidos no v3 foram corrigidos: o Deslizador do Kalao master (00150099) entrou na mesh; a Luang (07119245) ganhou `mesh_final` nas 6 partes; as meshes da Vanity perderam os espaços (`00261002_Tampa1_Puxador1`). Nenhuma parte fora de subparte ficou sem mesh, nenhum nome com espaço, nenhum órfão. Segue em aberto só o `acab_id "L14_L33"`. O teste de dado real passa a ler o v5.
+
+## Teste com os assets do piloto (02/10/2026)
+
+Pasta `PILOTO PLUGIN INLAB\ARTEFACTO` (19 `.max`, nomeados pelo nome do produto, não pelo `cod_est`). Seis foram copiados para a pasta temp do Max com o `cod_est` no nome e passaram pelas funções da seção Produto e do botão Verificar: 05125111, 07129404, 07132200, 00125400, 00111091 e 09125004.
+
+- Funcionou: pré-seleção pelo nome do arquivo, família pela classe, bloqueio do `ok_3d = false` (00111091), aviso de base de cópia (09125004), animado como estático (00125400), mensagem da V-20.
+- **Sugestão zerada nos seis:** 0 materiais ligados e 0 objetos com nome sugerido. Os assets crus têm nomes genéricos (`Cylinder002`, `Material #18`, `Iron Clean`).
+- Todos reprovam na V-17 (pivot da raiz 22 a 36 cm acima do chão): arquivos ainda não preparados.
+- Pontuais: Puff Dorset sem material; Mentha com keyframes em `Plane009`; Louise com escala não resetada (inclusive negativa). Dois arquivos (Louise Amarela) não têm produto no JSON.
+
+## Decisões do usuário (02/10/2026, branch `feat/v20-critica-familias-v1`)
+
+- **V-20 crítica com produto importado.** Nome errado reprova. Sem produto importado continua em advertência.
+- **Dropdown Família só com as 4 estruturais.** `INLAB_FAMILIAS_ANIMADAS_NA_UI = false` em `core/struct_familia.ms`; as 4 animadas continuam registradas para o v2.
+- **Nome único:** produto com um só nome de objeto sugere esse nome para todos os objetos lidos (5 dos 6 assets do piloto).

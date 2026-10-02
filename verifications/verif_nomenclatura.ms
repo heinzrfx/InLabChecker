@@ -11,9 +11,11 @@
          objeto       = um dos mesh_final do produto ("|" dividido);
          material     = um dos material_id das partes (sem as subpartes so3d,
                         cujo objeto usa o material da parte-mãe).
-       Comparação exata, com maiúsculas e minúsculas. Sem produto importado a
-       V-20 fica pendente. Continua NÃO crítica (advertência): tornar crítica
-       é decisão de produto.
+       Comparação exata, com maiúsculas e minúsculas.
+       02/10/2026 (decisão do usuário): com produto importado a V-20 é CRÍTICA
+       — nome de objeto ou material errado quebra a ligação com a plataforma e
+       o conserto é um clique em "Renomear materiais" / "Renomear objetos".
+       Sem produto importado ela continua em advertência, pedindo o .json.
 
  V-21/22 — CORRIGIDOS (auditoria de 08/08/2026, cruzando com a spec v1.0
  recuperada — a versão anterior deste arquivo tinha sido escrita sem acesso
@@ -82,7 +84,7 @@ fn InLab_V20_Nomenclatura cfg produto:undefined objetos:#() nomeArquivo:unsuppli
         local msg = "produto " + cod + ": "
         if problemas.count == 0 then msg += "arquivo, " + objetos.count as string + " objeto(s) e materiais com os nomes oficiais"
         else for i = 1 to problemas.count do msg += (if i > 1 then "; " else "") + problemas[i]
-        InLab_RegistrarVerif "V-20" titulo (problemas.count == 0) msg critico:false
+        InLab_RegistrarVerif "V-20" titulo (problemas.count == 0) msg critico:true
     )
     else if cfg.validNames.count == 0 then
         InLab_RegistrarVerif "V-20" titulo false "pendente: importe o .json e escolha o produto na seção Produto para conferir os nomes — modo advertência" critico:false
