@@ -278,6 +278,7 @@ global INLAB_TESTE_SAIDA, INLAB_TESTE_FALHAS
         ---------------------------------------------------------------- V-20
         -- 02/10/2026 (issue #36): os nomes válidos saem do produto importado
         -- (.max = cod_est; objeto = mesh_final; material = material_id).
+        -- Com produto importado a V-20 é CRÍTICA (reprova); sem produto, aviso.
         limparCena()
         local jsV20 = "{\"produtos\": [" +
             "{\"cod_est\": \"0020\", \"nome\": \"MESA\", \"bloco_3d\": {\"papel\": \"master\", \"base_codest\": \"0020\"}, \"partes\": [" +
@@ -296,20 +297,21 @@ global INLAB_TESTE_SAIDA, INLAB_TESTE_FALHAS
         fn rodar20 cfg p objs arq = ( InLab_ResetarResultados(); InLab_V20_Nomenclatura cfg produto:p objetos:objs nomeArquivo:arq; statusDe "V-20" )
         checar "V-20: sem produto importado fica em advertência e pede o produto" ((rodar20 cfgEst undefined #(oMesa) "0020") == #warning and (findString (mensagemDe "V-20") "seção Produto") != undefined)
         checar ("V-20: arquivo, objetos e materiais com os nomes do produto passa (" + mensagemDe "V-20" + ")") ((rodar20 cfgEst prodsV20[1] #(oMesa, oPrato) "0020") == #pass)
-        checar "V-20: arquivo com outro nome vira advertência" ((rodar20 cfgEst prodsV20[1] #(oMesa, oPrato) "mesa_final_v3") == #warning and (findString (mensagemDe "V-20") "mesa_final_v3") != undefined)
-        checar "V-20: cena não salva vira advertência" ((rodar20 cfgEst prodsV20[1] #(oMesa, oPrato) "") == #warning)
+        checar "V-20: arquivo com outro nome reprova" ((rodar20 cfgEst prodsV20[1] #(oMesa, oPrato) "mesa_final_v3") == #fail and (findString (mensagemDe "V-20") "mesa_final_v3") != undefined)
+        checar "V-20: cena não salva reprova" ((rodar20 cfgEst prodsV20[1] #(oMesa, oPrato) "") == #fail)
+        checar "V-20: nome errado reprova o produto (crítica)" (not (InLab_AprovacaoFinal()))
         oPrato.name = "prato solto"
-        checar "V-20: objeto fora dos nomes do produto é citado" ((rodar20 cfgEst prodsV20[1] #(oMesa, oPrato) "0020") == #warning and (findString (mensagemDe "V-20") "prato solto") != undefined)
+        checar "V-20: objeto fora dos nomes do produto é citado" ((rodar20 cfgEst prodsV20[1] #(oMesa, oPrato) "0020") == #fail and (findString (mensagemDe "V-20") "prato solto") != undefined)
         oPrato.name = "0020_Prato"
         mPratoV.name = "ART_Prato_1"
-        checar "V-20: material com o material_id da subparte so3d não vale (é o da parte-mãe)" ((rodar20 cfgEst prodsV20[1] #(oMesa, oPrato) "0020") == #warning and (findString (mensagemDe "V-20") "ART_Prato_1") != undefined)
+        checar "V-20: material com o material_id da subparte so3d não vale (é o da parte-mãe)" ((rodar20 cfgEst prodsV20[1] #(oMesa, oPrato) "0020") == #fail and (findString (mensagemDe "V-20") "ART_Prato_1") != undefined)
         mPratoV.name = "art_p_prato"
-        checar "V-20: nome de material diferencia maiúscula de minúscula" ((rodar20 cfgEst prodsV20[1] #(oMesa, oPrato) "0020") == #warning)
+        checar "V-20: nome de material diferencia maiúscula de minúscula" ((rodar20 cfgEst prodsV20[1] #(oMesa, oPrato) "0020") == #fail)
         mPratoV.name = "ART_P_Prato"
         oMesa.name = "0021"
         checar "V-20: cópia aceita o .max com o código do master" ((rodar20 cfgEst prodsV20[2] #(oMesa) "0020") == #pass)
         checar "V-20: cópia aceita o .max com o próprio código" ((rodar20 cfgEst prodsV20[2] #(oMesa) "0021") == #pass)
-        checar "V-20: produto sem mesh_final no JSON vira advertência" ((rodar20 cfgEst prodsV20[3] #(oMesa) "0022") == #warning and (findString (mensagemDe "V-20") "mesh_final") != undefined)
+        checar "V-20: produto sem mesh_final no JSON reprova" ((rodar20 cfgEst prodsV20[3] #(oMesa) "0022") == #fail and (findString (mensagemDe "V-20") "mesh_final") != undefined)
         oMesa.name = "0020"
         InLab_RodarVerificacoes cfgEst produto:prodsV20[1]
         checar "V-20: o orquestrador repassa o produto (mensagem cita o código)" ((findString (mensagemDe "V-20") "0020") != undefined)

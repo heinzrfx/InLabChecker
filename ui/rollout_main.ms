@@ -178,7 +178,8 @@ rollout InLabSecProduto "Produto" width:420
     button btnImportarProduto "Importar informações do produto" width:395 height:24 tooltip:"Abre o arquivo do produto exportado da plataforma (.json)."
     dropdownlist ddlProduto "Produto:" items:#() width:395
     -- 23/09/2026: família que as verificações e o "Alvo da família" usam.
-    -- Item 1 = nenhuma; os demais seguem a ordem de InLab_Familias.
+    -- Item 1 = nenhuma; os demais seguem a ordem de InLab_FamiliasDaUI (02/10/2026:
+    -- só as estruturais no v1 — ver core\struct_familia.ms).
     dropdownlist ddlFamilia "Família:" items:#() width:395
     button btnLerSelecao "Ler materiais" width:395 height:24 tooltip:"Lista os materiais dos objetos selecionados."
     listbox lbxPartes "Parte  →  material:" items:#() height:6 width:395
@@ -234,14 +235,18 @@ rollout InLabSecProduto "Produto" width:420
     )
 
     fn familiaEscolhida =
-        if ddlFamilia.selection > 1 and ddlFamilia.selection <= InLab_Familias.count + 1 then InLab_Familias[ddlFamilia.selection - 1].nome else ""
+    (
+        local fams = InLab_FamiliasDaUI()
+        if ddlFamilia.selection > 1 and ddlFamilia.selection <= fams.count + 1 then fams[ddlFamilia.selection - 1].nome else ""
+    )
 
     fn mostrarFamilia =
     (
-        ddlFamilia.items = #("— nenhuma —") + (for f in InLab_Familias collect (InLab_FamiliaRotulo f.nome))
+        local fams = InLab_FamiliasDaUI()
+        ddlFamilia.items = #("— nenhuma —") + (for f in fams collect (InLab_FamiliaRotulo f.nome))
         local idx = 0
         if InLab_FamiliaAtiva != undefined do
-            for i = 1 to InLab_Familias.count where InLab_Familias[i].nome == InLab_FamiliaAtiva.nome do idx = i
+            for i = 1 to fams.count where fams[i].nome == InLab_FamiliaAtiva.nome do idx = i
         ddlFamilia.selection = idx + 1
     )
 

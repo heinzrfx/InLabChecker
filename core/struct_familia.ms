@@ -16,6 +16,11 @@
  23/09/2026: InLab_DefinirFamiliaAtiva e InLab_FamiliaRotulo. A família ativa
  voltou a ter quem a defina (dropdown Família da seção Produto) — ver a nota
  em InLab_FamiliaAtiva abaixo.
+
+ 02/10/2026: InLab_FamiliasDaUI. O v1 do plugin trata produto animado como
+ estático (Bianca, respostas v3), então o dropdown Família mostra só as 4
+ estruturais. As 4 animadas continuam registradas, com as verificações e os
+ testes delas: para o v2 basta INLAB_FAMILIAS_ANIMADAS_NA_UI = true.
 ================================================================================
 */
 
@@ -91,6 +96,16 @@ fn InLab_RegistrarFamilia cfg =
     if idx > 0 then InLab_Familias[idx] = cfg
     else append InLab_Familias cfg
     cfg
+)
+
+-- 02/10/2026: famílias que o dropdown Família oferece. false = só as
+-- estruturais (v1: animado entra como estático); true = as 8.
+global INLAB_FAMILIAS_ANIMADAS_NA_UI = false
+
+global InLab_FamiliasDaUI
+fn InLab_FamiliasDaUI =
+(
+    for f in InLab_Familias where INLAB_FAMILIAS_ANIMADAS_NA_UI or not f.animado collect f
 )
 
 -- Busca uma config pelo nome interno (ex.: "giro_assento").

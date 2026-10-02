@@ -12,6 +12,7 @@
 global InLab_ParseJSON, InLab_JSON_Obter, InLab_JSON_LerArquivoUTF8, InLab_Log
 global InLab_Produto_Lista, InLab_Produto_SugerirFamilia
 global InLab_Familias, InLab_FamiliaAtiva, InLab_DefinirFamiliaAtiva, InLab_FamiliaRotulo
+global InLab_FamiliasDaUI, INLAB_FAMILIAS_ANIMADAS_NA_UI
 global InLab_RodarVerificacoes, InLab_VerifResults
 global INLAB_TESTE_SAIDA, INLAB_TESTE_FALHAS
 (
@@ -103,6 +104,15 @@ global INLAB_TESTE_SAIDA, INLAB_TESTE_FALHAS
 
         -- 2. DEFINIR FAMÍLIA ATIVA
         checar "8 famílias registradas" (InLab_Familias.count == 8)
+        -- 02/10/2026: o v1 trata animado como estático — o dropdown Família só
+        -- mostra as 4 estruturais; as animadas continuam registradas para o v2.
+        local daUI = InLab_FamiliasDaUI()
+        checar ("Dropdown: só as 4 famílias estruturais (" + (for f in daUI collect f.nome) as string + ")") (daUI.count == 4 and (for f in daUI where f.animado collect f).count == 0)
+        checar "Dropdown: toda família sugerida pelo produto está no dropdown" (
+            (for c in casos where (for f in daUI where f.nome == c[5] collect f).count == 0 collect c).count == 0)
+        INLAB_FAMILIAS_ANIMADAS_NA_UI = true
+        checar "Dropdown: com a constante ligada voltam as 8" ((InLab_FamiliasDaUI()).count == 8)
+        INLAB_FAMILIAS_ANIMADAS_NA_UI = false
         InLab_DefinirFamiliaAtiva "pernas_tampo"
         checar "Definir: pernas_tampo" (InLab_FamiliaAtiva != undefined and InLab_FamiliaAtiva.nome == "pernas_tampo")
         InLab_DefinirFamiliaAtiva "nao_existe"

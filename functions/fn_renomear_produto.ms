@@ -625,7 +625,10 @@ fn InLab_Produto_NomeLembraMesh nomeObj mesh =
 --   1º o objeto já se chama exatamente um mesh_final (plugin já rodou);
 --   2º pelo material ligado: o objeto usa materiais de partes com UM só
 --      mesh_final (a lógica que o Aplicar usava até 24/09/2026);
---   3º por semelhança de nome (InLab_Produto_NomeLembraMesh).
+--   3º por semelhança de nome (InLab_Produto_NomeLembraMesh);
+--   4º (02/10/2026) o produto tem UM nome de objeto só: é esse. Nos assets
+--      reais do piloto os nomes são genéricos (Cylinder002, Shape019) e os
+--      três passos acima não ligavam nada; 5 de 6 produtos tinham um nome só.
 -- ligacoes pode ser #() (materiais não lidos): aí só 1º e 3º.
 global InLab_Produto_SugerirMeshes
 fn InLab_Produto_SugerirMeshes produto ligacoes objs =
@@ -647,6 +650,7 @@ fn InLab_Produto_SugerirMeshes produto ligacoes objs =
                 if porMat.count == 1 then sug = porMat[1]
                 else
                     for m in meshes where sug == "" and (InLab_Produto_NomeLembraMesh o.name m) do sug = m
+                if sug == "" and meshes.count == 1 do sug = meshes[1]
             )
         )
         sug
