@@ -122,3 +122,19 @@ A cópia não tem `.max` próprio: sai do `.max` do master com a mesh renomeada 
 4. Para voltar ao master: escolher o master de novo e "Renomear objetos". **Não usar "Desfazer nomes"** para isso: ele desfaz a sessão inteira, inclusive a renomeação do master.
 
 O que entrou: o log da escolha do produto diz de qual master a cópia sai e lista as cópias de um master; cópia cuja base está com `ok_3d = false` é pulada junto (a cópia segue a base); base fora do arquivo de produtos gera aviso, sem bloquear.
+
+## Conferência do JSON v3 (`produtos teste plugin rafa v3.json`, exportado 02/10/2026 16:08 UTC)
+
+Mesmos 66 produtos do v2, mesmas chaves. Bate com o que a Bianca afirmou:
+- 0 `cod_est` duplicado, 0 `mesh_final` órfão, todo master com a própria base.
+- `ok_3d = false` só em 00111091, 00122093 e 07131A31 (09125006 e 09125010 foram liberados).
+- As 9 cópias têm exatamente os mesmos `material_id` do master.
+
+Diferenças em relação ao v2: 00150099 (Kalao master) ganhou a parte Deslizador; 09125006 e 09125010 mudaram `ok_fd` e `ok_3d`. Nada mais.
+
+Pontos para devolver:
+1. **00150099 (Kalao master):** o Deslizador novo veio com `mesh_final` vazio e fora de `meshes[0].partes`. Na cópia 06150000 ele está na mesh `06150000`.
+2. **Vanity (00261002):** os nomes de mesh com espaço continuam (ela disse que serão limpos).
+3. **Luang (07119245):** continua com as 6 partes sem mesh (a definir com a Bia).
+
+No plugin, com o v3: só a Vanity Desk fica sem sugestão de família; Banqueta, Buffet e Sofá saem com sugestão provisória; os 3 produtos com `ok_3d = false` são pulados e nenhuma cópia fica bloqueada pela base.
