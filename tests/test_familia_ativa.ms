@@ -67,7 +67,9 @@ global INLAB_TESTE_SAIDA, INLAB_TESTE_FALHAS
             #("POLTRONA", "POLTRONA SLUE GIRATÓRIA", "true", #(), "giro_assento"),
             #("APARADOR", "APARADOR C/ GAVETAS", "true", #(#("Gavetas", "ART_C_Gavetas")), "translacao"),
             #("BUFFET", "BUFFET ROSSETTI", "true", #(#("Portas", "ART_P_Portas"), #("Gavetas", "ART_P_Gavetas")), "rotacao"),
-            #("BICAMA", "BICAMA ZORN", "true", #(#("Estrutura", "07144006")), "movimento_especial")
+            #("BICAMA", "BICAMA ZORN", "true", #(#("Estrutura", "07144006")), "movimento_especial"),
+            -- 02/10/2026 (Bianca): em mesa "giratória" é o prato, não o assento.
+            #("MESA DE JANTAR", "MESA DE JANTAR BERRIZ - C/ PRATO GIRATORIO", "true", #(#("Prato", "00124600_Prato_Giratoria")), "rotacao")
         )
         for c in casos do
         (

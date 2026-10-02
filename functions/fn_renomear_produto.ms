@@ -40,6 +40,20 @@
  com pré-ligação por InLab_Produto_SugerirMeshes (nome já igual → material
  ligado → semelhança de nome). Os dois usam o mesmo histórico acumulado, e
  InLab_Produto_Reverter desfaz os dois.
+
+ 02/10/2026 (export v2, respostas da Bianca — docs\superpowers\specs\
+ 2026-10-02-json-v2-respostas-bianca.md):
+   - `so3d:true` (Porta_1, Tampa_1...) vem com `tipo:""` de propósito: o aviso
+     "Classificar a parte na plataforma" era falso alarme e não sai mais.
+   - "|" no `mesh_final` = a parte está em mais de uma mesh. O nome é dividido
+     (InLab_Produto_MeshesDaParte); antes "A|B" entrava como um nome só.
+   - parte-mãe de subparte so3d (Porta) vem sem `mesh_final`: a geometria
+     está nas subpartes. Sai #info em vez de #warn.
+   - `ok_3d:false`: avisa e pula (InLab_Produto_Liberado3D) — Aplicar e
+     RenomearMeshes não renomeiam nada. Export sem o campo conta como liberado.
+   - sugestão de família: em mesa, "giratória" é o prato (rotacao), não o
+     assento. As classes Escrivaninha, Mesa de Jogo e Vanity Desk seguem sem
+     sugestão até a Bianca mandar a tabela classe → família.
 ================================================================================
 */
 
@@ -73,6 +87,56 @@ global InLab_Produto_ParteValida
 fn InLab_Produto_ParteValida parte campo =
 (
     (InLab_Produto_Texto parte campo) != ""
+)
+
+-- Campo booleano do export (true/false do JSON; "true" em texto também vale).
+global InLab_Produto_Booleano
+fn InLab_Produto_Booleano obj chave =
+(
+    (toLower (InLab_Produto_Texto obj chave)) == "true"
+)
+
+-- 02/10/2026: nomes de mesh da parte. "|" no mesh_final = a parte está em
+-- mais de um grupo de mesh (ex.: "00124600|00124600_Prato_Giratoria").
+-- #() se o campo vier vazio ou null.
+global InLab_Produto_MeshesDaParte
+fn InLab_Produto_MeshesDaParte parte =
+(
+    local nomes = #()
+    for n in (filterString (InLab_Produto_Texto parte "mesh_final") "|") do
+    (
+        local limpo = trimLeft (trimRight n)
+        if limpo != "" do append nomes limpo
+    )
+    nomes
+)
+
+-- 02/10/2026: a parte é mãe de alguma subparte só de 3D (so3d com
+-- subparte_de = nome dela)? A mãe vem sem mesh_final de propósito.
+global InLab_Produto_EhMaeDeSubparte
+fn InLab_Produto_EhMaeDeSubparte produto parte =
+(
+    local partes = if produto == undefined then undefined else InLab_JSON_Obter produto "partes"
+    local nome = InLab_Produto_Texto parte "nome_parte"
+    local ehMae = false
+    if nome != "" and isKindOf partes Array do
+        for p in partes where not ehMae and (InLab_Produto_Booleano p "so3d") and (InLab_Produto_Texto p "subparte_de") == nome do ehMae = true
+    ehMae
+)
+
+-- 02/10/2026: false só quando o export traz ok_3d = false (produto ainda não
+-- liberado para o 3D na plataforma). Export sem o campo conta como liberado.
+global InLab_Produto_Liberado3D
+fn InLab_Produto_Liberado3D produto =
+(
+    produto == undefined or (toLower (InLab_Produto_Texto produto "ok_3d")) != "false"
+)
+
+-- Loga o aviso do produto não liberado. Quem chama pula a operação.
+global InLab_Produto_AvisarNaoLiberado
+fn InLab_Produto_AvisarNaoLiberado produto =
+(
+    InLab_Log ("Produto " + (InLab_Produto_Texto produto "cod_est") + " está com 3D não liberado na plataforma (ok_3d = false) — pulado, nada foi renomeado.") tipo:#warn
 )
 
 -- Índice (1-based) do produto com esse cod_est; 0 se não houver.
@@ -264,7 +328,8 @@ fn InLab_Produto_PartesContem produto trecho =
 )
 
 -- #(nomeFamilia, motivo). nomeFamilia = "" quando não dá para sugerir.
--- Animados: giratório → giro_assento; porta → rotacao; gaveta → translacao;
+-- Animados: giratório → giro_assento (em mesa → rotacao: gira o prato, não
+-- o assento — Bianca, 02/10/2026); porta → rotacao; gaveta → translacao;
 -- outro movimento → movimento_especial. Estáticos: pela tabela acima.
 global InLab_Produto_SugerirFamilia
 fn InLab_Produto_SugerirFamilia produto =
@@ -276,7 +341,10 @@ fn InLab_Produto_SugerirFamilia produto =
     (
         local temPorta = InLab_Produto_PartesContem produto "porta"
         local temGaveta = InLab_Produto_PartesContem produto "gaveta"
-        if (findString nome "girat") != undefined then
+        local ehMesa = (findString classe "mesa") == 1 or classe == "coluna de jantar"
+        if (findString nome "girat") != undefined and ehMesa then
+            #("rotacao", "animado, mesa com prato giratório")
+        else if (findString nome "girat") != undefined then
             #("giro_assento", "animado, nome com 'giratória'")
         else if temPorta then
             #("rotacao", "animado, com portas" + (if temGaveta then " (também tem gavetas: confira)" else ""))
@@ -328,7 +396,12 @@ fn InLab_Produto_Aplicar produto ligacoes =
                        (InLab_Produto_Rotulo partes[i]) + " e " + (InLab_Produto_Rotulo partes[j]) + ".") tipo:#err
         )
 
-    if conflito then
+    if not (InLab_Produto_Liberado3D produto) then
+    (
+        InLab_Produto_AvisarNaoLiberado produto
+        false
+    )
+    else if conflito then
     (
         InLab_Log "Nada foi renomeado — cada material só pode ter um nome. Corrija as ligações e aplique de novo." tipo:#err
         false
@@ -356,7 +429,8 @@ fn InLab_Produto_Aplicar produto ligacoes =
                 )
                 else
                 (
-                    if (InLab_Produto_Texto partes[i] "tipo") == "" do
+                    -- 02/10/2026: subparte so3d vem sem tipo de propósito (não é falta de classificação).
+                    if (InLab_Produto_Texto partes[i] "tipo") == "" and not (InLab_Produto_Booleano partes[i] "so3d") do
                     (
                         InLab_Log ("Parte '" + rot + "' sem tipo no JSON — nome provisório '" + mid + "'. Classificar a parte na plataforma.") tipo:#warn
                         nAviso += 1
@@ -409,7 +483,8 @@ fn InLab_Produto_Aplicar produto ligacoes =
 
 -- mesh_final distintos e válidos do produto, na ordem das partes. Parte com
 -- mesh_final vazio/null fica de fora (InLab_Produto_ParteValida, #46) —
--- avisar:true loga cada uma.
+-- avisar:true loga cada uma (#info se for parte-mãe de subparte so3d, que
+-- vem sem mesh de propósito; #warn nas demais). 02/10/2026: "|" divide.
 global InLab_Produto_MeshesDoProduto
 fn InLab_Produto_MeshesDoProduto produto avisar:false =
 (
@@ -418,8 +493,11 @@ fn InLab_Produto_MeshesDoProduto produto avisar:false =
     if isKindOf partes Array do
         for p in partes do
         (
-            if InLab_Produto_ParteValida p "mesh_final" then
-                appendIfUnique meshes (InLab_Produto_Texto p "mesh_final")
+            local daParte = InLab_Produto_MeshesDaParte p
+            if daParte.count > 0 then
+                for n in daParte do appendIfUnique meshes n
+            else if avisar and (InLab_Produto_EhMaeDeSubparte produto p) then
+                InLab_Log ("Parte '" + (InLab_Produto_Rotulo p) + "' não tem mesh própria — a geometria está nas subpartes.") tipo:#info
             else if avisar do
                 InLab_Log ("Parte '" + (InLab_Produto_Rotulo p) + "' sem mesh_final no JSON — não entra na lista de nomes de objeto.") tipo:#warn
         )
@@ -465,8 +543,8 @@ fn InLab_Produto_SugerirMeshes produto ligacoes objs =
             (
                 local porMat = #()
                 for i = 1 to partes.count where i <= ligacoes.count and ligacoes[i] != undefined and
-                    (InLab_Produto_ParteValida partes[i] "mesh_final") and (InLab_Produto_ObjUsaMaterial o ligacoes[i]) do
-                    appendIfUnique porMat (InLab_Produto_Texto partes[i] "mesh_final")
+                    (InLab_Produto_ObjUsaMaterial o ligacoes[i]) do
+                    for n in (InLab_Produto_MeshesDaParte partes[i]) do appendIfUnique porMat n
                 if porMat.count == 1 then sug = porMat[1]
                 else
                     for m in meshes where sug == "" and (InLab_Produto_NomeLembraMesh o.name m) do sug = m
@@ -478,11 +556,15 @@ fn InLab_Produto_SugerirMeshes produto ligacoes objs =
 
 -- nomes: paralelo a `objs` (mesh_final escolhido, ou "" / undefined = não
 -- renomear). Renomeia guardando no histórico do Desfazer. Devolve o número
--- de objetos renomeados.
+-- de objetos renomeados. produto: (opcional) com ok_3d = false → avisa e
+-- não renomeia nada (02/10/2026).
 global InLab_Produto_RenomearMeshes
-fn InLab_Produto_RenomearMeshes objs nomes =
+fn InLab_Produto_RenomearMeshes objs nomes produto:undefined =
 (
     local nObj = 0, nAviso = 0
+    if not (InLab_Produto_Liberado3D produto) then InLab_Produto_AvisarNaoLiberado produto
+    else
+    (
     undo "InLab: Renomear meshes" on
     (
         for i = 1 to objs.count do
@@ -511,6 +593,7 @@ fn InLab_Produto_RenomearMeshes objs nomes =
         )
     )
     InLab_Log ("Renomear objetos: " + nObj as string + " objeto(s) renomeado(s) · " + nAviso as string + " aviso(s).") tipo:#ok
+    )
     nObj
 )
 
