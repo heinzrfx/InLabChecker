@@ -111,3 +111,14 @@ Mudança de sugestão em relação ao que o plugin fazia: Mesa de Jantar / Centr
 - **Nomes de objeto de produto animado no v1:** se o animado entra como estático, o objeto é um só (`cod_est`) ou as meshes separadas (`codEst_Porta_1`, `codEst_GavetaFrente_Gaveta`) continuam valendo? Hoje o dropdown "Nome do objeto" oferece todos os nomes de `mesh_final`.
 - **Variantes de posição (issue #92):** como se chama o `.max` de cada variante, e a pré-seleção pelo nome do arquivo precisa reconhecer `codEst_L11`.
 - **`L14_L33`** e **Luang 07119245:** com a Bia.
+
+## Cópias de `bloco_3d` no plugin (issue #93, branch `feat/produto-copias-bloco3d`)
+
+A cópia não tem `.max` próprio: sai do `.max` do master com a mesh renomeada e os mesmos `material_id`. O fluxo usa o que já existia:
+
+1. Abrir o `.max` do master (pré-selecionado pelo nome do arquivo), renomear e exportar.
+2. Escolher a cópia no dropdown Produto. Os materiais já vêm ligados (mesmo `material_id`) e "Ler objetos" sugere o nome da cópia.
+3. "Renomear objetos" e exportar.
+4. Para voltar ao master: escolher o master de novo e "Renomear objetos". **Não usar "Desfazer nomes"** para isso: ele desfaz a sessão inteira, inclusive a renomeação do master.
+
+O que entrou: o log da escolha do produto diz de qual master a cópia sai e lista as cópias de um master; cópia cuja base está com `ok_3d = false` é pulada junto (a cópia segue a base); base fora do arquivo de produtos gera aviso, sem bloquear.

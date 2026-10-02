@@ -15,6 +15,7 @@ global InLab_Produto_MeshesDoProduto, InLab_Produto_SugerirMeshes, InLab_Produto
 global InLab_Produto_NomeLembraMesh
 global InLab_Produto_MeshesDaParte, InLab_Produto_Liberado3D, InLab_Produto_EhMaeDeSubparte
 global InLab_Produto_PartesDeMaterial
+global InLab_Produto_BaseDaCopia, InLab_Produto_CopiasDe, InLab_Produto_MotivoBloqueio, InLab_Produto_AvisosDeBloco
 global InLab_JSON_LerArquivoUTF8
 global INLAB_TESTE_SAIDA, INLAB_TESTE_FALHAS
 (
@@ -324,6 +325,64 @@ global INLAB_TESTE_SAIDA, INLAB_TESTE_FALHAS
             checar ("Export v2: " + prodsV2.count as string + " produtos, nomes de objeto fora de meshes[]: " + ruins as string) (prodsV2.count > 0 and ruins.count == 0)
         )
         else linha "SKIP  Export v2 não encontrado"
+
+        -- 12. CÓPIAS DE bloco_3d (issue #93): a cópia sai do .max do master,
+        -- com a mesh renomeada para o cod_est dela e os mesmos material_id.
+        fn prodBloco cod papel base ok3d =
+            "{\"cod_est\": \"" + cod + "\", \"nome\": \"P" + cod + "\", \"ok_3d\": " + ok3d +
+            ", \"bloco_3d\": {\"papel\": \"" + papel + "\", \"base_codest\": \"" + base + "\", \"duplicar_renomear\": " + (if papel == "copia" then "true" else "false") + "}" +
+            ", \"partes\": [{\"nome_parte\": \"Estrutura\", \"qualificador\": \"\", \"tipo\": \"P\", \"material_id\": \"ART_P_Estrutura\", \"mesh_final\": \"" + cod + "\"}]}"
+        local js4 = "{\"produtos\": [" + (prodBloco "0010" "master" "0010" "true") + ", " + (prodBloco "0011" "copia" "0010" "true") + ", " +
+            (prodBloco "0012" "copia" "0013" "true") + ", " + (prodBloco "0013" "master" "0013" "false") + ", " +
+            (prodBloco "0014" "copia" "9999" "true") + ", " + (prodBloco "0015" "copia" "0010" "true") + "]}"
+        local produtos4 = InLab_Produto_Lista (InLab_ParseJSON js4)
+        checar "BaseDaCopia: master não tem base" ((InLab_Produto_BaseDaCopia produtos4[1]) == "")
+        checar "BaseDaCopia: cópia devolve o base_codest" ((InLab_Produto_BaseDaCopia produtos4[2]) == "0010")
+        checar "BaseDaCopia: export sem bloco_3d → \"\"" ((InLab_Produto_BaseDaCopia produtos[1]) == "")
+        local copias = InLab_Produto_CopiasDe produtos4 "0010"
+        checar ("CopiasDe: 0010 é base de 0011 e 0015 (" + copias.count as string + ")") (copias.count == 2 and (InLab_Produto_Texto copias[1] "cod_est") == "0011" and (InLab_Produto_Texto copias[2] "cod_est") == "0015")
+        checar "CopiasDe: 0013 é base de 1; uma cópia não é base de ninguém" ((InLab_Produto_CopiasDe produtos4 "0013").count == 1 and (InLab_Produto_CopiasDe produtos4 "0011").count == 0)
+        checar "MotivoBloqueio: master liberado → \"\"" ((InLab_Produto_MotivoBloqueio produtos4 produtos4[1]) == "")
+        checar "MotivoBloqueio: cópia de base liberada → \"\"" ((InLab_Produto_MotivoBloqueio produtos4 produtos4[2]) == "")
+        checar "MotivoBloqueio: cópia de base NÃO liberada cita a base" ((findString (InLab_Produto_MotivoBloqueio produtos4 produtos4[3]) "0013") != undefined)
+        checar "MotivoBloqueio: o próprio produto não liberado" ((InLab_Produto_MotivoBloqueio produtos4 produtos4[4]) != "")
+        checar "MotivoBloqueio: base fora do arquivo não bloqueia" ((InLab_Produto_MotivoBloqueio produtos4 produtos4[5]) == "")
+        checar "MotivoBloqueio: sem a lista de produtos vale só o próprio ok_3d" ((InLab_Produto_MotivoBloqueio #() produtos4[3]) == "")
+
+        logsCapturados = #()
+        InLab_Produto_AvisosDeBloco produtos4 produtos4[1]
+        checar "Avisos: master lista as cópias" ((logTem #info "0011") and (logTem #info "0015"))
+        logsCapturados = #()
+        InLab_Produto_AvisosDeBloco produtos4 produtos4[2]
+        checar "Avisos: cópia diz de qual master sai" (logTem #info "0010")
+        logsCapturados = #()
+        InLab_Produto_AvisosDeBloco produtos4 produtos4[3]
+        checar "Avisos: cópia de base não liberada → #warn com a base" (logTem #warn "0013")
+        logsCapturados = #()
+        InLab_Produto_AvisosDeBloco produtos4 produtos4[5]
+        checar "Avisos: base fora do arquivo → #warn" (logTem #warn "9999")
+        logsCapturados = #()
+        InLab_Produto_AvisosDeBloco produtos4 produtos4[4]
+        checar "Avisos: produto não liberado → #warn" (logTem #warn "0013")
+
+        -- Ida e volta: objeto do master vira a cópia e volta, sem Desfazer.
+        local mBloco = StandardMaterial name:"ART_P_Estrutura"
+        local bBloco = Box name:"0010" material:mBloco pos:[560,0,0]
+        append criados bBloco
+        local ligB = InLab_Produto_SugerirLigacoes (InLab_Produto_PartesDeMaterial produtos4[2]) #(mBloco)
+        checar "Cópia: material com o mesmo material_id do master já vem ligado" (ligB[1] == mBloco)
+        local sugC = InLab_Produto_SugerirMeshes produtos4[2] ligB #(bBloco)
+        checar ("Cópia: objeto do master recebe o nome da cópia (veio '" + sugC[1] + "')") (sugC[1] == "0011")
+        checar "Cópia: RenomearMeshes renomeia" ((InLab_Produto_RenomearMeshes #(bBloco) sugC produto:produtos4[2] produtos:produtos4) == 1 and bBloco.name == "0011")
+        local sugM = InLab_Produto_SugerirMeshes produtos4[1] ligB #(bBloco)
+        InLab_Produto_RenomearMeshes #(bBloco) sugM produto:produtos4[1] produtos:produtos4
+        checar "Volta: escolher o master de novo devolve o nome dele" (bBloco.name == "0010")
+
+        logsCapturados = #()
+        checar "Cópia de base não liberada: RenomearMeshes devolve 0" ((InLab_Produto_RenomearMeshes #(bBloco) #("0012") produto:produtos4[3] produtos:produtos4) == 0 and bBloco.name == "0010")
+        checar "Cópia de base não liberada: #warn cita a base" (logTem #warn "0013")
+        checar "Cópia de base não liberada: Aplicar devolve false" ((InLab_Produto_Aplicar produtos4[3] #(mBloco) produtos:produtos4) == false)
+        InLab_Produto_Reverter()
 
         -- Ctrl+Z nativo NÃO é testável daqui: rodado de dentro do script,
         -- `max undo` desfaz o script inteiro (inclusive a criação das caixas),
