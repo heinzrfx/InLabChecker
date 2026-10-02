@@ -36,7 +36,7 @@ struct FamiliaConfig
     requiresInterior = false,      -- V-39: interior modelado obrigatório (Translação/Rotação)
     tampoAcessorio   = false,      -- V-38: só relevante para Pernas+Tampo
     materialTypes    = #(),        -- ex.: #("zona_acabamento"), #("palha"), #("cristal") → V-35/36/37
-    validNames       = #(),        -- V-20: vazio até a nomenclatura oficial ser definida (fica em advertência)
+    validNames       = #(),        -- V-20: vazio. Desde 02/10/2026 os nomes saem do produto importado (verif_nomenclatura.ms)
     limitesPorParte  = #(),        -- V-04: #("Prefixo", limiteMax) por parte. Vazio até Bianca definir por família.
 
     -- Gera a descrição da config como ARRAY de linhas, prontas para o log da UI.
@@ -55,7 +55,7 @@ struct FamiliaConfig
         append L ("Interior modelado (V-39): " + (if requiresInterior then "obrigatório" else "não se aplica"))
         append L ("Tampo acessório (V-38): " + (if tampoAcessorio then "sim" else "não"))
         append L ("Materiais especiais: " + (if materialTypes.count > 0 then (materialTypes as string) else "nenhum"))
-        append L ("Nomes válidos (V-20): " + (if validNames.count == 0 then "pendente — verificação em modo advertência" else (validNames as string)))
+        append L ("Nomes válidos (V-20): " + (if validNames.count == 0 then "saem do produto importado na seção Produto" else (validNames as string)))
         append L ("Limites por parte (V-04): " + (if limitesPorParte.count == 0 then "pendente — verificação em modo advertência" else (limitesPorParte as string)))
         L
     )
