@@ -1695,6 +1695,8 @@ O flatten decide sozinho onde corta. Antes de ter código, uma sondagem curta te
 
 Se funcionar, vira a Tarefa 7c no mesmo formato da Tarefa 7. Se não, avise o usuário: o checkbox "Preferir seams em regiões ocultas" ficaria sem efeito, e ele decide se sai da UI.
 
+**Resultado (02/10/2026, `docs/superpowers/specs/2026-10-02-autouv-seams-ocultas-sondagem.md`):** a costura funciona, mas não compensa. No Box013 nenhum limite cumpre o critério com ganho que valha, e o aproveitamento cai de 20 a 30 pontos nas duas peças. O caminho inverso (cortar só onde a ocultação é alta) chegou aos mesmos números. Decisão do usuário: a issue #4 fecha sem Tarefa 7c e o checkbox continua fora da UI.
+
 ---
 
 ### Tarefa 8 (Fase 4): organizar e empacotar
