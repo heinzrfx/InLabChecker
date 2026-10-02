@@ -15,6 +15,7 @@ global InLab_Produto_MeshesDoProduto, InLab_Produto_SugerirMeshes, InLab_Produto
 global InLab_Produto_NomeLembraMesh
 global InLab_Produto_MeshesDaParte, InLab_Produto_Liberado3D, InLab_Produto_EhMaeDeSubparte
 global InLab_Produto_PartesDeMaterial
+global InLab_Produto_Variantes, InLab_Produto_IndicePorArquivo
 global InLab_Produto_BaseDaCopia, InLab_Produto_CopiasDe, InLab_Produto_MotivoBloqueio, InLab_Produto_AvisosDeBloco
 global InLab_JSON_LerArquivoUTF8
 global INLAB_TESTE_SAIDA, INLAB_TESTE_FALHAS
@@ -320,6 +321,7 @@ global INLAB_TESTE_SAIDA, INLAB_TESTE_FALHAS
             (
                 local ms = InLab_JSON_Obter p "meshes"
                 local oficiais = if isKindOf ms Array then (for m in ms collect (InLab_Produto_Texto m "nome")) else #()
+                join oficiais (InLab_Produto_Variantes p) -- #92: nome das variantes de posição também é oficial
                 for n in (InLab_Produto_MeshesDoProduto p) where (findString n "|") != undefined or (findItem oficiais n) == 0 do
                     append ruins ((InLab_Produto_Texto p "cod_est") + ":" + n)
             )
@@ -394,6 +396,31 @@ global INLAB_TESTE_SAIDA, INLAB_TESTE_FALHAS
         checar "Cópia de base não liberada: #warn cita a base" (logTem #warn "0013")
         checar "Cópia de base não liberada: Aplicar devolve false" ((InLab_Produto_Aplicar produtos4[3] #(mBloco) produtos:produtos4) == false)
         InLab_Produto_Reverter()
+
+        -- 13. VARIANTES DE POSIÇÃO (issue #92): cada variante de glb_multiplos é
+        -- um .max próprio, chamado codEst_id, com a mesh de mesmo nome.
+        local js5 = "{\"produtos\": [" +
+            "{\"cod_est\": \"0030\", \"nome\": \"PUFF POSICOES\", \"glb_multiplos\": {\"qtd\": 2, \"variantes\": [" +
+            "{\"acab_id\": \"L11\", \"glb\": \"0030_L11\", \"mesh_final\": \"0030_L11\"}, {\"acab_id\": \"L12\", \"glb\": \"0030_L12\", \"mesh_final\": \"0030_L12\"}]}, " +
+            "\"partes\": [{\"nome_parte\": \"Base\", \"qualificador\": \"\", \"tipo\": \"C\", \"material_id\": \"ART_C_Base\", \"mesh_final\": \"0030\"}]}, " +
+            "{\"cod_est\": \"0031\", \"nome\": \"SEM VARIANTE\", \"glb_multiplos\": {\"qtd\": 1, \"variantes\": []}, " +
+            "\"partes\": [{\"nome_parte\": \"Base\", \"qualificador\": \"\", \"tipo\": \"C\", \"material_id\": \"ART_C_Base\", \"mesh_final\": \"0031\"}]}]}"
+        local produtos5 = InLab_Produto_Lista (InLab_ParseJSON js5)
+        local vars5 = InLab_Produto_Variantes produtos5[1]
+        checar ("Variantes: 2 nomes (" + vars5 as string + ")") (vars5.count == 2 and vars5[1] == "0030_L11" and vars5[2] == "0030_L12")
+        checar "Variantes: produto sem variantes → #()" ((InLab_Produto_Variantes produtos5[2]).count == 0 and (InLab_Produto_Variantes produtos[1]).count == 0)
+        local meshes5 = InLab_Produto_MeshesDoProduto produtos5[1]
+        checar ("MeshesDoProduto: nomes das variantes entram depois do nome base (" + meshes5 as string + ")") (meshes5.count == 3 and meshes5[1] == "0030" and meshes5[2] == "0030_L11" and meshes5[3] == "0030_L12")
+        checar "IndicePorArquivo: cod_est exato" ((InLab_Produto_IndicePorArquivo produtos5 "0031") == 2)
+        checar "IndicePorArquivo: nome de variante acha o produto" ((InLab_Produto_IndicePorArquivo produtos5 "0030_L12") == 1)
+        checar "IndicePorArquivo: variante inexistente → 0" ((InLab_Produto_IndicePorArquivo produtos5 "0030_L99") == 0 and (InLab_Produto_IndicePorArquivo produtos5 "mesa final") == 0)
+        local bVar = Box name:"0030_L12" pos:[680,0,0]
+        local bVarCru = Box name:"Cylinder009" pos:[720,0,0]
+        join criados #(bVar, bVarCru)
+        local sugV = InLab_Produto_SugerirMeshes produtos5[1] #() #(bVar, bVarCru) nomeArquivo:"0030_L12"
+        checar ("Variante: no .max 0030_L12 todo objeto recebe o nome da variante (" + sugV as string + ")") (sugV[1] == "0030_L12" and sugV[2] == "0030_L12")
+        local sugV2 = InLab_Produto_SugerirMeshes produtos5[1] #() #(bVarCru) nomeArquivo:"outro_arquivo"
+        checar "Variante: .max com outro nome não chuta a variante" (sugV2[1] == "")
 
         -- Ctrl+Z nativo NÃO é testável daqui: rodado de dentro do script,
         -- `max undo` desfaz o script inteiro (inclusive a criação das caixas),

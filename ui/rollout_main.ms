@@ -230,7 +230,7 @@ rollout InLabSecProduto "Produto" width:420
     (
         local p = produtoEscolhido()
         meshesProd = InLab_Produto_MeshesDoProduto p
-        nomesMesh = InLab_Produto_SugerirMeshes p ligacoes objsMesh
+        nomesMesh = InLab_Produto_SugerirMeshes p ligacoes objsMesh nomeArquivo:(getFilenameFile maxFileName)
         atualizarMeshes()
     )
 
@@ -315,13 +315,13 @@ rollout InLabSecProduto "Produto" width:420
                 else
                 (
                     local cod = getFilenameFile maxFileName
-                    local idx = InLab_Produto_IndicePorCodigo produtos cod
+                    local idx = InLab_Produto_IndicePorArquivo produtos cod -- cod_est ou variante de posição (#92)
                     if idx > 0 then
                         InLab_Log ("Produto do arquivo aberto: " + ddlProduto.items[idx]) tipo:#ok
                     else
                     (
                         idx = 1
-                        InLab_Log ("Nenhum produto com cod_est '" + cod + "' (nome do .max) — escolha na lista.") tipo:#warn
+                        InLab_Log ("Nenhum produto com cod_est ou variante '" + cod + "' (nome do .max) — escolha na lista.") tipo:#warn
                     )
                     ddlProduto.selection = idx
                 )

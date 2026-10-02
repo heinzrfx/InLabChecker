@@ -63,6 +63,18 @@
      sai da lista de materiais (InLab_Produto_PartesDeMaterial). `ligacoes`
      passa a ser paralelo a essa lista, não a todas as partes.
 
+ 02/10/2026 (arquétipos e variantes, respostas "Resposta_Rafa.md" e
+ "Arquetipos_Modelagem_FAST.md" da Bianca):
+   - a sugestão de família usa a tabela classe → arquétipo de modelagem (5
+     arquétipos). Dois deles ainda não têm família no plugin: a classe fica
+     sem sugestão, com o motivo.
+   - variantes de posição (issue #92): cada variante de glb_multiplos é um
+     .max próprio chamado codEst_id, com a mesh de mesmo nome
+     (InLab_Produto_Variantes, InLab_Produto_IndicePorArquivo; os nomes
+     entram em MeshesDoProduto e a sugestão segue o nome do arquivo).
+   - produto animado: as meshes separadas (codEst_Porta_1...) continuam
+     valendo mesmo com o v1 estático — nada mudou aqui.
+
  02/10/2026 (issue #93, cópias de bloco_3d): ver o bloco "CÓPIAS DE bloco_3d".
  O bloqueio de ok_3d passa por InLab_Produto_MotivoBloqueio, que também pula
  a cópia cuja base não está liberada. Voltar do nome da cópia para o do
@@ -162,6 +174,35 @@ fn InLab_Produto_IndicePorCodigo produtos cod =
 (
     local idx = 0
     for i = 1 to produtos.count where idx == 0 and (InLab_Produto_Texto produtos[i] "cod_est") == cod do idx = i
+    idx
+)
+
+--------------------------------------------------------------------------------
+-- VARIANTES DE POSIÇÃO (02/10/2026, issue #92)
+--------------------------------------------------------------------------------
+-- glb_multiplos.variantes: cada variante é um bloco de produto diferente (o
+-- "L11", "L12" é a POSIÇÃO de um detalhe físico, não acabamento), com .max,
+-- mesh e GLB próprios, todos chamados codEst_id (ex.: 07132220_L11).
+
+-- mesh_final de cada variante; #() se o produto não tem variantes.
+global InLab_Produto_Variantes
+fn InLab_Produto_Variantes produto =
+(
+    local nomes = #()
+    local gm = if produto == undefined then undefined else InLab_JSON_Obter produto "glb_multiplos"
+    local vs = InLab_JSON_Obter gm "variantes"
+    if isKindOf vs Array do
+        for v in vs where (InLab_Produto_Texto v "mesh_final") != "" do appendIfUnique nomes (InLab_Produto_Texto v "mesh_final")
+    nomes
+)
+
+-- Índice (1-based) do produto do .max aberto, pelo nome do arquivo sem
+-- extensão: o cod_est exato, ou o nome de uma variante. 0 se não houver.
+global InLab_Produto_IndicePorArquivo
+fn InLab_Produto_IndicePorArquivo produtos nomeArquivo =
+(
+    local idx = InLab_Produto_IndicePorCodigo produtos nomeArquivo
+    for i = 1 to produtos.count where idx == 0 and (findItem (InLab_Produto_Variantes produtos[i]) nomeArquivo) > 0 do idx = i
     idx
 )
 
@@ -394,31 +435,35 @@ fn InLab_Produto_SugerirLigacoes partes mtls =
 )
 
 --------------------------------------------------------------------------------
--- SUGESTÃO DE FAMÍLIA (23/09/2026 · tabela da equipe em 02/10/2026)
+-- SUGESTÃO DE FAMÍLIA (23/09/2026 · arquétipos da equipe em 02/10/2026)
 --------------------------------------------------------------------------------
 -- O export não traz a família do plugin: "familia" no JSON é a LINHA comercial
 -- (ex.: "RIZZI"). A sugestão sai da "classe" e é só um PRÉ-PREENCHIMENTO do
 -- dropdown Família — o modelador confirma ou troca.
--- 02/10/2026 (Bianca, respostas v3): família é ESTRUTURAL (4 famílias) e não
--- tem nada de animação. O v1 do plugin trata produto animado como estático,
--- então saiu o palpite por movimento (giratória/porta/gaveta → família
--- animada). Os campos de animação do JSON continuam lá, só não são usados.
--- Tabela da equipe:
+-- 02/10/2026 (Bianca): o que o plugin chama de família é o ARQUÉTIPO DE
+-- MODELAGEM (blocos), não tem nada de animação. O v1 trata produto animado
+-- como estático; os campos de animação do JSON continuam lá, sem uso.
+-- Tabela: Arquetipos_Modelagem_FAST.md (5 arquétipos, 34 classes), que
+-- substituiu a tabela v3 do mesmo dia (mesas voltaram para Pernas + Tampo).
+-- Par #(arquétipo, classes). Os três primeiros são famílias do plugin.
 global INLAB_FAMILIA_POR_CLASSE = #(
-    #("corpo_unico",        #("mesa de centro", "mesa de jantar", "mesa lateral", "mesa de jogo",
-                              "aparador", "banco", "puff")),
-    #("pernas_tampo",       #("escrivaninha", "mesa bar", "mesa de cha", "mesa bistro", "mesa de bistro")),
-    #("estrutura_estofado", #("cadeira", "poltrona", "chaise longue")),
-    #("estrutura_modular",  #("estante", "carro bar"))
+    #("pernas_tampo",         #("carro bar", "carro cha", "mesa bar", "mesa componivel", "mesa de centro", "mesa de cha",
+                                "mesa de jantar", "mesa de jogo", "mesa lateral")),
+    #("estrutura_estofado",   #("chaise longue", "modulo", "sofa")),
+    #("corpo_unico",          #("biombo", "cabeceira", "cavalete", "coluna de jantar")),
+    #("corpo_portas_gavetas", #("buffet", "caixa bar", "comoda", "escrivaninha", "estante", "mesa de cabeceira",
+                                "movel bar", "vanity desk")),
+    #("base_cabeceira",       #("bicama", "cama"))
 )
--- Classes que a equipe ainda NÃO definiu (Sofá e Buffet "a definir"; as outras
--- não entraram na tabela dela): fica o palpite antigo, com "provisório" no
--- motivo. Vanity Desk segue sem sugestão.
-global INLAB_FAMILIA_PROVISORIA = #(
-    #("pernas_tampo",       #("mesa componivel", "coluna de jantar")),
-    #("estrutura_modular",  #("modulo")),
-    #("estrutura_estofado", #("sofa", "cabeceira", "longarina", "cama", "bicama")),
-    #("corpo_unico",        #("buffet", "mesa de cabeceira", "banqueta"))
+-- Classes de duas famílias, decididas pelo dado (critério aceito pela Bianca):
+-- alguma parte em tecido → Estrutura + Estofado; senão Corpo Único.
+global INLAB_CLASSES_POR_TECIDO = #("balanco", "banco", "banqueta", "cadeira", "longarina", "poltrona", "puff")
+-- Arquétipos da equipe que AINDA NÃO têm família no plugin (FamiliaConfig com
+-- limites): a classe fica sem sugestão e o motivo diz qual arquétipo falta.
+-- Par #(arquétipo, rótulo).
+global INLAB_ARQUETIPOS_SEM_FAMILIA = #(
+    #("corpo_portas_gavetas", "Corpo + Portas/Gavetas"),
+    #("base_cabeceira",       "Base + Cabeceira")
 )
 
 -- true se alguma parte do produto tem o campo booleano `campo` ligado e, se
@@ -435,29 +480,35 @@ fn InLab_Produto_AlgumaParte produto campo trecho:"" =
 )
 
 -- #(nomeFamilia, motivo). nomeFamilia = "" quando não dá para sugerir.
--- As duas classes com duas famílias na tabela da equipe saem do dado:
 --   Aparador: Pernas + Tampo se o tampo é acessório (parte "Tampo" com
 --             acessorio = true); senão Corpo Único.
---   Banco / Puff: Estrutura + Estofado se alguma parte é tecido; senão
---             Corpo Único.
+--   INLAB_CLASSES_POR_TECIDO: Estrutura + Estofado se alguma parte é tecido;
+--             senão Corpo Único.
+--   demais: INLAB_FAMILIA_POR_CLASSE.
 global InLab_Produto_SugerirFamilia
 fn InLab_Produto_SugerirFamilia produto =
 (
     local classe = InLab_Produto_Normalizar (InLab_Produto_Texto produto "classe")
     local sufixo = if InLab_Produto_Booleano produto "animacao" then " · animado: entra como estático nesta versão" else ""
-    if classe == "aparador" and (InLab_Produto_AlgumaParte produto "acessorio" trecho:"tampo") then
-        #("pernas_tampo", "aparador com tampo acessório" + sufixo)
-    else if (classe == "banco" or classe == "puff") and (InLab_Produto_AlgumaParte produto "tecido") then
-        #("estrutura_estofado", classe + " com parte em tecido" + sufixo)
+    if classe == "aparador" then
+    (
+        if InLab_Produto_AlgumaParte produto "acessorio" trecho:"tampo" then #("pernas_tampo", "aparador com tampo acessório" + sufixo)
+        else #("corpo_unico", "aparador sem tampo acessório" + sufixo)
+    )
+    else if (findItem INLAB_CLASSES_POR_TECIDO classe) > 0 then
+    (
+        if InLab_Produto_AlgumaParte produto "tecido" then #("estrutura_estofado", classe + " com parte em tecido" + sufixo)
+        else #("corpo_unico", classe + " sem parte em tecido" + sufixo)
+    )
     else
     (
         local fam = ""
-        local provisoria = false
         for par in INLAB_FAMILIA_POR_CLASSE where fam == "" and (findItem par[2] classe) > 0 do fam = par[1]
-        if fam == "" do
-            for par in INLAB_FAMILIA_PROVISORIA where fam == "" and (findItem par[2] classe) > 0 do ( fam = par[1] ; provisoria = true )
-        if fam != "" then #(fam, "classe '" + classe + "'" + (if provisoria then ", provisório: a equipe ainda não definiu esta classe" else "") + sufixo)
-        else #("", (if classe == "" then "produto sem classe" else "classe '" + classe + "' fora da tabela"))
+        local rotuloFalta = ""
+        for par in INLAB_ARQUETIPOS_SEM_FAMILIA where par[1] == fam do rotuloFalta = par[2]
+        if fam == "" then #("", (if classe == "" then "produto sem classe" else "classe '" + classe + "' fora da tabela"))
+        else if rotuloFalta != "" then #("", "classe '" + classe + "' é do arquétipo '" + rotuloFalta + "', ainda sem família no plugin")
+        else #(fam, "classe '" + classe + "'" + sufixo)
     )
 )
 
@@ -601,6 +652,7 @@ fn InLab_Produto_MeshesDoProduto produto avisar:false =
             else if avisar do
                 InLab_Log ("Parte '" + (InLab_Produto_Rotulo p) + "' sem mesh_final no JSON — não entra na lista de nomes de objeto.") tipo:#warn
         )
+    for n in (InLab_Produto_Variantes produto) do appendIfUnique meshes n -- #92: variantes de posição
     meshes
 )
 
@@ -630,10 +682,14 @@ fn InLab_Produto_NomeLembraMesh nomeObj mesh =
 --      reais do piloto os nomes são genéricos (Cylinder002, Shape019) e os
 --      três passos acima não ligavam nada; 5 de 6 produtos tinham um nome só.
 -- ligacoes pode ser #() (materiais não lidos): aí só 1º e 3º.
+-- nomeArquivo: (opcional) nome do .max sem extensão. Se for o nome de uma
+-- variante de posição (#92), todo objeto que não tem já um nome do produto
+-- recebe o nome da variante — o .max de uma variante só tem essa mesh.
 global InLab_Produto_SugerirMeshes
-fn InLab_Produto_SugerirMeshes produto ligacoes objs =
+fn InLab_Produto_SugerirMeshes produto ligacoes objs nomeArquivo:"" =
 (
     local meshes = InLab_Produto_MeshesDoProduto produto
+    local variante = if (findItem (InLab_Produto_Variantes produto) nomeArquivo) > 0 then nomeArquivo else ""
     local partes = InLab_Produto_PartesDeMaterial produto -- paralelo a ligacoes
     for o in objs collect
     (
@@ -641,6 +697,7 @@ fn InLab_Produto_SugerirMeshes produto ligacoes objs =
         if isValidNode o do
         (
             if (findItem meshes o.name) > 0 then sug = o.name
+            else if variante != "" then sug = variante
             else
             (
                 local porMat = #()
