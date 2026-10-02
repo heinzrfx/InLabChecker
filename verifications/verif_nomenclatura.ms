@@ -11,6 +11,9 @@
          objeto       = um dos mesh_final do produto ("|" dividido);
          material     = um dos material_id das partes (sem as subpartes so3d,
                         cujo objeto usa o material da parte-mãe).
+         variante de posição (issue #92): o .max pode se chamar codEst_id
+                        (ex.: 07132220_L11); aí os objetos têm que ter
+                        exatamente esse nome.
        Comparação exata, com maiúsculas e minúsculas.
        02/10/2026 (decisão do usuário): com produto importado a V-20 é CRÍTICA
        — nome de objeto ou material errado quebra a ligação com a plataforma e
@@ -35,7 +38,7 @@
 -- Pré-declarados: definidos em functions\fn_renomear_produto.ms (carregado
 -- antes pelo manifesto; os testes que não usam produto não o carregam).
 global InLab_Produto_Texto, InLab_Produto_MeshesDoProduto, InLab_Produto_PartesDeMaterial
-global InLab_Produto_MateriaisDaSelecao, InLab_Produto_BaseDaCopia
+global InLab_Produto_MateriaisDaSelecao, InLab_Produto_BaseDaCopia, InLab_Produto_Variantes
 
 -- "a, b, c" com no máximo `maximo` nomes e "… (+N)" no fim.
 fn InLab_V20_Lista nomes maximo:5 =
@@ -59,12 +62,16 @@ fn InLab_V20_Nomenclatura cfg produto:undefined objetos:#() nomeArquivo:unsuppli
         local base = InLab_Produto_BaseDaCopia produto
         local problemas = #()
 
+        local variantes = InLab_Produto_Variantes produto
+        local ehVariante = (findItem variantes nomeArquivo) > 0
         if nomeArquivo == "" then
             append problemas ("cena não salva: o .max leva o código do produto (" + cod + ")")
-        else if (toLower nomeArquivo) != (toLower cod) and (base == "" or (toLower nomeArquivo) != (toLower base)) do
-            append problemas ("arquivo '" + nomeArquivo + "' não é o código do produto (" + cod + (if base != "" then " ou " + base + ", o master" else "") + ")")
+        else if not ehVariante and (toLower nomeArquivo) != (toLower cod) and (base == "" or (toLower nomeArquivo) != (toLower base)) do
+            append problemas ("arquivo '" + nomeArquivo + "' não é o código do produto (" + cod + (if base != "" then " ou " + base + ", o master" else "") +
+                               (if variantes.count > 0 then " nem uma variante: " + (InLab_V20_Lista variantes maximo:8) else "") + ")")
 
-        local meshes = InLab_Produto_MeshesDoProduto produto
+        -- No .max de uma variante só vale o nome dela.
+        local meshes = if ehVariante then #(nomeArquivo) else InLab_Produto_MeshesDoProduto produto
         if meshes.count == 0 then
             append problemas ("o produto " + cod + " não tem nome de objeto no JSON (mesh_final vazio)")
         else
