@@ -308,9 +308,9 @@ global INLAB_TESTE_SAIDA, INLAB_TESTE_FALHAS
         checar "ok_3d=false: RenomearMeshes devolve 0" ((InLab_Produto_RenomearMeshes #(bBloq) #("0004") produto:produtos3[2]) == 0)
         checar "ok_3d=false: objeto NÃO renomeado, com #warn" (bBloq.name == "obj_bloq" and (logTem #warn "0004"))
 
-        -- Export real v2 (opcional): nenhum nome de objeto com "|" e todo nome
+        -- Export real v3 (opcional; 02/10/2026, era o v2): nenhum nome de objeto com "|" e todo nome
         -- existe em meshes[] do próprio produto.
-        local arqV2 = @"G:\Meu Drive\Trabalhos\2026\Artefacto\InlabChecker\produtos teste plugin rafa v2.json"
+        local arqV2 = @"G:\Meu Drive\Trabalhos\2026\Artefacto\InlabChecker\produtos teste plugin rafa v3.json"
         if doesFileExist arqV2 then
         (
             local prodsV2 = InLab_Produto_Lista (InLab_ParseJSON (InLab_JSON_LerArquivoUTF8 arqV2))
@@ -322,9 +322,9 @@ global INLAB_TESTE_SAIDA, INLAB_TESTE_FALHAS
                 for n in (InLab_Produto_MeshesDoProduto p) where (findString n "|") != undefined or (findItem oficiais n) == 0 do
                     append ruins ((InLab_Produto_Texto p "cod_est") + ":" + n)
             )
-            checar ("Export v2: " + prodsV2.count as string + " produtos, nomes de objeto fora de meshes[]: " + ruins as string) (prodsV2.count > 0 and ruins.count == 0)
+            checar ("Export v3: " + prodsV2.count as string + " produtos, nomes de objeto fora de meshes[]: " + ruins as string) (prodsV2.count > 0 and ruins.count == 0)
         )
-        else linha "SKIP  Export v2 não encontrado"
+        else linha "SKIP  Export v3 não encontrado"
 
         -- 12. CÓPIAS DE bloco_3d (issue #93): a cópia sai do .max do master,
         -- com a mesh renomeada para o cod_est dela e os mesmos material_id.
