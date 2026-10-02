@@ -14,6 +14,7 @@ global InLab_Produto_Aplicar, InLab_Produto_Reverter, InLab_Produto_Renomear
 global InLab_Produto_MeshesDoProduto, InLab_Produto_SugerirMeshes, InLab_Produto_RenomearMeshes
 global InLab_Produto_NomeLembraMesh
 global InLab_Produto_MeshesDaParte, InLab_Produto_Liberado3D, InLab_Produto_EhMaeDeSubparte
+global InLab_Produto_PartesDeMaterial
 global InLab_JSON_LerArquivoUTF8
 global INLAB_TESTE_SAIDA, INLAB_TESTE_FALHAS
 (
@@ -276,15 +277,20 @@ global INLAB_TESTE_SAIDA, INLAB_TESTE_FALHAS
 
         local mEst = StandardMaterial name:"estrutura_x"
         local mPrato = StandardMaterial name:"prato_x"
-        local mSub = StandardMaterial name:"porta1_x"
+        local mPorta = StandardMaterial name:"porta_x"
+        -- v3 (Bianca): o objeto da subparte carrega o material da parte-MÃE;
+        -- a subparte so3d não entra na lista de materiais.
+        local partesMat3 = InLab_Produto_PartesDeMaterial produtos3[1]
+        checar ("PartesDeMaterial: subparte so3d fica de fora (" + partesMat3.count as string + " partes)") (partesMat3.count == 3 and (InLab_Produto_Rotulo partesMat3[3]) == "Prato")
+        checar "PartesDeMaterial: produto sem so3d devolve todas" ((InLab_Produto_PartesDeMaterial produtos[1]).count == 4)
         local bPrato = Box name:"obj_prato_x" material:mPrato pos:[480,0,0]
         append criados bPrato
-        local sug3 = InLab_Produto_SugerirMeshes produtos3[1] #(mEst, undefined, mPrato, mSub) #(bPrato)
+        local sug3 = InLab_Produto_SugerirMeshes produtos3[1] #(mEst, mPorta, mPrato) #(bPrato)
         checar ("Sugestão: parte em 2 meshes não sugere pelo material (veio '" + sug3[1] + "')") (sug3[1] == "0003_Prato")
         logsCapturados = #()
-        checar "Aplicar com so3d devolve true" ((InLab_Produto_Aplicar produtos3[1] #(mEst, undefined, mPrato, mSub)) == true)
-        checar "so3d: material renomeado para o material_id sem letra de tipo" (mSub.name == "ART_Porta_1")
-        checar "so3d: sem o aviso 'Classificar a parte na plataforma'" (not (logTem #warn "Classificar"))
+        checar "Aplicar em produto com so3d devolve true" ((InLab_Produto_Aplicar produtos3[1] #(mEst, mPorta, mPrato)) == true)
+        checar "so3d: o material da parte-mãe ganha o nome dela" (mPorta.name == "ART_P_Porta" and mPrato.name == "ART_P_Prato")
+        checar "so3d: nenhum aviso de parte sem material nem de 'Classificar'" (not (logTem #warn "Classificar") and not (logTem #warn "sem material ligado"))
         InLab_Produto_Reverter()
 
         checar "Liberado3D: ok_3d true" (InLab_Produto_Liberado3D produtos3[1])

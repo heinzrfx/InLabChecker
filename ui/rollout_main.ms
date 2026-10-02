@@ -193,12 +193,9 @@ rollout InLabSecProduto "Produto" width:420
     fn produtoEscolhido =
         if ddlProduto.selection > 0 and ddlProduto.selection <= produtos.count then produtos[ddlProduto.selection] else undefined
 
-    fn partesEscolhidas =
-    (
-        local p = produtoEscolhido()
-        local partes = if p != undefined then InLab_JSON_Obter p "partes" else undefined
-        if isKindOf partes Array then partes else #()
-    )
+    -- 02/10/2026 (v3): sem as subpartes so3d — o objeto delas usa o material
+    -- da parte-mãe (InLab_Produto_PartesDeMaterial).
+    fn partesEscolhidas = InLab_Produto_PartesDeMaterial (produtoEscolhido())
 
     fn atualizarTela =
     (
