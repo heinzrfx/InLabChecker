@@ -14,6 +14,7 @@ global InLab_V21_NomesValidos, InLab_V22_SufixosSequenciais, InLab_V30_Keyframes
 global InLab_EhGeometria, InLab_ObjetosVerificacao, InLab_VEx01_Ocultos
 global InLab_V01_PesoMax, InLab_SalvarAntesDeVerificar
 global InLab_DrawCallsDoNo, InLab_V05_DrawCalls, InLab_TetoDrawCalls, InLab_PrefGravar, InLab_PrefApagar
+global InLab_V20_Nomenclatura, InLab_ParseJSON, InLab_Produto_Lista
 global INLAB_TESTE_SAIDA, INLAB_TESTE_FALHAS
 (
     local dirTeste = getFilenamePath (getSourceFileName())
@@ -57,6 +58,7 @@ global INLAB_TESTE_SAIDA, INLAB_TESTE_FALHAS
                    @"familias\familia_giro_assento.ms", @"familias\familia_movimento_especial.ms",
                    @"functions\fn_otim_nucleo.ms",
                    @"functions\fn_realworldscale.ms",
+                   @"functions\fn_json.ms", @"functions\fn_renomear_produto.ms",
                    @"verifications\verif_peso_poly.ms", @"verifications\verif_pivot.ms",
                    @"verifications\verif_nomenclatura.ms", @"verifications\verif_geometria.ms",
                    @"verifications\verif_animacao.ms", @"report\report_generator.ms",
@@ -272,6 +274,46 @@ global INLAB_TESTE_SAIDA, INLAB_TESTE_FALHAS
         InLab_ResetarResultados()
         InLab_RegistrarVerif "T-05" "advertência não crítica" false "" critico:false
         checar "Aprovação: não crítico falho não reprova" (InLab_AprovacaoFinal() and (statusDe "T-05") == #warning)
+
+        ---------------------------------------------------------------- V-20
+        -- 02/10/2026 (issue #36): os nomes válidos saem do produto importado
+        -- (.max = cod_est; objeto = mesh_final; material = material_id).
+        limparCena()
+        local jsV20 = "{\"produtos\": [" +
+            "{\"cod_est\": \"0020\", \"nome\": \"MESA\", \"bloco_3d\": {\"papel\": \"master\", \"base_codest\": \"0020\"}, \"partes\": [" +
+            "{\"nome_parte\": \"Tampo\", \"qualificador\": \"\", \"tipo\": \"P\", \"so3d\": false, \"material_id\": \"ART_P_Tampo\", \"mesh_final\": \"0020\"}, " +
+            "{\"nome_parte\": \"Prato\", \"qualificador\": \"\", \"tipo\": \"P\", \"so3d\": false, \"material_id\": \"ART_P_Prato\", \"mesh_final\": \"0020|0020_Prato\"}, " +
+            "{\"nome_parte\": \"Prato_1\", \"qualificador\": \"\", \"tipo\": \"\", \"so3d\": true, \"subparte_de\": \"Prato\", \"material_id\": \"ART_Prato_1\", \"mesh_final\": \"0020_Prato\"}]}, " +
+            "{\"cod_est\": \"0021\", \"nome\": \"COPIA\", \"bloco_3d\": {\"papel\": \"copia\", \"base_codest\": \"0020\"}, \"partes\": [" +
+            "{\"nome_parte\": \"Tampo\", \"qualificador\": \"\", \"tipo\": \"P\", \"so3d\": false, \"material_id\": \"ART_P_Tampo\", \"mesh_final\": \"0021\"}]}, " +
+            "{\"cod_est\": \"0022\", \"nome\": \"SEM MESH\", \"partes\": [" +
+            "{\"nome_parte\": \"Base\", \"qualificador\": \"\", \"tipo\": \"P\", \"so3d\": false, \"material_id\": \"ART_P_Base\", \"mesh_final\": \"\"}]}]}"
+        local prodsV20 = InLab_Produto_Lista (InLab_ParseJSON jsV20)
+        local mTampoV = StandardMaterial name:"ART_P_Tampo"
+        local mPratoV = StandardMaterial name:"ART_P_Prato"
+        local oMesa = Box name:"0020" material:mTampoV
+        local oPrato = Box name:"0020_Prato" material:mPratoV pos:[60, 0, 0]
+        fn rodar20 cfg p objs arq = ( InLab_ResetarResultados(); InLab_V20_Nomenclatura cfg produto:p objetos:objs nomeArquivo:arq; statusDe "V-20" )
+        checar "V-20: sem produto importado fica em advertência e pede o produto" ((rodar20 cfgEst undefined #(oMesa) "0020") == #warning and (findString (mensagemDe "V-20") "seção Produto") != undefined)
+        checar ("V-20: arquivo, objetos e materiais com os nomes do produto passa (" + mensagemDe "V-20" + ")") ((rodar20 cfgEst prodsV20[1] #(oMesa, oPrato) "0020") == #pass)
+        checar "V-20: arquivo com outro nome vira advertência" ((rodar20 cfgEst prodsV20[1] #(oMesa, oPrato) "mesa_final_v3") == #warning and (findString (mensagemDe "V-20") "mesa_final_v3") != undefined)
+        checar "V-20: cena não salva vira advertência" ((rodar20 cfgEst prodsV20[1] #(oMesa, oPrato) "") == #warning)
+        oPrato.name = "prato solto"
+        checar "V-20: objeto fora dos nomes do produto é citado" ((rodar20 cfgEst prodsV20[1] #(oMesa, oPrato) "0020") == #warning and (findString (mensagemDe "V-20") "prato solto") != undefined)
+        oPrato.name = "0020_Prato"
+        mPratoV.name = "ART_Prato_1"
+        checar "V-20: material com o material_id da subparte so3d não vale (é o da parte-mãe)" ((rodar20 cfgEst prodsV20[1] #(oMesa, oPrato) "0020") == #warning and (findString (mensagemDe "V-20") "ART_Prato_1") != undefined)
+        mPratoV.name = "art_p_prato"
+        checar "V-20: nome de material diferencia maiúscula de minúscula" ((rodar20 cfgEst prodsV20[1] #(oMesa, oPrato) "0020") == #warning)
+        mPratoV.name = "ART_P_Prato"
+        oMesa.name = "0021"
+        checar "V-20: cópia aceita o .max com o código do master" ((rodar20 cfgEst prodsV20[2] #(oMesa) "0020") == #pass)
+        checar "V-20: cópia aceita o .max com o próprio código" ((rodar20 cfgEst prodsV20[2] #(oMesa) "0021") == #pass)
+        checar "V-20: produto sem mesh_final no JSON vira advertência" ((rodar20 cfgEst prodsV20[3] #(oMesa) "0022") == #warning and (findString (mensagemDe "V-20") "mesh_final") != undefined)
+        oMesa.name = "0020"
+        InLab_RodarVerificacoes cfgEst produto:prodsV20[1]
+        checar "V-20: o orquestrador repassa o produto (mensagem cita o código)" ((findString (mensagemDe "V-20") "0020") != undefined)
+        limparCena()
 
         ---------------------------------------------------------------- RODADA COMPLETA
         local c1 = Box name:"Corpo_01" length:40 width:40 height:40

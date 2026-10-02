@@ -43,6 +43,9 @@
 
  28/09/2026 (issue #37): codEst:/nomeProduto: (produto escolhido na UI) vão
  para o relatório em arquivo (report_generator.ms: JSON + HTML).
+
+ 02/10/2026 (issue #36): produto: (o produto escolhido na seção Produto) vai
+ para a V-20, que confere arquivo, objetos e materiais contra os nomes dele.
 ================================================================================
 */
 
@@ -106,7 +109,7 @@ fn InLab_SalvarAntesDeVerificar resposta:unsupplied =
     )
 )
 
-fn InLab_RodarVerificacoes cfg tampoAcessorio:false codEst:"" nomeProduto:"" =
+fn InLab_RodarVerificacoes cfg tampoAcessorio:false codEst:"" nomeProduto:"" produto:undefined =
 (
     InLab_TampoAcessorioProduto = tampoAcessorio
     InLab_ResetarResultados()
@@ -131,7 +134,7 @@ fn InLab_RodarVerificacoes cfg tampoAcessorio:false codEst:"" nomeProduto:"" =
         InLab_V30_Keyframes cfg objetos
 
         -- ===== Grupo 3 · Médias =====
-        InLab_V20_Nomenclatura cfg
+        InLab_V20_Nomenclatura cfg produto:produto objetos:objetos
         InLab_V21_NomesValidos objetos
         InLab_V22_SufixosSequenciais objetos
         InLab_V03_Poligonos cfg objetos
