@@ -54,28 +54,47 @@ global INLAB_TESTE_SAIDA, INLAB_TESTE_FALHAS
         (
             local js = "{\"classe\": \"" + classe + "\", \"nome\": \"" + nome + "\", \"animacao\": " + animacao + ", \"partes\": ["
             for i = 1 to partes.count do
-                js += (if i > 1 then ", " else "") + "{\"nome_parte\": \"" + partes[i][1] + "\", \"mesh_final\": \"" + partes[i][2] + "\"}"
+                js += (if i > 1 then ", " else "") + "{\"nome_parte\": \"" + partes[i][1] + "\", \"mesh_final\": \"" + partes[i][2] + "\"" +
+                      (if partes[i].count > 2 then ", " + partes[i][3] else "") + "}"
             InLab_ParseJSON (js + "]}")
         )
+        -- 02/10/2026 (Bianca, v3): família é ESTRUTURAL e sai da classe. O v1 do
+        -- plugin trata produto animado como estático: nada de família de animação.
         local casos = #(
-            #("MESA DE JANTAR", "MESA X", "false", #(#("Tampo", "0001")), "pernas_tampo"),
+            #("MESA DE JANTAR", "MESA X", "false", #(#("Tampo", "0001")), "corpo_unico"),
+            #("MESA LATERAL", "MESA LATERAL N", "false", #(), "corpo_unico"),
+            #("MESA DE JOGO", "MESA DE JOGO J", "false", #(), "corpo_unico"),
             #("MESA DE CHA", "MESA DE CHÁ Y", "false", #(), "pernas_tampo"),
+            #("ESCRIVANINHA", "ESCRIVANINHA E", "false", #(), "pernas_tampo"),
+            #("ESTANTE", "ESTANTE S", "false", #(), "estrutura_modular"),
             #("MODULO", "MODULO Z", "false", #(), "estrutura_modular"),
             #("POLTRONA", "POLTRONA W", "false", #(), "estrutura_estofado"),
+            #("CADEIRA", "CADEIRA C", "false", #(), "estrutura_estofado"),
             #("APARADOR", "APARADOR V", "false", #(), "corpo_unico"),
-            #("CADEIRA", "CADEIRA PICASSO - GIRATORIA", "true", #(#("Assento", "07119271")), "giro_assento"),
-            #("POLTRONA", "POLTRONA SLUE GIRATÓRIA", "true", #(), "giro_assento"),
-            #("APARADOR", "APARADOR C/ GAVETAS", "true", #(#("Gavetas", "ART_C_Gavetas")), "translacao"),
-            #("BUFFET", "BUFFET ROSSETTI", "true", #(#("Portas", "ART_P_Portas"), #("Gavetas", "ART_P_Gavetas")), "rotacao"),
-            #("BICAMA", "BICAMA ZORN", "true", #(#("Estrutura", "07144006")), "movimento_especial"),
-            -- 02/10/2026 (Bianca): em mesa "giratória" é o prato, não o assento.
-            #("MESA DE JANTAR", "MESA DE JANTAR BERRIZ - C/ PRATO GIRATORIO", "true", #(#("Prato", "00124600_Prato_Giratoria")), "rotacao")
+            #("APARADOR", "APARADOR TAMPO ACESSORIO", "false", #(#("Tampo", "0002", "\"acessorio\": true")), "pernas_tampo"),
+            #("BANCO", "BANCO MADEIRA", "false", #(#("Estrutura", "0003", "\"tecido\": false")), "corpo_unico"),
+            #("BANCO", "BANCO ESTOFADO", "false", #(#("Assento", "0004", "\"tecido\": true")), "estrutura_estofado"),
+            #("PUFF", "PUFF P", "false", #(#("Corpo", "0005", "\"tecido\": true")), "estrutura_estofado"),
+            -- animados entram como estáticos: vale a classe, não o movimento
+            #("CADEIRA", "CADEIRA PICASSO - GIRATORIA", "true", #(#("Assento", "07119271")), "estrutura_estofado"),
+            #("APARADOR", "APARADOR C/ GAVETAS", "true", #(#("Gavetas", "ART_C_Gavetas")), "corpo_unico"),
+            #("ESCRIVANINHA", "ESCRIVANINHA VAUGHAN", "true", #(#("Tampa_1", "00122093_Tampa1_Puxador1")), "pernas_tampo"),
+            #("MESA DE JANTAR", "MESA DE JANTAR BERRIZ - C/ PRATO GIRATORIO", "true", #(#("Prato", "00124600_Prato_Giratoria")), "corpo_unico"),
+            -- classes que a equipe ainda não definiu: fica a tabela provisória antiga
+            #("SOFA", "SOFA S", "false", #(), "estrutura_estofado"),
+            #("BUFFET", "BUFFET ROSSETTI", "true", #(#("Portas", "ART_P_Portas")), "corpo_unico"),
+            #("BICAMA", "BICAMA ZORN", "true", #(#("Estrutura", "07144006")), "estrutura_estofado")
         )
         for c in casos do
         (
             local sug = InLab_Produto_SugerirFamilia (produto c[1] c[2] c[3] c[4])
             checar ("Sugestão: " + c[2] + " → " + c[5] + " (veio '" + sug[1] + "': " + sug[2] + ")") (sug[1] == c[5])
         )
+        local sugSofa = InLab_Produto_SugerirFamilia (produto "SOFA" "SOFA S" "false" #())
+        checar "Classe sem definição da equipe: motivo diz 'provisório'" ((findString sugSofa[2] "provis") != undefined)
+        local sugAnim = InLab_Produto_SugerirFamilia (produto "CADEIRA" "CADEIRA GIRATORIA" "true" #())
+        checar "Animado: motivo avisa que entra como estático" ((findString sugAnim[2] "estático") != undefined)
+        checar "Vanity Desk (a definir): sem sugestão" ((InLab_Produto_SugerirFamilia (produto "VANITY DESK" "VANITY" "true" #()))[1] == "")
         local semTabela = InLab_Produto_SugerirFamilia (produto "LUMINARIA" "LUMINARIA Q" "false" #())
         checar "Classe fora da tabela: sem sugestão" (semTabela[1] == "" and (findString semTabela[2] "fora da tabela") != undefined)
         checar "Produto sem classe: sem sugestão" ((InLab_Produto_SugerirFamilia (produto "" "SEM" "false" #()))[1] == "")

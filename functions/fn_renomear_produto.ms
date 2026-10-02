@@ -51,9 +51,17 @@
      está nas subpartes. Sai #info em vez de #warn.
    - `ok_3d:false`: avisa e pula (InLab_Produto_Liberado3D) — Aplicar e
      RenomearMeshes não renomeiam nada. Export sem o campo conta como liberado.
-   - sugestão de família: em mesa, "giratória" é o prato (rotacao), não o
-     assento. As classes Escrivaninha, Mesa de Jogo e Vanity Desk seguem sem
-     sugestão até a Bianca mandar a tabela classe → família.
+   - sugestão de família: ver o bloco abaixo (substituído no mesmo dia).
+
+ 02/10/2026 (respostas v3 da Bianca, mesmo spec): o v1 do plugin trabalha só
+ com produto ESTÁTICO; animado entra tratado como estático e os campos de
+ animação do JSON ficam, sem uso.
+   - família é estrutural e sai da classe (tabela da equipe); saiu o palpite
+     de família animada por nome/porta/gaveta, inclusive o "mesa giratória →
+     rotacao" que tinha entrado de manhã.
+   - o objeto da subparte so3d carrega o material da parte-MÃE: a subparte
+     sai da lista de materiais (InLab_Produto_PartesDeMaterial). `ligacoes`
+     passa a ser paralelo a essa lista, não a todas as partes.
 ================================================================================
 */
 
@@ -130,6 +138,16 @@ global InLab_Produto_Liberado3D
 fn InLab_Produto_Liberado3D produto =
 (
     produto == undefined or (toLower (InLab_Produto_Texto produto "ok_3d")) != "false"
+)
+
+-- 02/10/2026 (v3): partes que recebem material na seção Produto — todas menos
+-- as subpartes só de 3D (so3d), cujo objeto usa o material da parte-mãe.
+-- `ligacoes` (Aplicar, SugerirMeshes, UI) é paralelo a ESTA lista.
+global InLab_Produto_PartesDeMaterial
+fn InLab_Produto_PartesDeMaterial produto =
+(
+    local partes = if produto == undefined then undefined else InLab_JSON_Obter produto "partes"
+    if isKindOf partes Array then (for p in partes where not (InLab_Produto_Booleano p "so3d") collect p) else #()
 )
 
 -- Loga o aviso do produto não liberado. Quem chama pula a operação.
@@ -295,69 +313,69 @@ fn InLab_Produto_SugerirLigacoes partes mtls =
 )
 
 --------------------------------------------------------------------------------
--- SUGESTÃO DE FAMÍLIA (23/09/2026)
+-- SUGESTÃO DE FAMÍLIA (23/09/2026 · tabela da equipe em 02/10/2026)
 --------------------------------------------------------------------------------
 -- O export não traz a família do plugin: "familia" no JSON é a LINHA comercial
--- (ex.: "RIZZI"). A sugestão sai de "animacao" + "classe" e é só um
--- PRÉ-PREENCHIMENTO do dropdown Família — o modelador confirma ou troca.
--- Tabela PROVISÓRIA, montada sobre as 22 classes do export Contract/Health
--- (209 produtos); a validar com a equipe. Classe fora da tabela ⇒ sem
--- sugestão. Cadeira, banco e banqueta podem ser estofados: conferir.
+-- (ex.: "RIZZI"). A sugestão sai da "classe" e é só um PRÉ-PREENCHIMENTO do
+-- dropdown Família — o modelador confirma ou troca.
+-- 02/10/2026 (Bianca, respostas v3): família é ESTRUTURAL (4 famílias) e não
+-- tem nada de animação. O v1 do plugin trata produto animado como estático,
+-- então saiu o palpite por movimento (giratória/porta/gaveta → família
+-- animada). Os campos de animação do JSON continuam lá, só não são usados.
+-- Tabela da equipe:
 global INLAB_FAMILIA_POR_CLASSE = #(
-    #("pernas_tampo",       #("mesa de jantar", "mesa de centro", "mesa lateral", "mesa de cha",
-                              "mesa componivel", "coluna de jantar")),
+    #("corpo_unico",        #("mesa de centro", "mesa de jantar", "mesa lateral", "mesa de jogo",
+                              "aparador", "banco", "puff")),
+    #("pernas_tampo",       #("escrivaninha", "mesa bar", "mesa de cha", "mesa bistro", "mesa de bistro")),
+    #("estrutura_estofado", #("cadeira", "poltrona", "chaise longue")),
+    #("estrutura_modular",  #("estante", "carro bar"))
+)
+-- Classes que a equipe ainda NÃO definiu (Sofá e Buffet "a definir"; as outras
+-- não entraram na tabela dela): fica o palpite antigo, com "provisório" no
+-- motivo. Vanity Desk segue sem sugestão.
+global INLAB_FAMILIA_PROVISORIA = #(
+    #("pernas_tampo",       #("mesa componivel", "coluna de jantar")),
     #("estrutura_modular",  #("modulo")),
-    #("estrutura_estofado", #("sofa", "poltrona", "chaise longue", "puff", "cabeceira",
-                              "longarina", "cama", "bicama")),
-    #("corpo_unico",        #("aparador", "buffet", "estante", "mesa de cabeceira",
-                              "cadeira", "banco", "banqueta"))
+    #("estrutura_estofado", #("sofa", "cabeceira", "longarina", "cama", "bicama")),
+    #("corpo_unico",        #("buffet", "mesa de cabeceira", "banqueta"))
 )
 
--- true se algum nome_parte ou mesh_final do produto contém `trecho`
--- (comparação normalizada: sem acento, minúscula).
-global InLab_Produto_PartesContem
-fn InLab_Produto_PartesContem produto trecho =
+-- true se alguma parte do produto tem o campo booleano `campo` ligado e, se
+-- `trecho` vier, o nome_parte (sem acento, minúsculo) contém `trecho`.
+global InLab_Produto_AlgumaParte
+fn InLab_Produto_AlgumaParte produto campo trecho:"" =
 (
     local partes = InLab_JSON_Obter produto "partes"
     local achou = false
     if isKindOf partes Array do
-        for p in partes where not achou do
-            for campo in #("nome_parte", "mesh_final") where not achou do
-                if (findString (InLab_Produto_Normalizar (InLab_Produto_Texto p campo)) trecho) != undefined do achou = true
+        for p in partes where not achou and (InLab_Produto_Booleano p campo) do
+            if trecho == "" or (findString (InLab_Produto_Normalizar (InLab_Produto_Texto p "nome_parte")) trecho) != undefined do achou = true
     achou
 )
 
 -- #(nomeFamilia, motivo). nomeFamilia = "" quando não dá para sugerir.
--- Animados: giratório → giro_assento (em mesa → rotacao: gira o prato, não
--- o assento — Bianca, 02/10/2026); porta → rotacao; gaveta → translacao;
--- outro movimento → movimento_especial. Estáticos: pela tabela acima.
+-- As duas classes com duas famílias na tabela da equipe saem do dado:
+--   Aparador: Pernas + Tampo se o tampo é acessório (parte "Tampo" com
+--             acessorio = true); senão Corpo Único.
+--   Banco / Puff: Estrutura + Estofado se alguma parte é tecido; senão
+--             Corpo Único.
 global InLab_Produto_SugerirFamilia
 fn InLab_Produto_SugerirFamilia produto =
 (
     local classe = InLab_Produto_Normalizar (InLab_Produto_Texto produto "classe")
-    local nome = InLab_Produto_Normalizar (InLab_Produto_Texto produto "nome")
-    local animado = (toLower (InLab_Produto_Texto produto "animacao")) == "true"
-    if animado then
-    (
-        local temPorta = InLab_Produto_PartesContem produto "porta"
-        local temGaveta = InLab_Produto_PartesContem produto "gaveta"
-        local ehMesa = (findString classe "mesa") == 1 or classe == "coluna de jantar"
-        if (findString nome "girat") != undefined and ehMesa then
-            #("rotacao", "animado, mesa com prato giratório")
-        else if (findString nome "girat") != undefined then
-            #("giro_assento", "animado, nome com 'giratória'")
-        else if temPorta then
-            #("rotacao", "animado, com portas" + (if temGaveta then " (também tem gavetas: confira)" else ""))
-        else if temGaveta then
-            #("translacao", "animado, com gavetas")
-        else
-            #("movimento_especial", "animado, sem porta, gaveta nem giro")
-    )
+    local sufixo = if InLab_Produto_Booleano produto "animacao" then " · animado: entra como estático nesta versão" else ""
+    if classe == "aparador" and (InLab_Produto_AlgumaParte produto "acessorio" trecho:"tampo") then
+        #("pernas_tampo", "aparador com tampo acessório" + sufixo)
+    else if (classe == "banco" or classe == "puff") and (InLab_Produto_AlgumaParte produto "tecido") then
+        #("estrutura_estofado", classe + " com parte em tecido" + sufixo)
     else
     (
         local fam = ""
+        local provisoria = false
         for par in INLAB_FAMILIA_POR_CLASSE where fam == "" and (findItem par[2] classe) > 0 do fam = par[1]
-        if fam != "" then #(fam, "classe '" + classe + "'")
+        if fam == "" do
+            for par in INLAB_FAMILIA_PROVISORIA where fam == "" and (findItem par[2] classe) > 0 do ( fam = par[1] ; provisoria = true )
+        if fam != "" then #(fam, "classe '" + classe + "'" + (if provisoria then ", provisório: a equipe ainda não definiu esta classe" else "") + sufixo)
         else #("", (if classe == "" then "produto sem classe" else "classe '" + classe + "' fora da tabela"))
     )
 )
@@ -377,15 +395,14 @@ fn InLab_Produto_Renomear alvo novoNome =
     )
 )
 
--- ligacoes: paralelo às partes do produto (material ou undefined).
+-- ligacoes: paralelo a InLab_Produto_PartesDeMaterial (material ou undefined).
 -- Renomeia só materiais e mapas (24/09/2026, #54): objetos são renomeados
 -- por InLab_Produto_RenomearMeshes. Devolve false (e não renomeia NADA) se
 -- um material estiver ligado a mais de uma parte.
 global InLab_Produto_Aplicar
 fn InLab_Produto_Aplicar produto ligacoes =
 (
-    local partes = InLab_JSON_Obter produto "partes"
-    if not (isKindOf partes Array) do partes = #()
+    local partes = InLab_Produto_PartesDeMaterial produto
 
     local conflito = false
     for i = 1 to partes.count where ligacoes[i] != undefined do
@@ -429,8 +446,8 @@ fn InLab_Produto_Aplicar produto ligacoes =
                 )
                 else
                 (
-                    -- 02/10/2026: subparte so3d vem sem tipo de propósito (não é falta de classificação).
-                    if (InLab_Produto_Texto partes[i] "tipo") == "" and not (InLab_Produto_Booleano partes[i] "so3d") do
+                    -- (subparte so3d, que vem sem tipo de propósito, nem chega aqui: PartesDeMaterial)
+                    if (InLab_Produto_Texto partes[i] "tipo") == "" do
                     (
                         InLab_Log ("Parte '" + rot + "' sem tipo no JSON — nome provisório '" + mid + "'. Classificar a parte na plataforma.") tipo:#warn
                         nAviso += 1
@@ -531,8 +548,7 @@ global InLab_Produto_SugerirMeshes
 fn InLab_Produto_SugerirMeshes produto ligacoes objs =
 (
     local meshes = InLab_Produto_MeshesDoProduto produto
-    local partes = if produto == undefined then undefined else InLab_JSON_Obter produto "partes"
-    if not (isKindOf partes Array) do partes = #()
+    local partes = InLab_Produto_PartesDeMaterial produto -- paralelo a ligacoes
     for o in objs collect
     (
         local sug = ""
