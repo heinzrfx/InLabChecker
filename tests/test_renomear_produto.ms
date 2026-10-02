@@ -13,6 +13,8 @@ global InLab_Produto_MateriaisDaSelecao, InLab_Produto_SugerirLigacoes
 global InLab_Produto_Aplicar, InLab_Produto_Reverter, InLab_Produto_Renomear
 global InLab_Produto_MeshesDoProduto, InLab_Produto_SugerirMeshes, InLab_Produto_RenomearMeshes
 global InLab_Produto_NomeLembraMesh
+global InLab_Produto_MeshesDaParte, InLab_Produto_Liberado3D, InLab_Produto_EhMaeDeSubparte
+global InLab_JSON_LerArquivoUTF8
 global INLAB_TESTE_SAIDA, INLAB_TESTE_FALHAS
 (
     local dirTeste = getFilenamePath (getSourceFileName())
@@ -247,6 +249,75 @@ global INLAB_TESTE_SAIDA, INLAB_TESTE_FALHAS
         delete bSome
         logsCapturados = #()
         checar "RenomearMeshes: objeto apagado é pulado com aviso" ((InLab_Produto_RenomearMeshes #(bSome) #("0001")) == 0 and (logTem #warn "não existe mais"))
+
+        -- 11. EXPORT v2 (02/10/2026, respostas da Bianca): so3d, "|" no
+        -- mesh_final, parte-mãe sem mesh e ok_3d=false.
+        local js3 = "{\"produtos\": [" +
+            "{\"cod_est\": \"0003\", \"nome\": \"BUFFET\", \"ok_3d\": true, \"partes\": [" +
+            "{\"nome_parte\": \"Estrutura\", \"qualificador\": \"\", \"tipo\": \"P\", \"so3d\": false, \"subparte_de\": \"\", \"material_id\": \"ART_P_Estrutura\", \"mesh_final\": \"0003\"}, " +
+            "{\"nome_parte\": \"Porta\", \"qualificador\": \"\", \"tipo\": \"P\", \"so3d\": false, \"subparte_de\": \"\", \"material_id\": \"ART_P_Porta\", \"mesh_final\": \"\"}, " +
+            "{\"nome_parte\": \"Prato\", \"qualificador\": \"\", \"tipo\": \"P\", \"so3d\": false, \"subparte_de\": \"\", \"material_id\": \"ART_P_Prato\", \"mesh_final\": \"0003|0003_Prato\"}, " +
+            "{\"nome_parte\": \"Porta_1\", \"qualificador\": \"\", \"tipo\": \"\", \"so3d\": true, \"subparte_de\": \"Porta\", \"material_id\": \"ART_Porta_1\", \"mesh_final\": \"0003_Porta_1\"}]}, " +
+            "{\"cod_est\": \"0004\", \"nome\": \"BLOQUEADO\", \"ok_3d\": false, \"partes\": [" +
+            "{\"nome_parte\": \"Tampo\", \"qualificador\": \"\", \"tipo\": \"P\", \"so3d\": false, \"subparte_de\": \"\", \"material_id\": \"ART_P_Tampo\", \"mesh_final\": \"0004\"}]}]}"
+        local produtos3 = InLab_Produto_Lista (InLab_ParseJSON js3)
+        local partes3 = InLab_JSON_Obter produtos3[1] "partes"
+        local mp = InLab_Produto_MeshesDaParte partes3[3]
+        checar "MeshesDaParte: '|' divide em 2 nomes" (mp.count == 2 and mp[1] == "0003" and mp[2] == "0003_Prato")
+        checar "MeshesDaParte: mesh_final vazio → #()" ((InLab_Produto_MeshesDaParte partes3[2]).count == 0)
+        local meshes3 = InLab_Produto_MeshesDoProduto produtos3[1]
+        checar ("MeshesDoProduto: '|' não vira nome (" + meshes3 as string + ")") (meshes3.count == 3 and meshes3[1] == "0003" and meshes3[2] == "0003_Prato" and meshes3[3] == "0003_Porta_1")
+        checar "EhMaeDeSubparte: Porta é mãe de Porta_1" (InLab_Produto_EhMaeDeSubparte produtos3[1] partes3[2])
+        checar "EhMaeDeSubparte: Estrutura não é mãe" (not (InLab_Produto_EhMaeDeSubparte produtos3[1] partes3[1]))
+        logsCapturados = #()
+        InLab_Produto_MeshesDoProduto produtos3[1] avisar:true
+        checar "Parte-mãe sem mesh_final: sem #warn (a geometria está nas subpartes)" (not (logTem #warn "mesh_final"))
+        checar "Parte-mãe sem mesh_final: #info cita a parte" (logTem #info "Porta")
+
+        local mEst = StandardMaterial name:"estrutura_x"
+        local mPrato = StandardMaterial name:"prato_x"
+        local mSub = StandardMaterial name:"porta1_x"
+        local bPrato = Box name:"obj_prato_x" material:mPrato pos:[480,0,0]
+        append criados bPrato
+        local sug3 = InLab_Produto_SugerirMeshes produtos3[1] #(mEst, undefined, mPrato, mSub) #(bPrato)
+        checar ("Sugestão: parte em 2 meshes não sugere pelo material (veio '" + sug3[1] + "')") (sug3[1] == "0003_Prato")
+        logsCapturados = #()
+        checar "Aplicar com so3d devolve true" ((InLab_Produto_Aplicar produtos3[1] #(mEst, undefined, mPrato, mSub)) == true)
+        checar "so3d: material renomeado para o material_id sem letra de tipo" (mSub.name == "ART_Porta_1")
+        checar "so3d: sem o aviso 'Classificar a parte na plataforma'" (not (logTem #warn "Classificar"))
+        InLab_Produto_Reverter()
+
+        checar "Liberado3D: ok_3d true" (InLab_Produto_Liberado3D produtos3[1])
+        checar "Liberado3D: ok_3d false" (not (InLab_Produto_Liberado3D produtos3[2]))
+        checar "Liberado3D: export sem o campo ok_3d conta como liberado" (InLab_Produto_Liberado3D produtos[1])
+        local mBloq = StandardMaterial name:"tampo_bloq"
+        local bBloq = Box name:"obj_bloq" material:mBloq pos:[520,0,0]
+        append criados bBloq
+        logsCapturados = #()
+        checar "ok_3d=false: Aplicar devolve false" ((InLab_Produto_Aplicar produtos3[2] #(mBloq)) == false)
+        checar "ok_3d=false: material NÃO renomeado" (mBloq.name == "tampo_bloq")
+        checar "ok_3d=false: #warn cita o produto" (logTem #warn "0004")
+        logsCapturados = #()
+        checar "ok_3d=false: RenomearMeshes devolve 0" ((InLab_Produto_RenomearMeshes #(bBloq) #("0004") produto:produtos3[2]) == 0)
+        checar "ok_3d=false: objeto NÃO renomeado, com #warn" (bBloq.name == "obj_bloq" and (logTem #warn "0004"))
+
+        -- Export real v2 (opcional): nenhum nome de objeto com "|" e todo nome
+        -- existe em meshes[] do próprio produto.
+        local arqV2 = @"G:\Meu Drive\Trabalhos\2026\Artefacto\InlabChecker\produtos teste plugin rafa v2.json"
+        if doesFileExist arqV2 then
+        (
+            local prodsV2 = InLab_Produto_Lista (InLab_ParseJSON (InLab_JSON_LerArquivoUTF8 arqV2))
+            local ruins = #()
+            for p in prodsV2 do
+            (
+                local ms = InLab_JSON_Obter p "meshes"
+                local oficiais = if isKindOf ms Array then (for m in ms collect (InLab_Produto_Texto m "nome")) else #()
+                for n in (InLab_Produto_MeshesDoProduto p) where (findString n "|") != undefined or (findItem oficiais n) == 0 do
+                    append ruins ((InLab_Produto_Texto p "cod_est") + ":" + n)
+            )
+            checar ("Export v2: " + prodsV2.count as string + " produtos, nomes de objeto fora de meshes[]: " + ruins as string) (prodsV2.count > 0 and ruins.count == 0)
+        )
+        else linha "SKIP  Export v2 não encontrado"
 
         -- Ctrl+Z nativo NÃO é testável daqui: rodado de dentro do script,
         -- `max undo` desfaz o script inteiro (inclusive a criação das caixas),

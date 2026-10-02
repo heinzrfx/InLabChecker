@@ -269,6 +269,15 @@ rollout InLabSecProduto "Produto" width:420
         )
     )
 
+    -- 02/10/2026: produto com ok_3d = false na plataforma — avisa na escolha;
+    -- os botões de renomear pulam (ver fn_renomear_produto.ms).
+    fn avisarNaoLiberado =
+    (
+        local p = produtoEscolhido()
+        if p != undefined and not (InLab_Produto_Liberado3D p) do
+            InLab_Log ("Produto " + (InLab_Produto_Texto p "cod_est") + " está com 3D não liberado na plataforma (ok_3d = false) — os botões de renomear vão pular este produto.") tipo:#warn
+    )
+
     fn sugerir =
     (
         ligacoes = InLab_Produto_SugerirLigacoes (partesEscolhidas()) materiais
@@ -321,6 +330,7 @@ rollout InLabSecProduto "Produto" width:420
                 sugerir()
                 sugerirMeshes()
                 sugerirFamilia()
+                avisarNaoLiberado()
             )
         )
     )
@@ -330,6 +340,7 @@ rollout InLabSecProduto "Produto" width:420
         sugerir()
         sugerirMeshes()
         sugerirFamilia()
+        avisarNaoLiberado()
     )
 
     on ddlFamilia selected i do
@@ -423,7 +434,7 @@ rollout InLabSecProduto "Produto" width:420
             InLab_Log "Clique em 'Ler objetos' antes de renomear." tipo:#warn
         else
         (
-            InLab_Produto_RenomearMeshes objsMesh nomesMesh
+            InLab_Produto_RenomearMeshes objsMesh nomesMesh produto:(produtoEscolhido())
             atualizarMeshes()
         )
     )
