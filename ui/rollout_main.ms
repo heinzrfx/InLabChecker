@@ -640,7 +640,9 @@ rollout InLabSecUV "UV e Texturas" width:420
     -- no canal 3 e não toca no canal 1. Os itens do dropdown seguem a ordem
     -- de INLAB_UV_RESOLUCOES (functions\fn_autouv.ms).
     -- 22/Set: saiu o checkbox "Preferir seams em regiões ocultas", que nunca
-    -- teve efeito. Volta quando a sondagem da Tarefa 7b der resultado.
+    -- teve efeito. 02/10/2026 (issue #4): a sondagem da Tarefa 7b mostrou que
+    -- não compensa (docs\superpowers\specs\2026-10-02-autouv-seams-ocultas-
+    -- sondagem.md); o checkbox não volta.
     -- 30/09/2026 (issue #58): saem os rótulos de cima do Auto UV e do Real
     -- World Fix: o nome fica no botão, o detalhe no tooltip. O ângulo do
     -- flatten fica sem rótulo, ao lado do botão Auto UV.
