@@ -10,7 +10,7 @@
    Grupo 2 (config/família) → V-30                               [ENTREGUE]
    Grupo 3 (médias)         → V-20/21/22, V-03/05/06, V-11/12    [ENTREGUE — auditado contra spec v1.0/v2.0; V-04 removida em 05/10/2026]
    Grupo 4 (animação)       → V-26, V-31/32/33, V-34, V-40       [próxima entrega]
-   Grupo 5 (UV)             → V-14/15/16, V-29/V-39              [próxima entrega]
+   Grupo 5 (UV)             → V-14/15/16                          [ENTREGUE 05/10/2026 — verif_mapeamento.ms, issue #101; V-29/V-39 ficam para o v2]
    Grupo 6 (pesadas)        → V-07, V-08/09/10/13                [próxima entrega]
    Grupo 7 (materiais)      → V-23/24/25, V-35/36/37, V-38       [próxima entrega]
 
@@ -146,8 +146,13 @@ fn InLab_RodarVerificacoes cfg tampoAcessorio:false codEst:"" nomeProduto:"" pro
         InLab_V12_XForm objetos
         InLab_VEx01_Ocultos objetos
 
-        -- ===== Grupos 4–7 · próximas entregas =====
-        InLab_Log "Grupos 4–7 (animação avançada, UV, geometria pesada, materiais) ainda não implementados — relatório parcial." tipo:#warn
+        -- ===== Grupo 5 · UV (issue #101, verif_mapeamento.ms) =====
+        InLab_V14_UVPresente objetos
+        InLab_V15_UVBake objetos
+        InLab_V16_ResolucaoTexturas objetos
+
+        -- ===== Grupos 4, 6 e 7 · próximas entregas =====
+        InLab_Log "Grupos 4, 6 e 7 (animação avançada, geometria pesada, materiais) ainda não implementados — relatório parcial." tipo:#warn
 
         InLab_GerarRelatorio cfg codEst:codEst nomeProduto:nomeProduto
     )
