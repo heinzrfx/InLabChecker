@@ -189,6 +189,31 @@ global INLAB_TESTE_SAIDA, INLAB_TESTE_FALHAS
         checar "Erro: V-13 não passa em silêncio (#warning)" ((statusDe "V-13") == #warning)
         checar "Erro: V-13 diz 'não analisado'" ((findString (mensagemDe "V-13") "não analisado") != undefined)
         limparCena()
+        ---------------------------------------------------------------- V-07
+        local cfgCU = InLab_ObterFamilia "corpo_unico"
+        INLAB_LIMITES_PROVISORIOS = true
+        fn rodar07 cfg objs = ( InLab_ResetarResultados(); InLab_V07_RatioVT cfg objs; statusDe "V-07" )
+        local esf = Sphere radius:20 segs:32 smooth:true mapcoords:true name:"Esfera_suave"
+        checar ("V-07: esfera suavizada passa ('" + (rodar07 cfgCU #(esf)) as string + "': " + mensagemDe "V-07" + ")") ((rodar07 cfgCU #(esf)) == #pass)
+        esf.smooth = false
+        checar "V-07: esfera sem smoothing passa do limite (advertência, provisório)" ((rodar07 cfgCU #(esf)) == #warning)
+        checar ("V-07: mensagem tem o objeto e o ratio ('" + mensagemDe "V-07" + "')") ((findString (mensagemDe "V-07") "Esfera_suave: 2.99") != undefined)
+        INLAB_LIMITES_PROVISORIOS = false
+        checar "V-07: com limites valendo, reprova" ((rodar07 cfgCU #(esf)) == #fail)
+        INLAB_LIMITES_PROVISORIOS = true
+        InLab_ResetarResultados()
+        InLab_V07_RatioVT cfgCU #(esf) exportador:undefined
+        checar "V-07: sem exportador vira 'não medido' (advertência)" (statusDe "V-07" == #warning and (findString (mensagemDe "V-07") "não medido") != undefined)
+        checar "V-07: a pasta temporária foi apagada" ((getFiles ((getDir #temp) + "\inlab_v07\*")).count == 0)
+        limparCena()
+        -- Review Focus: nome repetido soma no mesmo item; oculto fica de fora sem "não medido"
+        local r1 = Sphere radius:10 segs:16 smooth:true mapcoords:true name:"Repetido"
+        local r2 = Sphere radius:10 segs:16 smooth:true mapcoords:true name:"Repetido" pos:[50, 0, 0]
+        local oc = Sphere radius:10 segs:16 smooth:true mapcoords:true name:"Oculto" pos:[100, 0, 0]
+        hide oc
+        checar ("V-07: nome repetido e objeto oculto não quebram ('" + (rodar07 cfgCU #(r1, r2, oc)) as string + "': " + mensagemDe "V-07" + ")") ((rodar07 cfgCU #(r1, r2, oc)) == #pass)
+        limparCena()
+
         -- CASOS DAS PRÓXIMAS TASKS ENTRAM AQUI
     )
     catch

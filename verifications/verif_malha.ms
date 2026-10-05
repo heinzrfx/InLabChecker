@@ -23,6 +23,10 @@
      dirigidas de TODAS as faces (a→b repetida = sentido oposto) e a V-08 usa
      só getOpenEdges (furo de verdade). Limitação: faces duplicadas com o
      mesmo sentido também aparecem na V-10a (a V-09 as reporta à parte).
+   - V-07 (implementação): exportador GLTF_Export grava nodes[].name = nome do
+     objeto no Max; Sphere radius:20 segs:32 smooth:false exportou 2875 v /
+     960 t (ratio 2.99; a sondagem anterior media 2879). Exporta a cena
+     inteira (ignora selectedOnly) numa pasta temporária apagada em seguida.
    - V-08 é advertência: fundo aberto e faces escondidas apagadas pelo passo
      3 da Otimização são furos legítimos (Puff Dorset: 88 por peça).
    - Volume com sinal só em elemento fechado (sem aresta aberta). Medido no
@@ -357,5 +361,90 @@ fn InLab_V13_Ngons analises =
         local msg = if semPoly.count == analises.count then "não se aplica: nenhum objeto em Editable Poly com stack vazio" \
             else ("nenhuma ngon em superfície curva" + (if semPoly.count > 0 then (" · não se aplica a " + InLab_Malha_Lista semPoly) else ""))
         InLab_RegistrarVerif "V-13" "Ngons em superfície curva" true msg critico:true
+    )
+)
+
+-- V-07 · vértices e triângulos por nó como o GLB tem: exporta a cena inteira
+-- para um .gltf temporário e lê os accessors. Na sondagem de 05/10/2026 o
+-- exportador ignorou selectedOnly:true, e estimar pela malha errou de −44% a
+-- +10% (normais editadas, smoothing groups que dividem bits). Exportar levou
+-- 0,3–0,6 s. Devolve #(#ok, nomes, verts, tris) ou #(#naoMedido, motivo).
+-- exportador: só para teste (undefined = simula "nenhum exportador").
+fn InLab_GLTF_VerticesPorNo exportador:unsupplied =
+(
+    local cls = if exportador == unsupplied then InLab_ResolverExportadorGLTF() else exportador
+    if cls == undefined then #(#naoMedido, "nenhum exportador glTF instalado")
+    else
+    (
+        local pasta = (getDir #temp) + "\inlab_v07\\"
+        makeDir pasta all:true
+        local arq = pasta + "cena.gltf"
+        local res = undefined
+        try
+        (
+            local ok = exportFile arq #noPrompt selectedOnly:false using:cls
+            if ok != true or not (doesFileExist arq) then res = #(#naoMedido, "o export glTF não gerou arquivo")
+            else
+            (
+                local js = InLab_ParseJSON (InLab_JSON_LerArquivoUTF8 arq)
+                local acc = InLab_JSON_Obter js "accessors"
+                local meshes = InLab_JSON_Obter js "meshes"
+                local nomes = #(); local verts = #(); local tris = #()
+                for n in (InLab_JSON_Obter js "nodes") do
+                (
+                    local mi = InLab_JSON_Obter n "mesh"
+                    if mi != undefined do
+                    (
+                        local v = 0; local t = 0
+                        for p in (InLab_JSON_Obter meshes[mi + 1] "primitives") do
+                        (
+                            local nv = InLab_JSON_Obter acc[(InLab_JSON_Obter (InLab_JSON_Obter p "attributes") "POSITION") + 1] "count"
+                            local ii = InLab_JSON_Obter p "indices"
+                            v += nv
+                            t += (if ii == undefined then nv else (InLab_JSON_Obter acc[ii + 1] "count")) / 3
+                        )
+                        local nome = (InLab_JSON_Obter n "name") as string
+                        local k = findItem nomes nome
+                        if k == 0 then ( append nomes nome; append verts v; append tris t )
+                        else ( verts[k] += v; tris[k] += t )
+                    )
+                )
+                res = #(#ok, nomes, verts, tris)
+            )
+        )
+        catch ( res = #(#naoMedido, "falha no export ou na leitura do glTF: " + getCurrentException()) )
+        for f in (getFiles (pasta + "*")) do deleteFile f
+        res
+    )
+)
+
+-- V-07 · Ratio vértices/triângulos do GLB, por objeto, contra cfg.maxRatioVT.
+fn InLab_V07_RatioVT cfg objetos exportador:unsupplied =
+(
+    local titulo = "Ratio vértices/triângulos (GLB)"
+    local r = InLab_GLTF_VerticesPorNo exportador:exportador
+    if r[1] != #ok then
+    (
+        InLab_Log ("V-07 não medida: " + r[2]) tipo:#warn
+        InLab_RegistrarVerif "V-07" titulo false ("não medido: " + r[2]) critico:false
+    )
+    else
+    (
+        local nomesObj = for o in objetos collect o.name
+        local acima = #(); local maior = 0.0; local medidos = 0
+        for i = 1 to r[2].count where (findItem nomesObj r[2][i]) > 0 and r[4][i] > 0 do
+        (
+            medidos += 1
+            local ratio = r[3][i] as float / r[4][i]
+            if ratio > maior do maior = ratio
+            if ratio > cfg.maxRatioVT do
+                append acima (r[2][i] + ": " + (formattedPrint ratio format:".2f") + " (" + r[3][i] as string + " v / " + r[4][i] as string + " t)")
+        )
+        if medidos == 0 then
+            InLab_RegistrarVerif "V-07" titulo false "não medido: nenhum objeto da cena saiu no glTF" critico:false
+        else
+            InLab_RegistrarVerif "V-07" titulo (acima.count == 0) \
+                ((if acima.count == 0 then ("maior " + (formattedPrint maior format:".2f")) else InLab_Malha_Lista acima) + " · limite " + cfg.maxRatioVT as string) \
+                critico:true provisorio:true
     )
 )
