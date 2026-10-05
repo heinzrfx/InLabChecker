@@ -112,6 +112,29 @@ global INLAB_TESTE_SAIDA, INLAB_TESTE_FALHAS
         checar "Erro: V-10 diz 'não analisado'" ((findString (mensagemDe "V-10") "não analisado") != undefined)
         limparCena()
 
+        ---------------------------------------------------------------- V-09
+        fn rodar09 objs = ( InLab_ResetarResultados(); InLab_V09_Duplicados (InLab_Malha_AnalisarCena objs) objs; statusDe "V-09" )
+        b = caixaMesh()
+        checar "V-09: Box sem duplicata passa" ((rodar09 #(b)) == #pass)
+        meshop.cloneFaces b #{1}
+        update b
+        checar "V-09: face clonada no lugar reprova" ((rodar09 #(b)) == #fail)
+        checar ("V-09: mensagem cita faces coincidentes ('" + mensagemDe "V-09" + "')") ((findString (mensagemDe "V-09") "coincidente") != undefined)
+        limparCena()
+        b = caixaMesh()
+        local b2 = copy b
+        checar "V-09: dois Box iguais no mesmo lugar reprovam" ((rodar09 #(b, b2)) == #fail)
+        checar ("V-09: mensagem cita os dois objetos ('" + mensagemDe "V-09" + "')") ((findString (mensagemDe "V-09") b2.name) != undefined)
+        b2.pos = [100, 0, 0]
+        checar "V-09: o mesmo Box em outro lugar passa" ((rodar09 #(b, b2)) == #pass)
+        limparCena()
+        -- Review Focus: membro de grupo fechado não é acusado contra a cabeça
+        local gA = caixaMesh()
+        local gB = caixaMesh()
+        gB.pos = [100, 0, 0]
+        local grp = group #(gA, gB) name:"Produto"
+        checar "V-09: membros de grupo fechado, sem duplicata, passam" ((rodar09 #(gA, gB)) == #pass)
+        limparCena()
         -- CASOS DAS PRÓXIMAS TASKS ENTRAM AQUI
     )
     catch

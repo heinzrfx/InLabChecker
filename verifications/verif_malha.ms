@@ -11,6 +11,9 @@
  roda uma análise por grupo de instâncias (InLab_DeduplicarInstancias).
 
  05/10/2026 — decisões da sondagem (Max 2024):
+   - TOLERÂNCIA: units.decodeValue "0.01mm" devolve 0.0 com separador decimal
+     em vírgula (pt-BR; "0.5mm" idem; "1mm" funciona). A tolerância agora é
+     INLAB_MALHA_TOL_MM * decodeValue "1mm" (InLab_Malha_Tolerancia).
    - SEM Dictionary em laço: como mapa de arestas levou 565 s numa malha de
      262 mil triângulos, e a chave inteira estourou. Duplicata e únicos saem
      de sort nativo sobre doubles (chave positiva, < 2^53).
@@ -28,10 +31,14 @@
 ================================================================================
 */
 
-global INLAB_MALHA_TOL = "0.01mm"          -- tolerância de posição (units.decodeValue)
+global INLAB_MALHA_TOL_MM = 0.01          -- tolerância de posição, em milímetros
 global INLAB_MALHA_PLANO_GRAUS = 1.0       -- V-13: ngon não plana
 global INLAB_MALHA_CURVA_GRAUS = 15.0      -- V-13: vizinha suavizada em curva
 global INLAB_MALHA_LOG_TRIS = 50000        -- loga o tempo das peças a partir disso
+
+-- Tolerância de posição em unidades da cena. Não usar units.decodeValue "0.01mm":
+-- com separador decimal em vírgula (pt-BR) devolve 0.0 e a V-09 estoura.
+fn InLab_Malha_Tolerancia = ( INLAB_MALHA_TOL_MM * (units.decodeValue "1mm") )
 
 struct MalhaAnalise
 (
@@ -107,10 +114,61 @@ fn InLab_Malha_ElementosDoAvesso m abertas =
     avesso
 )
 
+-- V-09a: faces cujos 3 cantos coincidem (na tolerância) com os de outra face
+-- do mesmo objeto, em qualquer ordem — no mesmo sentido ou costas com costas.
+-- Centro quantizado por eixo; sort nativo de (qx − qxMin)·(nf+1) + f
+-- (double, positiva); só as faces com o mesmo qx são comparadas entre si.
+fn InLab_Malha_FacesDuplicadas m tol =
+(
+    local nf = m.numfaces
+    if nf < 2 then 0
+    else
+    (
+        local q = for f = 1 to nf collect
+        (
+            local c = meshop.getFaceCenter m f
+            #(floor ((c.x as double) / tol + 0.5), floor ((c.y as double) / tol + 0.5), floor ((c.z as double) / tol + 0.5))
+        )
+        local qxMin = q[1][1]
+        for f = 2 to nf where q[f][1] < qxMin do qxMin = q[f][1]
+        local base = (nf + 1) as double
+        local chaves = for f = 1 to nf collect ((q[f][1] - qxMin) * base + f)
+        sort chaves
+        -- cantos quantizados e ordenados, como texto (só para as faces de um grupo)
+        fn cantos m f tol =
+        (
+            local v = getFace m f
+            local ps = for i in #(v.x, v.y, v.z) collect (local p = getVert m i; (floor (p.x / tol + 0.5)) as string + "," + (floor (p.y / tol + 0.5)) as string + "," + (floor (p.z / tol + 0.5)) as string)
+            sort ps
+            ps[1] + "|" + ps[2] + "|" + ps[3]
+        )
+        local dup = #{}
+        local i = 1
+        while i <= nf do
+        (
+            local qi = floor (chaves[i] / base)
+            local j = i
+            while j < nf and (floor (chaves[j + 1] / base)) == qi do j += 1
+            if j > i do
+            (
+                local fs = for k = i to j collect ((chaves[k] - qi * base) as integer)
+                for x = 1 to fs.count do
+                    for y = x + 1 to fs.count do
+                    (
+                        local fa = fs[x]; local fb = fs[y]
+                        if q[fa][2] == q[fb][2] and q[fa][3] == q[fb][3] and (cantos m fa tol) == (cantos m fb tol) do ( dup[fa] = true; dup[fb] = true )
+                    )
+            )
+            i = j + 1
+        )
+        dup.numberSet
+    )
+)
+
 -- Análise de UMA peça. tol: tolerância de posição em unidades da cena.
 fn InLab_Malha_Analisar o tol:undefined =
 (
-    if tol == undefined do tol = units.decodeValue INLAB_MALHA_TOL
+    if tol == undefined do tol = InLab_Malha_Tolerancia()
     local a = MalhaAnalise no:o instancias:(InLab_InstanciasDoNo o)
     local m = snapshotAsMesh o
     try
@@ -122,6 +180,7 @@ fn InLab_Malha_Analisar o tol:undefined =
             a.invertidas = InLab_Malha_ArestasInvertidas m
             a.furos = abertas.numberSet
             a.avesso = InLab_Malha_ElementosDoAvesso m abertas
+            a.duplicadas = InLab_Malha_FacesDuplicadas m tol
         )
     )
     catch
@@ -136,7 +195,7 @@ fn InLab_Malha_Analisar o tol:undefined =
 -- Uma análise por grupo de instâncias; loga o tempo das peças grandes.
 fn InLab_Malha_AnalisarCena objs =
 (
-    local tol = units.decodeValue INLAB_MALHA_TOL
+    local tol = InLab_Malha_Tolerancia()
     for g in (InLab_DeduplicarInstancias objs) collect
     (
         local t0 = timeStamp()
@@ -184,4 +243,34 @@ fn InLab_V10_Normais analises =
         InLab_RegistrarVerif "V-10" "Normais invertidas" false ("não medido: " + InLab_Malha_Lista naoMedidos) critico:false
     else
         InLab_RegistrarVerif "V-10" "Normais invertidas" true "normais consistentes" critico:true
+)
+
+-- V-09 · Duplicatas: faces coincidentes no objeto, ou objeto inteiro em cima
+-- de outro (mesma contagem de triângulos e mesmo bbox de mundo). Instância no
+-- mesmo lugar também conta. Análise que falhou: "não medido" (não passa em silêncio).
+fn InLab_V09_Duplicados analises objetos =
+(
+    local itens = #()
+    local naoMedidos = #()
+    for a in analises do
+    (
+        if a.erro != undefined do append naoMedidos ((InLab_Malha_Nome a) + ": não analisado (" + a.erro + ")")
+        if a.duplicadas > 0 do append itens ((InLab_Malha_Nome a) + ": " + a.duplicadas as string + " face(s) coincidente(s)")
+    )
+    local tol = InLab_Malha_Tolerancia()
+    local tris = for o in objetos collect (GetTriMeshFaceCount o)[1]
+    for i = 1 to objetos.count do
+        for j = i + 1 to objetos.count do
+        (
+            local p = objetos[i]
+            local q = objetos[j]
+            if tris[i] > 0 and tris[i] == tris[j] and (distance p.min q.min) <= tol and (distance p.max q.max) <= tol do
+                append itens (p.name + " e " + q.name + ": objeto duplicado no mesmo lugar")
+        )
+    if itens.count > 0 then
+        InLab_RegistrarVerif "V-09" "Faces e objetos duplicados" false (InLab_Malha_Lista (itens + naoMedidos)) critico:true
+    else if naoMedidos.count > 0 then
+        InLab_RegistrarVerif "V-09" "Faces e objetos duplicados" false ("não medido: " + InLab_Malha_Lista naoMedidos) critico:false
+    else
+        InLab_RegistrarVerif "V-09" "Faces e objetos duplicados" true "nenhuma duplicata" critico:true
 )
