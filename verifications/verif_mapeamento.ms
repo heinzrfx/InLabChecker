@@ -84,3 +84,122 @@ fn InLab_V14_UVPresente objetos =
     else
         InLab_RegistrarVerif "V-14" titulo true ("UV no canal 1 em " + grupos.count as string + " peça(s)") critico:true
 )
+
+-- Vértices de mapa do canal fora do 0–1 (tolerância INLAB_UV_FORA_TOL).
+fn InLab_Mapa_ForaDe01 m canal =
+(
+    local n = 0
+    local lo = -INLAB_UV_FORA_TOL
+    local hi = 1.0 + INLAB_UV_FORA_TOL
+    for v = 1 to (meshop.getNumMapVerts m canal) do
+    (
+        local p = meshop.getMapVert m canal v
+        if p.x < lo or p.x > hi or p.y < lo or p.y > hi do n += 1
+    )
+    n
+)
+
+-- Faces sobrepostas no canal 3 por um Unwrap_UVW temporário. Devolve o número
+-- de faces (polígonos no Editable Poly) ou undefined se a medição falhou. O
+-- Unwrap sai SEMPRE (try da remoção separado do try da medição). Quem chama
+-- cuida de seleção, painel e redesenho. falharTeste: só para teste.
+fn InLab_Mapa_SobrepostasUnwrap o falharTeste:false =
+(
+    local n = undefined
+    local uw = Unwrap_UVW()
+    local grupos = InLab_AbrirGruposAcima o
+    try
+    (
+        with undo off
+        (
+            addModifier o uw
+            if falharTeste do throw "falha simulada (teste)"
+            select o
+            max modify mode
+            modPanel.setCurrentObject uw
+            uw.setMapChannel 3
+            uw.selectOverlappedFaces()
+            n = (uw.getSelectedFaces()).numberSet
+        )
+    )
+    catch
+    (
+        n = undefined
+        InLab_Log (o.name + ": V-15 não mediu a sobreposição (" + getCurrentException() + ").") tipo:#warn
+    )
+    try
+    (
+        with undo off ( for m in o.modifiers where m == uw do deleteModifier o m )
+    )
+    catch
+    (
+        InLab_Log (o.name + ": não removi o Unwrap temporário da V-15 (" + getCurrentException() + ") — apague à mão.") tipo:#err
+    )
+    InLab_FecharGrupos grupos
+    n
+)
+
+-- V-15 · UV de bake (canal 3): sem sobreposição e dentro do 0–1. Peça sem
+-- canal 3 é "não se aplica" e nunca recebe o Unwrap.
+fn InLab_V15_UVBake objetos falharTeste:false =
+(
+    local titulo = "UV de bake sem sobreposição (canal 3)"
+    local itens = #()
+    local naoMedidos = #()
+    local semCanal = #()
+    local comCanal = #()
+    for g in (InLab_DeduplicarInstancias objetos) do
+    (
+        local o = g.no
+        local m = undefined
+        try
+        (
+            m = snapshotAsMesh o
+            if (InLab_UV_TemCanal m 3) and m.numfaces > 0 then
+            (
+                append comCanal o
+                local fora = InLab_Mapa_ForaDe01 m 3
+                if fora > 0 do append itens (o.name + ": " + fora as string + " vértice(s) de UV fora do 0–1 no canal 3")
+            )
+            else append semCanal o.name
+        )
+        catch
+        (
+            append naoMedidos (o.name + ": não analisado (" + getCurrentException() + ")")
+            InLab_Log (o.name + ": V-15 não leu o canal 3 (" + getCurrentException() + ").") tipo:#err
+        )
+        if m != undefined do try ( delete m ) catch ()
+    )
+    if comCanal.count > 0 do
+    (
+        local sel = for s in selection collect s
+        local modo = getCommandPanelTaskMode()
+        disableSceneRedraw()
+        suspendEditing()
+        try
+        (
+            for o in comCanal do
+            (
+                local n = InLab_Mapa_SobrepostasUnwrap o falharTeste:falharTeste
+                if n == undefined then append naoMedidos (o.name + ": sobreposição não medida (ver log)")
+                else if n > 0 do append itens (o.name + ": " + n as string + " face(s) sobreposta(s) no canal 3")
+            )
+        )
+        catch ( InLab_Log ("V-15: " + getCurrentException()) tipo:#err )
+        resumeEditing()
+        enableSceneRedraw()
+        clearSelection()
+        local vivos = for s in sel where isValidNode s collect s
+        if vivos.count > 0 do select vivos
+        setCommandPanelTaskMode modo
+    )
+    if itens.count > 0 then
+        InLab_RegistrarVerif "V-15" titulo false (InLab_Mapa_Lista (itens + naoMedidos)) critico:true
+    else if naoMedidos.count > 0 then
+        InLab_RegistrarVerif "V-15" titulo false ("não medido: " + InLab_Mapa_Lista naoMedidos) critico:false
+    else if comCanal.count == 0 then
+        InLab_RegistrarVerif "V-15" titulo true "não se aplica: nenhuma peça com UV de bake (canal 3)" critico:true
+    else
+        InLab_RegistrarVerif "V-15" titulo true ("canal 3 sem sobreposição e dentro do 0–1 em " + comCanal.count as string + " peça(s)" + \
+            (if semCanal.count > 0 then (" · não se aplica a " + semCanal.count as string + " peça(s) sem canal 3") else "")) critico:true
+)

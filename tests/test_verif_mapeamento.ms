@@ -94,6 +94,84 @@ global INLAB_TESTE_SAIDA, INLAB_TESTE_FALHAS
         checar ("V-14: instâncias contam uma vez ('" + mensagemDe "V-14" + "')") ((findString (mensagemDe "V-14") bi.name) == undefined)
         limparCena()
 
+        ---------------------------------------------------------------- V-15
+        -- Sem canal 3: não se aplica, e o Unwrap não pode ser usado (falso positivo).
+        b = caixa [0, 0, 0]
+        checar "V-15: peça sem canal 3 passa como 'não se aplica'" ((rodar InLab_V15_UVBake #(b) "V-15") == #pass and (findString (mensagemDe "V-15") "não se aplica") != undefined)
+        checar "V-15: nenhum modificador sobrou" (b.modifiers.count == 0)
+        limparCena()
+        -- Canal 3 limpo: cópia do canal 1 de um Plane (uma ilha).
+        local pl = Plane length:10 width:10 lengthsegs:4 widthsegs:4 mapcoords:true
+        convertToMesh pl
+        copiarCanal pl 1 3
+        checar ("V-15: canal 3 limpo passa ('" + (rodar InLab_V15_UVBake #(pl) "V-15") as string + "': " + mensagemDe "V-15" + ")") ((rodar InLab_V15_UVBake #(pl) "V-15") == #pass)
+        limparCena()
+        -- Canal 3 sobreposto: os 6 lados do Box no mesmo 0–1.
+        b = caixa [0, 0, 0]
+        copiarCanal b 1 3
+        checar "V-15: canal 3 sobreposto reprova" ((rodar InLab_V15_UVBake #(b) "V-15") == #fail)
+        checar ("V-15: mensagem diz 'sobreposta' ('" + mensagemDe "V-15" + "')") ((findString (mensagemDe "V-15") "face(s) sobreposta(s)") != undefined)
+        checar "V-15: Unwrap removido" (b.modifiers.count == 0)
+        limparCena()
+        -- Fora do 0–1.
+        pl = Plane length:10 width:10 lengthsegs:4 widthsegs:4 mapcoords:true
+        convertToMesh pl
+        copiarCanal pl 1 3
+        meshop.setMapVert pl 3 1 [1.3, 0.5, 0]
+        update pl
+        checar "V-15: vértice fora do 0–1 reprova" ((rodar InLab_V15_UVBake #(pl) "V-15") == #fail and (findString (mensagemDe "V-15") "fora do 0–1") != undefined)
+        limparCena()
+        -- Membro de grupo fechado.
+        local gA = caixa [0, 0, 0]
+        local gB = caixa [30, 0, 0]
+        copiarCanal gA 1 3
+        local grp = group #(gA, gB) name:"Produto"
+        checar "V-15: membro de grupo fechado é medido" ((rodar InLab_V15_UVBake #(gA, gB) "V-15") == #fail)
+        checar "V-15: grupo fechado de novo e sem modificador" (not (isOpenGroupHead grp) and gA.modifiers.count == 0)
+        limparCena()
+        -- Instâncias: uma medição, sem sobra em nenhuma.
+        b = caixa [0, 0, 0]
+        copiarCanal b 1 3
+        bi = instance b
+        bi.pos = [30, 0, 0]
+        InLab_ResetarResultados()
+        InLab_V15_UVBake #(b, bi)
+        checar ("V-15: instâncias medidas uma vez ('" + mensagemDe "V-15" + "')") ((findString (mensagemDe "V-15") bi.name) == undefined and b.modifiers.count == 0 and bi.modifiers.count == 0)
+        limparCena()
+        -- Seleção e painel do usuário voltam como estavam.
+        local outro = caixa [60, 0, 0]
+        b = caixa [0, 0, 0]
+        copiarCanal b 1 3
+        select outro
+        setCommandPanelTaskMode #create
+        InLab_ResetarResultados()
+        InLab_V15_UVBake #(b)
+        checar ("V-15: seleção restaurada (" + (for s in selection collect s.name) as string + ")") (selection.count == 1 and selection[1] == outro)
+        checar ("V-15: painel restaurado (" + (getCommandPanelTaskMode()) as string + ")") ((getCommandPanelTaskMode()) == #create)
+        clearSelection()
+        InLab_ResetarResultados()
+        InLab_V15_UVBake #(b)
+        checar "V-15: seleção vazia continua vazia" (selection.count == 0)
+        limparCena()
+        -- Peça com modificador no stack.
+        b = Box length:10 width:10 height:10 mapcoords:true
+        convertToMesh b
+        copiarCanal b 1 3
+        addModifier b (Bend angle:20)
+        checar "V-15: peça com Bend é medida e o Bend fica" ((rodar InLab_V15_UVBake #(b) "V-15") == #fail and b.modifiers.count == 1 and classof b.modifiers[1] == Bend)
+        limparCena()
+        -- Malha vazia: não se aplica, sem erro.
+        local vz = mesh numverts:0 numfaces:0
+        checar "V-15: malha vazia é 'não se aplica'" ((rodar InLab_V15_UVBake #(vz) "V-15") == #pass)
+        limparCena()
+        -- Exceção simulada no meio da medição.
+        b = caixa [0, 0, 0]
+        copiarCanal b 1 3
+        InLab_ResetarResultados()
+        InLab_V15_UVBake #(b) falharTeste:true
+        checar ("V-15: exceção vira 'não medido' ('" + mensagemDe "V-15" + "')") (statusDe "V-15" == #warning and (findString (mensagemDe "V-15") "não medid") != undefined)
+        checar "V-15: exceção não deixa modificador" (b.modifiers.count == 0)
+        limparCena()
         -- CASOS DAS PRÓXIMAS TASKS ENTRAM AQUI
     )
     catch
