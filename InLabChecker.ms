@@ -106,6 +106,8 @@
             @"verifications\verif_pivot.ms",
             @"verifications\verif_nomenclatura.ms",
             @"verifications\verif_geometria.ms",
+            -- grupo 6 de geometria (issue #102): usa fn_export_gltf e fn_json
+            @"verifications\verif_malha.ms",
             @"verifications\verif_animacao.ms",
             -- medição de UV (issue #1): só leitura, usada pelo Auto UV no log
             @"verifications\verif_uv.ms",
