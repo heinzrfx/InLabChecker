@@ -10,7 +10,7 @@
 */
 -- Declarados ANTES do bloco: o bloco é compilado antes dos fileIn rodarem.
 global InLab_ParseJSON, InLab_JSON_Obter, InLab_JSON_LerArquivoUTF8, InLab_Log
-global InLab_Produto_Lista, InLab_Produto_SugerirFamilia
+global InLab_Produto_Lista, InLab_Produto_SugerirFamilia, INLAB_ARQUETIPOS_SEM_FAMILIA
 global InLab_Familias, InLab_FamiliaAtiva, InLab_DefinirFamiliaAtiva, InLab_FamiliaRotulo
 global InLab_FamiliasDaUI, INLAB_FAMILIAS_ANIMADAS_NA_UI
 global InLab_RodarVerificacoes, InLab_VerifResults
@@ -37,6 +37,7 @@ global INLAB_TESTE_SAIDA, INLAB_TESTE_FALHAS
                    @"core\log.ms", @"core\utils.ms",
                    @"familias\familia_corpo_unico.ms", @"familias\familia_pernas_tampo.ms",
                    @"familias\familia_estrutura_estofado.ms", @"familias\familia_estrutura_modular.ms",
+                   @"familias\familia_corpo_portas_gavetas.ms", @"familias\familia_base_cabeceira.ms",
                    @"familias\familia_translacao.ms", @"familias\familia_rotacao.ms",
                    @"familias\familia_giro_assento.ms", @"familias\familia_movimento_especial.ms",
                    @"functions\fn_json.ms", @"functions\fn_renomear_produto.ms",
@@ -76,6 +77,15 @@ global INLAB_TESTE_SAIDA, INLAB_TESTE_FALHAS
             #("SOFA", "SOFA S", "false", #(), "estrutura_estofado"),
             #("MODULO", "MODULO Z", "false", #(), "estrutura_estofado"),
             #("CHAISE LONGUE", "CHAISE", "false", #(), "estrutura_estofado"),
+            -- 05/10/2026: os dois arquétipos que faltavam viraram família
+            #("BUFFET", "BUFFET B", "false", #(), "corpo_portas_gavetas"),
+            #("ESCRIVANINHA", "ESCRIVANINHA E", "false", #(), "corpo_portas_gavetas"),
+            #("ESTANTE", "ESTANTE T", "false", #(), "corpo_portas_gavetas"),
+            #("VANITY DESK", "VANITY", "false", #(), "corpo_portas_gavetas"),
+            #("CÔMODA", "COMODA C", "false", #(), "corpo_portas_gavetas"),
+            #("MESA DE CABECEIRA", "MESA DE CABECEIRA M", "false", #(), "corpo_portas_gavetas"),
+            #("CAMA", "CAMA K", "false", #(), "base_cabeceira"),
+            #("BICAMA", "BICAMA K", "false", #(), "base_cabeceira"),
             -- condicionais pelo dado: tampo acessório / parte em tecido
             #("APARADOR", "APARADOR V", "false", #(), "corpo_unico"),
             #("APARADOR", "APARADOR TAMPO ACESSORIO", "false", #(#("Tampo", "0002", "\"acessorio\": true")), "pernas_tampo"),
@@ -97,13 +107,8 @@ global INLAB_TESTE_SAIDA, INLAB_TESTE_FALHAS
             local sug = InLab_Produto_SugerirFamilia (produto c[1] c[2] c[3] c[4])
             checar ("Sugestão: " + c[2] + " → " + c[5] + " (veio '" + sug[1] + "': " + sug[2] + ")") (sug[1] == c[5])
         )
-        -- Arquétipos que ainda não têm família no plugin: sem sugestão, com o motivo.
-        for c in #(#("BUFFET", "Corpo + Portas/Gavetas"), #("ESCRIVANINHA", "Corpo + Portas/Gavetas"), #("ESTANTE", "Corpo + Portas/Gavetas"),
-                   #("VANITY DESK", "Corpo + Portas/Gavetas"), #("CÔMODA", "Corpo + Portas/Gavetas"), #("CAMA", "Base + Cabeceira"), #("BICAMA", "Base + Cabeceira")) do
-        (
-            local sg = InLab_Produto_SugerirFamilia (produto c[1] c[1] "false" #())
-            checar ("Arquétipo sem família no plugin: " + c[1] + " → sem sugestão, motivo cita '" + c[2] + "' (" + sg[2] + ")") (sg[1] == "" and (findString sg[2] c[2]) != undefined)
-        )
+        -- 05/10/2026: todo arquétipo da equipe tem família no plugin.
+        checar "Nenhum arquétipo sem família" (INLAB_ARQUETIPOS_SEM_FAMILIA.count == 0)
         local sugAnim = InLab_Produto_SugerirFamilia (produto "CADEIRA" "CADEIRA GIRATORIA" "true" #())
         checar "Animado: motivo avisa que entra como estático" ((findString sugAnim[2] "estático") != undefined)
         local semTabela = InLab_Produto_SugerirFamilia (produto "LUMINARIA" "LUMINARIA Q" "false" #())
@@ -113,15 +118,15 @@ global INLAB_TESTE_SAIDA, INLAB_TESTE_FALHAS
             (for c in casos where (for f in InLab_Familias where f.nome == c[5] collect f).count == 0 collect c).count == 0)
 
         -- 2. DEFINIR FAMÍLIA ATIVA
-        checar "8 famílias registradas" (InLab_Familias.count == 8)
+        checar "10 famílias registradas" (InLab_Familias.count == 10)
         -- 02/10/2026: o v1 trata animado como estático — o dropdown Família só
-        -- mostra as 4 estruturais; as animadas continuam registradas para o v2.
+        -- mostra as estruturais (6 desde 05/10/2026); as animadas continuam registradas para o v2.
         local daUI = InLab_FamiliasDaUI()
-        checar ("Dropdown: só as 4 famílias estruturais (" + (for f in daUI collect f.nome) as string + ")") (daUI.count == 4 and (for f in daUI where f.animado collect f).count == 0)
+        checar ("Dropdown: só as 6 famílias estruturais (" + (for f in daUI collect f.nome) as string + ")") (daUI.count == 6 and (for f in daUI where f.animado collect f).count == 0)
         checar "Dropdown: toda família sugerida pelo produto está no dropdown" (
             (for c in casos where (for f in daUI where f.nome == c[5] collect f).count == 0 collect c).count == 0)
         INLAB_FAMILIAS_ANIMADAS_NA_UI = true
-        checar "Dropdown: com a constante ligada voltam as 8" ((InLab_FamiliasDaUI()).count == 8)
+        checar "Dropdown: com a constante ligada voltam as 10" ((InLab_FamiliasDaUI()).count == 10)
         INLAB_FAMILIAS_ANIMADAS_NA_UI = false
         InLab_DefinirFamiliaAtiva "pernas_tampo"
         checar "Definir: pernas_tampo" (InLab_FamiliaAtiva != undefined and InLab_FamiliaAtiva.nome == "pernas_tampo")
@@ -148,10 +153,9 @@ global INLAB_TESTE_SAIDA, INLAB_TESTE_FALHAS
         if doesFileExist arqReal then
         (
             local produtos = InLab_Produto_Lista (InLab_ParseJSON (InLab_JSON_LerArquivoUTF8 arqReal))
-            -- Sem sugestão só quem cai num arquétipo que ainda não tem família no plugin.
+            -- 05/10/2026: com os 5 arquétipos virando família, todo produto recebe sugestão.
             local semSug = for p in produtos where (InLab_Produto_SugerirFamilia p)[1] == "" collect p
-            local foraDaTabela = for p in semSug where (findString (InLab_Produto_SugerirFamilia p)[2] "sem família no plugin") == undefined collect p
-            checar ("Export real: " + produtos.count as string + " produtos, " + semSug.count as string + " em arquétipo sem família, " + foraDaTabela.count as string + " fora da tabela") (produtos.count > 0 and foraDaTabela.count == 0)
+            checar ("Export real: " + produtos.count as string + " produtos, " + semSug.count as string + " sem sugestão " + (for p in semSug collect (InLab_Produto_SugerirFamilia p)[2]) as string) (produtos.count > 0 and semSug.count == 0)
         )
         else linha "SKIP  Export real não encontrado"
     )

@@ -54,6 +54,7 @@ global INLAB_TESTE_SAIDA, INLAB_TESTE_FALHAS
                    @"core\log.ms", @"core\utils.ms",
                    @"familias\familia_corpo_unico.ms", @"familias\familia_pernas_tampo.ms",
                    @"familias\familia_estrutura_estofado.ms", @"familias\familia_estrutura_modular.ms",
+                   @"familias\familia_corpo_portas_gavetas.ms", @"familias\familia_base_cabeceira.ms",
                    @"familias\familia_translacao.ms", @"familias\familia_rotacao.ms",
                    @"familias\familia_giro_assento.ms", @"familias\familia_movimento_especial.ms",
                    @"functions\fn_otim_nucleo.ms",
@@ -223,7 +224,7 @@ global INLAB_TESTE_SAIDA, INLAB_TESTE_FALHAS
         cfgGiro.maxDrawCalls = undefined
         InLab_ResetarResultados(); InLab_V05_DrawCalls cfgGiro gz
         checar "V-05: família sem teto vira advertência" ((statusDe "V-05") == #warning)
-        for nome in #("corpo_unico", "pernas_tampo", "estrutura_estofado", "estrutura_modular", "translacao", "rotacao", "giro_assento", "movimento_especial") do
+        for nome in #("corpo_unico", "pernas_tampo", "estrutura_estofado", "estrutura_modular", "corpo_portas_gavetas", "base_cabeceira", "translacao", "rotacao", "giro_assento", "movimento_especial") do
             checar ("V-05: família '" + nome + "' tem teto inteiro") (isKindOf (InLab_ObterFamilia nome).maxDrawCalls Integer)
         limparCena()
 
