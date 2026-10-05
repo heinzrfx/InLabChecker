@@ -4,7 +4,7 @@
 --------------------------------------------------------------------------------
  O QUE ESTE ARQUIVO FAZ:
  Define o struct FamiliaConfig — substituto MaxScript-nativo do JSON de família
- da spec v2.0 (seção 2.2) — e o registro global onde as 8 famílias se inscrevem
+ da spec v2.0 (seção 2.2) — e o registro global onde as 10 famílias se inscrevem
  ao serem carregadas via fileIn.
 
  Cada arquivo em familias\ instancia este struct como variável global
@@ -24,6 +24,10 @@
 
  05/10/2026 (issue #36): saiu o campo limitesPorParte, junto com a V-04
  (ver o cabeçalho de verifications\verif_peso_poly.ms).
+
+ 05/10/2026: famílias Corpo + Portas/Gavetas e Base + Cabeceira (arquétipos
+ 4 e 5 da equipe), com limites provisórios. São 10: 6 estruturais + 4
+ animadas.
 ================================================================================
 */
 
@@ -71,7 +75,7 @@ struct FamiliaConfig
 -- REGISTRO GLOBAL DE FAMÍLIAS
 --------------------------------------------------------------------------------
 
--- Array com as 8 configs registradas (populado pelos arquivos de familias\).
+-- Array com as 10 configs registradas (populado pelos arquivos de familias\).
 global InLab_Familias = #()
 
 -- Família atualmente selecionada na UI.
@@ -100,7 +104,7 @@ fn InLab_RegistrarFamilia cfg =
 )
 
 -- 02/10/2026: famílias que o dropdown Família oferece. false = só as
--- estruturais (v1: animado entra como estático); true = as 8.
+-- estruturais (v1: animado entra como estático); true = todas.
 global INLAB_FAMILIAS_ANIMADAS_NA_UI = false
 
 global InLab_FamiliasDaUI
@@ -129,6 +133,8 @@ fn InLab_FamiliaRotulo nomeFam =
         "pernas_tampo":        "Pernas + Tampo"
         "estrutura_estofado":  "Estrutura + Estofado"
         "estrutura_modular":   "Estrutura Modular"
+        "corpo_portas_gavetas": "Corpo + Portas/Gavetas"
+        "base_cabeceira":      "Base + Cabeceira"
         "translacao":          "Translação (gavetas)"
         "rotacao":             "Rotação (portas / pratos)"
         "giro_assento":        "Giro de Assento"

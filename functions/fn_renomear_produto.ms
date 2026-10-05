@@ -74,6 +74,8 @@
      entram em MeshesDoProduto e a sugestão segue o nome do arquivo).
    - produto animado: as meshes separadas (codEst_Porta_1...) continuam
      valendo mesmo com o v1 estático — nada mudou aqui.
+ 05/10/2026: Corpo + Portas/Gavetas e Base + Cabeceira viraram família;
+ INLAB_ARQUETIPOS_SEM_FAMILIA ficou vazio e toda classe da tabela é sugerida.
 
  02/10/2026 (issue #93, cópias de bloco_3d): ver o bloco "CÓPIAS DE bloco_3d".
  O bloqueio de ok_3d passa por InLab_Produto_MotivoBloqueio, que também pula
@@ -445,7 +447,7 @@ fn InLab_Produto_SugerirLigacoes partes mtls =
 -- como estático; os campos de animação do JSON continuam lá, sem uso.
 -- Tabela: Arquetipos_Modelagem_FAST.md (5 arquétipos, 34 classes), que
 -- substituiu a tabela v3 do mesmo dia (mesas voltaram para Pernas + Tampo).
--- Par #(arquétipo, classes). Os três primeiros são famílias do plugin.
+-- Par #(arquétipo, classes). Desde 05/10/2026 os cinco são famílias do plugin.
 global INLAB_FAMILIA_POR_CLASSE = #(
     #("pernas_tampo",         #("carro bar", "carro cha", "mesa bar", "mesa componivel", "mesa de centro", "mesa de cha",
                                 "mesa de jantar", "mesa de jogo", "mesa lateral")),
@@ -460,11 +462,9 @@ global INLAB_FAMILIA_POR_CLASSE = #(
 global INLAB_CLASSES_POR_TECIDO = #("balanco", "banco", "banqueta", "cadeira", "longarina", "poltrona", "puff")
 -- Arquétipos da equipe que AINDA NÃO têm família no plugin (FamiliaConfig com
 -- limites): a classe fica sem sugestão e o motivo diz qual arquétipo falta.
--- Par #(arquétipo, rótulo).
-global INLAB_ARQUETIPOS_SEM_FAMILIA = #(
-    #("corpo_portas_gavetas", "Corpo + Portas/Gavetas"),
-    #("base_cabeceira",       "Base + Cabeceira")
-)
+-- Par #(arquétipo, rótulo). Vazio desde 05/10/2026: Corpo + Portas/Gavetas e
+-- Base + Cabeceira viraram família (familias\). Fica para um arquétipo novo.
+global INLAB_ARQUETIPOS_SEM_FAMILIA = #()
 
 -- true se alguma parte do produto tem o campo booleano `campo` ligado e, se
 -- `trecho` vier, o nome_parte (sem acento, minúsculo) contém `trecho`.

@@ -71,6 +71,8 @@
             @"familias\familia_pernas_tampo.ms",
             @"familias\familia_estrutura_estofado.ms",
             @"familias\familia_estrutura_modular.ms",
+            @"familias\familia_corpo_portas_gavetas.ms",
+            @"familias\familia_base_cabeceira.ms",
             @"familias\familia_translacao.ms",
             @"familias\familia_rotacao.ms",
             @"familias\familia_giro_assento.ms",

@@ -66,6 +66,7 @@ rollout _rTesteFake "" width:100 height:60
             @"core\struct_familia.ms", @"core\log.ms", @"core\utils.ms",
             @"familias\familia_corpo_unico.ms", @"familias\familia_pernas_tampo.ms",
             @"familias\familia_estrutura_estofado.ms", @"familias\familia_estrutura_modular.ms",
+            @"familias\familia_corpo_portas_gavetas.ms", @"familias\familia_base_cabeceira.ms",
             @"familias\familia_translacao.ms", @"familias\familia_rotacao.ms",
             @"familias\familia_giro_assento.ms", @"familias\familia_movimento_especial.ms",
             @"functions\fn_json.ms", @"functions\fn_updater.ms",
