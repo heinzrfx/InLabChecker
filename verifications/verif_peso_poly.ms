@@ -14,6 +14,12 @@
  28/09/2026 (issue #33): V-01 não mede mais arquivo velho nem reprova cena
  nunca salva — as duas viram advertência "não medido" (ver a função).
 
+ 05/10/2026 (issue #36): V-04 (polígonos por parte) REMOVIDA. Pela
+ nomenclatura oficial o produto estático chega como UMA mesh (codEst): no
+ export v5, 59 de 66 produtos. Não existe objeto "Encosto" ou "Perna" para
+ medir, e nenhuma família tinha limite por parte. A V-03 (total) cobre o
+ orçamento. Saiu junto FamiliaConfig.limitesPorParte.
+
  28/09/2026 (issue #32): V-05 passou a contar draw calls reais (materiais
  usados, somados por objeto) contra `maxDrawCalls` da família, que o ini pode
  sobrescrever. Tetos: docs\superpowers\specs\2026-09-28-draw-calls-benchmark.md.
@@ -60,33 +66,6 @@ fn InLab_V03_Poligonos cfg objetos =
     local dentro = (total >= cfg.polyMin) and (total <= cfg.polyMax)
     local msg = total as string + " triângulos · faixa " + cfg.polyMin as string + "–" + cfg.polyMax as string + " (unidade da faixa a confirmar, #36)"
     InLab_RegistrarVerif "V-03" "Triângulos totais (faixa da família)" dentro msg provisorio:true
-)
-
--- V-04 · Distribuição por parte nomeada (spec 2.2 · seção 2.4 v1.0).
--- Só valida partes com limite definido em cfg.limitesPorParte — igual ao
--- padrão já usado no V-20 para nomenclatura pendente.
-fn InLab_V04_PoligonosPorParte cfg objetos =
-(
-    if cfg.limitesPorParte.count == 0 then
-    (
-        InLab_RegistrarVerif "V-04" "Polígonos por parte (limite individual)" true "sem limites por parte definidos para esta família — pendente (spec 2.2)" critico:false
-    )
-    else
-    (
-        local problemas = #()
-        for regra in cfg.limitesPorParte do
-        (
-            local prefixo = regra[1]
-            local limite  = regra[2]
-            for o in objetos where (matchPattern o.name pattern:(prefixo + "*") ignoreCase:true) do
-            (
-                local n = InLab_Otim_Triangulos #(o)   -- triângulos (issue #60)
-                if n > limite do append problemas (o.name + ": " + n as string + " > " + limite as string + " (" + prefixo + ")")
-            )
-        )
-        local msg = if problemas.count == 0 then "todas as partes dentro do limite individual" else (problemas as string)
-        InLab_RegistrarVerif "V-04" "Polígonos por parte (limite individual)" (problemas.count == 0) msg critico:true
-    )
 )
 
 -- Draw calls de UM nó no GLB: cada material usado pelas faces vira um

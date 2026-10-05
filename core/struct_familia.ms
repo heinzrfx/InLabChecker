@@ -21,6 +21,9 @@
  estático (Bianca, respostas v3), então o dropdown Família mostra só as 4
  estruturais. As 4 animadas continuam registradas, com as verificações e os
  testes delas: para o v2 basta INLAB_FAMILIAS_ANIMADAS_NA_UI = true.
+
+ 05/10/2026 (issue #36): saiu o campo limitesPorParte, junto com a V-04
+ (ver o cabeçalho de verifications\verif_peso_poly.ms).
 ================================================================================
 */
 
@@ -42,7 +45,6 @@ struct FamiliaConfig
     tampoAcessorio   = false,      -- V-38: só relevante para Pernas+Tampo
     materialTypes    = #(),        -- ex.: #("zona_acabamento"), #("palha"), #("cristal") → V-35/36/37
     validNames       = #(),        -- V-20: vazio. Desde 02/10/2026 os nomes saem do produto importado (verif_nomenclatura.ms)
-    limitesPorParte  = #(),        -- V-04: #("Prefixo", limiteMax) por parte. Vazio até Bianca definir por família.
 
     -- Gera a descrição da config como ARRAY de linhas, prontas para o log da UI.
     -- (o listbox do log trabalha linha a linha, por isso não retorna string única)
@@ -61,7 +63,6 @@ struct FamiliaConfig
         append L ("Tampo acessório (V-38): " + (if tampoAcessorio then "sim" else "não"))
         append L ("Materiais especiais: " + (if materialTypes.count > 0 then (materialTypes as string) else "nenhum"))
         append L ("Nomes válidos (V-20): " + (if validNames.count == 0 then "saem do produto importado na seção Produto" else (validNames as string)))
-        append L ("Limites por parte (V-04): " + (if limitesPorParte.count == 0 then "pendente — verificação em modo advertência" else (limitesPorParte as string)))
         L
     )
 )

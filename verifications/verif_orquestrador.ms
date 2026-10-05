@@ -8,7 +8,7 @@
  STATUS DA IMPLEMENTAÇÃO:
    Grupo 1 (rápidas)        → V-19, V-01/02, V-17/18            [ENTREGUE]
    Grupo 2 (config/família) → V-30                               [ENTREGUE]
-   Grupo 3 (médias)         → V-20/21/22, V-03/04/05/06, V-11/12 [ENTREGUE — auditado contra spec v1.0/v2.0]
+   Grupo 3 (médias)         → V-20/21/22, V-03/05/06, V-11/12    [ENTREGUE — auditado contra spec v1.0/v2.0; V-04 removida em 05/10/2026]
    Grupo 4 (animação)       → V-26, V-31/32/33, V-34, V-40       [próxima entrega]
    Grupo 5 (UV)             → V-14/15/16, V-29/V-39              [próxima entrega]
    Grupo 6 (pesadas)        → V-07, V-08/09/10/13                [próxima entrega]
@@ -21,6 +21,8 @@
    V-04  → reescrita para o que a spec pede de fato: limite individual de
            polígonos por parte nomeada (cfg.limitesPorParte). Fica em modo
            advertência até esses limites serem definidos por família.
+           05/10/2026 (issue #36): REMOVIDA. O produto estático chega como
+           uma mesh só (codEst), sem objeto por parte para medir.
    V-05  → agora cobre as 8 famílias: numérico p/ corpo_unico, pernas_tampo
            e giro_assento (regra fixa); advertência p/ as demais ("1 por
            parte" não é verificável até a nomenclatura oficial existir).
@@ -138,7 +140,6 @@ fn InLab_RodarVerificacoes cfg tampoAcessorio:false codEst:"" nomeProduto:"" pro
         InLab_V21_NomesValidos objetos
         InLab_V22_SufixosSequenciais objetos
         InLab_V03_Poligonos cfg objetos
-        InLab_V04_PoligonosPorParte cfg objetos
         InLab_V05_DrawCalls cfg objetos
         InLab_V06_SugestaoAttach objetos
         InLab_V11_Modificadores objetos
