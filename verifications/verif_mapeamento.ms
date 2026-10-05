@@ -28,6 +28,37 @@
      medido" (passou:false, critico:false) e o laço segue; o Unwrap sai sempre
      e os grupos abertos voltam a fechar mesmo se a abertura/fechamento falhar.
    - Seleção, painel, redraw e suspendEditing restaurados passo a passo.
+ 05/10/2026 — correções da revisão final do branch:
+   - BUG achado no piloto (Auto UV real): o Unwrap temporário media o canal 1,
+     não o 3. O setMapChannel só vale ANTES da primeira avaliação do stack: com
+     select/setCurrentObject antes dele o Unwrap já carregou o canal 1 e o
+     setMapChannel 3 não recarrega (numberVertices fica igual). Os testes
+     antigos não pegavam porque copiavam o canal 1 para o 3. Agora o
+     setMapChannel 3 vem logo depois do addModifier (testado com redraw ligado
+     e desligado), e há testes com um canal limpo e o outro sobreposto.
+     Antes da correção: Mentha, 11 de 11 peças reprovadas (Box002: 8687 faces)
+     com um Auto UV que se mede com 0 sobreposições.
+   - Piloto depois da correção, Auto UV real em TODAS as peças (arquivos sem
+     salvar): Poltrona Mentha (11 peças, 34 mil tri) Auto UV 88 s, V-14 passa,
+     V-15 PASSA em 1,0 s; Mesa Lateral Nambu (14 peças, 40 mil tri) Auto UV 34 s,
+     V-14 passa, V-15 PASSA em 1,2 s. Nenhum Unwrap temporário sobra (só os 11/14
+     do próprio Auto UV), seleção e painel voltam. O log do Auto UV acusou 366
+     faces sobrepostas na Shape018 (InLab_MedirUV, critério geométrico próprio);
+     o selectOverlappedFaces nativo dá 0 nela (Unwrap vivo e V-15 concordam).
+   - suspendEditing/resumeEditing: agora alwaysSuspend:true nos dois. Sondagem
+     (8 peças com canal 3): saindo do Create ou do Modify o tempo é o mesmo
+     (3,5 s, 0,44 s/peça; sem suspendEditing 8,8 s, 1,1 s/peça) e o painel Modify
+     segue editável (getCurrentObject = Editable_mesh, modificador editável).
+     O padrão (alwaysSuspend:false) também funcionou nesta build, mas só
+     alwaysSuspend:true garante o par sem depender do painel aberto. Um suspend
+     SEM resume deixa o painel morto (getCurrentObject = UndefinedClass) até
+     um resumeEditing alwaysSuspend:true; há teste para isso.
+   - V-14 e V-15 só contam vértices de mapa USADOS por faces
+     (meshop.getMapVertsUsingMapFace): vértice órfão não gera falso FAIL.
+   - V-14 distingue "colapsado num ponto" (largura e altura ≤ 1e-6) de
+     "colapsado numa linha" (só um eixo).
+   - Abrir/fechar grupos dentro de with undo off; redrawViews() após reativar
+     o redesenho.
 ================================================================================
 */
 
@@ -60,12 +91,14 @@ fn InLab_V14_UVPresente objetos =
             if not (InLab_UV_TemCanal m 1) then append itens (o.name + ": sem UV no canal 1")
             else
             (
-                local nv = meshop.getNumMapVerts m 1
+                -- Só vértices de mapa usados por alguma face (órfão não conta).
+                local usados = meshop.getMapVertsUsingMapFace m 1 #{1..m.numfaces}
+                local nv = usados.numberSet
                 local uMin = 1e30
                 local uMax = -1e30
                 local vMin = 1e30
                 local vMax = -1e30
-                for v = 1 to nv do
+                for v in usados do
                 (
                     local p = meshop.getMapVert m 1 v
                     if p.x < uMin do uMin = p.x
@@ -73,8 +106,12 @@ fn InLab_V14_UVPresente objetos =
                     if p.y < vMin do vMin = p.y
                     if p.y > vMax do vMax = p.y
                 )
-                if nv == 0 or (uMax - uMin) <= 1e-6 or (vMax - vMin) <= 1e-6 do
+                local semLargura = (uMax - uMin) <= 1e-6
+                local semAltura = (vMax - vMin) <= 1e-6
+                if nv == 0 or (semLargura and semAltura) then
                     append itens (o.name + ": UV colapsado num ponto (canal 1)")
+                else if semLargura or semAltura do
+                    append itens (o.name + ": UV colapsado numa linha (canal 1)")
             )
         )
         catch
@@ -98,7 +135,8 @@ fn InLab_Mapa_ForaDe01 m canal =
     local n = 0
     local lo = -INLAB_UV_FORA_TOL
     local hi = 1.0 + INLAB_UV_FORA_TOL
-    for v = 1 to (meshop.getNumMapVerts m canal) do
+    -- Só vértices usados por faces: órfão fora do 0–1 não reprova.
+    for v in (meshop.getMapVertsUsingMapFace m canal #{1..m.numfaces}) do
     (
         local p = meshop.getMapVert m canal v
         if p.x < lo or p.x > hi or p.y < lo or p.y > hi do n += 1
@@ -131,16 +169,19 @@ fn InLab_Mapa_SobrepostasUnwrap o falharTeste:false =
     local grupos = #()
     try
     (
-        grupos = InLab_AbrirGruposAcima o
+        with undo off ( grupos = InLab_AbrirGruposAcima o )
         uw = Unwrap_UVW()
         with undo off
         (
             addModifier o uw
+            -- O canal TEM de ser escolhido aqui, antes de qualquer avaliação do
+            -- stack (select, painel): depois disso o setMapChannel não recarrega e
+            -- o Unwrap segue medindo o canal 1 (sondagem de 05/10/2026).
+            uw.setMapChannel 3
             if falharTeste do throw "falha simulada (teste)"
             select o
             max modify mode
             modPanel.setCurrentObject uw
-            uw.setMapChannel 3
             uw.selectOverlappedFaces()
             n = (uw.getSelectedFaces()).numberSet
         )
@@ -161,7 +202,7 @@ fn InLab_Mapa_SobrepostasUnwrap o falharTeste:false =
             InLab_Log (o.name + ": não removi o Unwrap temporário da V-15 (" + getCurrentException() + ") — apague à mão.") tipo:#err
         )
     )
-    try ( InLab_FecharGrupos grupos )
+    try ( with undo off ( InLab_FecharGrupos grupos ) )
     catch
     (
         InLab_Log (o.name + ": V-15 não fechou os grupos (" + getCurrentException() + "); fechando direto.") tipo:#warn
@@ -210,7 +251,8 @@ fn InLab_V15_UVBake objetos falharTeste:false =
         local modo = getCommandPanelTaskMode()
         local tratados = #()
         disableSceneRedraw()
-        try ( suspendEditing() ) catch ()
+        -- alwaysSuspend:true: suspende e retoma SEMPRE em par, com o painel Modify aberto ou não.
+        try ( suspendEditing alwaysSuspend:true ) catch ()
         try
         (
             for o in comCanal do
@@ -236,8 +278,8 @@ fn InLab_V15_UVBake objetos falharTeste:false =
                 append naoMedidos (o.name + ": sobreposição não medida (interrompida)")
         )
         -- Restauração: cada passo guardado, para um não pular o seguinte.
-        try ( resumeEditing() ) catch ()
-        try ( enableSceneRedraw() ) catch ()
+        try ( resumeEditing alwaysSuspend:true ) catch ()
+        try ( enableSceneRedraw(); redrawViews() ) catch ()
         try
         (
             with undo off

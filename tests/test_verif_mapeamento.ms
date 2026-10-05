@@ -49,6 +49,7 @@ global INLAB_TESTE_SAIDA, INLAB_TESTE_FALHAS
     )
 
     local logOriginal = InLab_Log
+    local b2 = undefined
     local unidadeOriginal = units.SystemType
 
     try
@@ -76,6 +77,25 @@ global INLAB_TESTE_SAIDA, INLAB_TESTE_FALHAS
         update b
         checar "V-14: UV colapsado num ponto reprova" ((rodar InLab_V14_UVPresente #(b) "V-14") == #fail)
         checar ("V-14: mensagem diz 'colapsado' ('" + mensagemDe "V-14" + "')") ((findString (mensagemDe "V-14") "colapsado") != undefined)
+        limparCena()
+        -- Só um eixo colapsado: é uma LINHA, não um ponto.
+        b = caixa [0, 0, 0]
+        for v = 1 to (meshop.getNumMapVerts b 1) do ( local pv = meshop.getMapVert b 1 v; meshop.setMapVert b 1 v [pv.x, 0.5, 0] )
+        update b
+        checar "V-14: UV colapsado num eixo reprova" ((rodar InLab_V14_UVPresente #(b) "V-14") == #fail)
+        checar ("V-14: mensagem diz 'numa linha' ('" + mensagemDe "V-14" + "')") ((findString (mensagemDe "V-14") "colapsado numa linha (canal 1)") != undefined and (findString (mensagemDe "V-14") "num ponto") == undefined)
+        limparCena()
+        b = caixa [0, 0, 0]
+        for v = 1 to (meshop.getNumMapVerts b 1) do meshop.setMapVert b 1 v [0.5, 0.5, 0]
+        update b
+        rodar InLab_V14_UVPresente #(b) "V-14"
+        checar ("V-14: mensagem do ponto diz 'num ponto (canal 1)' ('" + mensagemDe "V-14" + "')") ((findString (mensagemDe "V-14") "colapsado num ponto (canal 1)") != undefined)
+        -- Vértice de mapa órfão longe não esconde o colapso nem inventa largura.
+        local nv1 = meshop.getNumMapVerts b 1
+        meshop.setNumMapVerts b 1 (nv1 + 1) keep:true
+        meshop.setMapVert b 1 (nv1 + 1) [9, 9, 0]
+        update b
+        checar "V-14: vértice órfão não tira o colapso" ((rodar InLab_V14_UVPresente #(b) "V-14") == #fail)
         limparCena()
         b = caixa [0, 0, 0]
         for v = 1 to (meshop.getNumMapVerts b 1) do meshop.setMapVert b 1 v ((meshop.getMapVert b 1 v) * 37.0)
@@ -105,7 +125,45 @@ global INLAB_TESTE_SAIDA, INLAB_TESTE_FALHAS
         local pl = Plane length:10 width:10 lengthsegs:4 widthsegs:4 mapcoords:true
         convertToMesh pl
         copiarCanal pl 1 3
-        checar ("V-15: canal 3 limpo passa ('" + (rodar InLab_V15_UVBake #(pl) "V-15") as string + "': " + mensagemDe "V-15" + ")") ((rodar InLab_V15_UVBake #(pl) "V-15") == #pass)
+        local st15 = rodar InLab_V15_UVBake #(pl) "V-15"
+        checar ("V-15: canal 3 limpo passa ('" + st15 as string + "': " + mensagemDe "V-15" + ")") (st15 == #pass)
+        limparCena()
+        -- Vértice de mapa ÓRFÃO fora do 0–1 (nenhuma face usa): não reprova.
+        pl = Plane length:10 width:10 lengthsegs:4 widthsegs:4 mapcoords:true
+        convertToMesh pl
+        copiarCanal pl 1 3
+        local nv3 = meshop.getNumMapVerts pl 3
+        meshop.setNumMapVerts pl 3 (nv3 + 1) keep:true
+        meshop.setMapVert pl 3 (nv3 + 1) [5, 0.5, 0]
+        update pl
+        st15 = rodar InLab_V15_UVBake #(pl) "V-15"
+        checar ("V-15: vértice órfão fora do 0–1 não reprova ('" + st15 as string + "': " + mensagemDe "V-15" + ")") (st15 == #pass)
+        limparCena()
+        -- O Unwrap temporário tem de medir o canal 3, não o 1 (bug achado no piloto):
+        -- (A) canal 1 limpo e canal 3 sobreposto -> reprova; (B) canal 3 limpo e canal 1 sobreposto -> passa.
+        pl = Plane length:10 width:10 lengthsegs:4 widthsegs:4 mapcoords:true
+        convertToMesh pl
+        meshop.setNumMaps pl 4 keep:true
+        meshop.setMapSupport pl 3 true
+        meshop.setNumMapVerts pl 3 3
+        meshop.setMapVert pl 3 1 [0, 0, 0]
+        meshop.setMapVert pl 3 2 [1, 0, 0]
+        meshop.setMapVert pl 3 3 [0, 1, 0]
+        for f = 1 to (getNumFaces pl) do meshop.setMapFace pl 3 f [1, 2, 3]
+        update pl
+        checar "V-15: canal 1 limpo e canal 3 sobreposto reprova (mede o canal 3)" ((rodar InLab_V15_UVBake #(pl) "V-15") == #fail)
+        limparCena()
+        pl = Plane length:10 width:10 lengthsegs:4 widthsegs:4 mapcoords:true
+        convertToMesh pl
+        copiarCanal pl 1 3
+        meshop.setNumMapVerts pl 1 3
+        meshop.setMapVert pl 1 1 [0, 0, 0]
+        meshop.setMapVert pl 1 2 [1, 0, 0]
+        meshop.setMapVert pl 1 3 [0, 1, 0]
+        for f = 1 to (getNumFaces pl) do meshop.setMapFace pl 1 f [1, 2, 3]
+        update pl
+        st15 = rodar InLab_V15_UVBake #(pl) "V-15"
+        checar ("V-15: canal 3 limpo e canal 1 sobreposto passa (UV de material repete) ('" + st15 as string + "': " + mensagemDe "V-15" + ")") (st15 == #pass)
         limparCena()
         -- Canal 3 sobreposto: os 6 lados do Box no mesmo 0–1.
         b = caixa [0, 0, 0]
@@ -118,7 +176,8 @@ global INLAB_TESTE_SAIDA, INLAB_TESTE_FALHAS
         pl = Plane length:10 width:10 lengthsegs:4 widthsegs:4 mapcoords:true
         convertToMesh pl
         copiarCanal pl 1 3
-        meshop.setMapVert pl 3 1 [1.3, 0.5, 0]
+        -- O Plane traz vértices de mapa órfãos (1 a 10): move um vértice USADO pela face 1.
+        meshop.setMapVert pl 3 ((meshop.getMapFace pl 3 1).x as integer) [1.3, 0.5, 0]
         update pl
         checar "V-15: vértice fora do 0–1 reprova" ((rodar InLab_V15_UVBake #(pl) "V-15") == #fail and (findString (mensagemDe "V-15") "fora do 0–1") != undefined)
         limparCena()
@@ -138,6 +197,33 @@ global INLAB_TESTE_SAIDA, INLAB_TESTE_FALHAS
         InLab_ResetarResultados()
         InLab_V15_UVBake #(b, bi)
         checar ("V-15: instâncias medidas uma vez ('" + mensagemDe "V-15" + "')") ((findString (mensagemDe "V-15") bi.name) == undefined and b.modifiers.count == 0 and bi.modifiers.count == 0)
+        limparCena()
+        -- Painel Modify continua utilizável depois de começar no Create (suspendEditing
+        -- e resumeEditing em par). Um suspend sem resume deixa getCurrentObject em
+        -- UndefinedClass e o modificador inalcançável (visto na sondagem de 05/10/2026).
+        b = caixa [0, 0, 0]
+        b2 = caixa [30, 0, 0]
+        copiarCanal b 1 3
+        copiarCanal b2 1 3
+        select b
+        setCommandPanelTaskMode #create
+        InLab_ResetarResultados()
+        InLab_V15_UVBake #(b, b2)
+        max modify mode
+        select b2
+        windows.processPostedMessages()
+        local classePainel = undefined
+        local erroPainel = ""
+        try
+        (
+            classePainel = classof (modPanel.getCurrentObject())
+            addModifier b2 (Bend angle:5)
+            modPanel.setCurrentObject b2.modifiers[1]
+            if classof (modPanel.getCurrentObject()) != Bend do classePainel = #bend_nao_editavel
+        )
+        catch ( erroPainel = getCurrentException() )
+        checar ("V-15: painel Modify utilizável depois de começar no Create (" + classePainel as string + " " + erroPainel + ")") (erroPainel == "" and classePainel == Editable_mesh)
+        setCommandPanelTaskMode #create
         limparCena()
         -- Seleção e painel do usuário voltam como estavam.
         local outro = caixa [60, 0, 0]
@@ -234,7 +320,7 @@ global INLAB_TESTE_SAIDA, INLAB_TESTE_FALHAS
         mm.materialList[1] = standardMaterial diffuseMap:(Bitmaptexture filename:arq1k)
         mm.materialList[2] = standardMaterial ()
         b.material = mm
-        local b2 = caixa [30, 0, 0]
+        b2 = caixa [30, 0, 0]
         b2.material = standardMaterial diffuseMap:(Bitmaptexture filename:arq1k)
         InLab_ResetarResultados()
         InLab_V16_ResolucaoTexturas #(b, b2)
@@ -246,9 +332,12 @@ global INLAB_TESTE_SAIDA, INLAB_TESTE_FALHAS
         -- Ambiente: textura que nenhuma peça usa fica de fora.
         b.material = undefined
         b2.material = undefined
+        local envOriginal = environmentMap
         environmentMap = Bitmaptexture filename:arq1k
         checar "V-16: textura só do ambiente fica de fora" ((rodar InLab_V16_ResolucaoTexturas #(b, b2) "V-16") == #pass)
-        environmentMap = undefined
+        environmentMap = envOriginal
+        -- Limpa os bitmaps gerados (o teste não deixa lixo na pasta temp).
+        try ( deleteFile arq1k; deleteFile arq2k ) catch ( linha ("aviso: não apaguei os bitmaps de teste (" + getCurrentException() + ")") )
         limparCena()
 
         -- CASOS DAS PRÓXIMAS TASKS ENTRAM AQUI
