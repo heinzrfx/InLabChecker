@@ -302,6 +302,16 @@ global InLab_Otim_Calcular, InLab_Otim_Aplicar, InLab_Otim_Reverter
         checar ("Reverter do passo 1 volta A e B (A " + vaso.sides as string + ", B " + vasoB.sides as string + ")") \
             (vaso.sides == 64 and vasoB.sides == 64)
         INLAB_OTIM_META_MANUAL = undefined
+        limparCena()
+
+        ---------------------------------------------------------------- TOLERÂNCIA (issue #106)
+        -- Caixa 0,3 mm acima da base: o contato aceita até 2 × 0,5 mm, então o
+        -- fundo da caixa conta como encostado. Com a tolerância zerada (Max
+        -- pt-BR lia units.decodeValue "0.5mm" como 0) a folga escapava.
+        local baseFolga  = Box name:"esc_base_folga" length:10 width:10 height:2 lengthsegs:8 widthsegs:8 heightsegs:1 pos:[0, 0, 0]
+        local caixaFolga = Box name:"esc_caixa_folga" length:5 width:5 height:5 lengthsegs:5 widthsegs:5 heightsegs:1 pos:[0, 0, 2.03]
+        local pFolga = InLab_OtimEscondidas_Calcular #(baseFolga, caixaFolga)
+        checar ("Tolerância: caixa 0,3 mm acima da base — fundo em contato = 50 (" + (nFaces pFolga caixaFolga) as string + ")") ((nFaces pFolga caixaFolga) == 50)
 
         InLab_OtimEscondidas_LimparDestaque()
         limparCena()

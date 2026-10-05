@@ -9,7 +9,7 @@
  os 3 cantos recuados 10% para o centro — tem que passar, em cada amostra,
  num destes testes contra OUTRA peça:
    - CONTATO: raio de `amostra - normal * tol` pela normal bate na outra peça
-     a até 2 * tol (tol = 0,5 mm, units.decodeValue "0.5mm"), numa face
+     a até 2 * tol (tol = 0,5 mm = 0.5 * units.decodeValue "1mm"), numa face
      virada para o lado contrário.
    - DENTRO: paridade ímpar de acertos (deduplicados pela distância) em pelo
      menos 2 de 3 direções "tortas" (não alinhadas a eixo), só contra peça de
@@ -114,6 +114,12 @@
    - Reverter também busca os modificadores pelo nome no mesmo clique (antes
      só sem registro), e os snapshots são apagados no caminho de erro.
  Os passos 1 e 2 pulam peça com o passo 3 aplicado (fn_otim_nucleo.ms).
+ 05/10/2026 (issue #106): a tolerância era units.decodeValue "0.5mm", que
+ devolve 0 em Max com vírgula decimal (pt-BR; "0,5mm" dava 0.05). Com tol = 0
+ o contato só valia encostado exato e o fundo virava comparação exata. Agora
+ 0.5 * units.decodeValue "1mm", o mesmo valor em qualquer idioma. Os casos
+ da spec já encostavam exato, por isso o teste não pegou; o caso da caixa a
+ 0,3 mm da base pega.
 
  `global` antes de cada fn (mesmo já declarada em fn_otim_nucleo.ms): este
  arquivo pode ser carregado sozinho por InLab_RecarregarPlugin() — padrão de
@@ -453,7 +459,7 @@ fn InLab_OtimEscondidas_Calcular objs =
 (
     InLab_OtimEscondidas_LimparDestaque()
     local t0 = timeStamp()
-    local tol = units.decodeValue "0.5mm"
+    local tol = 0.5 * (units.decodeValue "1mm")   -- não "0.5mm": dá 0 em Max pt-BR (issue #106)
     -- Peça escondida ou não renderizável não vai para o GLB: não cobre ninguém.
     local cena = for o in geometry where InLab_EhGeometria o and (InLab_OtimEscondidas_VaiProGLB o) collect o
     local animSet = for o in cena where InLab_OtimEscondidas_Animado o collect o
