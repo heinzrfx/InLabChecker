@@ -260,3 +260,30 @@ fn InLab_V15_UVBake objetos falharTeste:false =
         InLab_RegistrarVerif "V-15" titulo true ("canal 3 sem sobreposição e dentro do 0–1 em " + comCanal.count as string + " peça(s)" + \
             (if semCanal.count > 0 then (" · não se aplica a " + semCanal.count as string + " peça(s) sem canal 3") else "")) critico:true
 )
+
+-- V-16 · Resolução das texturas usadas pelas peças (advertência). Textura sem
+-- arquivo ou com resolução ilegível é "não medida". O que só o ambiente usa
+-- fica de fora (InLab_CheckTexture escopo:#selecao).
+fn InLab_V16_ResolucaoTexturas objetos =
+(
+    local titulo = "Resolução das texturas (≥ " + INLAB_TEXTURA_MIN_PX as string + ")"
+    local infos = InLab_CheckTexture escopo:#selecao objs:objetos logar:false
+    if infos.count == 0 then
+        InLab_RegistrarVerif "V-16" titulo true "nenhuma textura nas peças" critico:false
+    else
+    (
+        local baixas = #()
+        local naoMedidas = #()
+        for t in infos do
+        (
+            local nome = filenameFromPath t.arquivo
+            if not t.existe then append naoMedidas (nome + ": não medida (arquivo não encontrado)")
+            else if t.resolucao == undefined then append naoMedidas (nome + ": não medida (resolução ilegível)")
+            else if (amin t.resolucao.x t.resolucao.y) < INLAB_TEXTURA_MIN_PX do
+                append baixas (nome + ": " + (t.resolucao.x as integer) as string + "x" + (t.resolucao.y as integer) as string)
+        )
+        local ok = baixas.count == 0 and naoMedidas.count == 0
+        InLab_RegistrarVerif "V-16" titulo ok \
+            (if ok then (infos.count as string + " textura(s) com " + INLAB_TEXTURA_MIN_PX as string + " px ou mais") else InLab_Mapa_Lista (baixas + naoMedidas)) critico:false
+    )
+)

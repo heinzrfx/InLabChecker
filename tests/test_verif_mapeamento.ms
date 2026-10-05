@@ -216,6 +216,41 @@ global INLAB_TESTE_SAIDA, INLAB_TESTE_FALHAS
         checar "V-15: fechamento quebrado não deixa Unwrap e o grupo volta fechado" (gA.modifiers.count == 0 and not (isOpenGroupHead grp))
         checar "V-15: fechamento quebrado deixa o redraw ligado" (not (isSceneRedrawDisabled()))
         limparCena()
+        ---------------------------------------------------------------- V-16
+        fn salvarBitmap tam nome = ( local arq = (getDir #temp) + "\\" + nome; local bm = bitmap tam tam color:gray filename:arq; save bm; close bm; arq )
+        local arq1k = salvarBitmap 1024 "inlab_v16_1024.jpg"
+        local arq2k = salvarBitmap 2048 "inlab_v16_2048.jpg"
+        b = caixa [0, 0, 0]
+        checar "V-16: peça sem material passa ('nenhuma textura')" ((rodar InLab_V16_ResolucaoTexturas #(b) "V-16") == #pass and (findString (mensagemDe "V-16") "nenhuma textura") != undefined)
+        b.material = standardMaterial diffuseMap:(Bitmaptexture filename:arq2k)
+        checar ("V-16: textura 2048 passa ('" + mensagemDe "V-16" + "')") ((rodar InLab_V16_ResolucaoTexturas #(b) "V-16") == #pass)
+        b.material = standardMaterial diffuseMap:(Bitmaptexture filename:arq1k)
+        checar "V-16: textura 1024 vira advertência" ((rodar InLab_V16_ResolucaoTexturas #(b) "V-16") == #warning)
+        checar ("V-16: mensagem tem '1024x1024' ('" + mensagemDe "V-16" + "')") ((findString (mensagemDe "V-16") "inlab_v16_1024.jpg: 1024x1024") != undefined)
+        b.material = standardMaterial diffuseMap:(Bitmaptexture filename:((getDir #temp) + "\inlab_v16_nao_existe.jpg"))
+        checar ("V-16: arquivo inexistente vira 'não medida' ('" + mensagemDe "V-16" + "')") ((rodar InLab_V16_ResolucaoTexturas #(b) "V-16") == #warning and (findString (mensagemDe "V-16") "não medida") != undefined)
+        -- Multi/Sub-Object com bitmap no sub-material; mesma textura em duas peças.
+        local mm = Multimaterial numsubs:2
+        mm.materialList[1] = standardMaterial diffuseMap:(Bitmaptexture filename:arq1k)
+        mm.materialList[2] = standardMaterial ()
+        b.material = mm
+        local b2 = caixa [30, 0, 0]
+        b2.material = standardMaterial diffuseMap:(Bitmaptexture filename:arq1k)
+        InLab_ResetarResultados()
+        InLab_V16_ResolucaoTexturas #(b, b2)
+        local ocorr = 0
+        local msg16 = mensagemDe "V-16"
+        local pos = findString msg16 "inlab_v16_1024.jpg"
+        while pos != undefined do ( ocorr += 1; msg16 = substring msg16 (pos + 1) -1; pos = findString msg16 "inlab_v16_1024.jpg" )
+        checar ("V-16: Multi/Sub enxergado e textura repetida listada uma vez (" + ocorr as string + ")") (statusDe "V-16" == #warning and ocorr == 1)
+        -- Ambiente: textura que nenhuma peça usa fica de fora.
+        b.material = undefined
+        b2.material = undefined
+        environmentMap = Bitmaptexture filename:arq1k
+        checar "V-16: textura só do ambiente fica de fora" ((rodar InLab_V16_ResolucaoTexturas #(b, b2) "V-16") == #pass)
+        environmentMap = undefined
+        limparCena()
+
         -- CASOS DAS PRÓXIMAS TASKS ENTRAM AQUI
     )
     catch
