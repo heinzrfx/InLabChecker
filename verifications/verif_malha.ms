@@ -32,6 +32,12 @@
    - Volume com sinal só em elemento fechado (sem aresta aberta). Medido no
      snapshot (mundo): espelho muda o sinal, mas a V-12 já pega escala
      negativa.
+   - PILOTO (Aparador Zucchi): V-13 reprova o TAMPO (1 ngon suavizada numa
+     curva). É uma tampa plana de 1605 lados cujas 1605 vizinhas dividem o
+     smoothing group a 26,6°. Mantido por decisão do controller: a tampa
+     triangula em fatias longas e o sombreado listra. Não é falso positivo.
+   - DESEMPENHO: V-10b trocou meshop.getElementsUsingFace por elemento
+     (O(faces) cada; 22 s no Teapot de 262 mil) por union-find nos vértices.
 ================================================================================
 */
 
@@ -97,23 +103,56 @@ fn InLab_Malha_ArestasInvertidas m =
 -- V-10b: elementos FECHADOS (nenhuma aresta aberta) com volume negativo.
 fn InLab_Malha_ElementosDoAvesso m abertas =
 (
-    local restantes = #{1..m.numfaces}
-    local avesso = 0
-    while not restantes.isEmpty do
+    -- Perf (05/10/2026): meshop.getElementsUsingFace custa O(faces) por chamada e
+    -- o Teapot de 262 mil triângulos tem centenas de elementos (22 s). Agora um
+    -- union-find sobre os vértices dá o elemento de cada face, e o volume e a
+    -- "abertura" são somados por elemento num laço só. Mesma semântica: só
+    -- elemento sem aresta aberta entra no teste de volume.
+    local nf = m.numfaces
+    local pai = #()
+    pai.count = m.numverts
+    for i = 1 to m.numverts do pai[i] = i
+    fn raiz pai i =
     (
-        local f0 = 0
-        for f in restantes while f0 == 0 do f0 = f
-        local elem = meshop.getElementsUsingFace m #{f0}
-        restantes -= elem
-        if ((meshop.getEdgesUsingFace m elem) * abertas).isEmpty do
+        while pai[i] != i do ( pai[i] = pai[pai[i]]; i = pai[i] )
+        i
+    )
+    local fv = #()
+    fv.count = nf
+    for f = 1 to nf do
+    (
+        local v = getFace m f
+        local a = raiz pai (v.x as integer)
+        local b = raiz pai (v.y as integer)
+        local c = raiz pai (v.z as integer)
+        if b != a do pai[b] = a
+        if c != a do pai[c] = a
+        fv[f] = v
+    )
+    local vol = #()
+    vol.count = m.numverts
+    local aberto = #{}
+    for i = 1 to m.numverts do vol[i] = 0.0
+    for f = 1 to nf do
+    (
+        local v = fv[f]
+        local r = raiz pai (v.x as integer)
+        vol[r] += dot (getVert m v.x) (cross (getVert m v.y) (getVert m v.z))
+    )
+    for e in abertas do
+    (
+        local v = fv[(e - 1) / 3 + 1]
+        aberto[raiz pai (v.x as integer)] = true
+    )
+    local avesso = 0
+    local vistos = #{}
+    for f = 1 to nf do
+    (
+        local r = raiz pai ((fv[f]).x as integer)
+        if not vistos[r] do
         (
-            local vol = 0.0
-            for f in elem do
-            (
-                local v = getFace m f
-                vol += dot (getVert m v.x) (cross (getVert m v.y) (getVert m v.z))
-            )
-            if vol < -1e-6 do avesso += 1
+            vistos[r] = true
+            if not aberto[r] and vol[r] < -1e-6 do avesso += 1
         )
     )
     avesso

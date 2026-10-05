@@ -214,6 +214,15 @@ global INLAB_TESTE_SAIDA, INLAB_TESTE_FALHAS
         checar ("V-07: nome repetido e objeto oculto não quebram ('" + (rodar07 cfgCU #(r1, r2, oc)) as string + "': " + mensagemDe "V-07" + ")") ((rodar07 cfgCU #(r1, r2, oc)) == #pass)
         limparCena()
 
+        ---------------------------------------------------------------- DESEMPENHO
+        local bule = Teapot segs:64          -- 262 mil triângulos
+        local t0 = timeStamp()
+        local ab = InLab_Malha_AnalisarCena #(bule)
+        local seg = (timeStamp() - t0) / 1000.0
+        linha ("      tempo da análise do Teapot " + ab[1].tris as string + " tris: " + seg as string + " s")
+        checar ("Desempenho: Teapot de 262 mil triângulos abaixo de 15 s (" + seg as string + " s)") (ab[1].tris == 262144 and seg < 15.0)
+        limparCena()
+
         -- CASOS DAS PRÓXIMAS TASKS ENTRAM AQUI
     )
     catch
