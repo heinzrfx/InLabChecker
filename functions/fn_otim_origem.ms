@@ -38,7 +38,7 @@
      a paridade (64 → 56 → 50 ... → 12, sem 15 lados).
    - CONTAGEM = a do medidor (InLab_Otim_Triangulos, só GeometryClass) no
      total da cena, na faixa e no log "cena X → Y": a proposta cai na faixa
-     que o medidor e a V-03/V-04 mostram. Spline renderizável sem
+     que o medidor e a V-03 mostram. Spline renderizável sem
      modificador é Shape e o medidor ainda não a conta: fica fora, com uma
      linha #info por spline (revisão de 24/09/2026 — antes havia um contador
      próprio que incluía a spline, e o "cai na faixa" valia só nele).

@@ -96,7 +96,7 @@ fn InLab_ContarPoligonosObj obj =
 )
 
 -- Soma os polígonos de um array de objetos (ex.: a seleção, ou a cena
--- inteira via "geometry as array"). Base para V-03/V-04.
+-- inteira via "geometry as array"). Base para V-03.
 fn InLab_ContarPoligonos objs =
 (
     local total = 0
