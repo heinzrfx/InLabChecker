@@ -205,3 +205,17 @@ O que o plugin chama de família é o arquétipo de blocos. Esta tabela **substi
 - **Ligar os limites como corte** (`INLAB_LIMITES_PROVISORIOS = false`) durante o teste: liberado por ela, decisão do usuário.
 - **As 25 verificações (#38):** liberadas por ela. A spec v2.0 que as define não está no repo.
 - **`L14_L33`** e **Louise Amarela:** com a Bianca.
+
+---
+
+# Atualização de 05/10/2026
+
+O que fechou desde a lista "Em aberto" acima:
+
+- **`L14_L33`:** no sistema existem dois acabamentos com o mesmo significado. L33 quer dizer "sem acabamento" e L14 quer dizer "sem acessório": nos dois casos, o detalhe não existe no bloco. Então `07132220_L14_L33` é **uma variante só**, a que não tem o detalhe. Não são duas posições e o JSON não precisa ser reenviado. O plugin já trata esse nome como qualquer outra variante: nenhuma mudança.
+- **Louise Amarela:** está inativa e fica fora do piloto. Nenhuma mudança no plugin.
+- **Famílias novas:** Corpo + Portas/Gavetas (20 MB, 100k–200k triângulos, 20 draw calls) e Base + Cabeceira (18 MB, 80k–180k, 12 draw calls), com limites provisórios decididos pelo usuário. Todo produto da tabela recebe sugestão. No export Contract/Health, 209 de 209.
+- **V-04:** removida (PR #104). O produto estático chega como uma mesh só, sem objeto por parte para medir.
+- **As 25 verificações (#38):** spec v2.0 localizada fora do repo, que é público. Recorte do v1 com 15 verificações, nas sub-issues #101, #102 e #103.
+
+Segue em aberto: **Estrutura Modular** sem classe na tabela da equipe, e **ligar os limites como corte** durante o teste.
