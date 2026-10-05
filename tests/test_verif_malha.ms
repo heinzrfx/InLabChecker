@@ -93,6 +93,23 @@ global INLAB_TESTE_SAIDA, INLAB_TESTE_FALHAS
         checar ("V-10: mensagem fala do avesso ('" + mensagemDe "V-10" + "')") ((findString (mensagemDe "V-10") "avesso") != undefined)
         limparCena()
 
+        -- Dois cubos soldados num só vértice (canto comum) são DOIS elementos
+        -- (meshop.getElementsUsingFace #{1} dá 12 de 24 faces); o do avesso não
+        -- pode sumir somado ao outro. Fixa a conectividade por ARESTA.
+        local ca = Box length:10 width:10 height:10 pos:[0,0,0]
+        local cb = Box length:10 width:10 height:10 pos:[10,10,10]
+        convertToMesh ca; convertToMesh cb
+        meshop.attach ca cb
+        local canto = #{}
+        for i = 1 to ca.numverts where (distance (getVert ca.mesh i) [5,5,10]) < 0.001 do canto[i] = true
+        meshop.weldVertsByThreshold ca canto 0.01
+        checar ("Conectividade: cubos soldados num canto continuam 2 elementos (" + (meshop.getElementsUsingFace ca #{1}).numberSet as string + " de " + ca.numfaces as string + " faces)")             (ca.numverts == 15 and (meshop.getElementsUsingFace ca #{1}).numberSet == 12)
+        meshop.flipNormals ca #{13..24}
+        update ca
+        checar "V-10: cubo do avesso soldado a outro por um vértice é detectado" ((rodarMalha InLab_V10_Normais #(ca) "V-10") == #fail)
+        checar ("V-10: mensagem fala do avesso ('" + mensagemDe "V-10" + "')") ((findString (mensagemDe "V-10") "avesso") != undefined)
+        limparCena()
+
         ---------------------------------------------------------------- INSTÂNCIAS
         b = caixaMesh()
         local bi = instance b

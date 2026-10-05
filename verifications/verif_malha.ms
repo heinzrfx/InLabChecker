@@ -37,7 +37,12 @@
      smoothing group a 26,6°. Mantido por decisão do controller: a tampa
      triangula em fatias longas e o sombreado listra. Não é falso positivo.
    - DESEMPENHO: V-10b trocou meshop.getElementsUsingFace por elemento
-     (O(faces) cada; 22 s no Teapot de 262 mil) por union-find nos vértices.
+     (O(faces) cada; 22 s no Teapot de 262 mil) por union-find nas faces,
+     unidas por ARESTA comum (chave ordenada com sort nativo). Sondagem: dois
+     cubos soldados num vértice são 2 elementos no Max (12 de 24 faces); unir
+     por vértice os fundia e escondia o cubo do avesso (teste em
+     test_verif_malha.ms). Malha grande demais para a chave caber em double
+     cai na união por vértice.
 ================================================================================
 */
 
@@ -105,13 +110,18 @@ fn InLab_Malha_ElementosDoAvesso m abertas =
 (
     -- Perf (05/10/2026): meshop.getElementsUsingFace custa O(faces) por chamada e
     -- o Teapot de 262 mil triângulos tem centenas de elementos (22 s). Agora um
-    -- union-find sobre os vértices dá o elemento de cada face, e o volume e a
-    -- "abertura" são somados por elemento num laço só. Mesma semântica: só
-    -- elemento sem aresta aberta entra no teste de volume.
+    -- union-find sobre as FACES dá o elemento de cada uma; o volume e a
+    -- "abertura" são somados por elemento. Mesma semântica: só elemento sem
+    -- aresta aberta entra no teste de volume.
+    -- Conectividade por ARESTA (duas faces no mesmo elemento só se dividem uma
+    -- aresta), como meshop.getElementsUsingFace: dois cubos soldados num só
+    -- vértice são dois elementos (unir por vértice somaria os volumes e
+    -- esconderia o cubo do avesso). Sem Dictionary: chave = aresta sem sentido
+    -- * nf + (face - 1), num double (exato até 2^53), ordenada com sort nativo.
+    -- Malha grande demais para a chave caber: cai na união por vértice
+    -- (aproximação; só pior no caso raro de elementos que se tocam num vértice).
     local nf = m.numfaces
-    local pai = #()
-    pai.count = m.numverts
-    for i = 1 to m.numverts do pai[i] = i
+    local nv = m.numverts
     fn raiz pai i =
     (
         while pai[i] != i do ( pai[i] = pai[pai[i]]; i = pai[i] )
@@ -119,42 +129,85 @@ fn InLab_Malha_ElementosDoAvesso m abertas =
     )
     local fv = #()
     fv.count = nf
-    for f = 1 to nf do
+    for f = 1 to nf do fv[f] = getFace m f
+    local pai = #()
+    pai.count = nf
+    for f = 1 to nf do pai[f] = f
+    local base = (nv + 1) as double
+    if (base * base * (nf as double)) < 9.0e15 then
     (
-        local v = getFace m f
-        local a = raiz pai (v.x as integer)
-        local b = raiz pai (v.y as integer)
-        local c = raiz pai (v.z as integer)
-        if b != a do pai[b] = a
-        if c != a do pai[c] = a
-        fv[f] = v
+        local chaves = #()
+        for f = 1 to nf do
+        (
+            local v = fv[f]
+            local a = v.x as integer
+            local b = v.y as integer
+            local c = v.z as integer
+            append chaves (((amin a b) * base + (amax a b)) * nf + (f - 1))
+            append chaves (((amin b c) * base + (amax b c)) * nf + (f - 1))
+            append chaves (((amin c a) * base + (amax c a)) * nf + (f - 1))
+        )
+        sort chaves
+        local anterior = -1.0
+        local fAnt = 0
+        for k in chaves do
+        (
+            local aresta = floor (k / nf)
+            local resto = k - aresta * nf
+            if resto < 0 do ( aresta -= 1; resto += nf )
+            if resto >= nf do ( aresta += 1; resto -= nf )
+            local fa = (resto as integer) + 1
+            if aresta == anterior do
+            (
+                local ra = raiz pai fa
+                local rb = raiz pai fAnt
+                if ra != rb do pai[ra] = rb
+            )
+            anterior = aresta
+            fAnt = fa
+        )
+    )
+    else
+    (
+        local pv = #()
+        pv.count = nv
+        for i = 1 to nv do pv[i] = i
+        for f = 1 to nf do
+        (
+            local v = fv[f]
+            local a = raiz pv (v.x as integer)
+            local b = raiz pv (v.y as integer)
+            local c = raiz pv (v.z as integer)
+            if b != a do pv[b] = a
+            if c != a do pv[c] = a
+        )
+        for f = 1 to nf do pai[f] = raiz pv ((fv[f]).x as integer)
+        -- pai[f] já é o representante comum (um vértice); vira "raiz" de si mesmo
+        -- porque raiz pai f só segue pai[f] != f: troca para um índice de face.
+        local rep = #()
+        rep.count = nv
+        for f = 1 to nf do
+        (
+            local r = pai[f]
+            if rep[r] == undefined do rep[r] = f
+            pai[f] = rep[r]
+        )
     )
     local vol = #()
-    vol.count = m.numverts
-    local aberto = #{}
-    for i = 1 to m.numverts do vol[i] = 0.0
+    vol.count = nf
+    for f = 1 to nf do vol[f] = 0.0
     for f = 1 to nf do
     (
         local v = fv[f]
-        local r = raiz pai (v.x as integer)
+        local r = raiz pai f
         vol[r] += dot (getVert m v.x) (cross (getVert m v.y) (getVert m v.z))
     )
-    for e in abertas do
-    (
-        local v = fv[(e - 1) / 3 + 1]
-        aberto[raiz pai (v.x as integer)] = true
-    )
+    local aberto = #{}
+    for e in abertas do aberto[raiz pai ((e - 1) / 3 + 1)] = true
     local avesso = 0
-    local vistos = #{}
     for f = 1 to nf do
-    (
-        local r = raiz pai ((fv[f]).x as integer)
-        if not vistos[r] do
-        (
-            vistos[r] = true
-            if not aberto[r] and vol[r] < -1e-6 do avesso += 1
-        )
-    )
+        if pai[f] == f do
+            if not aberto[f] and vol[f] < -1e-6 do avesso += 1
     avesso
 )
 

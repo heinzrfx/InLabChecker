@@ -9,9 +9,9 @@
    Grupo 1 (rápidas)        → V-19, V-01/02, V-17/18            [ENTREGUE]
    Grupo 2 (config/família) → V-30                               [ENTREGUE]
    Grupo 3 (médias)         → V-20/21/22, V-03/05/06, V-11/12    [ENTREGUE — auditado contra spec v1.0/v2.0; V-04 removida em 05/10/2026]
-   Grupo 4 (animação)       → V-26, V-31/32/33, V-34, V-40       [ENTREGUE 05/10/2026 — verif_malha.ms, issue #102]
+   Grupo 4 (animação)       → V-26, V-31/32/33, V-34, V-40       [próxima entrega]
    Grupo 5 (UV)             → V-14/15/16, V-29/V-39              [próxima entrega]
-   Grupo 6 (pesadas)        → V-07, V-08/09/10/13                [próxima entrega]
+   Grupo 6 (pesadas)        → V-07, V-08/09/10/13                [ENTREGUE 05/10/2026 — verif_malha.ms, issue #102]
    Grupo 7 (materiais)      → V-23/24/25, V-35/36/37, V-38       [próxima entrega]
 
  REVISÃO DO GRUPO 3 (auditoria pós-entrega, corrigindo divergências da spec):
