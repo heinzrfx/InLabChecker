@@ -1,10 +1,10 @@
 /*
 ================================================================================
- verifications\verif_geometria.ms — V-11/12 · [V-07/08/09/10/13: Grupo 6]
+ verifications\verif_geometria.ms — V-11/12 e EX-01
 --------------------------------------------------------------------------------
- Nesta entrega: stack de modificadores (V-11) e transform resetado (V-12).
- As verificações pesadas de malha (watertight, faces duplicadas, normais,
- ngons, ratio v/t) entram no Grupo 6.
+ Stack de modificadores (V-11) e transform resetado (V-12). As verificações
+ pesadas de malha (V-07, V-08, V-09, V-10, V-13) ficam em verif_malha.ms
+ (05/10/2026, issue #102).
 
  28/09/2026 (issue #35): EX-01 (extra, fora da numeração da spec) — objeto
  oculto ou não renderizável na cena vira advertência. Ele continua contando

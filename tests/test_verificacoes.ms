@@ -59,10 +59,10 @@ global INLAB_TESTE_SAIDA, INLAB_TESTE_FALHAS
                    @"familias\familia_giro_assento.ms", @"familias\familia_movimento_especial.ms",
                    @"functions\fn_otim_nucleo.ms",
                    @"functions\fn_realworldscale.ms",
-                   @"functions\fn_json.ms", @"functions\fn_renomear_produto.ms",
+                   @"functions\fn_json.ms", @"functions\fn_renomear_produto.ms", @"functions\fn_export_gltf.ms",
                    @"verifications\verif_peso_poly.ms", @"verifications\verif_pivot.ms",
                    @"verifications\verif_nomenclatura.ms", @"verifications\verif_geometria.ms",
-                   @"verifications\verif_animacao.ms", @"report\report_generator.ms",
+                   @"verifications\verif_animacao.ms", @"verifications\verif_malha.ms", @"report\report_generator.ms",
                    @"verifications\verif_orquestrador.ms") do
             fileIn (raiz + m)
         -- Depois dos fileIn: core\log.ms redefine InLab_Log.
@@ -334,6 +334,7 @@ global INLAB_TESTE_SAIDA, INLAB_TESTE_FALHAS
             local ids = for r in InLab_VerifResults collect r.id
             local unicos = makeUniqueArray (deepCopy ids)
             checar ("Rodada '" + cfg.nome + "': " + ids.count as string + " resultados, sem ID repetido") (ids.count >= 15 and unicos.count == ids.count)
+            checar ("Rodada '" + cfg.nome + "': grupo 6 presente (V-07, V-08, V-09, V-10, V-13)")                 ((for idV in #("V-07", "V-08", "V-09", "V-10", "V-13") where (statusDe idV) == #ausente collect idV).count == 0)
         )
         limparCena()
     )
