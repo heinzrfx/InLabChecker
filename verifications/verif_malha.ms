@@ -114,10 +114,38 @@ fn InLab_Malha_ElementosDoAvesso m abertas =
     avesso
 )
 
+-- Agrupa as faces de `lista` pelo valor quantizado do eixo `eixo` de q[f]
+-- (q[f] = #(qx, qy, qz)). Sort nativo de (qv − qvMin)·(k+1) + posição (double,
+-- positiva), sem Dictionary. Devolve só os grupos com 2 faces ou mais.
+fn InLab_Malha_AgruparPorEixo lista q eixo =
+(
+    local k = lista.count
+    local grupos = #()
+    if k >= 2 do
+    (
+        local qMin = q[lista[1]][eixo]
+        for f in lista where q[f][eixo] < qMin do qMin = q[f][eixo]
+        local base = (k + 1) as double
+        local chaves = for idx = 1 to k collect ((q[lista[idx]][eixo] - qMin) * base + idx)
+        sort chaves
+        local i = 1
+        while i <= k do
+        (
+            local qi = floor (chaves[i] / base)
+            local j = i
+            while j < k and (floor (chaves[j + 1] / base)) == qi do j += 1
+            if j > i do append grupos (for x = i to j collect lista[(chaves[x] - qi * base) as integer])
+            i = j + 1
+        )
+    )
+    grupos
+)
+
 -- V-09a: faces cujos 3 cantos coincidem (na tolerância) com os de outra face
 -- do mesmo objeto, em qualquer ordem — no mesmo sentido ou costas com costas.
--- Centro quantizado por eixo; sort nativo de (qx − qxMin)·(nf+1) + f
--- (double, positiva); só as faces com o mesmo qx são comparadas entre si.
+-- Centro quantizado por eixo; agrupa por qx e depois, dentro de cada grupo, por
+-- qy (dois sorts nativos): painel de lado, com milhares de faces no mesmo qx,
+-- não vira k² comparações. Só dentro de (qx, qy) iguais confere qz e cantos.
 fn InLab_Malha_FacesDuplicadas m tol =
 (
     local nf = m.numfaces
@@ -129,11 +157,6 @@ fn InLab_Malha_FacesDuplicadas m tol =
             local c = meshop.getFaceCenter m f
             #(floor ((c.x as double) / tol + 0.5), floor ((c.y as double) / tol + 0.5), floor ((c.z as double) / tol + 0.5))
         )
-        local qxMin = q[1][1]
-        for f = 2 to nf where q[f][1] < qxMin do qxMin = q[f][1]
-        local base = (nf + 1) as double
-        local chaves = for f = 1 to nf collect ((q[f][1] - qxMin) * base + f)
-        sort chaves
         -- cantos quantizados e ordenados, como texto (só para as faces de um grupo)
         fn cantos m f tol =
         (
@@ -143,24 +166,15 @@ fn InLab_Malha_FacesDuplicadas m tol =
             ps[1] + "|" + ps[2] + "|" + ps[3]
         )
         local dup = #{}
-        local i = 1
-        while i <= nf do
-        (
-            local qi = floor (chaves[i] / base)
-            local j = i
-            while j < nf and (floor (chaves[j + 1] / base)) == qi do j += 1
-            if j > i do
-            (
-                local fs = for k = i to j collect ((chaves[k] - qi * base) as integer)
+        for gx in (InLab_Malha_AgruparPorEixo (#{1..nf} as array) q 1) do
+            for fs in (InLab_Malha_AgruparPorEixo gx q 2) do
                 for x = 1 to fs.count do
                     for y = x + 1 to fs.count do
                     (
-                        local fa = fs[x]; local fb = fs[y]
-                        if q[fa][2] == q[fb][2] and q[fa][3] == q[fb][3] and (cantos m fa tol) == (cantos m fb tol) do ( dup[fa] = true; dup[fb] = true )
+                        local fa = fs[x]
+                        local fb = fs[y]
+                        if q[fa][3] == q[fb][3] and (cantos m fa tol) == (cantos m fb tol) do ( dup[fa] = true; dup[fb] = true )
                     )
-            )
-            i = j + 1
-        )
         dup.numberSet
     )
 )

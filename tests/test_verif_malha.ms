@@ -128,12 +128,38 @@ global INLAB_TESTE_SAIDA, INLAB_TESTE_FALHAS
         b2.pos = [100, 0, 0]
         checar "V-09: o mesmo Box em outro lugar passa" ((rodar09 #(b, b2)) == #pass)
         limparCena()
-        -- Review Focus: membro de grupo fechado não é acusado contra a cabeça
+        -- membro de grupo fechado não é acusado contra a cabeça
         local gA = caixaMesh()
         local gB = caixaMesh()
         gB.pos = [100, 0, 0]
         local grp = group #(gA, gB) name:"Produto"
         checar "V-09: membros de grupo fechado, sem duplicata, passam" ((rodar09 #(gA, gB)) == #pass)
+        limparCena()
+        -- análise que falhou não passa em silêncio
+        b = caixaMesh()
+        local ae9 = MalhaAnalise no:b instancias:#(b) erro:"teste"
+        InLab_ResetarResultados(); InLab_V09_Duplicados #(ae9) #(b)
+        checar "Erro: V-09 não passa em silêncio (#warning)" ((statusDe "V-09") == #warning)
+        checar "Erro: V-09 diz 'não analisado'" ((findString (mensagemDe "V-09") "não analisado") != undefined)
+        limparCena()
+        -- desempenho: painel de lado (plano x = const), milhares de faces com o mesmo qx
+        local pl = Plane length:100 width:100 lengthsegs:100 widthsegs:100
+        rotate pl (eulerAngles 0 90 0)
+        convertToMesh pl
+        local mp = snapshotAsMesh pl
+        local tolp = InLab_Malha_Tolerancia()
+        local qxs = for f = 1 to mp.numfaces collect (floor (((meshop.getFaceCenter mp f).x as double) / tolp + 0.5))
+        local qx1 = qxs[1]
+        local mesmoQx = (for x in qxs where x == qx1 collect x).count
+        linha ("[LOG] plano: " + mp.numfaces as string + " faces, " + mesmoQx as string + " com o mesmo qx")
+        checar "V-09 desempenho: o plano de lado tem quase todas as faces no mesmo qx" (mesmoQx > (mp.numfaces * 0.9))
+        local t0p = timeStamp()
+        local dupP = InLab_Malha_FacesDuplicadas mp tolp
+        local segP = (timeStamp() - t0p) / 1000.0
+        linha ("[LOG] FacesDuplicadas em " + mp.numfaces as string + " faces: " + segP as string + " s")
+        checar "V-09 desempenho: plano de lado sem duplicata" (dupP == 0)
+        checar ("V-09 desempenho: 20 mil faces em menos de 5 s (" + segP as string + " s)") (segP < 5.0)
+        delete mp
         limparCena()
         -- CASOS DAS PRÓXIMAS TASKS ENTRAM AQUI
     )
