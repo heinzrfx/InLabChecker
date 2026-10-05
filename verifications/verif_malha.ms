@@ -43,6 +43,22 @@
      24 faces); unir por vértice os fundia e escondia o cubo do avesso (teste
      em test_verif_malha.ms). Sem aproximação: se a chave não coubesse
      (nv² · nf >= 9e18, impossível na prática) a V-10 vira "não medido".
+   - REVISÃO FINAL (05/10/2026):
+       * V-10b: volume por elemento com âncora (1º vértice) subtraída antes do
+         produto misto e decisão relativa (avesso só se vol < -1e-4·d³, d =
+         2·raio do elemento a partir da âncora, >= diagonal do bbox; abaixo
+         disso é indeterminado). Antes o
+         limite absoluto de 1e-6 em float32 podia reprovar peça pequena longe
+         da origem (não reproduzido em cubo de 0,3 cm, mantido por robustez).
+       * V-10a: a contagem também pega face repetida no mesmo sentido e aresta
+         com 3+ faces (mensagem diz isso).
+       * V-09a: LIMITAÇÃO DE QUANTIZAÇÃO — dois pontos a menos de 0,01 mm, mas
+         em lados opostos da fronteira de uma célula, caem em células
+         diferentes e escapam; duplicatas exatas não são afetadas.
+       * V-07: objeto que vai pro GLB sem nó de mesmo nome no glTF vira aviso
+         ("N objeto(s) não medido(s)") e impede o "passou" limpo. Temporários
+         apagados também nas subpastas (o MaxScript não remove diretório).
+       * V-13: mensagem traz o maior ângulo com vizinha de mesmo smoothing bit.
 ================================================================================
 */
 
@@ -66,6 +82,7 @@ struct MalhaAnalise
     duplicadas = 0,         -- V-09a: faces coincidentes com outra
     ngonsNaoPlanas = 0,     -- V-13
     ngonsNaCurva = 0,       -- V-13
+    curvaMaxGraus = 0.0,    -- V-13: maior ângulo achado com vizinha de mesmo smoothing bit
     ngonsAplica = false,    -- V-13: Editable_Poly com stack vazio
     erro = undefined,       -- texto da exceção, se a análise falhou
     erroNgons = undefined,  -- falha na leitura das ngons (só V-13; não invalida as demais)
@@ -170,18 +187,38 @@ fn InLab_Malha_ElementosDoAvesso m abertas =
     local vol = #()
     vol.count = nf
     for f = 1 to nf do vol[f] = 0.0
+    -- Robustez (05/10/2026): ponto float32 longe da origem perde precisão no
+    -- produto misto. Cada elemento subtrai uma âncora (1º vértice da 1ª face
+    -- vista) antes do cross e acumula o raio máximo a partir dela; a decisão é
+    -- relativa (d = 2·raio, que cobre a diagonal do bbox, sem custo de bbox).
+    local anc = #(); anc.count = nf
+    local mn = #(); mn.count = nf   -- raio máximo (distância à âncora) por elemento
     for f = 1 to nf do
     (
         local v = fv[f]
         local r = raiz pai f
-        vol[r] += dot (getVert m v.x) (cross (getVert m v.y) (getVert m v.z))
+        local p1 = getVert m v.x
+        local p2 = getVert m v.y
+        local p3 = getVert m v.z
+        if anc[r] == undefined do ( anc[r] = p1; mn[r] = 0.0 )
+        local q1 = p1 - anc[r]
+        local q2 = p2 - anc[r]
+        local q3 = p3 - anc[r]
+        -- raio do elemento a partir da âncora (barato; 2·raio >= diagonal do bbox)
+        local rr = amax (length q1) (length q2) (length q3)
+        if rr > mn[r] do mn[r] = rr
+        vol[r] += dot q1 (cross q2 q3)
     )
     local aberto = #{}
     for e in abertas do aberto[raiz pai ((e - 1) / 3 + 1)] = true
     local avesso = 0
     for f = 1 to nf do
-        if pai[f] == f do
-            if not aberto[f] and vol[f] < -1e-6 do avesso += 1
+        if pai[f] == f and not aberto[f] do
+        (
+            local d = 2.0 * mn[f]   -- mn[f] = raio máximo a partir da âncora
+            -- |vol| abaixo de 1e-4·d³ é indeterminado (não conta como avesso)
+            if vol[f] < -(1e-4 * d * d * d) do avesso += 1
+        )
     avesso
 )
 
@@ -278,11 +315,18 @@ fn InLab_Malha_Ngons o a =
             (
                 local sg = polyop.getFaceSmoothGroup o f
                 local naCurva = false
+                local anguloMax = 0.0   -- maior ângulo com vizinha que divide bit de smoothing
                 if sg != 0 do
                     for g in (polyop.getFacesUsingEdge o (polyop.getEdgesUsingFace o #{f})) do
-                        if not naCurva and g != f and (bit.and sg (polyop.getFaceSmoothGroup o g)) != 0 and (dot n (polyop.getFaceNormal o g)) < cosCurva do
-                            naCurva = true
+                        if g != f and (bit.and sg (polyop.getFaceSmoothGroup o g)) != 0 do
+                        (
+                            local cs = dot n (polyop.getFaceNormal o g)
+                            if cs < cosCurva do naCurva = true
+                            local ang = acos (amax -1.0 (amin 1.0 cs))
+                            if ang > anguloMax do anguloMax = ang
+                        )
                 if naCurva do a.ngonsNaCurva += 1
+                if anguloMax > a.curvaMaxGraus do a.curvaMaxGraus = anguloMax
             )
         )
     )
@@ -294,9 +338,10 @@ fn InLab_Malha_Analisar o tol:undefined =
 (
     if tol == undefined do tol = InLab_Malha_Tolerancia()
     local a = MalhaAnalise no:o instancias:(InLab_InstanciasDoNo o)
-    local m = snapshotAsMesh o
+    local m = undefined
     try
     (
+        m = snapshotAsMesh o
         a.tris = m.numfaces
         if a.tris > 0 do
         (
@@ -316,7 +361,7 @@ fn InLab_Malha_Analisar o tol:undefined =
         a.erro = getCurrentException()
         InLab_Log (o.name + ": falha na análise de malha (" + a.erro + ").") tipo:#err
     )
-    delete m
+    if m != undefined do try ( delete m ) catch ()
     try ( InLab_Malha_Ngons o a ) catch
     (
         a.erroNgons = getCurrentException()
@@ -368,7 +413,7 @@ fn InLab_V10_Normais analises =
     (
         if a.erro != undefined do append naoMedidos ((InLab_Malha_Nome a) + ": não analisado (" + a.erro + ")")
         if a.erroAvesso != undefined do append naoMedidos ((InLab_Malha_Nome a) + ": elementos do avesso não medidos (" + a.erroAvesso + ")")
-        if a.invertidas > 0 do append itens ((InLab_Malha_Nome a) + ": " + (a.invertidas / 2) as string + " aresta(s) entre faces de sentido oposto")
+        if a.invertidas > 0 do append itens ((InLab_Malha_Nome a) + ": " + (a.invertidas / 2) as string + " aresta(s) entre faces de sentido oposto (ou face repetida / aresta com 3+ faces)")
         if a.avesso > 0 do append itens ((InLab_Malha_Nome a) + ": " + a.avesso as string + " parte(s) do avesso (normais para dentro)")
     )
     if itens.count > 0 then
@@ -420,7 +465,7 @@ fn InLab_V13_Ngons analises =
         if a.erro != undefined do append naoMedidos ((InLab_Malha_Nome a) + ": não analisado (" + a.erro + ")")
         if a.erroNgons != undefined do append naoMedidos ((InLab_Malha_Nome a) + ": não analisado (" + a.erroNgons + ")")
         if a.ngonsNaoPlanas > 0 do append itens ((InLab_Malha_Nome a) + ": " + a.ngonsNaoPlanas as string + " ngon(s) não plana(s)")
-        if a.ngonsNaCurva > 0 do append itens ((InLab_Malha_Nome a) + ": " + a.ngonsNaCurva as string + " ngon(s) suavizada(s) numa curva")
+        if a.ngonsNaCurva > 0 do append itens ((InLab_Malha_Nome a) + ": " + a.ngonsNaCurva as string + " ngon(s) suavizada(s) numa curva (vizinha a " + (formattedPrint a.curvaMaxGraus format:".0f") + "°)")
     )
     if itens.count > 0 then
         InLab_RegistrarVerif "V-13" "Ngons em superfície curva" false (InLab_Malha_Lista (itens + naoMedidos)) critico:true
@@ -433,6 +478,15 @@ fn InLab_V13_Ngons analises =
             else ("nenhuma ngon em superfície curva" + (if semPoly.count > 0 then (" · não se aplica a " + InLab_Malha_Lista semPoly) else ""))
         InLab_RegistrarVerif "V-13" "Ngons em superfície curva" true msg critico:true
     )
+)
+
+-- Apaga os arquivos de `pasta` e de todas as subpastas. O MaxScript não tem API
+-- para remover diretório: as pastas vazias ficam (só os arquivos saem).
+fn InLab_Malha_LimparPasta pasta =
+(
+    for d in (getDirectories (pasta + "*")) do InLab_Malha_LimparPasta d
+    for f in (getFiles (pasta + "*")) do
+        if not (deleteFile f) do InLab_Log ("V-07: não consegui apagar o temporário " + f) tipo:#warn
 )
 
 -- V-07 · vértices e triângulos por nó como o GLB tem: exporta a cena inteira
@@ -484,7 +538,7 @@ fn InLab_GLTF_VerticesPorNo exportador:unsupplied =
             )
         )
         catch ( res = #(#naoMedido, "falha no export ou na leitura do glTF: " + getCurrentException()) )
-        for f in (getFiles (pasta + "*")) do deleteFile f
+        InLab_Malha_LimparPasta pasta
         res
     )
 )
@@ -511,11 +565,23 @@ fn InLab_V07_RatioVT cfg objetos exportador:unsupplied =
             if ratio > cfg.maxRatioVT do
                 append acima (r[2][i] + ": " + (formattedPrint ratio format:".2f") + " (" + r[3][i] as string + " v / " + r[4][i] as string + " t)")
         )
+        -- Objeto que vai pro GLB mas sem nó de mesmo nome no glTF: não medido (aviso).
+        local semNo = #()
+        for o in objetos where (InLab_VaiProGLB o) and (findItem r[2] o.name) == 0 do append semNo o.name
+        local txtSemNo = ""
+        if semNo.count > 0 do
+        (
+            txtSemNo = semNo.count as string + " objeto(s) não medido(s): " + (InLab_Malha_Lista semNo)
+            InLab_Log ("V-07: " + txtSemNo + " (sem nó de mesmo nome no glTF).") tipo:#warn
+        )
         if medidos == 0 then
-            InLab_RegistrarVerif "V-07" titulo false "não medido: nenhum objeto da cena saiu no glTF" critico:false
+            InLab_RegistrarVerif "V-07" titulo false ("não medido: " + (if semNo.count > 0 then txtSemNo else "nenhum objeto da cena saiu no glTF")) critico:false
+        else if acima.count == 0 and semNo.count > 0 then
+            InLab_RegistrarVerif "V-07" titulo false ("nenhum acima do limite, mas " + txtSemNo) critico:false
         else
             InLab_RegistrarVerif "V-07" titulo (acima.count == 0) \
-                ((if acima.count == 0 then ("maior " + (formattedPrint maior format:".2f")) else InLab_Malha_Lista acima) + " · limite " + cfg.maxRatioVT as string) \
+                ((if acima.count == 0 then ("maior " + (formattedPrint maior format:".2f")) else InLab_Malha_Lista acima) + " · limite " + cfg.maxRatioVT as string \
+                    + (if semNo.count > 0 then (" · " + txtSemNo) else "")) \
                 critico:true provisorio:true
     )
 )

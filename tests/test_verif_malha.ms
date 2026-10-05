@@ -8,6 +8,7 @@
 global InLab_Log, InLab_VerifResults, InLab_ResetarResultados, INLAB_LIMITES_PROVISORIOS, InLab_ObterFamilia
 global MalhaAnalise, InLab_Malha_Analisar, InLab_Malha_AnalisarCena, InLab_V08_MalhaFechada, InLab_V10_Normais
 global InLab_V09_Duplicados, InLab_V13_Ngons, InLab_V07_RatioVT, InLab_ObjetosVerificacao
+global InLab_Malha_Tolerancia, InLab_Malha_FacesDuplicadas, InLab_VaiProGLB
 global INLAB_TESTE_SAIDA, INLAB_TESTE_FALHAS
 (
     local dirTeste = getFilenamePath (getSourceFileName())
@@ -214,7 +215,9 @@ global INLAB_TESTE_SAIDA, INLAB_TESTE_FALHAS
         checar ("V-07: esfera suavizada passa ('" + (rodar07 cfgCU #(esf)) as string + "': " + mensagemDe "V-07" + ")") ((rodar07 cfgCU #(esf)) == #pass)
         esf.smooth = false
         checar "V-07: esfera sem smoothing passa do limite (advertência, provisório)" ((rodar07 cfgCU #(esf)) == #warning)
-        checar ("V-07: mensagem tem o objeto e o ratio ('" + mensagemDe "V-07" + "')") ((findString (mensagemDe "V-07") "Esfera_suave: 2.99") != undefined)
+        -- ratio varia entre builds (2.99 / 3.00): aceita o prefixo 2.9 ou 3.0
+        checar ("V-07: mensagem tem o objeto e o ratio ('" + mensagemDe "V-07" + "')") \
+            ((findString (mensagemDe "V-07") "Esfera_suave: 2.9") != undefined or (findString (mensagemDe "V-07") "Esfera_suave: 3.0") != undefined)
         INLAB_LIMITES_PROVISORIOS = false
         checar "V-07: com limites valendo, reprova" ((rodar07 cfgCU #(esf)) == #fail)
         INLAB_LIMITES_PROVISORIOS = true
@@ -229,6 +232,33 @@ global INLAB_TESTE_SAIDA, INLAB_TESTE_FALHAS
         local oc = Sphere radius:10 segs:16 smooth:true mapcoords:true name:"Oculto" pos:[100, 0, 0]
         hide oc
         checar ("V-07: nome repetido e objeto oculto não quebram ('" + (rodar07 cfgCU #(r1, r2, oc)) as string + "': " + mensagemDe "V-07" + ")") ((rodar07 cfgCU #(r1, r2, oc)) == #pass)
+        limparCena()
+        -- Objeto renderável sem nó no glTF (malha vazia não exporta nó): não medido, sem passe limpo
+        local ok1 = Sphere radius:10 segs:16 smooth:true mapcoords:true name:"Medido"
+        local fantasma = mesh numverts:0 numfaces:0 name:"SemNoGLB"
+        checar ("V-07: objeto sem nó no glTF não passa limpo ('" + (rodar07 cfgCU #(ok1, fantasma)) as string + "': " + mensagemDe "V-07" + ")") \
+            ((rodar07 cfgCU #(ok1, fantasma)) == #warning and (findString (mensagemDe "V-07") "1 objeto(s) não medido(s): SemNoGLB") != undefined)
+        limparCena()
+
+        ---------------------------------------------------------------- V-10b ROBUSTEZ (float32 longe da origem)
+        for p in #([100,100,50], [300,-200,80], [1000,1000,0], [5000,-3000,200]) do
+        (
+            local pq = Box length:0.3 width:0.3 height:0.3 pos:p
+            convertToMesh pq
+            checar ("V-10: cubo de 0,3 cm fechado em " + p as string + " passa") ((rodarMalha InLab_V10_Normais #(pq) "V-10") == #pass)
+            meshop.flipNormals pq #{1..12}
+            update pq
+            checar ("V-10: o mesmo cubo do avesso em " + p as string + " reprova") ((rodarMalha InLab_V10_Normais #(pq) "V-10") == #fail and (findString (mensagemDe "V-10") "avesso") != undefined)
+            limparCena()
+        )
+        -- V-13: a mensagem traz o ângulo
+        c = cilindroPoly()
+        ft = tampa c
+        lado = 0
+        for f = 1 to (polyop.getNumFaces c) where lado == 0 and (polyop.getFaceDeg c f) == 4 do lado = f
+        polyop.setFaceSmoothGroup c #{ft} (polyop.getFaceSmoothGroup c lado)
+        rodarMalha InLab_V13_Ngons #(c) "V-13"
+        checar ("V-13: mensagem traz o ângulo da vizinha ('" + mensagemDe "V-13" + "')") ((findString (mensagemDe "V-13") "vizinha a 90°") != undefined)
         limparCena()
 
         ---------------------------------------------------------------- DESEMPENHO

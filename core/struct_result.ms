@@ -15,7 +15,7 @@
    V-20, V-22, V-30 em família estática e EX-01 (extra, fora da spec:
    objeto oculto). Previstos na spec: V-33, V-37 a V-40.
    Falha em limite provisorio:true também vira não crítica (ver abaixo).
-   (Lista atualizada em 28/09/2026, issue #35.)
+   (Lista atualizada em 28/09/2026, issue #35; V-08 acrescentada em 05/10/2026, issue #102.)
 ================================================================================
 */
 
