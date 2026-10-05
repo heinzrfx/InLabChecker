@@ -7,6 +7,7 @@
 -- Declarados ANTES do bloco: o bloco é compilado antes dos fileIn rodarem.
 global InLab_Log, InLab_VerifResults, InLab_ResetarResultados
 global InLab_V14_UVPresente, InLab_V15_UVBake, InLab_V16_ResolucaoTexturas, InLab_CheckTexture
+global InLab_AbrirGruposAcima, InLab_FecharGrupos
 global INLAB_TESTE_SAIDA, INLAB_TESTE_FALHAS
 (
     local dirTeste = getFilenamePath (getSourceFileName())
@@ -171,6 +172,49 @@ global INLAB_TESTE_SAIDA, INLAB_TESTE_FALHAS
         InLab_V15_UVBake #(b) falharTeste:true
         checar ("V-15: exceção vira 'não medido' ('" + mensagemDe "V-15" + "')") (statusDe "V-15" == #warning and (findString (mensagemDe "V-15") "não medid") != undefined)
         checar "V-15: exceção não deixa modificador" (b.modifiers.count == 0)
+        limparCena()
+        ---------------------------------------------------------------- V-15 (falhas fora da medição)
+        -- Seleção original = cabeça de grupo fechado.
+        gA = caixa [0, 0, 0]
+        gB = caixa [30, 0, 0]
+        copiarCanal gA 1 3
+        grp = group #(gA, gB) name:"Produto"
+        select grp
+        local antes = for s in selection collect s.name
+        InLab_ResetarResultados()
+        InLab_V15_UVBake #(gA, gB)
+        local depois = for s in selection collect s.name
+        checar ("V-15: seleção = grupo fechado volta igual (" + antes as string + " -> " + depois as string + ")") (antes.count > 0 and antes.count == depois.count and (for nm in antes where findItem depois nm == 0 collect nm).count == 0 and findItem depois grp.name > 0 and not (isOpenGroupHead grp))
+        limparCena()
+        -- (a) InLab_AbrirGruposAcima lança.
+        fn abrirQuebrado o = ( throw "abertura quebrada (teste)" )
+        fn fecharQuebrado g = ( throw "fechamento quebrado (teste)" )
+        local origAbrir = InLab_AbrirGruposAcima
+        local origFechar = InLab_FecharGrupos
+        local outro2 = caixa [60, 0, 0]
+        b = caixa [0, 0, 0]
+        copiarCanal b 1 3
+        select outro2
+        setCommandPanelTaskMode #create
+        InLab_AbrirGruposAcima = abrirQuebrado
+        try ( InLab_ResetarResultados(); InLab_V15_UVBake #(b) ) catch ( linha ("EXCEÇÃO inesperada em V-15 (a): " + getCurrentException()); INLAB_TESTE_FALHAS += 1 )
+        InLab_AbrirGruposAcima = origAbrir
+        checar ("V-15: abertura de grupo quebrada vira 'não medido' ('" + mensagemDe "V-15" + "')") (statusDe "V-15" == #warning and (findString (mensagemDe "V-15") "não medid") != undefined)
+        checar "V-15: abertura quebrada não deixa Unwrap" (b.modifiers.count == 0)
+        checar "V-15: abertura quebrada restaura seleção e painel" (selection.count == 1 and selection[1] == outro2 and (getCommandPanelTaskMode()) == #create)
+        checar "V-15: abertura quebrada deixa o redraw ligado" (not (isSceneRedrawDisabled()))
+        limparCena()
+        -- (b) InLab_FecharGrupos lança, peça em grupo e sobreposta: nunca PASS.
+        gA = caixa [0, 0, 0]
+        gB = caixa [30, 0, 0]
+        copiarCanal gA 1 3
+        grp = group #(gA, gB) name:"Produto"
+        InLab_FecharGrupos = fecharQuebrado
+        try ( InLab_ResetarResultados(); InLab_V15_UVBake #(gA) ) catch ( linha ("EXCEÇÃO inesperada em V-15 (b): " + getCurrentException()); INLAB_TESTE_FALHAS += 1 )
+        InLab_FecharGrupos = origFechar
+        checar ("V-15: fechamento quebrado não dá PASS ('" + statusDe "V-15" as string + "')") (statusDe "V-15" != #pass and statusDe "V-15" != #ausente)
+        checar "V-15: fechamento quebrado não deixa Unwrap e o grupo volta fechado" (gA.modifiers.count == 0 and not (isOpenGroupHead grp))
+        checar "V-15: fechamento quebrado deixa o redraw ligado" (not (isSceneRedrawDisabled()))
         limparCena()
         -- CASOS DAS PRÓXIMAS TASKS ENTRAM AQUI
     )

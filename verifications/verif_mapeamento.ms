@@ -21,6 +21,13 @@
      restaurados. disableSceneRedraw + suspendEditing: 1 s → 0,37 s por peça,
      mesmo resultado. Mede em instância, membro de grupo fechado, peça oculta,
      congelada e com modificador; getSaveRequired não muda.
+ 05/10/2026 — decisões da V-15 (implementação):
+   - O Unwrap só entra em peça COM canal 3, conferido no snapshot antes.
+   - Contagem em "faces" (Editable Poly = polígonos), nunca "triângulos".
+   - InLab_Mapa_SobrepostasUnwrap nunca lança; falha por peça vira "não
+     medido" (passou:false, critico:false) e o laço segue; o Unwrap sai sempre
+     e os grupos abertos voltam a fechar mesmo se a abertura/fechamento falhar.
+   - Seleção, painel, redraw e suspendEditing restaurados passo a passo.
 ================================================================================
 */
 
@@ -100,16 +107,32 @@ fn InLab_Mapa_ForaDe01 m canal =
 )
 
 -- Faces sobrepostas no canal 3 por um Unwrap_UVW temporário. Devolve o número
--- de faces (polígonos no Editable Poly) ou undefined se a medição falhou. O
--- Unwrap sai SEMPRE (try da remoção separado do try da medição). Quem chama
--- cuida de seleção, painel e redesenho. falharTeste: só para teste.
+-- de faces (polígonos no Editable Poly) ou undefined se a medição falhou. NUNCA
+-- lança: abertura de grupo, criação do Unwrap, medição, remoção e fechamento
+-- têm try próprio, e o Unwrap sai SEMPRE. Quem chama cuida de seleção, painel e
+-- redesenho. falharTeste: só para teste.
 fn InLab_Mapa_SobrepostasUnwrap o falharTeste:false =
 (
     local n = undefined
-    local uw = Unwrap_UVW()
-    local grupos = InLab_AbrirGruposAcima o
+    local uw = undefined
+    -- Grupos fechados acima do nó, anotados ANTES de abrir: se a abertura
+    -- lançar no meio, ainda sabemos o que fechar de volta.
+    local fechadosAntes = #()
     try
     (
+        local pai = o.parent
+        while pai != undefined do
+        (
+            if isGroupHead pai and not (isOpenGroupHead pai) do append fechadosAntes pai
+            pai = pai.parent
+        )
+    )
+    catch ()
+    local grupos = #()
+    try
+    (
+        grupos = InLab_AbrirGruposAcima o
+        uw = Unwrap_UVW()
         with undo off
         (
             addModifier o uw
@@ -127,15 +150,26 @@ fn InLab_Mapa_SobrepostasUnwrap o falharTeste:false =
         n = undefined
         InLab_Log (o.name + ": V-15 não mediu a sobreposição (" + getCurrentException() + ").") tipo:#warn
     )
-    try
+    if uw != undefined do
     (
-        with undo off ( for m in o.modifiers where m == uw do deleteModifier o m )
+        try
+        (
+            with undo off ( for m in o.modifiers where m == uw do deleteModifier o m )
+        )
+        catch
+        (
+            InLab_Log (o.name + ": não removi o Unwrap temporário da V-15 (" + getCurrentException() + ") — apague à mão.") tipo:#err
+        )
     )
+    try ( InLab_FecharGrupos grupos )
     catch
     (
-        InLab_Log (o.name + ": não removi o Unwrap temporário da V-15 (" + getCurrentException() + ") — apague à mão.") tipo:#err
+        InLab_Log (o.name + ": V-15 não fechou os grupos (" + getCurrentException() + "); fechando direto.") tipo:#warn
+        for g in fechadosAntes do try ( if isValidNode g do setGroupOpen g false ) catch ()
     )
-    InLab_FecharGrupos grupos
+    -- Se a abertura lançou no meio, grupos ficou vazio: fecha o que foi anotado.
+    if grupos.count == 0 do
+        for g in fechadosAntes do try ( if isValidNode g and (isOpenGroupHead g) do setGroupOpen g false ) catch ()
     n
 )
 
@@ -174,24 +208,47 @@ fn InLab_V15_UVBake objetos falharTeste:false =
     (
         local sel = for s in selection collect s
         local modo = getCommandPanelTaskMode()
+        local tratados = #()
         disableSceneRedraw()
-        suspendEditing()
+        try ( suspendEditing() ) catch ()
         try
         (
             for o in comCanal do
             (
-                local n = InLab_Mapa_SobrepostasUnwrap o falharTeste:falharTeste
-                if n == undefined then append naoMedidos (o.name + ": sobreposição não medida (ver log)")
-                else if n > 0 do append itens (o.name + ": " + n as string + " face(s) sobreposta(s) no canal 3")
+                append tratados o
+                try
+                (
+                    local n = InLab_Mapa_SobrepostasUnwrap o falharTeste:falharTeste
+                    if n == undefined then append naoMedidos (o.name + ": sobreposição não medida (ver log)")
+                    else if n > 0 do append itens (o.name + ": " + n as string + " face(s) sobreposta(s) no canal 3")
+                )
+                catch
+                (
+                    append naoMedidos (o.name + ": sobreposição não medida (" + getCurrentException() + ")")
+                    InLab_Log (o.name + ": V-15 " + getCurrentException()) tipo:#err
+                )
             )
         )
-        catch ( InLab_Log ("V-15: " + getCurrentException()) tipo:#err )
-        resumeEditing()
-        enableSceneRedraw()
-        clearSelection()
-        local vivos = for s in sel where isValidNode s collect s
-        if vivos.count > 0 do select vivos
-        setCommandPanelTaskMode modo
+        catch
+        (
+            InLab_Log ("V-15: " + getCurrentException()) tipo:#err
+            for o in comCanal where findItem tratados o == 0 do
+                append naoMedidos (o.name + ": sobreposição não medida (interrompida)")
+        )
+        -- Restauração: cada passo guardado, para um não pular o seguinte.
+        try ( resumeEditing() ) catch ()
+        try ( enableSceneRedraw() ) catch ()
+        try
+        (
+            with undo off
+            (
+                clearSelection()
+                local vivos = for s in sel where isValidNode s collect s
+                if vivos.count > 0 do select vivos
+            )
+        )
+        catch ( InLab_Log ("V-15: não restaurei a seleção (" + getCurrentException() + ")") tipo:#warn )
+        try ( setCommandPanelTaskMode modo ) catch ( InLab_Log ("V-15: não restaurei o painel (" + getCurrentException() + ")") tipo:#warn )
     )
     if itens.count > 0 then
         InLab_RegistrarVerif "V-15" titulo false (InLab_Mapa_Lista (itens + naoMedidos)) critico:true
