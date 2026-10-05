@@ -38,11 +38,11 @@
      triangula em fatias longas e o sombreado listra. Não é falso positivo.
    - DESEMPENHO: V-10b trocou meshop.getElementsUsingFace por elemento
      (O(faces) cada; 22 s no Teapot de 262 mil) por union-find nas faces,
-     unidas por ARESTA comum (chave ordenada com sort nativo). Sondagem: dois
-     cubos soldados num vértice são 2 elementos no Max (12 de 24 faces); unir
-     por vértice os fundia e escondia o cubo do avesso (teste em
-     test_verif_malha.ms). Malha grande demais para a chave caber em double
-     cai na união por vértice.
+     unidas por ARESTA comum (chave integer64 ordenada com sort nativo).
+     Sondagem: dois cubos soldados num vértice são 2 elementos no Max (12 de
+     24 faces); unir por vértice os fundia e escondia o cubo do avesso (teste
+     em test_verif_malha.ms). Sem aproximação: se a chave não coubesse
+     (nv² · nf >= 9e18, impossível na prática) a V-10 vira "não medido".
 ================================================================================
 */
 
@@ -68,7 +68,8 @@ struct MalhaAnalise
     ngonsNaCurva = 0,       -- V-13
     ngonsAplica = false,    -- V-13: Editable_Poly com stack vazio
     erro = undefined,       -- texto da exceção, se a análise falhou
-    erroNgons = undefined   -- falha na leitura das ngons (só V-13; não invalida as demais)
+    erroNgons = undefined,  -- falha na leitura das ngons (só V-13; não invalida as demais)
+    erroAvesso = undefined  -- V-10b não medida (só V-10; não invalida as demais)
 )
 
 -- "a, b, c" com no máximo `maximo` itens e "… (+N)" no fim.
@@ -116,12 +117,17 @@ fn InLab_Malha_ElementosDoAvesso m abertas =
     -- Conectividade por ARESTA (duas faces no mesmo elemento só se dividem uma
     -- aresta), como meshop.getElementsUsingFace: dois cubos soldados num só
     -- vértice são dois elementos (unir por vértice somaria os volumes e
-    -- esconderia o cubo do avesso). Sem Dictionary: chave = aresta sem sentido
-    -- * nf + (face - 1), num double (exato até 2^53), ordenada com sort nativo.
-    -- Malha grande demais para a chave caber: cai na união por vértice
-    -- (aproximação; só pior no caso raro de elementos que se tocam num vértice).
+    -- esconderia o cubo do avesso). Sem Dictionary: chave integer64 =
+    -- (aresta sem sentido) * nf + (face - 1), ordenada com sort nativo (sort de
+    -- integer64 mede 0,6 s em 786 mil chaves). Cabe até nv² · nf ~ 9,2e18, muito
+    -- além de qualquer produto; passando disso lança erro (a análise loga e a
+    -- V-10 vira "não medido"), nunca aproxima.
     local nf = m.numfaces
     local nv = m.numverts
+    local base = (nv + 1) as integer64
+    local nf64 = nf as integer64
+    if ((nv + 1) as double) * ((nv + 1) as double) * (nf as double) >= 9.0e18 do
+        throw ("malha grande demais para a V-10b (" + nv as string + " vértices, " + nf as string + " faces)")
     fn raiz pai i =
     (
         while pai[i] != i do ( pai[i] = pai[pai[i]]; i = pai[i] )
@@ -133,65 +139,33 @@ fn InLab_Malha_ElementosDoAvesso m abertas =
     local pai = #()
     pai.count = nf
     for f = 1 to nf do pai[f] = f
-    local base = (nv + 1) as double
-    if (base * base * (nf as double)) < 9.0e15 then
+    local chaves = #()
+    for f = 1 to nf do
     (
-        local chaves = #()
-        for f = 1 to nf do
-        (
-            local v = fv[f]
-            local a = v.x as integer
-            local b = v.y as integer
-            local c = v.z as integer
-            append chaves (((amin a b) * base + (amax a b)) * nf + (f - 1))
-            append chaves (((amin b c) * base + (amax b c)) * nf + (f - 1))
-            append chaves (((amin c a) * base + (amax c a)) * nf + (f - 1))
-        )
-        sort chaves
-        local anterior = -1.0
-        local fAnt = 0
-        for k in chaves do
-        (
-            local aresta = floor (k / nf)
-            local resto = k - aresta * nf
-            if resto < 0 do ( aresta -= 1; resto += nf )
-            if resto >= nf do ( aresta += 1; resto -= nf )
-            local fa = (resto as integer) + 1
-            if aresta == anterior do
-            (
-                local ra = raiz pai fa
-                local rb = raiz pai fAnt
-                if ra != rb do pai[ra] = rb
-            )
-            anterior = aresta
-            fAnt = fa
-        )
+        local v = fv[f]
+        local a = (v.x as integer) as integer64
+        local b = (v.y as integer) as integer64
+        local c = (v.z as integer) as integer64
+        local fk = (f - 1) as integer64
+        append chaves (((amin a b) * base + (amax a b)) * nf64 + fk)
+        append chaves (((amin b c) * base + (amax b c)) * nf64 + fk)
+        append chaves (((amin c a) * base + (amax c a)) * nf64 + fk)
     )
-    else
+    sort chaves
+    local anterior = -1L
+    local fAnt = 0
+    for k in chaves do
     (
-        local pv = #()
-        pv.count = nv
-        for i = 1 to nv do pv[i] = i
-        for f = 1 to nf do
+        local aresta = k / nf64
+        local fa = ((k - aresta * nf64) as integer) + 1
+        if aresta == anterior do
         (
-            local v = fv[f]
-            local a = raiz pv (v.x as integer)
-            local b = raiz pv (v.y as integer)
-            local c = raiz pv (v.z as integer)
-            if b != a do pv[b] = a
-            if c != a do pv[c] = a
+            local ra = raiz pai fa
+            local rb = raiz pai fAnt
+            if ra != rb do pai[ra] = rb
         )
-        for f = 1 to nf do pai[f] = raiz pv ((fv[f]).x as integer)
-        -- pai[f] já é o representante comum (um vértice); vira "raiz" de si mesmo
-        -- porque raiz pai f só segue pai[f] != f: troca para um índice de face.
-        local rep = #()
-        rep.count = nv
-        for f = 1 to nf do
-        (
-            local r = pai[f]
-            if rep[r] == undefined do rep[r] = f
-            pai[f] = rep[r]
-        )
+        anterior = aresta
+        fAnt = fa
     )
     local vol = #()
     vol.count = nf
@@ -329,7 +303,11 @@ fn InLab_Malha_Analisar o tol:undefined =
             local abertas = meshop.getOpenEdges m
             a.invertidas = InLab_Malha_ArestasInvertidas m
             a.furos = abertas.numberSet
-            a.avesso = InLab_Malha_ElementosDoAvesso m abertas
+            try ( a.avesso = InLab_Malha_ElementosDoAvesso m abertas ) catch
+            (
+                a.erroAvesso = getCurrentException()
+                InLab_Log (o.name + ": V-10b não medida (" + a.erroAvesso + ").") tipo:#warn
+            )
             a.duplicadas = InLab_Malha_FacesDuplicadas m tol
         )
     )
@@ -389,6 +367,7 @@ fn InLab_V10_Normais analises =
     for a in analises do
     (
         if a.erro != undefined do append naoMedidos ((InLab_Malha_Nome a) + ": não analisado (" + a.erro + ")")
+        if a.erroAvesso != undefined do append naoMedidos ((InLab_Malha_Nome a) + ": elementos do avesso não medidos (" + a.erroAvesso + ")")
         if a.invertidas > 0 do append itens ((InLab_Malha_Nome a) + ": " + (a.invertidas / 2) as string + " aresta(s) entre faces de sentido oposto")
         if a.avesso > 0 do append itens ((InLab_Malha_Nome a) + ": " + a.avesso as string + " parte(s) do avesso (normais para dentro)")
     )
