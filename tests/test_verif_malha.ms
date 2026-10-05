@@ -161,6 +161,34 @@ global INLAB_TESTE_SAIDA, INLAB_TESTE_FALHAS
         checar ("V-09 desempenho: 20 mil faces em menos de 5 s (" + segP as string + " s)") (segP < 5.0)
         delete mp
         limparCena()
+        ---------------------------------------------------------------- V-13
+        fn cilindroPoly = ( local c = Cylinder radius:20 height:40 sides:6 heightsegs:1 capsegs:1 smooth:true; convertToPoly c; c )
+        fn tampa p = ( local t = 0; for f = 1 to (polyop.getNumFaces p) where t == 0 and (polyop.getFaceDeg p f) == 6 do t = f; t )
+        local c = cilindroPoly()
+        checar ("V-13: cilindro poly (tampa ngon plana) passa ('" + (rodarMalha InLab_V13_Ngons #(c) "V-13") as string + "')") ((rodarMalha InLab_V13_Ngons #(c) "V-13") == #pass)
+        local ft = tampa c
+        polyop.moveVert c (polyop.getFaceVerts c ft)[1] [0, 0, 5]
+        checar "V-13: tampa ngon não plana reprova" ((rodarMalha InLab_V13_Ngons #(c) "V-13") == #fail)
+        checar ("V-13: mensagem diz não plana ('" + mensagemDe "V-13" + "')") ((findString (mensagemDe "V-13") "não plana") != undefined)
+        limparCena()
+        c = cilindroPoly()
+        ft = tampa c
+        local lado = 0
+        for f = 1 to (polyop.getNumFaces c) where lado == 0 and (polyop.getFaceDeg c f) == 4 do lado = f
+        polyop.setFaceSmoothGroup c #{ft} (polyop.getFaceSmoothGroup c lado)
+        checar "V-13: tampa suavizada junto com o lado (90°) reprova" ((rodarMalha InLab_V13_Ngons #(c) "V-13") == #fail)
+        checar ("V-13: mensagem diz suavizada ('" + mensagemDe "V-13" + "')") ((findString (mensagemDe "V-13") "suavizada") != undefined)
+        limparCena()
+        b = caixaMesh()
+        checar "V-13: Editable Mesh passa como não se aplica" ((rodarMalha InLab_V13_Ngons #(b) "V-13") == #pass and (findString (mensagemDe "V-13") "não se aplica") != undefined)
+        limparCena()
+        -- leitura das ngons que falhou não passa em silêncio
+        b = caixaMesh()
+        local ae13 = MalhaAnalise no:b instancias:#(b) erroNgons:"teste" ngonsAplica:true
+        InLab_ResetarResultados(); InLab_V13_Ngons #(ae13)
+        checar "Erro: V-13 não passa em silêncio (#warning)" ((statusDe "V-13") == #warning)
+        checar "Erro: V-13 diz 'não analisado'" ((findString (mensagemDe "V-13") "não analisado") != undefined)
+        limparCena()
         -- CASOS DAS PRÓXIMAS TASKS ENTRAM AQUI
     )
     catch

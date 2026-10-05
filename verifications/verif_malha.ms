@@ -52,7 +52,8 @@ struct MalhaAnalise
     ngonsNaoPlanas = 0,     -- V-13
     ngonsNaCurva = 0,       -- V-13
     ngonsAplica = false,    -- V-13: Editable_Poly com stack vazio
-    erro = undefined        -- texto da exceção, se a análise falhou
+    erro = undefined,       -- texto da exceção, se a análise falhou
+    erroNgons = undefined   -- falha na leitura das ngons (só V-13; não invalida as demais)
 )
 
 -- "a, b, c" com no máximo `maximo` itens e "… (+N)" no fim.
@@ -179,6 +180,45 @@ fn InLab_Malha_FacesDuplicadas m tol =
     )
 )
 
+-- V-13: ngons (5+ lados) do Editable Poly de stack vazio. Não plana = maior
+-- distância de um vértice ao plano da face ÷ maior distância ao centro >
+-- tan 1°. Suavizada na curva = divide smoothing group com uma vizinha a mais
+-- de 15°. Tampa de cilindro (plana, smoothing próprio) passa.
+fn InLab_Malha_Ngons o a =
+(
+    if classof o.baseobject == Editable_Poly and o.modifiers.count == 0 do
+    (
+        a.ngonsAplica = true
+        local tanPlano = tan INLAB_MALHA_PLANO_GRAUS
+        local cosCurva = cos INLAB_MALHA_CURVA_GRAUS
+        for f = 1 to (polyop.getNumFaces o) where (polyop.getFaceDeg o f) > 4 do
+        (
+            local n = polyop.getFaceNormal o f
+            local c = polyop.getFaceCenter o f
+            local desvio = 0.0
+            local raio = 0.0
+            for v in (polyop.getFaceVerts o f) do
+            (
+                local p = polyop.getVert o v
+                desvio = amax desvio (abs (dot (p - c) n))
+                raio = amax raio (distance p c)
+            )
+            if raio > 0 and desvio / raio > tanPlano then a.ngonsNaoPlanas += 1
+            else
+            (
+                local sg = polyop.getFaceSmoothGroup o f
+                local naCurva = false
+                if sg != 0 do
+                    for g in (polyop.getFacesUsingEdge o (polyop.getEdgesUsingFace o #{f})) do
+                        if not naCurva and g != f and (bit.and sg (polyop.getFaceSmoothGroup o g)) != 0 and (dot n (polyop.getFaceNormal o g)) < cosCurva do
+                            naCurva = true
+                if naCurva do a.ngonsNaCurva += 1
+            )
+        )
+    )
+    a
+)
+
 -- Análise de UMA peça. tol: tolerância de posição em unidades da cena.
 fn InLab_Malha_Analisar o tol:undefined =
 (
@@ -203,6 +243,11 @@ fn InLab_Malha_Analisar o tol:undefined =
         InLab_Log (o.name + ": falha na análise de malha (" + a.erro + ").") tipo:#err
     )
     delete m
+    try ( InLab_Malha_Ngons o a ) catch
+    (
+        a.erroNgons = getCurrentException()
+        InLab_Log (o.name + ": falha na leitura das ngons (" + a.erroNgons + ").") tipo:#err
+    )
     a
 )
 
@@ -287,4 +332,30 @@ fn InLab_V09_Duplicados analises objetos =
         InLab_RegistrarVerif "V-09" "Faces e objetos duplicados" false ("não medido: " + InLab_Malha_Lista naoMedidos) critico:false
     else
         InLab_RegistrarVerif "V-09" "Faces e objetos duplicados" true "nenhuma duplicata" critico:true
+)
+
+-- V-13 · Ngons em superfície curva (só Editable Poly de stack vazio).
+-- Falha na leitura (erroNgons/erro) é "não medido", não passa em silêncio.
+fn InLab_V13_Ngons analises =
+(
+    local itens = #()
+    local naoMedidos = #()
+    for a in analises do
+    (
+        if a.erro != undefined do append naoMedidos ((InLab_Malha_Nome a) + ": não analisado (" + a.erro + ")")
+        if a.erroNgons != undefined do append naoMedidos ((InLab_Malha_Nome a) + ": não analisado (" + a.erroNgons + ")")
+        if a.ngonsNaoPlanas > 0 do append itens ((InLab_Malha_Nome a) + ": " + a.ngonsNaoPlanas as string + " ngon(s) não plana(s)")
+        if a.ngonsNaCurva > 0 do append itens ((InLab_Malha_Nome a) + ": " + a.ngonsNaCurva as string + " ngon(s) suavizada(s) numa curva")
+    )
+    if itens.count > 0 then
+        InLab_RegistrarVerif "V-13" "Ngons em superfície curva" false (InLab_Malha_Lista (itens + naoMedidos)) critico:true
+    else if naoMedidos.count > 0 then
+        InLab_RegistrarVerif "V-13" "Ngons em superfície curva" false ("não medido: " + InLab_Malha_Lista naoMedidos) critico:false
+    else
+    (
+        local semPoly = for a in analises where not a.ngonsAplica collect a.no.name
+        local msg = if semPoly.count == analises.count then "não se aplica: nenhum objeto em Editable Poly com stack vazio" \
+            else ("nenhuma ngon em superfície curva" + (if semPoly.count > 0 then (" · não se aplica a " + InLab_Malha_Lista semPoly) else ""))
+        InLab_RegistrarVerif "V-13" "Ngons em superfície curva" true msg critico:true
+    )
 )
