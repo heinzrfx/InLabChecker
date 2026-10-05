@@ -288,7 +288,10 @@ global INLAB_TESTE_SAIDA, INLAB_TESTE_FALHAS
             "{\"cod_est\": \"0021\", \"nome\": \"COPIA\", \"bloco_3d\": {\"papel\": \"copia\", \"base_codest\": \"0020\"}, \"partes\": [" +
             "{\"nome_parte\": \"Tampo\", \"qualificador\": \"\", \"tipo\": \"P\", \"so3d\": false, \"material_id\": \"ART_P_Tampo\", \"mesh_final\": \"0021\"}]}, " +
             "{\"cod_est\": \"0022\", \"nome\": \"SEM MESH\", \"partes\": [" +
-            "{\"nome_parte\": \"Base\", \"qualificador\": \"\", \"tipo\": \"P\", \"so3d\": false, \"material_id\": \"ART_P_Base\", \"mesh_final\": \"\"}]}]}"
+            "{\"nome_parte\": \"Base\", \"qualificador\": \"\", \"tipo\": \"P\", \"so3d\": false, \"material_id\": \"ART_P_Base\", \"mesh_final\": \"\"}]}, " +
+            "{\"cod_est\": \"0023\", \"nome\": \"VARIANTES\", \"glb_multiplos\": {\"qtd\": 2, \"variantes\": [{\"acab_id\": \"L11\", \"glb\": \"0023_L11\", \"mesh_final\": \"0023_L11\"}, " +
+            "{\"acab_id\": \"L12\", \"glb\": \"0023_L12\", \"mesh_final\": \"0023_L12\"}]}, \"partes\": [" +
+            "{\"nome_parte\": \"Tampo\", \"qualificador\": \"\", \"tipo\": \"P\", \"so3d\": false, \"material_id\": \"ART_P_Tampo\", \"mesh_final\": \"0023\"}]}]}"
         local prodsV20 = InLab_Produto_Lista (InLab_ParseJSON jsV20)
         local mTampoV = StandardMaterial name:"ART_P_Tampo"
         local mPratoV = StandardMaterial name:"ART_P_Prato"
@@ -312,6 +315,11 @@ global INLAB_TESTE_SAIDA, INLAB_TESTE_FALHAS
         checar "V-20: cópia aceita o .max com o código do master" ((rodar20 cfgEst prodsV20[2] #(oMesa) "0020") == #pass)
         checar "V-20: cópia aceita o .max com o próprio código" ((rodar20 cfgEst prodsV20[2] #(oMesa) "0021") == #pass)
         checar "V-20: produto sem mesh_final no JSON reprova" ((rodar20 cfgEst prodsV20[3] #(oMesa) "0022") == #fail and (findString (mensagemDe "V-20") "mesh_final") != undefined)
+        -- Variante de posição (issue #92): .max e objeto = codEst_id
+        oMesa.name = "0023_L11"
+        checar ("V-20: variante — arquivo e objeto com o nome da variante passam (" + mensagemDe "V-20" + ")") ((rodar20 cfgEst prodsV20[4] #(oMesa) "0023_L11") == #pass)
+        checar "V-20: variante — objeto com o nome de OUTRA variante reprova" ((rodar20 cfgEst prodsV20[4] #(oMesa) "0023_L12") == #fail and (findString (mensagemDe "V-20") "0023_L12") != undefined)
+        checar "V-20: variante — arquivo com variante inexistente reprova" ((rodar20 cfgEst prodsV20[4] #(oMesa) "0023_L99") == #fail)
         oMesa.name = "0020"
         InLab_RodarVerificacoes cfgEst produto:prodsV20[1]
         checar "V-20: o orquestrador repassa o produto (mensagem cita o código)" ((findString (mensagemDe "V-20") "0020") != undefined)

@@ -157,3 +157,51 @@ Pasta `PILOTO PLUGIN INLAB\ARTEFACTO` (19 `.max`, nomeados pelo nome do produto,
 - **V-20 crítica com produto importado.** Nome errado reprova. Sem produto importado continua em advertência.
 - **Dropdown Família só com as 4 estruturais.** `INLAB_FAMILIAS_ANIMADAS_NA_UI = false` em `core/struct_familia.ms`; as 4 animadas continuam registradas para o v2.
 - **Nome único:** produto com um só nome de objeto sugere esse nome para todos os objetos lidos (5 dos 6 assets do piloto).
+
+---
+
+# Respostas finais do dia (`Resposta_Rafa.md` e `Arquetipos_Modelagem_FAST.md`)
+
+## O que a Bianca fechou
+
+| Pergunta | Resposta |
+|---|---|
+| Nome do `.max` de cada variante | `codEst_id` (`07132220_L11.max`). O GLB e a mesh saem com o mesmo nome. Vale na V-20. |
+| `L14_L33` | Cada variante é um id e um `.max`. O "L14_L33" é pendência dela: se forem duas posições, viram duas variantes e o JSON é reenviado. |
+| Animado no v1 | **Mantém as meshes separadas** (`codEst_Porta_1`, `codEst_Prato_Giratoria`…). Os nomes continuam válidos no dropdown e na V-20. |
+| Critério Aparador / Banco / Puff | Aceito. |
+| Arquivos do piloto | **Renomear os 19 `.max` para o `cod_est`.** O plugin não aceita o nome do produto: a base de nomes tem inconsistência e casar por nome daria falha silenciosa. |
+| Louise Amarela | Tratar como não cadastrada; ela confere no legado. |
+| Limites (Birô) | Para o teste, valem os limites que já estão no plugin, como **referência do teste, não definitivos**. Pode liberar as 25 verificações em cima deles. Se for preciso medir taxa de reprovação, pode ligar como corte temporário. |
+| "Por bloco" | **1 bloco = 1 arquivo `.max`**. Os limites por bloco valem por arquivo. |
+
+## Arquétipos de modelagem (5)
+
+O que o plugin chama de família é o arquétipo de blocos. Esta tabela **substitui** a tabela v3 acima (as mesas voltaram para Pernas + Tampo).
+
+1. Corpo Único · 2. Pernas + Tampo · 3. Estrutura + Estofado · 4. Corpo + Portas/Gavetas · 5. Base + Cabeceira
+
+| Arquétipo | Classes |
+|---|---|
+| Pernas + Tampo | Carro Bar, Carro Chá, Mesa Bar, Mesa Componível, Mesa de Centro, Mesa de Chá, Mesa de Jantar, Mesa de Jogo, Mesa Lateral |
+| Estrutura + Estofado | Chaise Longue, Módulo, Sofá |
+| Corpo Único | Biombo, Cabeceira, Cavalete, Coluna de Jantar |
+| Corpo + Portas/Gavetas | Buffet, Caixa Bar, Cômoda, Escrivaninha, Estante, Mesa de Cabeceira, Móvel Bar, Vanity Desk |
+| Base + Cabeceira | Bicama, Cama |
+| Pelo dado: tecido → Estrutura + Estofado; senão Corpo Único | Balanço, Banco, Banqueta, Cadeira, Longarina, Poltrona, Puff |
+| Pelo dado: tampo acessório → Pernas + Tampo; senão Corpo Único | Aparador |
+
+## O que mudou no plugin (branch `feat/arquetipos-e-variantes`)
+
+- **Sugestão de família** pela tabela acima. Sai a tabela "provisória".
+- **Dois arquétipos ainda não têm família no plugin** (Corpo + Portas/Gavetas e Base + Cabeceira): as classes deles ficam sem sugestão, com o motivo no log. No export Contract/Health são 14 de 209 produtos; no v5 são 5 de 66 (2 buffets, 2 escrivaninhas, 1 vanity desk).
+- **Variantes de posição (issue #92):** `InLab_Produto_Variantes` e `InLab_Produto_IndicePorArquivo`. O `.max` chamado `codEst_id` pré-seleciona o produto; os nomes das variantes entram no dropdown "Nome do objeto"; no `.max` de uma variante todo objeto recebe o nome dela; a V-20 aceita o arquivo e exige exatamente esse nome nos objetos.
+
+## Em aberto
+
+- **Criar as duas famílias novas** (Corpo + Portas/Gavetas, Base + Cabeceira): precisam de limites (peso, faixa de polígonos, draw calls). Decisão de produto.
+- **Estrutura Modular** existe no plugin e não aparece na tabela da equipe: nenhuma classe sugere mais essa família.
+- **V-04 (polígonos por parte):** a Bianca fala em "limites que você recomendou", mas `limitesPorParte` está vazio nas 8 famílias. Sem números, a V-04 continua "pendente".
+- **Ligar os limites como corte** (`INLAB_LIMITES_PROVISORIOS = false`) durante o teste: liberado por ela, decisão do usuário.
+- **As 25 verificações (#38):** liberadas por ela. A spec v2.0 que as define não está no repo.
+- **`L14_L33`** e **Louise Amarela:** com a Bianca.
