@@ -6,7 +6,7 @@
 */
 -- Declarados ANTES do bloco: o bloco é compilado antes dos fileIn rodarem.
 global InLab_Log, InLab_VerifResults, InLab_ResetarResultados, INLAB_LIMITES_PROVISORIOS, InLab_ObterFamilia
-global InLab_Malha_Analisar, InLab_Malha_AnalisarCena, InLab_V08_MalhaFechada, InLab_V10_Normais
+global MalhaAnalise, InLab_Malha_Analisar, InLab_Malha_AnalisarCena, InLab_V08_MalhaFechada, InLab_V10_Normais
 global InLab_V09_Duplicados, InLab_V13_Ngons, InLab_V07_RatioVT, InLab_ObjetosVerificacao
 global INLAB_TESTE_SAIDA, INLAB_TESTE_FALHAS
 (
@@ -99,6 +99,17 @@ global INLAB_TESTE_SAIDA, INLAB_TESTE_FALHAS
         bi.pos = [100, 0, 0]
         local grupos = InLab_Malha_AnalisarCena #(b, bi)
         checar ("Instâncias: 1 análise para 2 nós (" + grupos.count as string + ")") (grupos.count == 1 and grupos[1].instancias.count == 2)
+        limparCena()
+
+        ---------------------------------------------------------------- ERRO DE ANÁLISE
+        b = caixaMesh()
+        local ae = MalhaAnalise no:b instancias:#(b) erro:"teste"
+        InLab_ResetarResultados(); InLab_V08_MalhaFechada #(ae)
+        checar "Erro: V-08 vira advertência" ((statusDe "V-08") == #warning)
+        checar "Erro: V-08 diz 'não analisado'" ((findString (mensagemDe "V-08") "não analisado") != undefined)
+        InLab_ResetarResultados(); InLab_V10_Normais #(ae)
+        checar "Erro: V-10 não passa em silêncio (#warning)" ((statusDe "V-10") == #warning)
+        checar "Erro: V-10 diz 'não analisado'" ((findString (mensagemDe "V-10") "não analisado") != undefined)
         limparCena()
 
         -- CASOS DAS PRÓXIMAS TASKS ENTRAM AQUI

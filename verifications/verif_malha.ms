@@ -38,8 +38,8 @@ struct MalhaAnalise
     no,                     -- nó representante do grupo de instâncias
     instancias = #(),       -- todos os nós do grupo
     tris = 0,
-    furos = 0,              -- V-08: arestas abertas que não são da V-10
-    invertidas = 0,         -- V-10a: arestas abertas com gêmea no mesmo sentido
+    furos = 0,              -- V-08: arestas abertas (meshop.getOpenEdges)
+    invertidas = 0,         -- V-10a: arestas dirigidas repetidas (vizinhas de sentido oposto)
     avesso = 0,             -- V-10b: elementos fechados com volume negativo
     duplicadas = 0,         -- V-09a: faces coincidentes com outra
     ngonsNaoPlanas = 0,     -- V-13
@@ -57,22 +57,11 @@ fn InLab_Malha_Lista itens maximo:8 =
     txt
 )
 
--- Vértices dirigidos da aresta `e` do Mesh: a aresta k (1..3) da face f
--- vai do canto k ao canto k+1 (mod 3); e = 3*(f-1) + k.
-fn InLab_Malha_VertsDaAresta m e =
-(
-    local f = (e - 1) / 3 + 1
-    local k = (e - 1) - (f - 1) * 3 + 1
-    local v = getFace m f
-    local vs = #(v.x as integer, v.y as integer, v.z as integer)
-    #(vs[k], vs[(if k == 3 then 1 else k + 1)])
-)
-
 -- V-10a: quantas arestas (de todas as faces) têm uma gêmea no MESMO sentido
 -- (vizinhas com sentido oposto). Em malha consistente cada aresta dirigida a→b
--- aparece uma vez. Sort nativo sobre doubles, sem Dictionary. `abertas` fica na
--- assinatura por compatibilidade e não é usada (ver cabeçalho, 05/10/2026).
-fn InLab_Malha_ArestasInvertidas m abertas =
+-- aparece uma vez. Sort nativo sobre doubles, sem Dictionary.
+-- (ver cabeçalho, 05/10/2026).
+fn InLab_Malha_ArestasInvertidas m =
 (
     local base = (m.numverts + 1) as double
     local chaves = #()
@@ -130,7 +119,7 @@ fn InLab_Malha_Analisar o tol:undefined =
         if a.tris > 0 do
         (
             local abertas = meshop.getOpenEdges m
-            a.invertidas = InLab_Malha_ArestasInvertidas m abertas
+            a.invertidas = InLab_Malha_ArestasInvertidas m
             a.furos = abertas.numberSet
             a.avesso = InLab_Malha_ElementosDoAvesso m abertas
         )
@@ -182,11 +171,17 @@ fn InLab_V08_MalhaFechada analises =
 fn InLab_V10_Normais analises =
 (
     local itens = #()
+    local naoMedidos = #()
     for a in analises do
     (
+        if a.erro != undefined do append naoMedidos ((InLab_Malha_Nome a) + ": não analisado (" + a.erro + ")")
         if a.invertidas > 0 do append itens ((InLab_Malha_Nome a) + ": " + (a.invertidas / 2) as string + " aresta(s) entre faces de sentido oposto")
         if a.avesso > 0 do append itens ((InLab_Malha_Nome a) + ": " + a.avesso as string + " parte(s) do avesso (normais para dentro)")
     )
-    InLab_RegistrarVerif "V-10" "Normais invertidas" (itens.count == 0) \
-        (if itens.count == 0 then "normais consistentes" else InLab_Malha_Lista itens) critico:true
+    if itens.count > 0 then
+        InLab_RegistrarVerif "V-10" "Normais invertidas" false (InLab_Malha_Lista (itens + naoMedidos)) critico:true
+    else if naoMedidos.count > 0 then
+        InLab_RegistrarVerif "V-10" "Normais invertidas" false ("não medido: " + InLab_Malha_Lista naoMedidos) critico:false
+    else
+        InLab_RegistrarVerif "V-10" "Normais invertidas" true "normais consistentes" critico:true
 )
