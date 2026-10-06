@@ -65,15 +65,6 @@
 global INLAB_TEXTURA_MIN_PX = 2048     -- V-16: menor lado mínimo
 global INLAB_UV_FORA_TOL = 1e-4        -- V-15: tolerância do 0–1 no canal 3
 
--- "a; b; c" com no máximo `maximo` itens e "… (+N)" no fim.
-fn InLab_Mapa_Lista itens maximo:8 =
-(
-    local txt = ""
-    for i = 1 to (amin itens.count maximo) do txt += (if i > 1 then "; " else "") + itens[i]
-    if itens.count > maximo do txt += "; … (+" + (itens.count - maximo) as string + ")"
-    txt
-)
-
 -- V-14 · UV presente no canal 1 (uma vez por grupo de instâncias).
 fn InLab_V14_UVPresente objetos =
 (
@@ -122,9 +113,9 @@ fn InLab_V14_UVPresente objetos =
         if m != undefined do try ( delete m ) catch ()
     )
     if itens.count > 0 then
-        InLab_RegistrarVerif "V-14" titulo false (InLab_Mapa_Lista (itens + naoMedidos)) critico:true
+        InLab_RegistrarVerif "V-14" titulo false (InLab_ListaResumida (itens + naoMedidos)) critico:true
     else if naoMedidos.count > 0 then
-        InLab_RegistrarVerif "V-14" titulo false ("não medido: " + InLab_Mapa_Lista naoMedidos) critico:false
+        InLab_RegistrarVerif "V-14" titulo false ("não medido: " + InLab_ListaResumida naoMedidos) critico:false
     else
         InLab_RegistrarVerif "V-14" titulo true ("UV no canal 1 em " + grupos.count as string + " peça(s)") critico:true
 )
@@ -293,9 +284,9 @@ fn InLab_V15_UVBake objetos falharTeste:false =
         try ( setCommandPanelTaskMode modo ) catch ( InLab_Log ("V-15: não restaurei o painel (" + getCurrentException() + ")") tipo:#warn )
     )
     if itens.count > 0 then
-        InLab_RegistrarVerif "V-15" titulo false (InLab_Mapa_Lista (itens + naoMedidos)) critico:true
+        InLab_RegistrarVerif "V-15" titulo false (InLab_ListaResumida (itens + naoMedidos)) critico:true
     else if naoMedidos.count > 0 then
-        InLab_RegistrarVerif "V-15" titulo false ("não medido: " + InLab_Mapa_Lista naoMedidos) critico:false
+        InLab_RegistrarVerif "V-15" titulo false ("não medido: " + InLab_ListaResumida naoMedidos) critico:false
     else if comCanal.count == 0 then
         InLab_RegistrarVerif "V-15" titulo true "não se aplica: nenhuma peça com UV de bake (canal 3)" critico:true
     else
@@ -326,6 +317,6 @@ fn InLab_V16_ResolucaoTexturas objetos =
         )
         local ok = baixas.count == 0 and naoMedidas.count == 0
         InLab_RegistrarVerif "V-16" titulo ok \
-            (if ok then (infos.count as string + " textura(s) com " + INLAB_TEXTURA_MIN_PX as string + " px ou mais") else InLab_Mapa_Lista (baixas + naoMedidas)) critico:false
+            (if ok then (infos.count as string + " textura(s) com " + INLAB_TEXTURA_MIN_PX as string + " px ou mais") else InLab_ListaResumida (baixas + naoMedidas)) critico:false
     )
 )
