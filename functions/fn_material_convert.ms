@@ -58,6 +58,11 @@
  o mesmo tempo, por isso não entrou.
  24/09/2026 (issue #52, limpeza): InLab_BitmapQuadrado removida — código
  morto, nenhuma chamada (InLab_BitmapDoTexmap é a função em uso).
+ 06/10/2026 (issue #103): o perfil de propriedades por tipo de material saiu
+ de InLab_ConverterCoronaMtl para InLab_Material_PerfilSlots, compartilhado
+ com as verificações do grupo 7. Sem mudança de comportamento. Achado na
+ sondagem: o VRayMtl não tem refraction_amount (a refração é a cor
+ "refraction"), então a conversão não liga transmission em vidro VRay.
 ================================================================================
 */
 
@@ -407,6 +412,31 @@ fn InLab_TipoDeMaterial mtl =
 )
 
 --------------------------------------------------------------------------------
+-- 06/10/2026 (issue #103): nomes de propriedade por tipo de material, em
+-- ordem de tentativa (InLab_PropSafe). Usado pela conversão e pelas
+-- verificações do grupo 7 (verif_materiais.ms), para as duas lerem
+-- exatamente os mesmos slots. #outro devolve o perfil Physical (era o
+-- "default" da conversão).
+--------------------------------------------------------------------------------
+struct PerfilSlots ( cor, mapaBase, valGloss, mapaGloss, bump, opacMapa, refrVal, ior )
+
+fn InLab_Material_PerfilSlots tipo =
+(
+    case tipo of
+    (
+        #legacy: PerfilSlots cor:#(#colorDiffuse, #diffuse) mapaBase:#(#texmapDiffuse) \
+            valGloss:#(#reflectGlossiness, #levelReflectGlossiness) mapaGloss:#(#texmapReflectGlossiness) \
+            bump:#(#texmapBump) opacMapa:#(#texmapOpacity) refrVal:#(#levelRefract) ior:#(#ior, #fresnelIor)
+        #vray: PerfilSlots cor:#(#diffuse) mapaBase:#(#texmap_diffuse) \
+            valGloss:#(#reflection_glossiness) mapaGloss:#(#texmap_reflectionGlossiness, #texmap_reflection_glossiness) \
+            bump:#(#texmap_bump) opacMapa:#(#texmap_opacity) refrVal:#(#refraction_amount) ior:#(#refraction_ior)
+        default: PerfilSlots cor:#(#baseColor) mapaBase:#(#baseTexmap) \
+            valGloss:#(#baseRoughness, #roughness) mapaGloss:#(#baseRoughnessTexmap, #roughnessTexmap) \
+            bump:#(#baseBumpTexmap, #bumpTexmap) opacMapa:#(#opacityTexmap) refrVal:#(#refractionAmount, #refraction) ior:#(#ior)
+    )
+)
+
+--------------------------------------------------------------------------------
 -- Converte UM CoronaPhysicalMtl em glTF Material. Retorna o material novo
 -- ou undefined (material não-Corona → chamador mantém o original).
 --------------------------------------------------------------------------------
@@ -443,40 +473,19 @@ fn InLab_ConverterCoronaMtl mtl tamanho fazerBake =
 
         -- ===== PERFIL DE PROPRIEDADES por renderizador (bug 4) =====
         local tipoMtl = InLab_TipoDeMaterial mtl
-        local candCor       = #(#baseColor)
-        local candMapaBase  = #(#baseTexmap)
-        local candValGloss  = #(#baseRoughness, #roughness)
-        local candMapaGloss = #(#baseRoughnessTexmap, #roughnessTexmap)
-        local candBump      = #(#baseBumpTexmap, #bumpTexmap)
-        local candOpacMapa  = #(#opacityTexmap)
-        local candRefrVal   = #(#refractionAmount, #refraction)
-        local candIOR       = #(#ior)
+        local perfil = InLab_Material_PerfilSlots tipoMtl
+        local candCor       = perfil.cor
+        local candMapaBase  = perfil.mapaBase
+        local candValGloss  = perfil.valGloss
+        local candMapaGloss = perfil.mapaGloss
+        local candBump      = perfil.bump
+        local candOpacMapa  = perfil.opacMapa
+        local candRefrVal   = perfil.refrVal
+        local candIOR       = perfil.ior
         case tipoMtl of
         (
-            #legacy:
-            (
-                candCor       = #(#colorDiffuse, #diffuse)
-                candMapaBase  = #(#texmapDiffuse)
-                candValGloss  = #(#reflectGlossiness, #levelReflectGlossiness)
-                candMapaGloss = #(#texmapReflectGlossiness)
-                candBump      = #(#texmapBump)
-                candOpacMapa  = #(#texmapOpacity)
-                candRefrVal   = #(#levelRefract)
-                candIOR       = #(#ior, #fresnelIor)
-                InLab_Log (mtl.name + ": perfil CoronaLegacyMtl (workflow glossiness).")
-            )
-            #vray:
-            (
-                candCor       = #(#diffuse)
-                candMapaBase  = #(#texmap_diffuse)
-                candValGloss  = #(#reflection_glossiness)
-                candMapaGloss = #(#texmap_reflectionGlossiness, #texmap_reflection_glossiness)
-                candBump      = #(#texmap_bump)
-                candOpacMapa  = #(#texmap_opacity)
-                candRefrVal   = #(#refraction_amount)
-                candIOR       = #(#refraction_ior)
-                InLab_Log (mtl.name + ": perfil VRayMtl (workflow glossiness).")
-            )
+            #legacy: InLab_Log (mtl.name + ": perfil CoronaLegacyMtl (workflow glossiness).")
+            #vray: InLab_Log (mtl.name + ": perfil VRayMtl (workflow glossiness).")
             default: ()
         )
 
