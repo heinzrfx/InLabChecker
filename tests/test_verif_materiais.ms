@@ -200,6 +200,39 @@ global INLAB_TESTE_SAIDA, INLAB_TESTE_FALHAS
         try ( deleteFile arqPng; deleteFile arqJpg ) catch ( linha ("aviso: não apaguei os bitmaps de teste (" + getCurrentException() + ")") )
         limparCena()
 
+        ---------------------------------------------------------------- V-25
+        local js = "{\"produtos\": [{\"cod_est\": \"0090\", \"nome\": \"POLTRONA\", \"partes\": [" +
+            "{\"nome_parte\": \"Estrutura\", \"tipo\": \"P\", \"so3d\": false, \"tecido\": false, \"acessorio\": false, \"material_id\": \"ART_P_Estrutura\", \"mesh_final\": \"0090\"}, " +
+            "{\"nome_parte\": \"Assento\", \"tipo\": \"T\", \"so3d\": false, \"tecido\": true, \"acessorio\": false, \"material_id\": \"ART_T_Assento\", \"mesh_final\": \"0090\"}, " +
+            "{\"nome_parte\": \"Encosto\", \"tipo\": \"T\", \"so3d\": false, \"tecido\": true, \"acessorio\": false, \"material_id\": \"ART_T_Encosto\", \"mesh_final\": \"0090\"}, " +
+            "{\"nome_parte\": \"Tampo\", \"tipo\": \"P\", \"so3d\": false, \"tecido\": false, \"acessorio\": true, \"material_id\": \"ART_P_Tampo\", \"mesh_final\": \"0090\"}]}]}"
+        local prod = (InLab_Produto_Lista (InLab_ParseJSON js))[1]
+        fn multiCom nomes = ( local mm = Multimaterial numsubs:nomes.count; for k = 1 to nomes.count do mm.materialList[k] = legacyCom nomes[k] (CoronaColor()); mm )
+        fn idsNasFaces o ids = ( local n = polyop.getNumFaces o; for f = 1 to n do polyop.setFaceMatID o f ids[1 + (mod (f - 1) ids.count) as integer]; o )
+        fn rodar25 objs p = ( InLab_ResetarResultados(); InLab_V25_IDsDeMaterial (InLab_Mat_Uso objs) produto:p; statusDe "V-25" )
+        local d1 = caixa "0090" [0, 0, 0]
+        d1.material = multiCom #("ART_P_Estrutura", "ART_T_Assento", "ART_T_Encosto", "ART_P_Tampo")
+        idsNasFaces d1 #(1, 2, 3, 4)
+        checar ("V-25: todos os IDs com sub-material e todas as partes com faces passa ('" + (rodar25 #(d1) prod) as string + "')") ((rodar25 #(d1) prod) == #pass and not (tem (mensagemDe "V-25") "sem faces"))
+        -- Face com ID fora da lista: reprova (crítica).
+        idsNasFaces d1 #(1, 2, 3, 7)
+        checar "V-25: ID sem sub-material reprova" ((rodar25 #(d1) prod) == #fail)
+        checar ("V-25: mensagem cita objeto e ID ('" + mensagemDe "V-25" + "')") (tem (mensagemDe "V-25") "0090: ID 7 sem sub-material")
+        -- Slot do Multi/Sub vazio com faces apontando para ele: reprova, sem exceção.
+        d1.material.materialList[4] = undefined
+        idsNasFaces d1 #(1, 2, 3, 4)
+        checar "V-25: sub-material undefined com faces reprova sem exceção" ((rodar25 #(d1) prod) == #fail and tem (mensagemDe "V-25") "0090: ID 4 sem sub-material")
+        -- Parte do produto sem faces: passa com nota (bloco sem o tampo acessório).
+        d1.material = multiCom #("ART_P_Estrutura", "ART_T_Assento", "ART_T_Encosto")
+        idsNasFaces d1 #(1, 2, 3)
+        checar "V-25: parte sem faces passa com nota" ((rodar25 #(d1) prod) == #pass and tem (mensagemDe "V-25") "parte(s) do produto sem faces: ART_P_Tampo")
+        -- Sem produto: só a regra dos IDs.
+        checar "V-25: sem produto, IDs ok passa" ((rodar25 #(d1) undefined) == #pass)
+        -- Material direto (não Multi/Sub): passa.
+        d1.material = legacyCom "ART_P_Estrutura" (CoronaColor())
+        checar "V-25: material direto passa" ((rodar25 #(d1) undefined) == #pass)
+        limparCena()
+
         -- CASOS DAS PRÓXIMAS TASKS ENTRAM AQUI
     )
     catch

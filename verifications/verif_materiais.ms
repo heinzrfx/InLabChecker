@@ -17,6 +17,9 @@
  (CoronaColorCorrect, CoronaMix, CoronaTriplanar, CoronaColor), quase nenhum
  bitmap direto. O CoronaLegacyMtl não tem propriedade de 2-sided e o VRayMtl
  não tem refraction_amount (a refração é a cor "refraction").
+
+ 06/10/2026 — V-25 (IDs com sub-material, crítica): parte do produto sem
+ faces é só nota. InLab_Mat_NomesUsados e InLab_Mat_IdsDasPartes servem à V-20.
 ================================================================================
 */
 
@@ -168,4 +171,36 @@ fn InLab_V24_PNG infos =
     local okMsg = "nenhum PNG no base color nem no roughness"
     if aceitos.count > 0 do okMsg = "PNG aceito (alpha): " + InLab_ListaResumida aceitos
     InLab_Mat_Registrar "V-24" titulo problemas naoMedidos okMsg critico:true
+)
+
+fn InLab_Mat_NomesUsados uso = ( for m in uso.usados collect m.name )
+
+-- material_id das partes do produto (sem as subpartes so3d), filtradas por
+-- `filtro` (fn parte -> bool) quando dado.
+fn InLab_Mat_IdsDasPartes produto filtro:undefined =
+(
+    local ids = #()
+    for p in (InLab_Produto_PartesDeMaterial produto) where (filtro == undefined or (filtro p)) do
+    (
+        local id = InLab_Produto_Texto p "material_id"
+        if id != "" do appendIfUnique ids id
+    )
+    ids
+)
+
+-- V-25 · IDs de material com correspondência de parte (crítica). Face com ID
+-- que não leva a um sub-material reprova. Parte do produto sem faces é só
+-- nota: o bloco pode não ter todas as partes (tampo acessório, variante).
+-- O nome do sub-material contra o material_id é da V-20.
+fn InLab_V25_IDsDeMaterial uso produto:undefined =
+(
+    local titulo = "IDs de material com sub-material"
+    local okMsg = "todos os IDs de material das faces têm sub-material"
+    if produto != undefined do
+    (
+        local usados = InLab_Mat_NomesUsados uso
+        local semFaces = for id in (InLab_Mat_IdsDasPartes produto) where (findItem usados id) == 0 collect id
+        if semFaces.count > 0 do okMsg += " · nota: parte(s) do produto sem faces: " + InLab_ListaResumida semFaces
+    )
+    InLab_Mat_Registrar "V-25" titulo uso.orfaos uso.naoMedidos okMsg critico:true
 )
