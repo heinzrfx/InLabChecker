@@ -45,7 +45,9 @@ global INLAB_TESTE_SAIDA, INLAB_TESTE_FALHAS
                    @"functions\fn_realworldscale.ms",
                    @"verifications\verif_peso_poly.ms", @"verifications\verif_pivot.ms",
                    @"verifications\verif_nomenclatura.ms", @"verifications\verif_geometria.ms",
-                   @"verifications\verif_animacao.ms", @"report\report_generator.ms",
+                   @"verifications\verif_animacao.ms",
+                   @"verifications\verif_uv.ms", @"functions\fn_autouv.ms", @"functions\fn_checktexture.ms",
+                   @"verifications\verif_mapeamento.ms", @"report\report_generator.ms",
                    @"verifications\verif_orquestrador.ms") do
             fileIn (raiz + m)
         -- Depois dos fileIn: core\log.ms redefine InLab_Log.
