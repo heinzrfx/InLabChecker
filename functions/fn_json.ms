@@ -10,6 +10,13 @@
  pra instalação onde System.Web.Extensions não carregar — era esse o motivo
  original de evitar o .NET (portabilidade entre Max 2024 e 2027).
 
+ AJUSTE 06/10/2026 — MAX 2025 A 2027: o JavaScriptSerializer não existe no
+ .NET 8+ que esses Max usam, e o plugin caía no parser MAXScript (travou o
+ Max 2027 por 19 min no teste). Ordem agora: System.Text.Json (2025+) →
+ JavaScriptSerializer (2024) → parser MAXScript. Saída idêntica nos três;
+ INLAB_JSON_Leitor diz qual rodou e o log avisa na troca. Teste:
+ tests\test_json.ms (rodar no 2024 e no 2027).
+
  REPRESENTAÇÃO ESCOLHIDA (decisão desta fase, documentada conforme pedido):
    objeto JSON {...}  → Array MAXScript de pares #(chave, valor), chave
                          sempre String — NÃO o struct nativo `dictionary`.
@@ -385,17 +392,129 @@ fn InLab_JSON_DotNetParaNativo v =
 -- já documentada em ui\rollout_main.ms / core\struct_familia.ms).
 --------------------------------------------------------------------------------
 
+--------------------------------------------------------------------------------
+-- PARSER System.Text.Json — Max 2025 a 2027 (ajuste 06/10/2026)
+-- Do Max 2025 em diante o Max roda .NET 8+ (o 2027 roda .NET 10), que não
+-- tem JavaScriptSerializer: "Cannot resolve type". O plugin caía no parser
+-- MAXScript e travava com o export real (teste no Max 2027: 19 min sem
+-- terminar). System.Text.Json é o leitor nativo do .NET moderno. O
+-- JsonDocument.Parse tem um 2º parâmetro (JsonDocumentOptions, um struct)
+-- que o MAXScript não preenche sozinho ("No 'Parse' method found"), por isso
+-- o método é chamado por reflexão com as opções padrão (Activator).
+-- No Max 2024 (.NET Framework 4.8) a assembly não carrega e o caminho é o
+-- JavaScriptSerializer de antes.
+--------------------------------------------------------------------------------
+global INLAB_JSON_STJ_Parse = undefined   -- MethodInfo de JsonDocument.Parse(string, opções)
+global INLAB_JSON_STJ_Opcoes = undefined  -- JsonDocumentOptions padrão
+-- Qual leitor rodou por último: #systemTextJson, #javaScriptSerializer ou #maxscript.
+global INLAB_JSON_Leitor = undefined
+
+fn InLab_JSON_ParseSystemTextJson =
+(
+    if INLAB_JSON_STJ_Parse == undefined do
+    (
+        try
+        (
+            local asm = dotNet.loadAssembly "System.Text.Json"
+            local tDoc = asm.GetType "System.Text.Json.JsonDocument"
+            local tOpc = asm.GetType "System.Text.Json.JsonDocumentOptions"
+            if tDoc != undefined and tOpc != undefined do
+            (
+                local tipos = dotNetObject "System.Type[]" 2
+                tipos.SetValue ((dotNetClass "System.Type").GetType "System.String") 0
+                tipos.SetValue tOpc 1
+                local metodo = tDoc.GetMethod "Parse" tipos
+                if metodo != undefined do
+                (
+                    INLAB_JSON_STJ_Opcoes = (dotNetClass "System.Activator").CreateInstance tOpc
+                    INLAB_JSON_STJ_Parse = metodo
+                )
+            )
+        )
+        catch ( INLAB_JSON_STJ_Parse = undefined )
+    )
+    INLAB_JSON_STJ_Parse
+)
+
+-- JsonElement → o mesmo formato nativo do JavaScriptSerializer (ver acima):
+-- objeto → array de pares, array → Array, número com ponto ou expoente →
+-- Double, inteiro → Integer (Integer64 se não couber), null → undefined.
+global InLab_JSON_ElementoParaNativo
+fn InLab_JSON_ElementoParaNativo e =
+(
+    local tipo = e.ValueKind.ToString()
+    case tipo of
+    (
+        "Object":
+        (
+            local pares = #()
+            local en = e.EnumerateObject()
+            while en.MoveNext() do
+            (
+                local p = en.Current
+                append pares #(p.Name, InLab_JSON_ElementoParaNativo p.Value)
+            )
+            pares
+        )
+        "Array": for i = 0 to (e.GetArrayLength()) - 1 collect InLab_JSON_ElementoParaNativo (e.Item i)
+        "String": e.GetString()
+        "Number":
+        (
+            local bruto = e.GetRawText()
+            if (findString bruto ".") != undefined or (findString bruto "e") != undefined or (findString bruto "E") != undefined then
+                e.GetDouble()
+            else
+            (
+                local n = e.GetInt64()
+                if n >= -2147483648L and n <= 2147483647L then (n as integer) else n
+            )
+        )
+        "True": true
+        "False": false
+        default: undefined -- "Null" (e "Undefined", que não aparece num documento válido)
+    )
+)
+
 global InLab_ParseJSON
 fn InLab_ParseJSON texto =
 (
     local resultado = undefined
     if texto == undefined or texto == "" then
         InLab_Log "InLab_ParseJSON: texto vazio ou indefinido — nada para interpretar." tipo:#err
+    else if (InLab_JSON_ParseSystemTextJson()) != undefined then
+    (
+        if INLAB_JSON_Leitor != #systemTextJson do InLab_Log "InLab_ParseJSON: leitor System.Text.Json (.NET moderno, Max 2025+)." tipo:#info
+        INLAB_JSON_Leitor = #systemTextJson
+        local doc = undefined
+        local erro = undefined
+        try
+        (
+            local args = dotNetObject "System.Object[]" 2
+            args.SetValue texto 0
+            args.SetValue INLAB_JSON_STJ_Opcoes 1
+            doc = INLAB_JSON_STJ_Parse.Invoke undefined args
+        )
+        catch ( erro = getCurrentException() )
+        if erro != undefined then
+            InLab_Log ("InLab_ParseJSON: JSON malformado — " + erro) tipo:#err
+        else
+        (
+            try ( resultado = InLab_JSON_ElementoParaNativo doc.RootElement )
+            catch
+            (
+                resultado = undefined
+                InLab_Log ("InLab_ParseJSON: falha ao converter o JSON para MAXScript — " + getCurrentException()) tipo:#err
+            )
+            try ( doc.Dispose() ) catch ()
+        )
+    )
     else
     (
         local ser = InLab_JSON_SerializerDotNet()
         if ser != undefined then
         (
+            if INLAB_JSON_Leitor != #javaScriptSerializer do InLab_Log "InLab_ParseJSON: leitor JavaScriptSerializer (.NET Framework, Max 2024)." tipo:#info
+            INLAB_JSON_Leitor = #javaScriptSerializer
             local bruto = undefined
             local erro = undefined
             try ( bruto = ser.DeserializeObject texto asDotNetObject:true ) catch ( erro = getCurrentException() )
@@ -414,6 +533,7 @@ fn InLab_ParseJSON texto =
         else
         (
             InLab_Log "InLab_ParseJSON: parser .NET indisponível — usando o parser MAXScript (arquivos grandes podem travar o Max)." tipo:#warn
+            INLAB_JSON_Leitor = #maxscript
             local r = InLab_JSON_ParseMaxScript texto
             if r[1] then resultado = r[2]
             else InLab_Log ("InLab_ParseJSON: JSON malformado — " + r[2]) tipo:#err
