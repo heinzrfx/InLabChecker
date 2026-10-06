@@ -41,13 +41,14 @@ global INLAB_TESTE_SAIDA, INLAB_TESTE_FALHAS
                    @"familias\familia_translacao.ms", @"familias\familia_rotacao.ms",
                    @"familias\familia_giro_assento.ms", @"familias\familia_movimento_especial.ms",
                    @"functions\fn_json.ms", @"functions\fn_renomear_produto.ms", @"functions\fn_export_gltf.ms",
+                   @"functions\fn_material_convert.ms",
                    @"functions\fn_otim_nucleo.ms",
                    @"functions\fn_realworldscale.ms",
                    @"verifications\verif_peso_poly.ms", @"verifications\verif_pivot.ms",
                    @"verifications\verif_nomenclatura.ms", @"verifications\verif_geometria.ms",
                    @"verifications\verif_malha.ms", @"verifications\verif_animacao.ms",
                    @"verifications\verif_uv.ms", @"functions\fn_autouv.ms", @"functions\fn_checktexture.ms",
-                   @"verifications\verif_mapeamento.ms", @"report\report_generator.ms",
+                   @"verifications\verif_mapeamento.ms", @"verifications\verif_materiais.ms", @"report\report_generator.ms",
                    @"verifications\verif_orquestrador.ms") do
             fileIn (raiz + m)
         -- Depois dos fileIn: core\log.ms redefine InLab_Log.

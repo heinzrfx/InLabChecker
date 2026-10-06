@@ -12,9 +12,10 @@
    Itens critico:false aparecem no relatório mas não bloqueiam a aprovação.
    Implementados hoje como não críticos: V-02 (SKP, externa),
    V-16 (resolução das texturas; acrescentada em 05/10/2026, issue #101),
+   V-38 (tampo acessório; 06/10/2026, issue #103),
    V-05 (famílias sem regra numérica), V-06, V-08 (arestas abertas),
    V-20, V-22, V-30 em família estática e EX-01 (extra, fora da spec:
-   objeto oculto). Previstos na spec: V-33, V-37 a V-40.
+   objeto oculto). Previstos na spec: V-33, V-39, V-40.
    Falha em limite provisorio:true também vira não crítica (ver abaixo).
    (Lista atualizada em 28/09/2026, issue #35; V-08 acrescentada em 05/10/2026, issue #102.)
 ================================================================================
