@@ -17,6 +17,7 @@ global InLab_Produto_MeshesDaParte, InLab_Produto_Liberado3D, InLab_Produto_EhMa
 global InLab_Produto_PartesDeMaterial
 global InLab_Produto_Variantes, InLab_Produto_IndicePorArquivo
 global InLab_Produto_BaseDaCopia, InLab_Produto_CopiasDe, InLab_Produto_MotivoBloqueio, InLab_Produto_AvisosDeBloco
+global InLab_Produto_PartesSemMateriaPrima, InLab_Produto_AvisosMateriaPrima
 global InLab_JSON_LerArquivoUTF8
 global INLAB_TESTE_SAIDA, INLAB_TESTE_FALHAS
 (
@@ -367,6 +368,30 @@ global INLAB_TESTE_SAIDA, INLAB_TESTE_FALHAS
         logsCapturados = #()
         InLab_Produto_AvisosDeBloco produtos4 produtos4[4]
         checar "Avisos: produto não liberado → #warn" (logTem #warn "0013")
+
+        -- 06/10/2026: matéria-prima não indicada (export v6). Tecido não avisa;
+        -- export antigo, sem o campo materia_prima, também não.
+        local jsMP = "{\"produtos\": [{\"cod_est\": \"0030\", \"nome\": \"MP\", \"partes\": [" +
+            "{\"nome_parte\": \"Estrutura\", \"qualificador\": \"\", \"tipo\": \"P\", \"so3d\": false, \"tecido\": false, \"materia_prima\": {\"familia\": \"Madeira\", \"materia\": \"Cedro\"}, \"material_id\": \"ART_P_Estrutura\", \"mesh_final\": \"0030\"}, " +
+            "{\"nome_parte\": \"Gaveta\", \"qualificador\": \"\", \"tipo\": \"C\", \"so3d\": false, \"tecido\": false, \"materia_prima\": {\"familia\": \"\", \"materia\": \"\"}, \"material_id\": \"ART_C_Gaveta\", \"mesh_final\": \"0030\"}, " +
+            "{\"nome_parte\": \"Assento\", \"qualificador\": \"\", \"tipo\": \"T\", \"so3d\": false, \"tecido\": true, \"materia_prima\": {\"familia\": \"\", \"materia\": \"\"}, \"material_id\": \"ART_T_Assento\", \"mesh_final\": \"0030\"}, " +
+            "{\"nome_parte\": \"Porta_1\", \"qualificador\": \"\", \"tipo\": \"\", \"so3d\": true, \"subparte_de\": \"Gaveta\", \"tecido\": false, \"materia_prima\": {\"familia\": \"\", \"materia\": \"\"}, \"material_id\": \"ART_Porta_1\", \"mesh_final\": \"0030_Porta_1\"}, " +
+            "{\"nome_parte\": \"Puxador\", \"qualificador\": \"\", \"tipo\": \"A\", \"so3d\": false, \"tecido\": false, \"materia_prima\": {\"familia\": \"Metal\", \"materia\": \"\"}, \"material_id\": \"ART_A_Puxador\", \"mesh_final\": \"0030\"}]}, " +
+            "{\"cod_est\": \"0031\", \"nome\": \"EXPORT ANTIGO\", \"partes\": [" +
+            "{\"nome_parte\": \"Tampo\", \"qualificador\": \"\", \"tipo\": \"P\", \"so3d\": false, \"material_id\": \"ART_P_Tampo\", \"mesh_final\": \"0031\"}]}]}"
+        local prodsMP = InLab_Produto_Lista (InLab_ParseJSON jsMP)
+        local semMP = InLab_Produto_PartesSemMateriaPrima prodsMP[1]
+        checar ("SemMateriaPrima: só Gaveta e Porta_1 (" + (for p in semMP collect InLab_Produto_Texto p "nome_parte") as string + ")") (semMP.count == 2 and (InLab_Produto_Texto semMP[1] "nome_parte") == "Gaveta" and (InLab_Produto_Texto semMP[2] "nome_parte") == "Porta_1")
+        checar "SemMateriaPrima: export sem o campo materia_prima não acusa" ((InLab_Produto_PartesSemMateriaPrima prodsMP[2]).count == 0)
+        checar "SemMateriaPrima: produto undefined → #()" ((InLab_Produto_PartesSemMateriaPrima undefined).count == 0)
+        logsCapturados = #()
+        InLab_Produto_AvisosMateriaPrima prodsMP[1]
+        checar "AvisosMateriaPrima: #warn 'matéria-prima não indicada' na Gaveta" (logTem #warn "Gaveta': matéria-prima não indicada")
+        checar "AvisosMateriaPrima: tecido (Assento) não avisa" (not (logTem #warn "Assento"))
+        checar "AvisosMateriaPrima: parte com família (Puxador) não avisa" (not (logTem #warn "Puxador"))
+        logsCapturados = #()
+        InLab_Produto_AvisosMateriaPrima prodsMP[2]
+        checar "AvisosMateriaPrima: export antigo não loga nada" (logsCapturados.count == 0)
 
         -- Produto com UM nome de objeto (asset cru: nomes genéricos, sem
         -- material ligado) → todos os objetos recebem esse nome.
