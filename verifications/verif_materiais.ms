@@ -24,8 +24,14 @@
  06/10/2026 — V-35 (palha com opacidade) e V-36 (cristal com refração), ambas
  advertência provisória. V-35 não confere 2-sided (a conversão liga sozinha).
  V-36 nunca reprova por valor; no VRay lê a cor "refraction".
+ 06/10/2026 — V-37 (zonas do estofado, advertência provisória) e V-38 (tampo
+ acessório, critico:false). V-38 lê InLab_TampoAcessorioProduto, que o
+ orquestrador define; aqui só é pré-declarada, sem valor.
 ================================================================================
 */
+
+-- Definida e preenchida pelo orquestrador (checkbox da UI); aqui só é lida.
+global InLab_TampoAcessorioProduto
 
 -- Uso de material pelas faces, calculado uma vez e compartilhado pela V-25,
 -- V-37 e V-38. usados: material direto ou sub-material de Multi/Sub com pelo
@@ -265,4 +271,58 @@ fn InLab_V36_Cristal infos =
     )
     local okMsg = if cristais.count == 0 then "não se aplica: nenhum material de cristal/vidro" else (cristais.count as string + " material(is) de cristal com refração")
     InLab_Mat_Registrar "V-36" titulo problemas naoMedidos okMsg critico:true provisorio:true
+)
+
+-- Filtros das partes do produto (globais nomeadas: fn dentro de bloco/lambda
+-- em argumento nomeado é frágil no MaxScript).
+fn InLab_Mat_EhTecido p = InLab_Produto_Booleano p "tecido"
+fn InLab_Mat_EhTampoAcessorio p =
+    (InLab_Produto_Booleano p "acessorio") and (findString (InLab_Produto_Normalizar (InLab_Produto_Texto p "nome_parte")) "tampo") != undefined
+
+-- V-37 · Zonas de acabamento do estofado (advertência provisória). Só nas
+-- famílias com "zona_acabamento" em materialTypes. Com produto: cada parte
+-- tecido:true precisa ter faces com o seu material_id. Sem produto: um único
+-- material em tudo → advertência ("pode ser produto sem desmembramento").
+fn InLab_V37_ZonasEstofado cfg uso produto:undefined =
+(
+    local titulo = "Zonas de acabamento do estofado"
+    if (findItem cfg.materialTypes "zona_acabamento") == 0 then
+        InLab_RegistrarVerif "V-37" titulo true ("não se aplica: família " + cfg.nome + " sem zona de acabamento") critico:true provisorio:true
+    else if produto != undefined then
+    (
+        local usados = InLab_Mat_NomesUsados uso
+        local tecidos = InLab_Mat_IdsDasPartes produto filtro:InLab_Mat_EhTecido
+        local faltam = for id in tecidos where (findItem usados id) == 0 collect ("parte de tecido sem faces: " + id)
+        InLab_Mat_Registrar "V-37" titulo faltam uso.naoMedidos (tecidos.count as string + " parte(s) de tecido com o seu material") critico:true provisorio:true
+    )
+    else
+    (
+        local problemas = if uso.usados.count <= 1 then #("estofado num único material (pode ser produto sem desmembramento; importe o .json para conferir as partes)") else #()
+        InLab_Mat_Registrar "V-37" titulo problemas uso.naoMedidos (uso.usados.count as string + " materiais no estofado") critico:true provisorio:true
+    )
+)
+
+-- V-38 · Tampo acessório em bloco separado (advertência, critico:false).
+-- Ativa pelo checkbox (InLab_TampoAcessorioProduto) ou pela família. Com
+-- produto: faces do material do tampo acessório E de outra parte no mesmo
+-- arquivo → advertência. Sem produto: pendente.
+fn InLab_V38_TampoAcessorio cfg uso produto:undefined =
+(
+    local titulo = "Tampo acessório em arquivo separado"
+    if not (InLab_TampoAcessorioProduto == true or cfg.tampoAcessorio) then
+        InLab_RegistrarVerif "V-38" titulo true "não se aplica: produto sem tampo acessório" critico:false
+    else if produto == undefined then
+        InLab_RegistrarVerif "V-38" titulo false "pendente: importe o .json e escolha o produto na seção Produto para conferir estrutura e tampo" critico:false
+    else
+    (
+        local idsTampo = InLab_Mat_IdsDasPartes produto filtro:InLab_Mat_EhTampoAcessorio
+        local idsOutros = for id in (InLab_Mat_IdsDasPartes produto) where (findItem idsTampo id) == 0 collect id
+        local usados = InLab_Mat_NomesUsados uso
+        local temTampo = (for id in idsTampo where (findItem usados id) > 0 collect id).count > 0
+        local temOutros = (for id in idsOutros where (findItem usados id) > 0 collect id).count > 0
+        if temTampo and temOutros then
+            InLab_RegistrarVerif "V-38" titulo false "estrutura e tampo acessório no mesmo arquivo: separe em dois blocos (intercambialidade)" critico:false
+        else
+            InLab_RegistrarVerif "V-38" titulo true (if temTampo then "arquivo só com o tampo" else "arquivo só com a estrutura") critico:false
+    )
 )

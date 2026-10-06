@@ -10,7 +10,7 @@ global InLab_Material_PerfilSlots, InLab_TipoDeMaterial, InLab_ParseJSON, InLab_
 global InLab_Mat_Uso, InLab_Mat_Resolver, InLab_Mat_MapasDoSlot, InLab_Mat_ArquivoDoMapa
 global InLab_V23_SlotsPBR, InLab_V24_PNG, InLab_V25_IDsDeMaterial
 global InLab_V35_Palha, InLab_V36_Cristal, InLab_V37_ZonasEstofado, InLab_V38_TampoAcessorio
-global InLab_TampoAcessorioProduto
+global InLab_TampoAcessorioProduto, InLab_AprovacaoFinal
 global INLAB_TESTE_SAIDA, INLAB_TESTE_FALHAS
 (
     local dirTeste = getFilenamePath (getSourceFileName())
@@ -270,6 +270,52 @@ global INLAB_TESTE_SAIDA, INLAB_TESTE_FALHAS
             mV.refraction = color 0 0 0
             checar "V-36: VRay com refração preta vira advertência" ((rodarMats InLab_V36_Cristal #(e1) "V-36") == #warning)
         )
+        limparCena()
+
+        ---------------------------------------------------------------- V-37 / V-38
+        local cfgEstof = InLab_ObterFamilia "estrutura_estofado"
+        local cfgUnico = InLab_ObterFamilia "corpo_unico"
+        local cfgTampo = InLab_ObterFamilia "pernas_tampo"
+        fn rodar37 cfg objs p = ( InLab_ResetarResultados(); InLab_V37_ZonasEstofado cfg (InLab_Mat_Uso objs) produto:p; statusDe "V-37" )
+        fn rodar38 cfg objs p = ( InLab_ResetarResultados(); InLab_V38_TampoAcessorio cfg (InLab_Mat_Uso objs) produto:p; statusDe "V-38" )
+        local g1 = caixa "0090" [0, 0, 0]
+        g1.material = multiCom #("ART_P_Estrutura", "ART_T_Assento", "ART_T_Encosto")
+        idsNasFaces g1 #(1, 2, 3)
+        checar "V-37: família sem zona de acabamento não se aplica" ((rodar37 cfgUnico #(g1) prod) == #pass and tem (mensagemDe "V-37") "não se aplica")
+        checar "V-37: as duas partes de tecido com faces passa" ((rodar37 cfgEstof #(g1) prod) == #pass)
+        idsNasFaces g1 #(1, 2)
+        checar "V-37: parte de tecido sem faces vira advertência" ((rodar37 cfgEstof #(g1) prod) == #warning and tem (mensagemDe "V-37") "ART_T_Encosto")
+        -- Sem produto: um material só em tudo → advertência; mais de um → passa.
+        g1.material = legacyCom "Tecido unico" (CoronaColor())
+        checar "V-37: sem produto, estofado num único material vira advertência" ((rodar37 cfgEstof #(g1) undefined) == #warning and tem (mensagemDe "V-37") "único")
+        g1.material = multiCom #("Tecido A", "Tecido B")
+        idsNasFaces g1 #(1, 2)
+        checar "V-37: sem produto, mais de um material passa" ((rodar37 cfgEstof #(g1) undefined) == #pass)
+
+        -- V-38
+        InLab_TampoAcessorioProduto = false
+        checar "V-38: sem tampo acessório não se aplica" ((rodar38 cfgUnico #(g1) prod) == #pass and tem (mensagemDe "V-38") "não se aplica")
+        InLab_TampoAcessorioProduto = true
+        g1.material = multiCom #("ART_P_Estrutura", "ART_P_Tampo")
+        idsNasFaces g1 #(1, 2)
+        checar "V-38: tampo e estrutura no mesmo arquivo vira advertência" ((rodar38 cfgUnico #(g1) prod) == #warning and tem (mensagemDe "V-38") "separe")
+        g1.material = legacyCom "ART_P_Tampo" (CoronaColor())
+        checar "V-38: só o tampo passa" ((rodar38 cfgUnico #(g1) prod) == #pass)
+        g1.material = legacyCom "ART_P_Estrutura" (CoronaColor())
+        checar "V-38: só a estrutura passa" ((rodar38 cfgUnico #(g1) prod) == #pass)
+        checar "V-38: sem produto fica pendente (advertência)" ((rodar38 cfgUnico #(g1) undefined) == #warning and tem (mensagemDe "V-38") "pendente")
+        InLab_TampoAcessorioProduto = false
+        -- Pela família (cfg.tampoAcessorio), sem o checkbox; o valor volta no fim.
+        local tampoOriginal = cfgTampo.tampoAcessorio
+        cfgTampo.tampoAcessorio = true
+        g1.material = multiCom #("ART_P_Estrutura", "ART_P_Tampo")
+        idsNasFaces g1 #(1, 2)
+        checar "V-38: tampo acessório pela família também ativa" ((rodar38 cfgTampo #(g1) prod) == #warning)
+        cfgTampo.tampoAcessorio = tampoOriginal
+        -- Não crítica: o resultado sai com critico:false e não bloqueia a aprovação.
+        local r38 = undefined
+        for r in InLab_VerifResults where r.id == "V-38" do r38 = r
+        checar "V-38 é não crítica (critico:false, aprovação continua)" (r38 != undefined and not r38.critico and InLab_AprovacaoFinal())
         limparCena()
 
         -- CASOS DAS PRÓXIMAS TASKS ENTRAM AQUI
