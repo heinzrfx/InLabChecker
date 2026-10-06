@@ -32,6 +32,8 @@ Medido em Aparador Zucchi e Puff Dorset do piloto, e em primitivas.
 
 Tolerância de posição: `units.decodeValue "0.01mm"`. Ângulos: 1° (planaridade) e 15° (curvatura).
 
+> **06/10/2026:** o limite de curvatura da V-13 subiu de 15° para **45°** (`INLAB_MALHA_CURVA_GRAUS`), por decisão do usuário: o TAMPO do Aparador Zucchi (ngon plana suavizada com o chanfro a 27°) não reprova por enquanto. Se o GLB mostrar faixas no sombreamento ou perda de otimização, rever o limite e decidir se vira aviso ou reprovação.
+
 ### 3.1 V-07 · pelo exportador
 
 1. Resolve o exportador com `InLab_ResolverExportadorGLTF` (`fn_export_gltf.ms`). Sem exportador: `#warning` "não medido: nenhum exportador glTF instalado".

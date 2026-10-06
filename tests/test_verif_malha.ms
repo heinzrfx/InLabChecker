@@ -197,6 +197,18 @@ global INLAB_TESTE_SAIDA, INLAB_TESTE_FALHAS
         checar "V-13: tampa suavizada junto com o lado (90°) reprova" ((rodarMalha InLab_V13_Ngons #(c) "V-13") == #fail)
         checar ("V-13: mensagem diz suavizada ('" + mensagemDe "V-13" + "')") ((findString (mensagemDe "V-13") "suavizada") != undefined)
         limparCena()
+        -- Chanfro (caso do TAMPO do Aparador Zucchi, 27°): tronco de cone
+        -- hexagonal com a tampa de cima suavizada junto com a lateral a 30°.
+        local cn = Cone radius1:20 radius2:10 height:5 sides:6 heightsegs:1 capsegs:1 smooth:true
+        convertToPoly cn
+        local topo = 0
+        for f = 1 to (polyop.getNumFaces cn) where topo == 0 and (polyop.getFaceDeg cn f) == 6 and (polyop.getFaceNormal cn f).z > 0.5 do topo = f
+        local ladoCn = 0
+        for f = 1 to (polyop.getNumFaces cn) where ladoCn == 0 and (polyop.getFaceDeg cn f) == 4 do ladoCn = f
+        polyop.setFaceSmoothGroup cn #{topo} (polyop.getFaceSmoothGroup cn ladoCn)
+        local angCn = acos (dot (polyop.getFaceNormal cn topo) (polyop.getFaceNormal cn ladoCn))
+        checar ("V-13: tampa suavizada com chanfro a " + (formattedPrint angCn format:".0f") + "° passa") ((rodarMalha InLab_V13_Ngons #(cn) "V-13") == #pass and angCn > 25 and angCn < 35)
+        limparCena()
         b = caixaMesh()
         checar "V-13: Editable Mesh passa como não se aplica" ((rodarMalha InLab_V13_Ngons #(b) "V-13") == #pass and (findString (mensagemDe "V-13") "não se aplica") != undefined)
         limparCena()

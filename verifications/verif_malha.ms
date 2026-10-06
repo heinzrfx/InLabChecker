@@ -59,12 +59,18 @@
          ("N objeto(s) não medido(s)") e impede o "passou" limpo. Temporários
          apagados também nas subpastas (o MaxScript não remove diretório).
        * V-13: mensagem traz o maior ângulo com vizinha de mesmo smoothing bit.
+ 06/10/2026 — V-13 de 15° para 45° (decisão do usuário): o TAMPO do Aparador
+   Zucchi (ngon plana de 1605 lados suavizada junto com o chanfro a 27°)
+   reprovava. Por enquanto não reprova: 45° deixa passar chanfro comum e
+   continua pegando quina viva suavizada (90°). Se o GLB mostrar faixas no
+   sombreamento ou perda de otimização, rever o limite e decidir se vira aviso
+   ou reprovação (INLAB_MALHA_CURVA_GRAUS).
 ================================================================================
 */
 
 global INLAB_MALHA_TOL_MM = 0.01          -- tolerância de posição, em milímetros
 global INLAB_MALHA_PLANO_GRAUS = 1.0       -- V-13: ngon não plana
-global INLAB_MALHA_CURVA_GRAUS = 15.0      -- V-13: vizinha suavizada em curva
+global INLAB_MALHA_CURVA_GRAUS = 45.0      -- V-13: vizinha suavizada em curva (era 15°, ver cabeçalho 06/10/2026)
 global INLAB_MALHA_LOG_TRIS = 50000        -- loga o tempo das peças a partir disso
 
 -- Tolerância de posição em unidades da cena. Não usar units.decodeValue "0.01mm":
@@ -281,7 +287,7 @@ fn InLab_Malha_FacesDuplicadas m tol =
 -- V-13: ngons (5+ lados) do Editable Poly de stack vazio. Não plana = maior
 -- distância de um vértice ao plano da face ÷ maior distância ao centro >
 -- tan 1°. Suavizada na curva = divide smoothing group com uma vizinha a mais
--- de 15°. Tampa de cilindro (plana, smoothing próprio) passa.
+-- de INLAB_MALHA_CURVA_GRAUS (45°). Tampa de cilindro (plana, smoothing próprio) passa.
 fn InLab_Malha_Ngons o a =
 (
     if classof o.baseobject == Editable_Poly and o.modifiers.count == 0 do
