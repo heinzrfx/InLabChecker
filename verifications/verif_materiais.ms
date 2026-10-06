@@ -20,6 +20,10 @@
 
  06/10/2026 — V-25 (IDs com sub-material, crítica): parte do produto sem
  faces é só nota. InLab_Mat_NomesUsados e InLab_Mat_IdsDasPartes servem à V-20.
+
+ 06/10/2026 — V-35 (palha com opacidade) e V-36 (cristal com refração), ambas
+ advertência provisória. V-35 não confere 2-sided (a conversão liga sozinha).
+ V-36 nunca reprova por valor; no VRay lê a cor "refraction".
 ================================================================================
 */
 
@@ -203,4 +207,62 @@ fn InLab_V25_IDsDeMaterial uso produto:undefined =
         if semFaces.count > 0 do okMsg += " · nota: parte(s) do produto sem faces: " + InLab_ListaResumida semFaces
     )
     InLab_Mat_Registrar "V-25" titulo uso.orfaos uso.naoMedidos okMsg critico:true
+)
+
+-- V-35 · Palha com opacidade (advertência provisória). O 2-sided não é
+-- conferido: a conversão liga doubleSided sozinha e o CoronaLegacyMtl não tem
+-- a propriedade (sondagem de 06/10/2026).
+fn InLab_V35_Palha infos =
+(
+    local titulo = "Palha com mapa de opacidade"
+    local palhas = for i in infos where i.especial == #palha collect i
+    local problemas = #(), naoMedidos = #()
+    for i in palhas do
+    (
+        try
+        (
+            if i.tipo == #outro then append problemas (i.mtl.name + ": tipo não convertido para glTF")
+            else if (InLab_Mat_MapasDoSlot i #opacMapa).count == 0 do append problemas (i.mtl.name + ": sem mapa de opacidade")
+        )
+        catch ( append naoMedidos (i.mtl.name + " (" + getCurrentException() + ")") )
+    )
+    local okMsg = if palhas.count == 0 then "não se aplica: nenhum material de palha" else (palhas.count as string + " material(is) de palha com opacidade")
+    InLab_Mat_Registrar "V-35" titulo problemas naoMedidos okMsg critico:true provisorio:true
+)
+
+-- Refração ligada: VRay pela cor "refraction" (não tem refraction_amount);
+-- Corona pelo valor do perfil (levelRefract / refractionAmount) > 0.
+fn InLab_Mat_RefracaoLigada i =
+(
+    if i.tipo == #vray then
+    (
+        local c = InLab_PropSafe i.base #(#refraction)
+        c != undefined and (c.r + c.g + c.b) > 0
+    )
+    else
+    (
+        local v = InLab_PropSafe i.base (InLab_Material_PerfilSlots i.tipo).refrVal
+        v != undefined and v > 0
+    )
+)
+
+-- V-36 · Cristal com refração (advertência provisória). Nunca reprova por
+-- valor: roughness, IOR e intensidade ficam livres (decisão de 06/10/2026;
+-- vidro jateado é fosco de propósito).
+fn InLab_V36_Cristal infos =
+(
+    local titulo = "Cristal com refração ligada"
+    local cristais = for i in infos where i.especial == #cristal collect i
+    local problemas = #(), naoMedidos = #()
+    for i in cristais do
+    (
+        try
+        (
+            if i.tipo == #outro then append problemas (i.mtl.name + ": tipo não convertido para glTF")
+            else if not (InLab_Mat_RefracaoLigada i) do append problemas (i.mtl.name + ": refração desligada")
+        )
+        catch ( append naoMedidos (i.mtl.name + " (" + getCurrentException() + ")") )
+    )
+    local okMsg = if cristais.count == 0 then "não se aplica: nenhum material de cristal/vidro" else (cristais.count as string + " material(is) de cristal com refração")
+    InLab_Mat_Registrar "V-36" titulo problemas naoMedidos okMsg critico:true provisorio:true
 )

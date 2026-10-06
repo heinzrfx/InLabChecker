@@ -233,6 +233,45 @@ global INLAB_TESTE_SAIDA, INLAB_TESTE_FALHAS
         checar "V-25: material direto passa" ((rodar25 #(d1) undefined) == #pass)
         limparCena()
 
+        ---------------------------------------------------------------- V-35 / V-36
+        local e1 = caixa "e1" [0, 0, 0]
+        e1.material = legacyCom "Madeira" (CoronaColor())
+        checar "V-35: sem palha não se aplica (passa)" ((rodarMats InLab_V35_Palha #(e1) "V-35") == #pass and tem (mensagemDe "V-35") "não se aplica")
+        e1.material = legacyCom "Palha natural" (CoronaColor())
+        checar "V-35: palha sem opacidade vira advertência" ((rodarMats InLab_V35_Palha #(e1) "V-35") == #warning and tem (mensagemDe "V-35") "Palha natural: sem mapa de opacidade")
+        e1.material.texmapOpacity = CoronaColor()
+        checar "V-35: palha com opacidade passa" ((rodarMats InLab_V35_Palha #(e1) "V-35") == #pass)
+
+        e1.material = legacyCom "Madeira" (CoronaColor())
+        checar "V-36: sem cristal não se aplica (passa)" ((rodarMats InLab_V36_Cristal #(e1) "V-36") == #pass and tem (mensagemDe "V-36") "não se aplica")
+        -- Vidro jateado: refração ligada e glossiness baixo (fosco) passa.
+        local mJat = legacyCom "Vidro Jateado" undefined
+        mJat.levelRefract = 1.0
+        mJat.reflectGlossiness = 0.3
+        e1.material = mJat
+        checar "V-36: vidro jateado (fosco) com refração passa" ((rodarMats InLab_V36_Cristal #(e1) "V-36") == #pass)
+        mJat.levelRefract = 0.0
+        checar "V-36: vidro com refração 0 vira advertência" ((rodarMats InLab_V36_Cristal #(e1) "V-36") == #warning and tem (mensagemDe "V-36") "Vidro Jateado: refração desligada")
+        -- Physical.
+        local mPh = CoronaPhysicalMtl()
+        mPh.name = "Cristal liso"
+        mPh.refractionAmount = 1.0
+        e1.material = mPh
+        checar "V-36: Physical com refração passa" ((rodarMats InLab_V36_Cristal #(e1) "V-36") == #pass)
+        -- VRay (só se a classe existir).
+        local mV = try ( VRayMtl() ) catch ( undefined )
+        if mV == undefined then checar "V-36: VRay — pulado: VRay ausente" true
+        else
+        (
+            mV.name = "Glass VRay"
+            mV.refraction = color 255 255 255
+            e1.material = mV
+            checar "V-36: VRay com cor de refração passa" ((rodarMats InLab_V36_Cristal #(e1) "V-36") == #pass)
+            mV.refraction = color 0 0 0
+            checar "V-36: VRay com refração preta vira advertência" ((rodarMats InLab_V36_Cristal #(e1) "V-36") == #warning)
+        )
+        limparCena()
+
         -- CASOS DAS PRÓXIMAS TASKS ENTRAM AQUI
     )
     catch
