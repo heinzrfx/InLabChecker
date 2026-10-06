@@ -65,6 +65,13 @@
    continua pegando quina viva suavizada (90°). Se o GLB mostrar faixas no
    sombreamento ou perda de otimização, rever o limite e decidir se vira aviso
    ou reprovação (INLAB_MALHA_CURVA_GRAUS).
+ 06/10/2026 — DESEMPENHO medido de novo (Max 2024, mesmo Teapot de 262 mil
+   triângulos): o union-find por ARESTA da V-10b (commit 50c1d78) levou a
+   etapa de 2,7 s para 6,5 s e a análise inteira de 11 s para ~15,4 s. O
+   "Teapot 11 s" registrado naquele commit era da versão por vértice. O teto
+   do teste (15 s) ficou no limite e falhava de forma intermitente; subiu
+   para 20 s. Custo por etapa hoje: arestas invertidas 2,7 s, elementos do
+   avesso 6,5 s, faces duplicadas 5,6 s.
 ================================================================================
 */
 
