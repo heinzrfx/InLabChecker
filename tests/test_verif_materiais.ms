@@ -133,6 +133,73 @@ global INLAB_TESTE_SAIDA, INLAB_TESTE_FALHAS
         checar "ArquivoDoMapa: Bitmaptexture sem arquivo devolve undefined" ((InLab_Mat_ArquivoDoMapa (Bitmaptexture())) == undefined)
         limparCena()
 
+        ---------------------------------------------------------------- V-23 / V-24
+        fn salvarBitmap nome = ( local arq = (getDir #temp) + "\\" + nome; local bm = bitmap 8 8 color:gray filename:arq; save bm; close bm; arq )
+        local arqPng = salvarBitmap "inlab_v24.png"
+        local arqJpg = salvarBitmap "inlab_v24.jpg"
+        fn rodarMats f objs idV = ( InLab_ResetarResultados(); f (InLab_Mat_Resolver (InLab_Mat_Uso objs)); statusDe idV )
+        local c1 = caixa "c1" [0, 0, 0]
+        -- Só base color (procedural): passa, com nota.
+        c1.material = legacyCom "So base" (CoronaColor())
+        checar "V-23: só base color (procedural) passa" ((rodarMats InLab_V23_SlotsPBR #(c1) "V-23") == #pass)
+        checar ("V-23: nota de roughness e normal vazios ('" + mensagemDe "V-23" + "')") (tem (mensagemDe "V-23") "sem roughness: So base" and tem (mensagemDe "V-23") "sem normal: So base")
+        -- Sem mapa no base color: advertência provisória.
+        c1.material = legacyCom "Sem base" undefined
+        checar "V-23: base color sem mapa vira advertência" ((rodarMats InLab_V23_SlotsPBR #(c1) "V-23") == #warning)
+        checar ("V-23: mensagem cita o material ('" + mensagemDe "V-23" + "')") (tem (mensagemDe "V-23") "Sem base: base color sem mapa")
+        -- Standard: não convertível.
+        c1.material = StandardMaterial name:"Padrao"
+        checar "V-23: Standard vira advertência (não convertível)" ((rodarMats InLab_V23_SlotsPBR #(c1) "V-23") == #warning and tem (mensagemDe "V-23") "Padrao: tipo")
+        -- Três slots preenchidos: passa sem nota.
+        local mCheio = legacyCom "Cheio" (CoronaColor())
+        mCheio.texmapReflectGlossiness = CoronaColor()
+        mCheio.texmapBump = CoronaNormal()
+        c1.material = mCheio
+        checar "V-23: três slots preenchidos passa sem nota" ((rodarMats InLab_V23_SlotsPBR #(c1) "V-23") == #pass and not (tem (mensagemDe "V-23") "sem roughness"))
+
+        -- V-24: PNG dentro de CoronaMix no base color reprova.
+        local mixP = CoronaMix()
+        setSubTexmap mixP 1 (Bitmaptexture filename:arqPng)
+        c1.material = legacyCom "Laca" mixP
+        checar "V-24: PNG dentro de CoronaMix no base color reprova" ((rodarMats InLab_V24_PNG #(c1) "V-24") == #fail)
+        checar ("V-24: mensagem cita material, slot e arquivo ('" + mensagemDe "V-24" + "')") (tem (mensagemDe "V-24") "Laca (base color): inlab_v24.png")
+        -- PNG no roughness (CoronaBitmap) reprova.
+        local mR = legacyCom "Verniz" (CoronaColor())
+        local cbR = CoronaBitmap()
+        cbR.filename = arqPng
+        mR.texmapReflectGlossiness = cbR
+        c1.material = mR
+        checar "V-24: PNG em CoronaBitmap no roughness reprova" ((rodarMats InLab_V24_PNG #(c1) "V-24") == #fail and tem (mensagemDe "V-24") "Verniz (roughness)")
+        -- Palha com PNG: aceito.
+        c1.material = legacyCom "Palha natural" (Bitmaptexture filename:arqPng)
+        checar "V-24: PNG em palha passa" ((rodarMats InLab_V24_PNG #(c1) "V-24") == #pass and tem (mensagemDe "V-24") "PNG aceito (alpha): Palha natural")
+        -- Material com opacidade e PNG: aceito.
+        local mOp = legacyCom "Tela" (Bitmaptexture filename:arqPng)
+        mOp.texmapOpacity = CoronaColor()
+        c1.material = mOp
+        checar "V-24: PNG em material com opacidade passa" ((rodarMats InLab_V24_PNG #(c1) "V-24") == #pass)
+        -- JPG passa; PNG no bump não conta.
+        local mJ = legacyCom "Carvalho" (Bitmaptexture filename:arqJpg)
+        mJ.texmapReflectGlossiness = Bitmaptexture filename:arqJpg
+        mJ.texmapBump = Bitmaptexture filename:arqPng
+        c1.material = mJ
+        checar "V-24: JPG em base e roughness passa (PNG no bump não conta)" ((rodarMats InLab_V24_PNG #(c1) "V-24") == #pass)
+        -- Bitmap sem arquivo: ignorado.
+        c1.material = legacyCom "Vazio" (Bitmaptexture())
+        checar "V-24: bitmap sem arquivo é ignorado" ((rodarMats InLab_V24_PNG #(c1) "V-24") == #pass)
+        -- Mesmo material com PNG em dois objetos: listado uma vez.
+        c1.material = legacyCom "Laca" mixP
+        local c2 = caixa "c2" [30, 0, 0]
+        c2.material = c1.material
+        rodarMats InLab_V24_PNG #(c1, c2) "V-24"
+        local msg24 = mensagemDe "V-24"
+        local ocorr = 0
+        local pos = findString msg24 "Laca (base color)"
+        while pos != undefined do ( ocorr += 1; msg24 = substring msg24 (pos + 1) -1; pos = findString msg24 "Laca (base color)" )
+        checar ("V-24: material repetido listado uma vez (" + ocorr as string + ")") (ocorr == 1)
+        try ( deleteFile arqPng; deleteFile arqJpg ) catch ( linha ("aviso: não apaguei os bitmaps de teste (" + getCurrentException() + ")") )
+        limparCena()
+
         -- CASOS DAS PRÓXIMAS TASKS ENTRAM AQUI
     )
     catch

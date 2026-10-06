@@ -110,3 +110,62 @@ fn InLab_Mat_Registrar idV titulo problemas naoMedidos okMsg critico:true provis
     else
         InLab_RegistrarVerif idV titulo true okMsg critico:critico provisorio:provisorio
 )
+
+-- V-23 · Slots PBR (advertência provisória). Base color sem nenhum mapa ou
+-- material que a conversão não suporta → advertência. Roughness ou normal
+-- vazios: só nota (decisão de 06/10/2026: um mapa só é exceção válida).
+fn InLab_V23_SlotsPBR infos =
+(
+    local titulo = "Slots PBR (base color, roughness, normal)"
+    local problemas = #(), naoMedidos = #(), semRough = #(), semNormal = #()
+    for i in infos do
+    (
+        try
+        (
+            if i.tipo == #outro then
+                append problemas (i.mtl.name + ": tipo " + (classof i.mtl) as string + " não é convertido para glTF")
+            else
+            (
+                if (InLab_Mat_MapasDoSlot i #mapaBase).count == 0 do append problemas (i.mtl.name + ": base color sem mapa")
+                if (InLab_Mat_MapasDoSlot i #mapaGloss).count == 0 do append semRough i.mtl.name
+                if (InLab_Mat_MapasDoSlot i #bump).count == 0 do append semNormal i.mtl.name
+            )
+        )
+        catch ( append naoMedidos (i.mtl.name + " (" + getCurrentException() + ")") )
+    )
+    local nota = ""
+    if semRough.count > 0 do nota += " · sem roughness: " + InLab_ListaResumida semRough
+    if semNormal.count > 0 do nota += " · sem normal: " + InLab_ListaResumida semNormal
+    if problemas.count > 0 do append problemas (nota)
+    InLab_Mat_Registrar "V-23" titulo (for p in problemas where p != "" collect p) naoMedidos \
+        (infos.count as string + " material(is) com base color mapeado" + nota) critico:true provisorio:true
+)
+
+-- V-24 · PNG proibido no base color e no roughness (crítica). Exceção: palha
+-- ou material com mapa de opacidade (o alpha exige PNG; decisão de 06/10/2026).
+fn InLab_V24_PNG infos =
+(
+    local titulo = "Sem PNG no base color e no roughness"
+    local problemas = #(), naoMedidos = #(), aceitos = #()
+    for i in infos where i.tipo != #outro do
+    (
+        try
+        (
+            local alpha = i.especial == #palha or (InLab_Mat_MapasDoSlot i #opacMapa).count > 0
+            for par in #(#(#mapaBase, "base color"), #(#mapaGloss, "roughness")) do
+                for tm in (InLab_Mat_MapasDoSlot i par[1]) do
+                (
+                    local arq = InLab_Mat_ArquivoDoMapa tm
+                    if arq != undefined and (toLower (getFilenameType arq)) == ".png" do
+                    (
+                        if alpha then appendIfUnique aceitos i.mtl.name
+                        else appendIfUnique problemas (i.mtl.name + " (" + par[2] + "): " + filenameFromPath arq)
+                    )
+                )
+        )
+        catch ( append naoMedidos (i.mtl.name + " (" + getCurrentException() + ")") )
+    )
+    local okMsg = "nenhum PNG no base color nem no roughness"
+    if aceitos.count > 0 do okMsg = "PNG aceito (alpha): " + InLab_ListaResumida aceitos
+    InLab_Mat_Registrar "V-24" titulo problemas naoMedidos okMsg critico:true
+)
