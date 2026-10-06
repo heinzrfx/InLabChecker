@@ -18,6 +18,9 @@
  DUPLA FUNÇÃO: ferramenta standalone (log) + insumo — retorna um array de
  structs TexturaInfo que as verificações V-23/24/25 (Fase 4) vão consumir
  sem precisar varrer a cena de novo.
+
+ 05/10/2026 (issue #101): parâmetro logar: — a V-16 consome o inventário sem
+ despejar o relatório no log da verificação.
 ================================================================================
 */
 
@@ -83,8 +86,9 @@ fn InLab_MapaUsadoPor mapa objs =
 --   escopo:#cena    → todos os mapas da cena
 --   escopo:#selecao → apenas mapas usados pelos objetos em `objs`
 -- Retorna array de TexturaInfo e loga o relatório.
+--   logar:false → não loga o relatório (usado pela V-16); o retorno não muda.
 --------------------------------------------------------------------------------
-fn InLab_CheckTexture escopo:#cena objs:#() =
+fn InLab_CheckTexture escopo:#cena objs:#() logar:true =
 (
     ----------------------------------------------------------------------
     -- 1. Coleta das instâncias de mapa
@@ -98,7 +102,7 @@ fn InLab_CheckTexture escopo:#cena objs:#() =
 
     if mapas.count == 0 then
     (
-        InLab_Log "Check Texture: nenhum bitmap encontrado no escopo." tipo:#warn
+        if logar do InLab_Log "Check Texture: nenhum bitmap encontrado no escopo." tipo:#warn
         #()
     )
     else
@@ -143,7 +147,7 @@ fn InLab_CheckTexture escopo:#cena objs:#() =
         ------------------------------------------------------------------
         local missing = 0
         local pngs = 0
-        InLab_Log ("Check Texture: " + inventario.count as string +
+        if logar do InLab_Log ("Check Texture: " + inventario.count as string +
                    " textura(s) única(s) · escopo " + escopo as string + ".")
         for t in inventario do
         (
@@ -155,20 +159,20 @@ fn InLab_CheckTexture escopo:#cena objs:#() =
             if not t.existe then
             (
                 missing += 1
-                InLab_Log ("MISSING · " + t.arquivo + " · usado por " + matsTxt) tipo:#err
+                if logar do InLab_Log ("MISSING · " + t.arquivo + " · usado por " + matsTxt) tipo:#err
             )
             else if t.ehPNG then
             (
                 pngs += 1
-                InLab_Log ("PNG (proibido V-24) · " + (filenameFromPath t.arquivo) + " · " + resTxt +
+                if logar do InLab_Log ("PNG (proibido V-24) · " + (filenameFromPath t.arquivo) + " · " + resTxt +
                            " · " + matsTxt) tipo:#warn
             )
             else
-                InLab_Log ((filenameFromPath t.arquivo) + " · " + t.formato + " · " + resTxt +
+                if logar do InLab_Log ((filenameFromPath t.arquivo) + " · " + t.formato + " · " + resTxt +
                            " · " + matsTxt) tipo:#ok
         )
         local tipoResumo = if missing > 0 then #err else (if pngs > 0 then #warn else #ok)
-        InLab_Log ("Resumo: " + missing as string + " missing · " + pngs as string + " PNG(s).") tipo:tipoResumo
+        if logar do InLab_Log ("Resumo: " + missing as string + " missing · " + pngs as string + " PNG(s).") tipo:tipoResumo
         inventario
     )
 )

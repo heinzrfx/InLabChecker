@@ -111,6 +111,8 @@
             @"verifications\verif_animacao.ms",
             -- medição de UV (issue #1): só leitura, usada pelo Auto UV no log
             @"verifications\verif_uv.ms",
+            -- grupo 5 de UV (issue #101): usa verif_uv, fn_autouv e fn_checktexture
+            @"verifications\verif_mapeamento.ms",
             @"report\report_generator.ms",
             @"verifications\verif_orquestrador.ms",
             -- 5. UI

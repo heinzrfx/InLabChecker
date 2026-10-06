@@ -11,6 +11,7 @@
    aprovado = 100% dos resultados com critico:true em status:#pass.
    Itens critico:false aparecem no relatório mas não bloqueiam a aprovação.
    Implementados hoje como não críticos: V-02 (SKP, externa),
+   V-16 (resolução das texturas; acrescentada em 05/10/2026, issue #101),
    V-05 (famílias sem regra numérica), V-06, V-08 (arestas abertas),
    V-20, V-22, V-30 em família estática e EX-01 (extra, fora da spec:
    objeto oculto). Previstos na spec: V-33, V-37 a V-40.
