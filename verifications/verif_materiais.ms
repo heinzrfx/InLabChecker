@@ -27,6 +27,21 @@
  06/10/2026 — V-37 (zonas do estofado, advertência provisória) e V-38 (tampo
  acessório, critico:false). V-38 lê InLab_TampoAcessorioProduto, que o
  orquestrador define; aqui só é pré-declarada, sem valor.
+
+ 06/10/2026 — piloto (5 arquivos de PILOTO PLUGIN INLAB\ARTEFACTO, leitura,
+ sem salvar; V-23..V-38 levam 0,04 a 0,07 s por arquivo, sem exceção nem
+ "não medido"):
+   Aparador Zucchi  — V-23 pass; V-24 FAIL (Material #0, LOURO MATE 02_basecolor.png,
+                      PNG real no base color); V-25/35/36/37/38 pass.
+   Poltrona Mentha  — tudo pass (V-23 com roughness/normal ausentes só listados).
+   Mesa Nambu       — V-23 warning ("metal dourado artefacto": base color sem mapa,
+                      cor lisa sem procedural; sem normal no Material #17); resto pass.
+   Mesa Louise Jat. — V-23 warning (Vidro Jateado, Glass Bronze Distorted: cor lisa);
+                      V-36 pass (2 materiais de cristal com refração).
+   Puff Pol (VRay)  — V-23 warning (MET - marrom metal, MET - caixilho metal: cor lisa);
+                      checagens rodam sem erro; V-37 pass (6 materiais).
+ Nenhum procedural no difuso virou "base color sem mapa" (os materiais acusados
+ têm texmapDiffuse indefinido), nem ID órfão na V-25.
 ================================================================================
 */
 

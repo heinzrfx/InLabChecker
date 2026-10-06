@@ -80,7 +80,7 @@ rollout _rTesteFake "" width:100 height:60
             @"verifications\verif_peso_poly.ms", @"verifications\verif_pivot.ms",
             @"verifications\verif_nomenclatura.ms", @"verifications\verif_geometria.ms",
             @"verifications\verif_malha.ms", @"verifications\verif_animacao.ms", @"verifications\verif_uv.ms",
-            @"verifications\verif_mapeamento.ms", @"report\report_generator.ms", @"verifications\verif_orquestrador.ms",
+            @"verifications\verif_mapeamento.ms", @"verifications\verif_materiais.ms", @"report\report_generator.ms", @"verifications\verif_orquestrador.ms",
             @"ui\kit.ms") do
             fileIn (raiz + m)
 
