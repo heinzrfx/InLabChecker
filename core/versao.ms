@@ -24,7 +24,7 @@
 ================================================================================
 */
 
-global INLAB_VERSAO = "0.13"
+global INLAB_VERSAO = "1.0"
 
 fn InLab_VersaoComponentes v =
 (
