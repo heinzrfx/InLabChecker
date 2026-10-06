@@ -12,8 +12,9 @@
  CASOS ESPECIAIS DA SPEC (detectados por palavra-chave no nome do material):
    PALHA ("palha", "trama", "rattan") → alphaMode BLEND + doubleSided
                                          (V-35 → GLB: BLEND + doubleSided)
-   CRISTAL ("cristal", "vidro", "glass") → transmission real + roughness
-                                            forçado ≤ 0.1 (V-36)
+   CRISTAL ("cristal", "vidro", "glass") → transmission pela refração do
+                                            material; roughness e IOR ficam os
+                                            do material (06/10/2026, #119)
 
  BAKE (plano, seção Fase 3.1): mapas que NÃO são bitmap simples (procedurais,
  composições) são "achatados" via renderMap() para arquivo em disco.
@@ -62,7 +63,12 @@
  de InLab_ConverterCoronaMtl para InLab_Material_PerfilSlots, compartilhado
  com as verificações do grupo 7. Sem mudança de comportamento. Achado na
  sondagem: o VRayMtl não tem refraction_amount (a refração é a cor
- "refraction"), então a conversão não liga transmission em vidro VRay.
+ "refraction"), então a conversão ignorava a refração do vidro VRay e dava
+ transmission 1.0 a todos.
+
+ 06/10/2026 (#118, #119): vidro VRay lê a cor de refração (média dos canais
+ → transmission). O roughness do vidro não é mais forçado para 0,05: a V-36
+ deixa roughness, IOR e refração livres (vidro jateado é fosco de propósito).
 ================================================================================
 */
 
@@ -416,7 +422,9 @@ fn InLab_TipoDeMaterial mtl =
 -- ordem de tentativa (InLab_PropSafe). Usado pela conversão e pelas
 -- verificações do grupo 7 (verif_materiais.ms), para as duas lerem
 -- exatamente os mesmos slots. #outro devolve o perfil Physical (era o
--- "default" da conversão).
+-- "default" da conversão). No VRay a refração é COR ("refraction") e não
+-- tem campo de valor: refrVal vazio, e conversão e V-36 leem a cor à parte
+-- (06/10/2026, #118: refraction_amount não existe no VRayMtl).
 --------------------------------------------------------------------------------
 struct PerfilSlots ( cor, mapaBase, valGloss, mapaGloss, bump, opacMapa, refrVal, ior )
 
@@ -429,7 +437,7 @@ fn InLab_Material_PerfilSlots tipo =
             bump:#(#texmapBump) opacMapa:#(#texmapOpacity) refrVal:#(#levelRefract) ior:#(#ior, #fresnelIor)
         #vray: PerfilSlots cor:#(#diffuse) mapaBase:#(#texmap_diffuse) \
             valGloss:#(#reflection_glossiness) mapaGloss:#(#texmap_reflectionGlossiness, #texmap_reflection_glossiness) \
-            bump:#(#texmap_bump) opacMapa:#(#texmap_opacity) refrVal:#(#refraction_amount) ior:#(#refraction_ior)
+            bump:#(#texmap_bump) opacMapa:#(#texmap_opacity) refrVal:#() ior:#(#refraction_ior)
         default: PerfilSlots cor:#(#baseColor) mapaBase:#(#baseTexmap) \
             valGloss:#(#baseRoughness, #roughness) mapaGloss:#(#baseRoughnessTexmap, #roughnessTexmap) \
             bump:#(#baseBumpTexmap, #bumpTexmap) opacMapa:#(#opacityTexmap) refrVal:#(#refractionAmount, #refraction) ior:#(#ior)
@@ -621,7 +629,17 @@ fn InLab_ConverterCoronaMtl mtl tamanho fazerBake =
         ------------------------------------------------------------------
         if especial == #cristal do
         (
-            local refr = InLab_PropSafe mtl candRefrVal
+            -- 06/10/2026 (#118): no VRayMtl a refração é a COR "refraction"
+            -- (não existe refraction_amount): o peso é a média dos canais.
+            -- Antes caía no 1.0 e todo vidro VRay saía transparente.
+            local refr = if tipoMtl == #vray then
+            (
+                local c = InLab_PropSafe mtl #(#refraction)
+                if c == undefined then undefined else ((c.r + c.g + c.b) / (3.0 * 255.0))
+            )
+            else InLab_PropSafe mtl candRefrVal
+            if tipoMtl == #vray and (InLab_PropSafe mtl #(#texmap_refraction)) != undefined do
+                InLab_Log (mtl.name + ": mapa de refração do VRay não é convertido — transmission sai da cor de refração.") tipo:#warn
             local peso = if refr != undefined then refr else 1.0
             if (InLab_SetPropSafe g #(#transmission, #transmissionFactor, #transmissionWeight) peso) != undefined then
                 InLab_Log (mtl.name + ": CRISTAL → transmission = " + peso as string + " (V-36).") tipo:#ok
@@ -631,13 +649,9 @@ fn InLab_ConverterCoronaMtl mtl tamanho fazerBake =
             local ior = InLab_PropSafe mtl candIOR
             if ior != undefined do InLab_SetPropSafe g #(#ior, #indexOfRefraction) ior
 
-            -- V-36 exige roughness baixo: força se estiver acima.
-            local rAtual = InLab_PropSafe g #(#roughness, #roughnessFactor)
-            if rAtual != undefined and rAtual > 0.1 do
-            (
-                InLab_SetPropSafe g #(#roughness, #roughnessFactor) 0.05
-                InLab_Log (mtl.name + ": roughness " + rAtual as string + " > 0.1 → forçado 0.05 (V-36).") tipo:#warn
-            )
+            -- 06/10/2026 (#119): o roughness do vidro NÃO é mais forçado para
+            -- 0,05. Decisão da V-36: roughness, IOR e refração ficam livres
+            -- (vidro jateado é fosco de propósito).
         )
 
         -- Transmission default do glTFMaterial nesta build = 1.0 (constatado
