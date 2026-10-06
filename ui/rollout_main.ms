@@ -274,7 +274,12 @@ rollout InLabSecProduto "Produto" width:420
     -- 02/10/2026: avisos da escolha do produto — bloqueio (ok_3d = false, ou
     -- cópia de base não liberada: os botões de renomear pulam) e relação
     -- master/cópia de bloco_3d (#93). Ver fn_renomear_produto.ms.
-    fn avisarNaoLiberado = InLab_Produto_AvisosDeBloco produtos (produtoEscolhido())
+    -- 06/10/2026: também avisa as partes sem matéria-prima (não tecido).
+    fn avisarNaoLiberado =
+    (
+        InLab_Produto_AvisosDeBloco produtos (produtoEscolhido())
+        InLab_Produto_AvisosMateriaPrima (produtoEscolhido())
+    )
 
     fn sugerir =
     (

@@ -82,6 +82,11 @@
  a cópia cuja base não está liberada. Voltar do nome da cópia para o do
  master NÃO é pelo Desfazer (ele desfaz a sessão inteira, inclusive a
  renomeação do master): é escolher o master de novo e "Renomear objetos".
+
+ 06/10/2026 (export v6, campo materia_prima): parte que não é tecido e vem
+ com matéria-prima vazia gera o aviso "matéria-prima não indicada" na seção
+ Produto (InLab_Produto_AvisosMateriaPrima). Só aviso, decisão do usuário:
+ os outros tipos de matéria-prima ainda vão ser levantados.
 ================================================================================
 */
 
@@ -288,6 +293,28 @@ fn InLab_Produto_AvisosDeBloco produtos produto =
                        ". Depois de exportar este, escolha cada cópia em Produto, use 'Renomear objetos' e exporte de novo.") tipo:#info
         )
     )
+)
+
+-- 06/10/2026 (export v6): partes com "materia_prima" vazia ({familia: "",
+-- materia: ""}). Decisão do usuário: é esperado — várias partes não se
+-- encaixam em nenhuma matéria-prima da lista atual (os outros tipos vão ser
+-- levantados depois) —, então é só aviso, na seção Produto, e nunca em
+-- tecido (tecido: true). Subparte so3d também avisa. Export antigo, sem o
+-- campo materia_prima, não avisa (senão toda parte de export v5 acusaria).
+global InLab_Produto_PartesSemMateriaPrima
+fn InLab_Produto_PartesSemMateriaPrima produto =
+(
+    local partes = if produto == undefined then undefined else InLab_JSON_Obter produto "partes"
+    if not (isKindOf partes Array) then #()
+    else for p in partes where not (InLab_Produto_Booleano p "tecido") and
+        (local mp = InLab_JSON_Obter p "materia_prima"; isKindOf mp Array and (InLab_Produto_Texto mp "familia") == "" and (InLab_Produto_Texto mp "materia") == "") collect p
+)
+
+global InLab_Produto_AvisosMateriaPrima
+fn InLab_Produto_AvisosMateriaPrima produto =
+(
+    for p in (InLab_Produto_PartesSemMateriaPrima produto) do
+        InLab_Log ("Parte '" + (InLab_Produto_Rotulo p) + "': matéria-prima não indicada.") tipo:#warn
 )
 
 -- Rótulo da parte na UI. O qualificador entra porque o nome sozinho repete
