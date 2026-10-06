@@ -18,6 +18,7 @@
 global InLab_Log
 global InLab_ConverterObjetos, InLab_ReverterConversao, InLab_UltimaConversao
 global InLab_SetPropSafe, InLab_BakeBaseComAlpha, InLab_BitmapDoTexmap, InLab_PastaBake
+global InLab_ConverterCoronaMtl, InLab_PropSafe, InLab_ResolverClasseGLTF
 global INLAB_TESTE_SAIDA, INLAB_TESTE_FALHAS
 (
     local dirTeste = getFilenamePath (getSourceFileName())
@@ -112,6 +113,39 @@ global INLAB_TESTE_SAIDA, INLAB_TESTE_FALHAS
                 local achouErro = false
                 for item in logsCapturados where item[1] == #err do achouErro = true
                 checar "SetPropSafe: logou a falha com tipo #err" achouErro
+
+                -- ===== 5. VIDRO (06/10/2026, #118 e #119) =====
+                -- Roughness do vidro fica o do material (decisão da V-36: valores
+                -- livres); transmission sai da refração, inclusive do VRay (cor).
+                fn transmissionDe g = InLab_PropSafe g #(#transmission, #transmissionFactor, #transmissionWeight)
+                fn roughnessDe g = InLab_PropSafe g #(#roughness, #roughnessFactor)
+                local mFosco = CoronaLegacyMtl()
+                mFosco.name = "Madeira fosca"
+                mFosco.reflectGlossiness = 0.3
+                local mJateado = CoronaLegacyMtl()
+                mJateado.name = "Vidro Jateado"
+                mJateado.reflectGlossiness = 0.3
+                mJateado.levelRefract = 1.0
+                local gFosco = InLab_ConverterCoronaMtl mFosco 256 false
+                local gJateado = InLab_ConverterCoronaMtl mJateado 256 false
+                checar ("Vidro jateado mantém o roughness do material (" + (roughnessDe gJateado) as string + " = " + (roughnessDe gFosco) as string + ", não 0,05)") ((roughnessDe gJateado) != undefined and (roughnessDe gJateado) > 0.1 and (abs ((roughnessDe gJateado) - (roughnessDe gFosco))) < 1e-4)
+                checar ("Vidro jateado: transmission 1 (" + (transmissionDe gJateado) as string + ")") ((abs ((transmissionDe gJateado) - 1.0)) < 1e-4)
+                local mParcial = CoronaPhysicalMtl name:"Cristal parcial"
+                mParcial.refractionAmount = 0.6
+                checar ("Physical: transmission = refractionAmount 0,6 (" + (transmissionDe (InLab_ConverterCoronaMtl mParcial 256 false)) as string + ")") ((abs ((transmissionDe (InLab_ConverterCoronaMtl mParcial 256 false)) - 0.6)) < 1e-3)
+                local mV = try ( VRayMtl() ) catch ( undefined )
+                if mV == undefined then checar "VRay — pulado: VRay ausente" true
+                else
+                (
+                    mV.name = "Glass VRay"
+                    mV.refraction = color 255 255 255
+                    checar ("VRay: refração branca → transmission 1 (" + (transmissionDe (InLab_ConverterCoronaMtl mV 256 false)) as string + ")") ((abs ((transmissionDe (InLab_ConverterCoronaMtl mV 256 false)) - 1.0)) < 1e-3)
+                    mV.refraction = color 128 128 128
+                    local tCinza = transmissionDe (InLab_ConverterCoronaMtl mV 256 false)
+                    checar ("VRay: refração cinza 128 → transmission ~0,5 (" + tCinza as string + ")") ((abs (tCinza - (128.0 / 255.0))) < 1e-2)
+                    mV.refraction = color 0 0 0
+                    checar ("VRay: refração preta → transmission 0 (" + (transmissionDe (InLab_ConverterCoronaMtl mV 256 false)) as string + ")") ((abs (transmissionDe (InLab_ConverterCoronaMtl mV 256 false))) < 1e-4)
+                )
             )
 
             -- ===== 4. InLab_BakeBaseComAlpha (issue #51) =====
