@@ -47,7 +47,8 @@ global INLAB_TESTE_SAIDA, INLAB_TESTE_FALHAS
         for m in #(@"core\versao.ms", @"core\prefs.ms", @"core\struct_result.ms", @"core\struct_familia.ms",
                    @"core\log.ms", @"core\utils.ms",
                    @"familias\familia_corpo_unico.ms", @"familias\familia_pernas_tampo.ms", @"familias\familia_estrutura_estofado.ms",
-                   @"functions\fn_json.ms", @"functions\fn_renomear_produto.ms", @"functions\fn_material_convert.ms") do
+                   @"functions\fn_json.ms", @"functions\fn_renomear_produto.ms", @"functions\fn_material_convert.ms",
+                   @"verifications\verif_materiais.ms") do
             fileIn (raiz + m)
         -- Depois dos fileIn: core\log.ms redefine InLab_Log.
         InLab_Log = fn _logTeste msg tipo:#info = ( format "      [LOG %] %\n" tipo msg to:INLAB_TESTE_SAIDA; flush INLAB_TESTE_SAIDA )
@@ -69,6 +70,68 @@ global INLAB_TESTE_SAIDA, INLAB_TESTE_FALHAS
         checar "Perfil Legacy: todos os slots de mapa existem no CoronaLegacyMtl" ((for n in #(pl.mapaBase[1], pl.mapaGloss[1], pl.bump[1], pl.opacMapa[1], pl.refrVal[1]) where not (isProperty mL n) collect n).count == 0)
         local mP = CoronaPhysicalMtl()
         checar "Perfil Physical: todos os slots de mapa existem no CoronaPhysicalMtl" ((for n in #(pp.mapaBase[1], pp.mapaGloss[1], pp.bump[1], pp.opacMapa[1], pp.refrVal[1]) where not (isProperty mP n) collect n).count == 0)
+
+        ---------------------------------------------------------------- helpers
+        fn caixa nome p = ( local b = Box name:nome length:10 width:10 height:10 mapcoords:true pos:p; convertToPoly b; b )
+        fn legacyCom nome difuso = ( local m = CoronaLegacyMtl(); m.name = nome; m.texmapDiffuse = difuso; m )
+        -- Material direto: usado. Objeto sem material: ignorado.
+        local m1 = legacyCom "Madeira" (CoronaColor())
+        local b1 = caixa "b1" [0, 0, 0]
+        b1.material = m1
+        local b0 = caixa "b0" [30, 0, 0]
+        local uso = InLab_Mat_Uso #(b1, b0)
+        checar "Uso: material direto entra, objeto sem material é ignorado" (uso.usados.count == 1 and uso.usados[1] == m1 and uso.orfaos.count == 0 and uso.naoMedidos.count == 0)
+        -- Multi/Sub: só os sub-materiais com faces entram.
+        local mm = Multimaterial numsubs:3
+        mm.materialList[1] = legacyCom "Tecido" (CoronaColor())
+        mm.materialList[2] = legacyCom "Metal" (CoronaColor())
+        mm.materialList[3] = legacyCom "Sem faces" (CoronaColor())
+        local b2 = caixa "b2" [60, 0, 0]
+        for f = 1 to (polyop.getNumFaces b2) do polyop.setFaceMatID b2 f (if f <= 3 then 1 else 2)
+        b2.material = mm
+        uso = InLab_Mat_Uso #(b2)
+        checar "Uso: Multi/Sub entra pelos sub-materiais com faces (2 de 3)" (uso.usados.count == 2 and (findItem uso.usados mm.materialList[3]) == 0)
+        -- Mesmo material em dois objetos: uma vez só.
+        local b3 = caixa "b3" [90, 0, 0]
+        b3.material = m1
+        uso = InLab_Mat_Uso #(b1, b3)
+        checar "Uso: mesmo material em dois objetos aparece uma vez" (uso.usados.count == 1)
+        -- Resolver: tipo, especial e Layered.
+        local mPalha = legacyCom "Palha natural" (CoronaColor())
+        local lay = CoronaLayeredMtl()
+        lay.name = "Camadas"
+        lay.baseMtl = legacyCom "Base do layered" (CoronaColor())
+        local layVazio = CoronaLayeredMtl()
+        layVazio.name = "Camadas sem base"
+        local mStd = StandardMaterial name:"Padrao"
+        b1.material = mPalha
+        b2.material = lay
+        b3.material = mStd
+        local b4 = caixa "b4" [120, 0, 0]
+        b4.material = layVazio
+        local infos = InLab_Mat_Resolver (InLab_Mat_Uso #(b1, b2, b3, b4))
+        fn infoDe infos nome = ( local r = undefined; for i in infos where i.mtl.name == nome do r = i; r )
+        checar "Resolver: Legacy com palavra palha = #legacy/#palha" ((infoDe infos "Palha natural").tipo == #legacy and (infoDe infos "Palha natural").especial == #palha)
+        checar "Resolver: Layered lido pelo material base" ((infoDe infos "Camadas").tipo == #legacy and (infoDe infos "Camadas").base.name == "Base do layered")
+        checar "Resolver: Layered sem base vira #outro, sem exceção" ((infoDe infos "Camadas sem base").tipo == #outro and (infoDe infos "Camadas sem base").base == undefined)
+        checar "Resolver: Standard vira #outro" ((infoDe infos "Padrao").tipo == #outro)
+        -- Árvore do slot: o bitmap dentro do CoronaMix aparece.
+        local mix = CoronaMix()
+        local bmt = Bitmaptexture filename:((getDir #temp) + "\\inlab_v24_dentro.png")
+        setSubTexmap mix 1 bmt
+        local mArv = legacyCom "Arvore" mix
+        b1.material = mArv
+        local iArv = (InLab_Mat_Resolver (InLab_Mat_Uso #(b1)))[1]
+        local mapas = InLab_Mat_MapasDoSlot iArv #mapaBase
+        checar "MapasDoSlot: percorre a árvore (CoronaMix + bitmap)" ((findItem mapas mix) > 0 and (findItem mapas bmt) > 0)
+        checar "MapasDoSlot: slot vazio devolve #()" ((InLab_Mat_MapasDoSlot iArv #bump).count == 0)
+        checar "ArquivoDoMapa: Bitmaptexture devolve o caminho" ((InLab_Mat_ArquivoDoMapa bmt) == bmt.filename)
+        local cbm = CoronaBitmap()
+        cbm.filename = (getDir #temp) + "\\inlab_v24_corona.png"
+        checar "ArquivoDoMapa: CoronaBitmap devolve o caminho" ((InLab_Mat_ArquivoDoMapa cbm) == cbm.filename)
+        checar "ArquivoDoMapa: procedural devolve undefined" ((InLab_Mat_ArquivoDoMapa mix) == undefined)
+        checar "ArquivoDoMapa: Bitmaptexture sem arquivo devolve undefined" ((InLab_Mat_ArquivoDoMapa (Bitmaptexture())) == undefined)
+        limparCena()
 
         -- CASOS DAS PRÓXIMAS TASKS ENTRAM AQUI
     )

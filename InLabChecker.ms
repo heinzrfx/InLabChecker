@@ -113,6 +113,8 @@
             @"verifications\verif_uv.ms",
             -- grupo 5 de UV (issue #101): usa verif_uv, fn_autouv e fn_checktexture
             @"verifications\verif_mapeamento.ms",
+            -- grupo 7 de materiais (issue #103): usa fn_material_convert e fn_renomear_produto
+            @"verifications\verif_materiais.ms",
             @"report\report_generator.ms",
             @"verifications\verif_orquestrador.ms",
             -- 5. UI
