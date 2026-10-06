@@ -320,9 +320,7 @@ fn InLab_V38_TampoAcessorio cfg uso produto:undefined =
         local usados = InLab_Mat_NomesUsados uso
         local temTampo = (for id in idsTampo where (findItem usados id) > 0 collect id).count > 0
         local temOutros = (for id in idsOutros where (findItem usados id) > 0 collect id).count > 0
-        if temTampo and temOutros then
-            InLab_RegistrarVerif "V-38" titulo false "estrutura e tampo acessório no mesmo arquivo: separe em dois blocos (intercambialidade)" critico:false
-        else
-            InLab_RegistrarVerif "V-38" titulo true (if temTampo then "arquivo só com o tampo" else "arquivo só com a estrutura") critico:false
+        local problemas = if temTampo and temOutros then #("estrutura e tampo acessório no mesmo arquivo: separe em dois blocos (intercambialidade)") else #()
+        InLab_Mat_Registrar "V-38" titulo problemas uso.naoMedidos (if temTampo then "arquivo só com o tampo" else "arquivo só com a estrutura") critico:false
     )
 )

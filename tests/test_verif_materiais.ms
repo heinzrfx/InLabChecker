@@ -303,6 +303,12 @@ global INLAB_TESTE_SAIDA, INLAB_TESTE_FALHAS
         checar "V-38: só o tampo passa" ((rodar38 cfgUnico #(g1) prod) == #pass)
         g1.material = legacyCom "ART_P_Estrutura" (CoronaColor())
         checar "V-38: só a estrutura passa" ((rodar38 cfgUnico #(g1) prod) == #pass)
+        InLab_TampoAcessorioProduto = true
+        local usoNM = InLab_Mat_Uso #(g1)
+        append usoNM.naoMedidos "objX (erro simulado)"
+        InLab_ResetarResultados(); InLab_V38_TampoAcessorio cfgUnico usoNM produto:prod
+        checar "V-38: material não lido não passa em silêncio" ((statusDe "V-38") == #warning and tem (mensagemDe "V-38") "não medido")
+        InLab_TampoAcessorioProduto = true  -- volta a true: o caso seguinte (pendente) precisa dele
         checar "V-38: sem produto fica pendente (advertência)" ((rodar38 cfgUnico #(g1) undefined) == #warning and tem (mensagemDe "V-38") "pendente")
         InLab_TampoAcessorioProduto = false
         -- Pela família (cfg.tampoAcessorio), sem o checkbox; o valor volta no fim.
