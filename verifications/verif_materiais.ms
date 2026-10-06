@@ -19,7 +19,17 @@
  não tem refraction_amount (a refração é a cor "refraction").
 
  06/10/2026 — V-25 (IDs com sub-material, crítica): parte do produto sem
- faces é só nota. InLab_Mat_NomesUsados e InLab_Mat_IdsDasPartes servem à V-20.
+ faces é só nota. InLab_Mat_NomesUsados e InLab_Mat_IdsDasPartes servem à V-25,
+ V-37 e V-38.
+
+ 06/10/2026 — revisão final: (1) cena já convertida. A conversão troca o
+ material por um glTF Material; InLab_Mat_Resolver procura o original em
+ InLab_UltimaConversao (materialNovo == glTF) e lê o Corona dele (o especial
+ vem do nome do original, porque o glTF ganha sufixo "_GLTF"). Sem registro, o
+ tipo é #gltf: V-23/V-35/V-36 avisam "já convertido" e a V-24 (crítica) põe o
+ material em "não medido", nunca passe limpo sem leitura. (2) InLab_Mat_Registrar
+ ganhou nota:, texto " · ..." no fim da mensagem em todos os ramos (roughness/
+ normal da V-23, PNG aceito da V-24, parte sem faces da V-25).
 
  06/10/2026 — V-35 (palha com opacidade) e V-36 (cristal com refração), ambas
  advertência provisória. V-35 não confere 2-sided (a conversão liga sozinha).
@@ -47,6 +57,8 @@
 
 -- Definida e preenchida pelo orquestrador (checkbox da UI); aqui só é lida.
 global InLab_TampoAcessorioProduto
+-- Registro da conversão (fn_material_convert.ms); pré-declarada sem valor.
+global InLab_UltimaConversao
 
 -- Uso de material pelas faces, calculado uma vez e compartilhado pela V-25,
 -- V-37 e V-38. usados: material direto ou sub-material de Multi/Sub com pelo
@@ -89,7 +101,8 @@ fn InLab_Mat_Uso objetos =
 
 -- mtl: o material usado (nome para mensagens e palavras-chave). base: o que
 -- se lê nos slots (o próprio, ou o base de um Layered). tipo: #physical,
--- #legacy, #vray ou #outro (a conversão não suporta). especial: #palha,
+-- #legacy, #vray, #outro (a conversão não suporta) ou #gltf (já convertido e
+-- sem registro do original). especial: #palha,
 -- #cristal ou #nenhum (mesmas palavras da conversão).
 struct MatInfo ( mtl, base, tipo, especial )
 
@@ -97,18 +110,36 @@ fn InLab_Mat_Resolver uso =
 (
     for m in uso.usados collect
     (
-        local base = m
-        if InLab_ClasseContem m "CoronaLayeredMtl" do base = InLab_PropSafe m #(#baseMtl, #baseMaterial, #base)
-        local tipo = if base == undefined then #outro else InLab_TipoDeMaterial base
-        MatInfo mtl:m base:base tipo:tipo especial:(InLab_DetectarEspecial m.name)
+        local origem = m
+        local nomeEsp = m.name
+        local semOrigem = false
+        -- Cena já convertida: o material é um glTF; o Corona original está no
+        -- registro da conversão (InLab_UltimaConversao).
+        if InLab_ClasseContem m "gltf" do
+        (
+            local rec = undefined
+            if InLab_UltimaConversao != undefined do
+                for r in InLab_UltimaConversao where rec == undefined and r.materialNovo == m and r.materialOriginal != undefined do rec = r
+            if rec != undefined then ( origem = rec.materialOriginal; nomeEsp = origem.name )
+            else semOrigem = true
+        )
+        local base = undefined
+        local tipo = #gltf
+        if not semOrigem do
+        (
+            base = origem
+            if InLab_ClasseContem origem "CoronaLayeredMtl" do base = InLab_PropSafe origem #(#baseMtl, #baseMaterial, #base)
+            tipo = if base == undefined then #outro else InLab_TipoDeMaterial base
+        )
+        MatInfo mtl:m base:base tipo:tipo especial:(InLab_DetectarEspecial nomeEsp)
     )
 )
 
 -- Todos os texmaps da árvore do slot `campo` (#mapaBase, #mapaGloss, #bump,
--- #opacMapa). #() se o slot está vazio ou o tipo é #outro.
+-- #opacMapa). #() se o slot está vazio ou o tipo é #outro/#gltf.
 fn InLab_Mat_MapasDoSlot info campo =
 (
-    if info.tipo == #outro then #()
+    if info.tipo == #outro or info.tipo == #gltf then #()
     else
     (
         local nomes = getProperty (InLab_Material_PerfilSlots info.tipo) campo
@@ -129,15 +160,22 @@ fn InLab_Mat_ArquivoDoMapa tm =
 
 -- Registro no padrão do grupo 5: problema → falha (critico/provisorio);
 -- só "não medido" → advertência; senão passa com okMsg.
-fn InLab_Mat_Registrar idV titulo problemas naoMedidos okMsg critico:true provisorio:false =
+fn InLab_Mat_Registrar idV titulo problemas naoMedidos okMsg critico:true provisorio:false nota:"" =
 (
     if problemas.count > 0 then
-        InLab_RegistrarVerif idV titulo false (InLab_ListaResumida (problemas + naoMedidos)) critico:critico provisorio:provisorio
+    (
+        local itens = for p in problemas collect p
+        for n in naoMedidos do append itens ("não medido: " + n)
+        InLab_RegistrarVerif idV titulo false ((InLab_ListaResumida itens) + nota) critico:critico provisorio:provisorio
+    )
     else if naoMedidos.count > 0 then
-        InLab_RegistrarVerif idV titulo false ("não medido: " + InLab_ListaResumida naoMedidos) critico:false
+        InLab_RegistrarVerif idV titulo false ("não medido: " + (InLab_ListaResumida naoMedidos) + nota) critico:false
     else
-        InLab_RegistrarVerif idV titulo true okMsg critico:critico provisorio:provisorio
+        InLab_RegistrarVerif idV titulo true (okMsg + nota) critico:critico provisorio:provisorio
 )
+
+-- Mensagem de material já convertido (V-23, V-35, V-36).
+fn InLab_Mat_MsgGltf nome = ( nome + ": já convertido para glTF — verifique antes de converter (ou Reverter a conversão)" )
 
 -- V-23 · Slots PBR (advertência provisória). Base color sem nenhum mapa ou
 -- material que a conversão não suporta → advertência. Roughness ou normal
@@ -150,7 +188,9 @@ fn InLab_V23_SlotsPBR infos =
     (
         try
         (
-            if i.tipo == #outro then
+            if i.tipo == #gltf then
+                append problemas (InLab_Mat_MsgGltf i.mtl.name)
+            else if i.tipo == #outro then
                 append problemas (i.mtl.name + ": tipo " + (classof i.mtl) as string + " não é convertido para glTF")
             else
             (
@@ -164,9 +204,8 @@ fn InLab_V23_SlotsPBR infos =
     local nota = ""
     if semRough.count > 0 do nota += " · sem roughness: " + InLab_ListaResumida semRough
     if semNormal.count > 0 do nota += " · sem normal: " + InLab_ListaResumida semNormal
-    if problemas.count > 0 do append problemas (nota)
-    InLab_Mat_Registrar "V-23" titulo (for p in problemas where p != "" collect p) naoMedidos \
-        (infos.count as string + " material(is) com base color mapeado" + nota) critico:true provisorio:true
+    InLab_Mat_Registrar "V-23" titulo problemas naoMedidos \
+        (infos.count as string + " material(is) com base color mapeado") critico:true provisorio:true nota:nota
 )
 
 -- V-24 · PNG proibido no base color e no roughness (crítica). Exceção: palha
@@ -175,10 +214,14 @@ fn InLab_V24_PNG infos =
 (
     local titulo = "Sem PNG no base color e no roughness"
     local problemas = #(), naoMedidos = #(), aceitos = #()
-    for i in infos where i.tipo != #outro do
+    for i in infos do
     (
         try
         (
+            if i.tipo == #gltf then append naoMedidos (i.mtl.name + ": já convertido para glTF")
+            else if i.tipo == #outro then append naoMedidos (i.mtl.name + ": tipo " + (classof i.mtl) as string + " não lido")
+            else
+            (
             local alpha = i.especial == #palha or (InLab_Mat_MapasDoSlot i #opacMapa).count > 0
             for par in #(#(#mapaBase, "base color"), #(#mapaGloss, "roughness")) do
                 for tm in (InLab_Mat_MapasDoSlot i par[1]) do
@@ -190,12 +233,14 @@ fn InLab_V24_PNG infos =
                         else appendIfUnique problemas (i.mtl.name + " (" + par[2] + "): " + filenameFromPath arq)
                     )
                 )
+            )
         )
         catch ( append naoMedidos (i.mtl.name + " (" + getCurrentException() + ")") )
     )
     local okMsg = "nenhum PNG no base color nem no roughness"
-    if aceitos.count > 0 do okMsg = "PNG aceito (alpha): " + InLab_ListaResumida aceitos
-    InLab_Mat_Registrar "V-24" titulo problemas naoMedidos okMsg critico:true
+    local nota = ""
+    if aceitos.count > 0 do nota = " · PNG aceito (alpha): " + InLab_ListaResumida aceitos
+    InLab_Mat_Registrar "V-24" titulo problemas naoMedidos okMsg critico:true nota:nota
 )
 
 fn InLab_Mat_NomesUsados uso = ( for m in uso.usados collect m.name )
@@ -221,13 +266,14 @@ fn InLab_V25_IDsDeMaterial uso produto:undefined =
 (
     local titulo = "IDs de material com sub-material"
     local okMsg = "todos os IDs de material das faces têm sub-material"
+    local nota = ""
     if produto != undefined do
     (
         local usados = InLab_Mat_NomesUsados uso
         local semFaces = for id in (InLab_Mat_IdsDasPartes produto) where (findItem usados id) == 0 collect id
-        if semFaces.count > 0 do okMsg += " · nota: parte(s) do produto sem faces: " + InLab_ListaResumida semFaces
+        if semFaces.count > 0 do nota = " · parte(s) do produto sem faces: " + InLab_ListaResumida semFaces
     )
-    InLab_Mat_Registrar "V-25" titulo uso.orfaos uso.naoMedidos okMsg critico:true
+    InLab_Mat_Registrar "V-25" titulo uso.orfaos uso.naoMedidos okMsg critico:true nota:nota
 )
 
 -- V-35 · Palha com opacidade (advertência provisória). O 2-sided não é
@@ -242,7 +288,8 @@ fn InLab_V35_Palha infos =
     (
         try
         (
-            if i.tipo == #outro then append problemas (i.mtl.name + ": tipo não convertido para glTF")
+            if i.tipo == #gltf then append problemas (InLab_Mat_MsgGltf i.mtl.name)
+            else if i.tipo == #outro then append problemas (i.mtl.name + ": tipo não convertido para glTF")
             else if (InLab_Mat_MapasDoSlot i #opacMapa).count == 0 do append problemas (i.mtl.name + ": sem mapa de opacidade")
         )
         catch ( append naoMedidos (i.mtl.name + " (" + getCurrentException() + ")") )
@@ -279,7 +326,8 @@ fn InLab_V36_Cristal infos =
     (
         try
         (
-            if i.tipo == #outro then append problemas (i.mtl.name + ": tipo não convertido para glTF")
+            if i.tipo == #gltf then append problemas (InLab_Mat_MsgGltf i.mtl.name)
+            else if i.tipo == #outro then append problemas (i.mtl.name + ": tipo não convertido para glTF")
             else if not (InLab_Mat_RefracaoLigada i) do append problemas (i.mtl.name + ": refração desligada")
         )
         catch ( append naoMedidos (i.mtl.name + " (" + getCurrentException() + ")") )
@@ -308,12 +356,14 @@ fn InLab_V37_ZonasEstofado cfg uso produto:undefined =
         local usados = InLab_Mat_NomesUsados uso
         local tecidos = InLab_Mat_IdsDasPartes produto filtro:InLab_Mat_EhTecido
         local faltam = for id in tecidos where (findItem usados id) == 0 collect ("parte de tecido sem faces: " + id)
-        InLab_Mat_Registrar "V-37" titulo faltam uso.naoMedidos (tecidos.count as string + " parte(s) de tecido com o seu material") critico:true provisorio:true
+        local okMsg = if tecidos.count == 0 then "não se aplica: produto sem parte de tecido" else (tecidos.count as string + " parte(s) de tecido com o seu material")
+        InLab_Mat_Registrar "V-37" titulo faltam uso.naoMedidos okMsg critico:true provisorio:true
     )
     else
     (
-        local problemas = if uso.usados.count <= 1 then #("estofado num único material (pode ser produto sem desmembramento; importe o .json para conferir as partes)") else #()
-        InLab_Mat_Registrar "V-37" titulo problemas uso.naoMedidos (uso.usados.count as string + " materiais no estofado") critico:true provisorio:true
+        local problemas = if uso.usados.count == 1 then #("estofado num único material (pode ser produto sem desmembramento; importe o .json para conferir as partes)") else #()
+        local okMsg = if uso.usados.count == 0 then "não se aplica: nenhum material nas peças" else (uso.usados.count as string + " materiais no estofado")
+        InLab_Mat_Registrar "V-37" titulo problemas uso.naoMedidos okMsg critico:true provisorio:true
     )
 )
 
@@ -336,6 +386,7 @@ fn InLab_V38_TampoAcessorio cfg uso produto:undefined =
         local temTampo = (for id in idsTampo where (findItem usados id) > 0 collect id).count > 0
         local temOutros = (for id in idsOutros where (findItem usados id) > 0 collect id).count > 0
         local problemas = if temTampo and temOutros then #("estrutura e tampo acessório no mesmo arquivo: separe em dois blocos (intercambialidade)") else #()
-        InLab_Mat_Registrar "V-38" titulo problemas uso.naoMedidos (if temTampo then "arquivo só com o tampo" else "arquivo só com a estrutura") critico:false
+        InLab_Mat_Registrar "V-38" titulo problemas uso.naoMedidos \
+            (if temTampo then "arquivo só com o tampo" else if temOutros then "arquivo só com a estrutura" else "nenhuma parte do produto nas faces (ver V-20)") critico:false
     )
 )

@@ -12,6 +12,9 @@ global InLab_V23_SlotsPBR, InLab_V24_PNG, InLab_V25_IDsDeMaterial
 global InLab_V35_Palha, InLab_V36_Cristal, InLab_V37_ZonasEstofado, InLab_V38_TampoAcessorio
 global InLab_TampoAcessorioProduto, InLab_AprovacaoFinal
 global INLAB_TESTE_SAIDA, INLAB_TESTE_FALHAS
+global InLab_UltimaConversao, InLab_ResolverClasseGLTF, ConversaoRecord
+-- Base cuja leitura de slot lança: getNumSubTexmaps de um inteiro dá erro.
+struct TesteSlotQuebrado ( texmapDiffuse = 5, texmapReflectGlossiness = 5, texmapBump = 5, texmapOpacity = 5 )
 (
     local dirTeste = getFilenamePath (getSourceFileName())
     local raiz = substring dirTeste 1 (dirTeste.count - 6) -- tira "tests\"
@@ -324,7 +327,76 @@ global INLAB_TESTE_SAIDA, INLAB_TESTE_FALHAS
         checar "V-38 é não crítica (critico:false, aprovação continua)" (r38 != undefined and not r38.critico and InLab_AprovacaoFinal())
         limparCena()
 
-        -- CASOS DAS PRÓXIMAS TASKS ENTRAM AQUI
+        ---------------------------------------------------------------- revisão final
+        -- Cena já convertida: material glTF sem e com registro da conversão.
+        local classeGltf = try ( InLab_ResolverClasseGLTF() ) catch ( undefined )
+        local mG = if classeGltf != undefined then (try ( classeGltf() ) catch ( undefined )) else undefined
+        if mG == undefined then checar "glTF: pulado: glTF ausente" true
+        else
+        (
+            local conversaoOriginal = InLab_UltimaConversao
+            try
+            (
+                InLab_UltimaConversao = #()
+                mG.name = "Mesa_GLTF"
+                local h1 = caixa "h1" [0, 0, 0]
+                h1.material = mG
+                checar "glTF sem registro: V-23 avisa já convertido" ((rodarMats InLab_V23_SlotsPBR #(h1) "V-23") == #warning and tem (mensagemDe "V-23") "já convertido")
+                checar ("glTF sem registro: V-24 vira advertência não medido ('" + (rodarMats InLab_V24_PNG #(h1) "V-24") as string + "')") ((statusDe "V-24") == #warning and tem (mensagemDe "V-24") "não medido")
+                checar "glTF sem registro: V-35/V-36 só avisam se for palha/cristal (não se aplica)" ((rodarMats InLab_V35_Palha #(h1) "V-35") == #pass)
+                -- Com registro: lê o Corona original (PNG no difuso → V-24 falha).
+                local arqPng2 = salvarBitmap "inlab_v24_gltf.png"
+                local original = legacyCom "Mesa" (Bitmaptexture filename:arqPng2)
+                append InLab_UltimaConversao (ConversaoRecord no:h1 materialOriginal:original materialNovo:mG)
+                checar ("glTF com registro: V-24 reprova lendo o original ('" + (rodarMats InLab_V24_PNG #(h1) "V-24") as string + "')") ((statusDe "V-24") == #fail and tem (mensagemDe "V-24") "Mesa_GLTF (base color): inlab_v24_gltf.png")
+                checar "glTF com registro: V-23 lê o original (base color mapeado, sem aviso de convertido)" ((rodarMats InLab_V23_SlotsPBR #(h1) "V-23") == #pass and not (tem (mensagemDe "V-23") "já convertido"))
+                -- Palavra-chave vem do nome do ORIGINAL (o glTF ganha sufixo _GLTF).
+                original.name = "Palha natural"
+                mG.name = "Palha natural_GLTF"
+                checar "glTF com registro: especial lido do nome do original (palha sem opacidade avisa na V-35)" ((rodarMats InLab_V35_Palha #(h1) "V-35") == #warning)
+                try ( deleteFile arqPng2 ) catch ()
+            )
+            catch ( checar ("glTF: exceção inesperada: " + getCurrentException()) false )
+            InLab_UltimaConversao = conversaoOriginal
+            limparCena()
+        )
+
+        -- Caminho "não medido": a leitura do slot lança (valor que não é texmap).
+        local quebrado = TesteSlotQuebrado()
+        local infoQ = MatInfo mtl:(CoronaLegacyMtl name:"Quebrado Palha Vidro") base:quebrado tipo:#legacy especial:#palha
+        for par in #(#(InLab_V23_SlotsPBR, "V-23"), #(InLab_V24_PNG, "V-24"), #(InLab_V35_Palha, "V-35")) do
+        (
+            InLab_ResetarResultados()
+            local erroQ = ""
+            try ( par[1] #(infoQ) ) catch ( erroQ = getCurrentException() )
+            checar (par[2] + ": leitura que lança vira advertência 'não medido', sem exceção ('" + erroQ + "')") (erroQ == "" and (statusDe par[2]) == #warning and tem (mensagemDe par[2]) "não medido")
+        )
+        infoQ.especial = #cristal
+        InLab_ResetarResultados()
+        local erroC = ""
+        try ( InLab_V36_Cristal #(infoQ) ) catch ( erroC = getCurrentException() )
+        checar "V-36: leitura que lança vira 'não medido' ou refração desligada, sem exceção" (erroC == "" and (statusDe "V-36") == #warning)
+
+        -- Notas separadas da lista de problemas.
+        local nq = caixa "nq" [0, 0, 0]
+        nq.material = legacyCom "SemBase" undefined
+        rodarMats InLab_V23_SlotsPBR #(nq) "V-23"
+        checar ("V-23: nota vem depois do problema ('" + mensagemDe "V-23" + "')") (tem (mensagemDe "V-23") "SemBase: base color sem mapa · sem roughness: SemBase")
+        limparCena()
+
+        -- Bordas da V-37 e V-38.
+        local jsSem = "{\"produtos\": [{\"cod_est\": \"0091\", \"nome\": \"MESA\", \"partes\": [" +
+            "{\"nome_parte\": \"Estrutura\", \"tipo\": \"P\", \"so3d\": false, \"tecido\": false, \"acessorio\": false, \"material_id\": \"ART_P_Estrutura\", \"mesh_final\": \"0091\"}]}]}"
+        local prodSemTecido = (InLab_Produto_Lista (InLab_ParseJSON jsSem))[1]
+        local k1 = caixa "0091" [0, 0, 0]
+        k1.material = legacyCom "ART_P_Estrutura" (CoronaColor())
+        checar "V-37: produto sem parte de tecido não se aplica" ((rodar37 cfgEstof #(k1) prodSemTecido) == #pass and tem (mensagemDe "V-37") "não se aplica: produto sem parte de tecido")
+        checar "V-37: sem produto e sem materiais nas peças não se aplica" ((rodar37 cfgEstof #() undefined) == #pass and tem (mensagemDe "V-37") "não se aplica: nenhum material nas peças")
+        InLab_TampoAcessorioProduto = true
+        k1.material = legacyCom "Outro material" (CoronaColor())
+        checar "V-38: sem nenhuma parte do produto nas faces avisa para ver a V-20" ((rodar38 cfgUnico #(k1) prod) == #pass and tem (mensagemDe "V-38") "nenhuma parte do produto nas faces (ver V-20)")
+        InLab_TampoAcessorioProduto = false
+        limparCena()
     )
     catch
     (
