@@ -89,15 +89,6 @@ struct MalhaAnalise
     erroAvesso = undefined  -- V-10b não medida (só V-10; não invalida as demais)
 )
 
--- "a, b, c" com no máximo `maximo` itens e "… (+N)" no fim.
-fn InLab_Malha_Lista itens maximo:8 =
-(
-    local txt = ""
-    for i = 1 to (amin itens.count maximo) do txt += (if i > 1 then "; " else "") + itens[i]
-    if itens.count > maximo do txt += "; … (+" + (itens.count - maximo) as string + ")"
-    txt
-)
-
 -- V-10a: quantas arestas (de todas as faces) têm uma gêmea no MESMO sentido
 -- (vizinhas com sentido oposto). Em malha consistente cada aresta dirigida a→b
 -- aparece uma vez. Sort nativo sobre doubles, sem Dictionary.
@@ -401,7 +392,7 @@ fn InLab_V08_MalhaFechada analises =
         if a.furos > 0 do append itens ((InLab_Malha_Nome a) + ": " + a.furos as string + " aresta(s) aberta(s)")
     )
     InLab_RegistrarVerif "V-08" "Malha fechada (arestas abertas)" (itens.count == 0) \
-        (if itens.count == 0 then "nenhuma aresta aberta" else ("confira se o furo é de propósito (fundo aberto, faces escondidas): " + InLab_Malha_Lista itens)) critico:false
+        (if itens.count == 0 then "nenhuma aresta aberta" else ("confira se o furo é de propósito (fundo aberto, faces escondidas): " + InLab_ListaResumida itens)) critico:false
 )
 
 -- V-10 · Normais invertidas: vizinhas com sentido oposto ou peça do avesso.
@@ -417,9 +408,9 @@ fn InLab_V10_Normais analises =
         if a.avesso > 0 do append itens ((InLab_Malha_Nome a) + ": " + a.avesso as string + " parte(s) do avesso (normais para dentro)")
     )
     if itens.count > 0 then
-        InLab_RegistrarVerif "V-10" "Normais invertidas" false (InLab_Malha_Lista (itens + naoMedidos)) critico:true
+        InLab_RegistrarVerif "V-10" "Normais invertidas" false (InLab_ListaResumida (itens + naoMedidos)) critico:true
     else if naoMedidos.count > 0 then
-        InLab_RegistrarVerif "V-10" "Normais invertidas" false ("não medido: " + InLab_Malha_Lista naoMedidos) critico:false
+        InLab_RegistrarVerif "V-10" "Normais invertidas" false ("não medido: " + InLab_ListaResumida naoMedidos) critico:false
     else
         InLab_RegistrarVerif "V-10" "Normais invertidas" true "normais consistentes" critico:true
 )
@@ -447,9 +438,9 @@ fn InLab_V09_Duplicados analises objetos =
                 append itens (p.name + " e " + q.name + ": objeto duplicado no mesmo lugar")
         )
     if itens.count > 0 then
-        InLab_RegistrarVerif "V-09" "Faces e objetos duplicados" false (InLab_Malha_Lista (itens + naoMedidos)) critico:true
+        InLab_RegistrarVerif "V-09" "Faces e objetos duplicados" false (InLab_ListaResumida (itens + naoMedidos)) critico:true
     else if naoMedidos.count > 0 then
-        InLab_RegistrarVerif "V-09" "Faces e objetos duplicados" false ("não medido: " + InLab_Malha_Lista naoMedidos) critico:false
+        InLab_RegistrarVerif "V-09" "Faces e objetos duplicados" false ("não medido: " + InLab_ListaResumida naoMedidos) critico:false
     else
         InLab_RegistrarVerif "V-09" "Faces e objetos duplicados" true "nenhuma duplicata" critico:true
 )
@@ -468,14 +459,14 @@ fn InLab_V13_Ngons analises =
         if a.ngonsNaCurva > 0 do append itens ((InLab_Malha_Nome a) + ": " + a.ngonsNaCurva as string + " ngon(s) suavizada(s) numa curva (vizinha a " + (formattedPrint a.curvaMaxGraus format:".0f") + "°)")
     )
     if itens.count > 0 then
-        InLab_RegistrarVerif "V-13" "Ngons em superfície curva" false (InLab_Malha_Lista (itens + naoMedidos)) critico:true
+        InLab_RegistrarVerif "V-13" "Ngons em superfície curva" false (InLab_ListaResumida (itens + naoMedidos)) critico:true
     else if naoMedidos.count > 0 then
-        InLab_RegistrarVerif "V-13" "Ngons em superfície curva" false ("não medido: " + InLab_Malha_Lista naoMedidos) critico:false
+        InLab_RegistrarVerif "V-13" "Ngons em superfície curva" false ("não medido: " + InLab_ListaResumida naoMedidos) critico:false
     else
     (
         local semPoly = for a in analises where not a.ngonsAplica collect a.no.name
         local msg = if semPoly.count == analises.count then "não se aplica: nenhum objeto em Editable Poly com stack vazio" \
-            else ("nenhuma ngon em superfície curva" + (if semPoly.count > 0 then (" · não se aplica a " + InLab_Malha_Lista semPoly) else ""))
+            else ("nenhuma ngon em superfície curva" + (if semPoly.count > 0 then (" · não se aplica a " + InLab_ListaResumida semPoly) else ""))
         InLab_RegistrarVerif "V-13" "Ngons em superfície curva" true msg critico:true
     )
 )
@@ -571,7 +562,7 @@ fn InLab_V07_RatioVT cfg objetos exportador:unsupplied =
         local txtSemNo = ""
         if semNo.count > 0 do
         (
-            txtSemNo = semNo.count as string + " objeto(s) não medido(s): " + (InLab_Malha_Lista semNo)
+            txtSemNo = semNo.count as string + " objeto(s) não medido(s): " + (InLab_ListaResumida semNo)
             InLab_Log ("V-07: " + txtSemNo + " (sem nó de mesmo nome no glTF).") tipo:#warn
         )
         if medidos == 0 then
@@ -580,7 +571,7 @@ fn InLab_V07_RatioVT cfg objetos exportador:unsupplied =
             InLab_RegistrarVerif "V-07" titulo false ("nenhum acima do limite, mas " + txtSemNo) critico:false
         else
             InLab_RegistrarVerif "V-07" titulo (acima.count == 0) \
-                ((if acima.count == 0 then ("maior " + (formattedPrint maior format:".2f")) else InLab_Malha_Lista acima) + " · limite " + cfg.maxRatioVT as string \
+                ((if acima.count == 0 then ("maior " + (formattedPrint maior format:".2f")) else InLab_ListaResumida acima) + " · limite " + cfg.maxRatioVT as string \
                     + (if semNo.count > 0 then (" · " + txtSemNo) else "")) \
                 critico:true provisorio:true
     )

@@ -33,6 +33,10 @@
  (GeometryClass, mas nunca produto); objeto oculto continua contando.
  `InLab_VaiProGLB` (oculto/não renderizável, também pela camada) veio de
  functions\fn_otim_escondidas.ms para ser usada também pela EX-01.
+
+ 06/10/2026: `InLab_ListaResumida` junta InLab_Malha_Lista (verif_malha.ms,
+ issue #102) e InLab_Mapa_Lista (verif_mapeamento.ms, issue #101), cópias
+ idênticas que nasceram em branches paralelas.
 ================================================================================
 */
 
@@ -174,4 +178,14 @@ fn InLab_FormatarMB v =
 (
     if v == undefined then "n/d"
     else (formattedPrint v format:".2f") + " MB"
+)
+
+-- "a; b; c" com no máximo `maximo` itens e "… (+N)" no fim. Usada nas
+-- mensagens das verificações que listam peças (grupos 5 e 6).
+fn InLab_ListaResumida itens maximo:8 =
+(
+    local txt = ""
+    for i = 1 to (amin itens.count maximo) do txt += (if i > 1 then "; " else "") + itens[i]
+    if itens.count > maximo do txt += "; … (+" + (itens.count - maximo) as string + ")"
+    txt
 )
