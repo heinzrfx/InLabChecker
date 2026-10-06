@@ -1,8 +1,10 @@
 # Instalação do InLabChecker
 
-Para 3ds Max 2024 (também roda no 2027 — ver nota no fim do passo 2). Não precisa ser administrador. Leva uns 5 minutos e é feito uma vez só por máquina: depois disso o plugin se atualiza pelo próprio painel.
+Para 3ds Max 2024 a 2027 (ver nota no fim do passo 2). Não precisa ser administrador. Leva uns 5 minutos e é feito uma vez só por máquina: depois disso o plugin se atualiza pelo próprio painel.
 
 ## Do que você precisa
+
+**Pré-requisito: Corona Renderer instalado na mesma versão do Max.** Os materiais do acervo são Corona: sem ele, a conversão de material, o Real World Fix e as verificações de material (V-23 a V-38) não funcionam.
 
 Na página da última release (<https://github.com/heinzrfx/InLabChecker/releases/latest>), em **Assets**, baixe os dois arquivos:
 
@@ -19,7 +21,7 @@ Na página da última release (<https://github.com/heinzrfx/InLabChecker/release
 %LOCALAPPDATA%\Autodesk\3dsMax\2024 - 64bit\ENU\scripts
 ```
 
-No 3ds Max 2027, o caminho é o mesmo trocando `2024` por `2027` — repita os passos 2 a 6 nessa segunda pasta se usar as duas versões do Max na mesma máquina (instalação separada por versão, de propósito: cada build pode expor APIs diferentes).
+No 3ds Max 2025, 2026 ou 2027, o caminho é o mesmo trocando `2024` pelo ano da sua versão. Se usar mais de uma versão do Max na mesma máquina, repita os passos 2 a 6 na pasta de cada uma (instalação separada por versão, de propósito: cada build pode expor APIs diferentes).
 
 **3. Crie ali uma pasta chamada `InLabChecker`** (exatamente assim, com o I, o L e o C maiúsculos).
 
