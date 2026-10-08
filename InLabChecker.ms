@@ -87,12 +87,11 @@
             @"functions\fn_renomear_produto.ms",
             -- fn_prooptimizer.ms saiu em 24/09/2026 (issue #62): o passo 2
             -- (fn_otim_fino.ms) tem o próprio ProOptimizer. Arquivo apagado em 30/09/2026.
-            -- Otimização em 3 passos (issue #60): núcleo antes dos passos.
+            -- Otimização: medidor de triângulos e o ProOptimizer de 30% por
+            -- clique (#124). Os 3 passos (fn_otim_origem/_fino/_escondidas)
+            -- saíram em 08/10/2026 (issue #126).
             @"functions\fn_otim_nucleo.ms",
-            @"functions\fn_otim_reduzir.ms",   -- Reduzir 30% por clique (#124)
-            @"functions\fn_otim_origem.ms",
-            @"functions\fn_otim_fino.ms",
-            @"functions\fn_otim_escondidas.ms",
+            @"functions\fn_otim_reduzir.ms",
             @"functions\fn_realworldscale.ms",
             @"functions\fn_checktexture.ms",
             @"functions\fn_autouv.ms",
