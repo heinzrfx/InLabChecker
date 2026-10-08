@@ -58,6 +58,19 @@
    - Modificador desligado pelo usuário: avisa em vez de culpar as proteções.
    - #info de KeepUV desligado só aparece depois de avaliar o nó (classof).
    - Histórico do Desfazer é zerado em reset, cena nova e arquivo aberto.
+   - Segundo teste (undo): o ProOptimizer NÃO refaz a malha quando o
+     VertexPercent SOBE (24 → 34,3 continua com a malha de 24%; nos modelos
+     reais Porter e Mentha o Ctrl+Z e o Desfazer dos cliques do meio davam a
+     malha errada, a que o export pegaria). Ctrl+Z/Redo: callback
+     #sceneUndo/#sceneRedo liga e desliga os modificadores
+     (InLab_OtimReduzir_Refrescar). Desfazer: o liga/desliga dentro do script
+     não bastou (sondado com o bule), então refaz o Calculate no contexto. Passar
+     por 100% antes do alvo também funcionou na sonda, mas sem explicação: não
+     usado. O `select` do Calculate fica fora do undo (o Ctrl+Z deixava a
+     seleção na última peça).
+   LIMITE CONHECIDO: Ctrl+Z de um Desfazer não devolve o registro dele ao
+   histórico (o Desfazer seguinte pula as peças com #warn); o Ctrl+Z continua
+   funcionando. Clique em que nada reduz deixa um passo vazio no Ctrl+Z.
    Fica como está: peça que as proteções seguram desde o 1º clique refaz o
    Calculate em todo clique (~0,6 s por peça), porque o modificador que não
    reduziu é removido.
@@ -125,6 +138,31 @@ fn InLab_OtimReduzir_NoStack o m =
     tem
 )
 
+-- O ProOptimizer não refaz a malha quando o VertexPercent SOBE (Ctrl+Z ou
+-- Desfazer de um clique do meio): continua mostrando a malha do percentual
+-- mais baixo — e é ela que o export pegaria. Desligar e religar o modificador
+-- força a reavaliação (completeRedraw e classof não bastam). Sem undo: não
+-- pode virar um passo do Ctrl+Z nem apagar o Redo. `mods` = undefined
+-- refresca todos os "InLab · Reduzir" da cena.
+global InLab_OtimReduzir_Refrescar
+fn InLab_OtimReduzir_Refrescar mods:undefined =
+(
+    if mods == undefined do
+    (
+        mods = #()
+        for o in geometry do
+            for m in o.modifiers where classof m == ProOptimizer and m.name == INLAB_REDUZIR_NOME_MOD and findItem mods m == 0 do append mods m
+    )
+    with undo off
+        for m in mods where m.enabled do ( m.enabled = false; m.enabled = true )
+    mods.count
+)
+
+-- Ctrl+Z e Redo do Max não passam pelo plugin: refresca depois de cada um.
+callbacks.removeScripts id:#InLabReduzirRefrescar
+for ev in #(#sceneUndo, #sceneRedo) do
+    callbacks.addScript ev "try ( InLab_OtimReduzir_Refrescar() ) catch ()" id:#InLabReduzirRefrescar
+
 -- Põe a peça no contexto obrigatório do Calculate (grupos acima abertos, nó
 -- selecionado, painel Modify, `po` corrente) e dispara o cálculo. Devolve true
 -- se alguma das variantes (#Calculate, #CalculationEnabled) rodou. Fecha os
@@ -136,7 +174,8 @@ fn InLab_OtimReduzir_Calcular o po =
     local calcOk = false
     try
     (
-        select o
+        -- Fora do undo: o Ctrl+Z do clique não deve mexer na seleção.
+        with undo off select o
         setCommandPanelTaskMode #modify
         try ( subObjectLevel = 0 )
         catch ( InLab_Log (o.name + ": não zerei o subObjectLevel (" + getCurrentException() + ").") tipo:#warn )
@@ -261,7 +300,8 @@ fn InLab_OtimReduzir objs =
                             if trisDepois >= trisAntes then
                             (
                                 -- As proteções seguraram: desfaz o passo nesta peça.
-                                if criado then deleteModifier o po else po.VertexPercent = pctAntes
+                                if criado then deleteModifier o po
+                                else ( po.VertexPercent = pctAntes; InLab_OtimReduzir_Refrescar mods:#(po) )
                                 InLab_Log (o.name + ": não reduziu (" + (InLab_Otim_Milhar trisAntes) +
                                            " triângulos — as proteções seguram). Peça intacta.") tipo:#warn
                             )
@@ -313,6 +353,8 @@ fn InLab_OtimReduzir_Desfazer =
     (
         local clique = InLab_ReduzirHistorico[InLab_ReduzirHistorico.count]
         deleteItem InLab_ReduzirHistorico InLab_ReduzirHistorico.count
+        local selOriginal = selection as array
+        local painelOriginal = getCommandPanelTaskMode()
         undo "InLab Desfazer redução" on
         (
             for r in clique do
@@ -327,7 +369,17 @@ fn InLab_OtimReduzir_Desfazer =
                     try
                     (
                         if r.criado then deleteModifier r.no r.modificador
-                        else r.modificador.VertexPercent = r.pctAntes
+                        else
+                        (
+                            -- Subir o VertexPercent não refaz a malha (ver
+                            -- InLab_OtimReduzir_Refrescar); no Desfazer o
+                            -- liga/desliga não bastou: refaz o Calculate.
+                            r.modificador.VertexPercent = r.pctAntes
+                            if InLab_OtimReduzir_Calcular r.no r.modificador then
+                                r.modificador.VertexPercent = r.pctAntes
+                            else
+                                InLab_Log (r.no.name + ": não recalculei o ProOptimizer — a malha pode continuar a do clique desfeito.") tipo:#warn
+                        )
                         InLab_Log (r.no.name + ": volta a " + (InLab_Otim_Milhar (GetTriMeshFaceCount r.no)[1]) + " triângulos.") tipo:#ok
                         n += 1
                     )
@@ -335,6 +387,12 @@ fn InLab_OtimReduzir_Desfazer =
                 )
             )
         )
+        try
+        (
+            if selOriginal.count > 0 then select (for s in selOriginal where isValidNode s collect s) else clearSelection()
+            setCommandPanelTaskMode painelOriginal
+        )
+        catch ( InLab_Log ("Desfazer: não restaurei seleção/painel (" + getCurrentException() + ").") tipo:#warn )
         InLab_Log ("Desfazer: " + n as string + " de " + clique.count as string + " peça(s) voltaram ao clique anterior.") \
             tipo:(if n == clique.count then #ok else #warn)
     )

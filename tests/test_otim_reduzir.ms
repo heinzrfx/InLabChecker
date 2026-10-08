@@ -134,6 +134,41 @@ global INLAB_TESTE_SAIDA, INLAB_TESTE_FALHAS
             ((InLab_OtimReduzir #(a)) == 0 and (abs (poA.VertexPercent - 49.0)) < 0.01)
         poA.enabled = true
 
+        ---------------------------------------------------------------- PERCENTUAL SOBE (teste adversarial 08/10)
+        -- O ProOptimizer não refaz a malha quando o VertexPercent sobe: o
+        -- Desfazer/Ctrl+Z de um clique do meio tem que dar a mesma malha que
+        -- uma peça nova reduzida direto àquele percentual.
+        fn refBule pct =
+        (
+            local c = Teapot radius:10 segs:6 mapcoords:true pos:[0, -200, 0]
+            convertToPoly c
+            InLab_OtimReduzir #(c)
+            (InLab_OtimReduzir_Modificador c).VertexPercent = pct
+            local n = tris c
+            delete c
+            n
+        )
+        -- Referências ANTES: o refBule cria um passo de undo próprio, que um
+        -- Ctrl+Z do meio da sequência desfaria no lugar do clique.
+        local ref343 = refBule 34.3
+        local ref49 = refBule 49.0
+        local bu = Teapot name:"red_bule_sobe" radius:10 segs:6 mapcoords:true pos:[0, 200, 0]
+        convertToPoly bu
+        for i = 1 to 4 do InLab_OtimReduzir #(bu)
+        local bu4 = tris bu
+        InLab_OtimReduzir_Desfazer()
+        checar ("Desfazer do clique 4 dá a malha de 34,3% (" + (tris bu) as string + ", ref " + ref343 as string + ", clique 4 = " + bu4 as string + ")") \
+            ((tris bu) == ref343)
+        InLab_OtimReduzir #(bu)
+        max undo
+        checar ("Ctrl+Z do clique refeito dá a malha de 34,3% (" + (tris bu) as string + ")") ((tris bu) == ref343)
+        max undo
+        checar ("Ctrl+Z do Desfazer volta à malha de 24% (" + (tris bu) as string + ", ref " + bu4 as string + ")") ((tris bu) == bu4)
+        max undo
+        checar ("Ctrl+Z do clique 4 dá a malha de 34,3% (" + (tris bu) as string + ")") ((tris bu) == ref343)
+        max undo
+        checar ("Ctrl+Z do clique 3 dá a malha de 49% (" + (tris bu) as string + ", ref " + ref49 as string + ")") ((tris bu) == ref49)
+
         ---------------------------------------------------------------- HISTÓRICO ZERA NA CENA NOVA
         checar "Histórico tem cliques antes do reset" (InLab_ReduzirHistorico.count > 0)
         resetMaxFile #noPrompt
