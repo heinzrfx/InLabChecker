@@ -1,20 +1,20 @@
 /*
 ================================================================================
- functions\fn_otim_reduzir.ms — Otimização · Reduzir 10% por clique (issue #124)
+ functions\fn_otim_reduzir.ms — Otimização · Reduzir 30% por clique (issue #124)
 --------------------------------------------------------------------------------
  Epic #121 / issue #123 (ajustes pós-v1 do teste com a Bia, 07/10/2026): a
- Otimização fica só com o ProOptimizer. Cada clique em Reduzir tira 10% dos
+ Otimização fica só com o ProOptimizer. Cada clique em Reduzir tira 30% dos
  vértices de cada peça selecionada; Desfazer volta o último clique.
 
  O QUE FAZ: um ProOptimizer por stack, chamado INLAB_REDUZIR_NOME_MOD
- ("InLab · Reduzir"). O 1º clique cria o modificador (VertexPercent 90); os
+ ("InLab · Reduzir"). O 1º clique cria o modificador (VertexPercent 70); os
  seguintes reaproveitam o mesmo e multiplicam o VertexPercent por
- INLAB_REDUZIR_FATOR (90 → 81 → 72,9...): cada clique tira 10% do que a peça
+ INLAB_REDUZIR_FATOR (70 → 49 → 34,3...): cada clique tira 30% do que a peça
  TEM, nunca chega a zero. Não empilha um ProOptimizer por clique. O piso é
  INLAB_REDUZIR_PCT_MIN (1% dos vértices originais).
 
  UM CLIQUE = UM PASSO DE CTRL+Z: cada chamada de InLab_OtimReduzir fica num
- `undo "InLab Reduzir 10%" on` só, com todas as peças.
+ `undo "InLab Reduzir 30%" on` só, com todas as peças.
 
  SONDAGEM (Max 2024, 08/10/2026, Sphere segs:64 = 3968 triângulos):
    - Só o Calculate do modificador NOVO precisa do contexto (nó selecionado,
@@ -45,6 +45,23 @@
  anterior, num undo próprio. Se o estado no stack não bate com o registro
  (o usuário já deu Ctrl+Z, colapsou, apagou), pula a peça com #warn.
 
+ HISTÓRICO:
+ 08/10/2026: passo de 10% (fator 0,9) para 30% (fator 0,7) por clique, a
+ pedido do usuário.
+ 08/10/2026 (teste adversarial por agente, 4 modelos do piloto + primitivas):
+   - Mudança ABAIXO do modificador (vértice movido, modificador inserido
+     embaixo) invalida o cálculo: o ProOptimizer devolve a malha inteira e a
+     peça nunca mais reduzia. Agora, se o clique não reduz numa peça que já
+     tinha o modificador, refaz o Calculate no contexto e tenta de novo
+     (InLab_OtimReduzir_Calcular) — nesse clique a queda pode passar de 30%,
+     porque a peça volta do original direto para o VertexPercent do clique.
+   - Modificador desligado pelo usuário: avisa em vez de culpar as proteções.
+   - #info de KeepUV desligado só aparece depois de avaliar o nó (classof).
+   - Histórico do Desfazer é zerado em reset, cena nova e arquivo aberto.
+   Fica como está: peça que as proteções seguram desde o 1º clique refaz o
+   Calculate em todo clique (~0,6 s por peça), porque o modificador que não
+   reduziu é removido.
+
  `global` antes de cada fn: o arquivo pode ser recarregado sozinho por
  InLab_RecarregarPlugin() — padrão de functions\fn_renomear_produto.ms.
 ================================================================================
@@ -71,8 +88,14 @@ struct ReduzirRecord
 global InLab_ReduzirHistorico
 if InLab_ReduzirHistorico == undefined do InLab_ReduzirHistorico = #()
 
+-- Cena nova, reset ou arquivo aberto: o histórico é da cena anterior (achado
+-- no teste de 08/10/2026: sobrevivia a resetMaxFile/loadMaxFile).
+callbacks.removeScripts id:#InLabReduzirHistorico
+for ev in #(#systemPostReset, #systemPostNew, #filePostOpen) do
+    callbacks.addScript ev "InLab_ReduzirHistorico = #()" id:#InLabReduzirHistorico
+
 global INLAB_REDUZIR_NOME_MOD = "InLab · Reduzir"
-global INLAB_REDUZIR_FATOR = 0.9
+global INLAB_REDUZIR_FATOR = 0.7
 global INLAB_REDUZIR_PCT_MIN = 1.0
 
 -- Proteções: #(propriedade, valor, descrição para o log). Ver cabeçalho.
@@ -102,6 +125,33 @@ fn InLab_OtimReduzir_NoStack o m =
     tem
 )
 
+-- Põe a peça no contexto obrigatório do Calculate (grupos acima abertos, nó
+-- selecionado, painel Modify, `po` corrente) e dispara o cálculo. Devolve true
+-- se alguma das variantes (#Calculate, #CalculationEnabled) rodou. Fecha os
+-- grupos que abriu; a seleção e o painel quem chama restaura.
+global InLab_OtimReduzir_Calcular
+fn InLab_OtimReduzir_Calcular o po =
+(
+    local grupos = InLab_AbrirGruposAcima o
+    local calcOk = false
+    try
+    (
+        select o
+        setCommandPanelTaskMode #modify
+        try ( subObjectLevel = 0 )
+        catch ( InLab_Log (o.name + ": não zerei o subObjectLevel (" + getCurrentException() + ").") tipo:#warn )
+        try ( modPanel.setCurrentObject po )
+        catch ( InLab_Log (o.name + ": não pus o ProOptimizer como corrente no Modify (" + getCurrentException() + ").") tipo:#warn )
+        for c in #(#Calculate, #CalculationEnabled) while not calcOk do
+            if isProperty po c do
+                ( try ( setProperty po c true; calcOk = true )
+                  catch ( InLab_Log (o.name + ": ProOptimizer." + c as string + " falhou (" + getCurrentException() + ").") tipo:#warn ) )
+    )
+    catch ( InLab_Log (o.name + ": erro ao calcular o ProOptimizer (" + getCurrentException() + ").") tipo:#err )
+    InLab_FecharGrupos grupos
+    calcOk
+)
+
 -- Cria o ProOptimizer na peça, com as proteções, e dispara o Calculate no
 -- contexto obrigatório. Devolve o modificador, ou undefined se não deu (e já
 -- removeu o que criou). `faltando` acumula as proteções inexistentes na build.
@@ -110,17 +160,9 @@ fn InLab_OtimReduzir_Criar o faltando =
 (
     local po = ProOptimizer()
     po.name = INLAB_REDUZIR_NOME_MOD
-    local grupos = #()
     try
     (
-        grupos = InLab_AbrirGruposAcima o
-        select o
-        setCommandPanelTaskMode #modify
-        try ( subObjectLevel = 0 )
-        catch ( InLab_Log (o.name + ": não zerei o subObjectLevel (" + getCurrentException() + ").") tipo:#warn )
         addModifier o po
-        try ( modPanel.setCurrentObject po )
-        catch ( InLab_Log (o.name + ": não pus o ProOptimizer como corrente no Modify (" + getCurrentException() + ").") tipo:#warn )
 
         for p in INLAB_REDUZIR_PROTECOES do
         (
@@ -133,19 +175,20 @@ fn InLab_OtimReduzir_Criar o faltando =
             else if findItem faltando p[1] == 0 do append faltando p[1]
         )
 
-        local calcOk = false
-        for c in #(#Calculate, #CalculationEnabled) while not calcOk do
-            if isProperty po c do
-                ( try ( setProperty po c true; calcOk = true )
-                  catch ( InLab_Log (o.name + ": ProOptimizer." + c as string + " falhou (" + getCurrentException() + ").") tipo:#warn ) )
-        if not calcOk then
+        if not (InLab_OtimReduzir_Calcular o po) then
         (
             deleteModifier o po
             po = undefined
             InLab_Log (o.name + ": ProOptimizer sem Calculate/CalculationEnabled nesta build — peça NÃO reduzida.") tipo:#err
         )
-        else if isProperty po #KeepUV and not po.KeepUV do
-            InLab_Log (o.name + ": sem UV no canal 1 — o ProOptimizer desligou KeepUV sozinho.") tipo:#info
+        else
+        (
+            -- O KeepUV só vira false depois que o nó é avaliado (achado no
+            -- teste de 08/10/2026): ler logo após o Calculate dá sempre true.
+            classof o
+            if isProperty po #KeepUV and not po.KeepUV do
+                InLab_Log (o.name + ": sem UV no canal 1 — o ProOptimizer desligou KeepUV sozinho.") tipo:#info
+        )
     )
     catch
     (
@@ -155,11 +198,10 @@ fn InLab_OtimReduzir_Criar o faltando =
             catch ( InLab_Log (o.name + ": não removi o ProOptimizer após o erro (" + getCurrentException() + ").") tipo:#err )
         po = undefined
     )
-    InLab_FecharGrupos grupos
     po
 )
 
--- Um clique: tira 10% dos vértices de cada peça (stack) de `objs`. Devolve
+-- Um clique: tira 30% dos vértices de cada peça (stack) de `objs`. Devolve
 -- quantas peças reduziram.
 global InLab_OtimReduzir
 fn InLab_OtimReduzir objs =
@@ -179,7 +221,7 @@ fn InLab_OtimReduzir objs =
         local painelOriginal = getCommandPanelTaskMode()
         local somaAntes = 0, somaDepois = 0
 
-        undo "InLab Reduzir 10%" on
+        undo "InLab Reduzir 30%" on
         (
             for o in reps do
             (
@@ -190,7 +232,9 @@ fn InLab_OtimReduzir objs =
                     local po = InLab_OtimReduzir_Modificador o
                     local criado = (po == undefined)
                     local pctAntes = if criado then 100.0 else po.VertexPercent
-                    if not criado and pctAntes <= INLAB_REDUZIR_PCT_MIN + 0.001 then
+                    if not criado and not po.enabled then
+                        InLab_Log (o.name + ": o modificador \"" + INLAB_REDUZIR_NOME_MOD + "\" está desligado no stack — ligue-o para reduzir.") tipo:#warn
+                    else if not criado and pctAntes <= INLAB_REDUZIR_PCT_MIN + 0.001 then
                         InLab_Log (o.name + ": já está no mínimo (" + (formattedPrint pctAntes format:".1f") + "% dos vértices).") tipo:#warn
                     else
                     (
@@ -200,6 +244,20 @@ fn InLab_OtimReduzir objs =
                             local pctDepois = amax INLAB_REDUZIR_PCT_MIN (pctAntes * INLAB_REDUZIR_FATOR)
                             po.VertexPercent = pctDepois
                             local trisDepois = (GetTriMeshFaceCount o)[1]
+                            -- Malha ABAIXO do modificador mudou (vértice movido,
+                            -- modificador inserido embaixo): o cálculo guardado
+                            -- não vale mais e o ProOptimizer devolve a malha
+                            -- inteira. Refaz o Calculate e tenta de novo.
+                            if trisDepois >= trisAntes and not criado do
+                            (
+                                if InLab_OtimReduzir_Calcular o po do
+                                (
+                                    po.VertexPercent = pctDepois
+                                    trisDepois = (GetTriMeshFaceCount o)[1]
+                                    if trisDepois < trisAntes do
+                                        InLab_Log (o.name + ": a malha abaixo do ProOptimizer mudou — recalculado.") tipo:#info
+                                )
+                            )
                             if trisDepois >= trisAntes then
                             (
                                 -- As proteções seguraram: desfaz o passo nesta peça.
@@ -236,7 +294,7 @@ fn InLab_OtimReduzir objs =
             InLab_Log ("Reduzir: proteção(ões) inexistente(s) nesta build do ProOptimizer: " +
                        (for f in faltando collect f as string) as string + " — aplicado sem ela(s).") tipo:#warn
         if clique.count > 0 do append InLab_ReduzirHistorico clique
-        InLab_Log ("Reduzir 10%: " + clique.count as string + " de " + reps.count as string + " peça(s) reduzida(s)" +
+        InLab_Log ("Reduzir 30%: " + clique.count as string + " de " + reps.count as string + " peça(s) reduzida(s)" +
                    (if clique.count > 0 then (", " + (InLab_Otim_Milhar somaAntes) + " → " + (InLab_Otim_Milhar somaDepois) + " triângulos.") else ".")) \
             tipo:(if clique.count == reps.count then #ok else #warn)
         clique.count

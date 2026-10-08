@@ -1,6 +1,6 @@
 /*
  tests\test_otim_reduzir.ms — teste automático de functions\fn_otim_reduzir.ms (issue #124)
- Reduzir 10% por clique (um modificador por stack, VertexPercent × 0,9), cada
+ Reduzir 30% por clique (um modificador por stack, VertexPercent × 0,7), cada
  clique um passo de Ctrl+Z, Desfazer volta exatamente ao clique anterior,
  instâncias com um modificador só, grupo fechado, proteções, seleção restaurada,
  piso de 1% e registro que não bate depois de um Ctrl+Z.
@@ -63,8 +63,8 @@ global INLAB_TESTE_SAIDA, INLAB_TESTE_FALHAS
         local esfT1 = tris esf, buleT1 = tris bule1, caixaT1 = tris caixa
         local po = InLab_OtimReduzir_Modificador esf
         checar ("Clique 1 reduz as 3 peças (3 stacks): " + n1 as string) (n1 == 3)
-        checar ("Esfera cai ~10% (" + esfT0 as string + " -> " + esfT1 as string + ")") (esfT1 < esfT0 and esfT1 >= esfT0 * 0.85)
-        checar "Modificador com o nome InLab e VertexPercent 90" (po != undefined and po.name == INLAB_REDUZIR_NOME_MOD and (abs (po.VertexPercent - 90.0)) < 0.01)
+        checar ("Esfera cai ~30% (" + esfT0 as string + " -> " + esfT1 as string + ")") (esfT1 < esfT0 and esfT1 <= esfT0 * 0.80 and esfT1 >= esfT0 * 0.60)
+        checar "Modificador com o nome InLab e VertexPercent 70" (po != undefined and po.name == INLAB_REDUZIR_NOME_MOD and (abs (po.VertexPercent - 70.0)) < 0.01)
         checar "Proteções ligadas (KeepUV, LockUV, LockMat, Exclude Borders)" (po.KeepUV and po.LockUV and po.LockMat and po.OptimizationMode == 2)
         checar "Instâncias: um ProOptimizer só no stack compartilhado" (contaPO bule1 == 1 and (InLab_OtimReduzir_Modificador bule2) == (InLab_OtimReduzir_Modificador bule1))
         checar ("Instância fora da lista também reduz (" + (tris bule2) as string + ")") ((tris bule2) == buleT1 and buleT1 < buleT0)
@@ -77,12 +77,12 @@ global INLAB_TESTE_SAIDA, INLAB_TESTE_FALHAS
         InLab_OtimReduzir #(esf)
         local esfT2 = tris esf
         checar "Clique 2 reaproveita o modificador (não empilha)" (contaPO esf == 1)
-        checar ("Clique 2: VertexPercent 81 (" + po.VertexPercent as string + ")") ((abs (po.VertexPercent - 81.0)) < 0.01)
+        checar ("Clique 2: VertexPercent 49 (" + po.VertexPercent as string + ")") ((abs (po.VertexPercent - 49.0)) < 0.01)
         checar ("Clique 2 reduz mais (" + esfT1 as string + " -> " + esfT2 as string + ")") (esfT2 < esfT1)
 
         ---------------------------------------------------------------- CTRL+Z
         max undo
-        checar ("Ctrl+Z volta só o clique 2 (" + (tris esf) as string + ")") ((tris esf) == esfT1 and (abs (po.VertexPercent - 90.0)) < 0.01)
+        checar ("Ctrl+Z volta só o clique 2 (" + (tris esf) as string + ")") ((tris esf) == esfT1 and (abs (po.VertexPercent - 70.0)) < 0.01)
         -- O registro do clique 2 não bate mais: Desfazer pula a peça.
         local nPula = InLab_OtimReduzir_Desfazer()
         checar "Desfazer depois do Ctrl+Z pula a peça (registro não bate)" (nPula == 0 and (tris esf) == esfT1)
@@ -115,6 +115,29 @@ global INLAB_TESTE_SAIDA, INLAB_TESTE_FALHAS
         InLab_OtimReduzir #(a, b)
         max undo
         checar "Um Ctrl+Z desfaz o clique inteiro (as 2 peças)" ((tris a) == aT0 and (tris b) == bT0 and contaPO a == 0 and contaPO b == 0)
+
+        ---------------------------------------------------------------- MALHA ABAIXO MUDOU (teste adversarial 08/10)
+        InLab_ReduzirHistorico = #()
+        InLab_OtimReduzir #(a)
+        local aT1 = tris a
+        polyop.moveVert a #{1..100} [0, 0, 5]
+        local aSujo = tris a
+        local nSujo = InLab_OtimReduzir #(a)
+        checar ("Malha abaixo mudou (" + aT1 as string + " -> " + aSujo as string + "): clique recalcula e reduz (" + (tris a) as string + ")") \
+            (nSujo == 1 and (tris a) < aT1)
+        checar "Recalcular não empilha modificador" (contaPO a == 1)
+
+        ---------------------------------------------------------------- MODIFICADOR DESLIGADO
+        local poA = InLab_OtimReduzir_Modificador a
+        poA.enabled = false
+        checar "Modificador desligado: clique não reduz nem mexe no VertexPercent" \
+            ((InLab_OtimReduzir #(a)) == 0 and (abs (poA.VertexPercent - 49.0)) < 0.01)
+        poA.enabled = true
+
+        ---------------------------------------------------------------- HISTÓRICO ZERA NA CENA NOVA
+        checar "Histórico tem cliques antes do reset" (InLab_ReduzirHistorico.count > 0)
+        resetMaxFile #noPrompt
+        checar "Histórico zera no reset da cena" (InLab_ReduzirHistorico.count == 0)
 
         limparCena()
     )
