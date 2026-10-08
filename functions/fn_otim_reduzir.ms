@@ -66,8 +66,9 @@
      (InLab_OtimReduzir_Refrescar). Desfazer: o liga/desliga dentro do script
      não bastou (sondado com o bule), então refaz o Calculate no contexto. Passar
      por 100% antes do alvo também funcionou na sonda, mas sem explicação: não
-     usado. O `select` do Calculate fica fora do undo (o Ctrl+Z deixava a
-     seleção na última peça).
+     usado. Seleção, grupos e painel do Calculate ficam fora do undo (o Ctrl+Z
+     mexia na seleção: última peça, membros de grupo sem a cabeça, peça com
+     instância); o Calculate fica dentro, senão o Redo volta a peça inteira.
    LIMITE CONHECIDO: Ctrl+Z de um Desfazer não devolve o registro dele ao
    histórico (o Desfazer seguinte pula as peças com #warn); o Ctrl+Z continua
    funcionando. Clique em que nada reduz deixa um passo vazio no Ctrl+Z.
@@ -161,7 +162,7 @@ fn InLab_OtimReduzir_Refrescar mods:undefined =
 -- Ctrl+Z e Redo do Max não passam pelo plugin: refresca depois de cada um.
 callbacks.removeScripts id:#InLabReduzirRefrescar
 for ev in #(#sceneUndo, #sceneRedo) do
-    callbacks.addScript ev "try ( InLab_OtimReduzir_Refrescar() ) catch ()" id:#InLabReduzirRefrescar
+    callbacks.addScript ev "try ( InLab_OtimReduzir_Refrescar() ) catch ( try ( InLab_Log (\"Reduzir: não refresquei o ProOptimizer depois do Ctrl+Z/Redo (\" + getCurrentException() + \") — confira a malha.\") tipo:#warn ) catch () )" id:#InLabReduzirRefrescar
 
 -- Põe a peça no contexto obrigatório do Calculate (grupos acima abertos, nó
 -- selecionado, painel Modify, `po` corrente) e dispara o cálculo. Devolve true
@@ -170,24 +171,32 @@ for ev in #(#sceneUndo, #sceneRedo) do
 global InLab_OtimReduzir_Calcular
 fn InLab_OtimReduzir_Calcular o po =
 (
-    local grupos = InLab_AbrirGruposAcima o
+    -- Grupos, seleção e painel FORA do undo (teste de undo de 08/10/2026):
+    -- dentro dele, o Ctrl+Z do clique deixava na seleção os membros de grupo
+    -- sem a cabeça, e o setCurrentObject numa peça com instância punha a peça
+    -- na seleção. O Calculate fica DENTRO: fora dele o Redo traz o modificador
+    -- sem o cálculo e a peça volta inteira.
+    local grupos = #()
+    with undo off grupos = InLab_AbrirGruposAcima o
     local calcOk = false
     try
     (
-        -- Fora do undo: o Ctrl+Z do clique não deve mexer na seleção.
-        with undo off select o
-        setCommandPanelTaskMode #modify
-        try ( subObjectLevel = 0 )
-        catch ( InLab_Log (o.name + ": não zerei o subObjectLevel (" + getCurrentException() + ").") tipo:#warn )
-        try ( modPanel.setCurrentObject po )
-        catch ( InLab_Log (o.name + ": não pus o ProOptimizer como corrente no Modify (" + getCurrentException() + ").") tipo:#warn )
+        with undo off
+        (
+            select o
+            setCommandPanelTaskMode #modify
+            try ( subObjectLevel = 0 )
+            catch ( InLab_Log (o.name + ": não zerei o subObjectLevel (" + getCurrentException() + ").") tipo:#warn )
+            try ( modPanel.setCurrentObject po )
+            catch ( InLab_Log (o.name + ": não pus o ProOptimizer como corrente no Modify (" + getCurrentException() + ").") tipo:#warn )
+        )
         for c in #(#Calculate, #CalculationEnabled) while not calcOk do
             if isProperty po c do
                 ( try ( setProperty po c true; calcOk = true )
                   catch ( InLab_Log (o.name + ": ProOptimizer." + c as string + " falhou (" + getCurrentException() + ").") tipo:#warn ) )
     )
     catch ( InLab_Log (o.name + ": erro ao calcular o ProOptimizer (" + getCurrentException() + ").") tipo:#err )
-    InLab_FecharGrupos grupos
+    with undo off InLab_FecharGrupos grupos
     calcOk
 )
 

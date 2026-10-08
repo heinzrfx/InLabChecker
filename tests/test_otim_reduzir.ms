@@ -169,6 +169,34 @@ global INLAB_TESTE_SAIDA, INLAB_TESTE_FALHAS
         max undo
         checar ("Ctrl+Z do clique 3 dá a malha de 49% (" + (tris bu) as string + ", ref " + ref49 as string + ")") ((tris bu) == ref49)
 
+        ---------------------------------------------------------------- SELEÇÃO DEPOIS DO CTRL+Z (teste adversarial 08/10)
+        fn nomesSel = (for s in selection collect s.name) as string
+        local sd = Sphere name:"red_sd" segs:24 mapcoords:true pos:[0, 300, 0]
+        local se = Sphere name:"red_se" segs:24 mapcoords:true pos:[50, 300, 0]
+        convertToPoly sd
+        convertToPoly se
+        local gs = group #(sd, se) name:"red_gs"
+        select gs
+        local selG = nomesSel()
+        InLab_OtimReduzir #(sd, se)
+        max undo
+        checar ("Grupo de 2 membros: Ctrl+Z mantém a seleção (" + selG + " -> " + nomesSel() + ")") (nomesSel() == selG)
+        local ti = Teapot name:"red_ti" segs:4 mapcoords:true pos:[0, 400, 0]
+        convertToPoly ti
+        local ti2 = instance ti
+        ti2.name = "red_ti2"
+        ti2.pos = [60, 400, 0]
+        select sd
+        local selI = nomesSel()
+        local tiT0 = tris ti
+        InLab_OtimReduzir #(ti)
+        local tiT1 = tris ti
+        max undo
+        checar ("Instância: Ctrl+Z do clique que cria o modificador mantém a seleção (" + selI + " -> " + nomesSel() + ")") (nomesSel() == selI)
+        max redo
+        checar ("Instância: Redo volta reduzida (" + (tris ti) as string + " = " + tiT1 as string + ") e a seleção igual") \
+            ((tris ti) == tiT1 and tiT1 < tiT0 and nomesSel() == selI)
+
         ---------------------------------------------------------------- HISTÓRICO ZERA NA CENA NOVA
         checar "Histórico tem cliques antes do reset" (InLab_ReduzirHistorico.count > 0)
         resetMaxFile #noPrompt
