@@ -165,7 +165,6 @@
 -- InLabChecker_Rollout, chamada
 -- daqui quando a família muda no dropdown.
 global InLab_UtilUI_AtualizarLimite
-global INLAB_OTIM_PROPOSTAS = #()
 
 global InLab_ProdutoAtivo = undefined -- árvore crua do JSON importado (formato de InLab_ParseJSON)
 

@@ -18,7 +18,7 @@
 
  SONDAGEM (Max 2024, 08/10/2026, Sphere segs:64 = 3968 triângulos):
    - Só o Calculate do modificador NOVO precisa do contexto (nó selecionado,
-     painel Modify, modificador corrente — ver fn_otim_fino.ms). Depois dele,
+     painel Modify, modificador corrente — ver o antigo fn_otim_fino.ms, removido na #126). Depois dele,
      mudar o VertexPercent recalcula sem seleção nem painel: 90% = 3570,
      81% = 3212 triângulos.
    - O cálculo sobrevive a salvar e reabrir o .max: VertexPercent num
@@ -26,9 +26,9 @@
    - Ctrl+Z volta o VertexPercent (81 → 90) e depois remove o modificador.
 
  PROTEÇÕES: as mesmas do ajuste fino (sondadas em 24/09/2026, ver
- fn_otim_fino.ms): LockMat, KeepUV, LockUV, KeepNormals e OptimizationMode 2
+ fn_otim_fino.ms, removido na #126): LockMat, KeepUV, LockUV, KeepNormals e OptimizationMode 2
  (Exclude Borders). Copiadas para INLAB_REDUZIR_PROTECOES porque o ajuste fino
- sai do plugin (#126). Peça sem UV no canal 1: o ProOptimizer desliga KeepUV
+ saiu do plugin (#126). Peça sem UV no canal 1: o ProOptimizer desliga KeepUV
  sozinho — loga #info.
 
  INSTÂNCIAS: um modificador por stack (InLab_DeduplicarInstancias); as
@@ -98,7 +98,7 @@ struct ReduzirRecord
 )
 
 -- Sem inicializador no `global`: recarregar o arquivo não apaga o histórico
--- (mesmo padrão de InLab_UltimoAjusteFino).
+-- (mesmo padrão do registro do antigo ajuste fino).
 global InLab_ReduzirHistorico
 if InLab_ReduzirHistorico == undefined do InLab_ReduzirHistorico = #()
 
