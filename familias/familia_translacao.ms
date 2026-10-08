@@ -26,6 +26,5 @@ cfgTranslacao.maxDrawCalls     = 20  -- V-05 · provisório (benchmark 28/09/202
 cfgTranslacao.requiresInterior = true                              -- V-39
 cfgTranslacao.tampoAcessorio   = false
 cfgTranslacao.materialTypes    = #()
-cfgTranslacao.validNames       = #()
 
 InLab_RegistrarFamilia cfgTranslacao

@@ -32,6 +32,5 @@ cfgBaseCabeceira.maxDrawCalls     = 12  -- V-05 · provisório
 cfgBaseCabeceira.requiresInterior = false
 cfgBaseCabeceira.tampoAcessorio   = false
 cfgBaseCabeceira.materialTypes    = #("zona_acabamento")   -- V-37
-cfgBaseCabeceira.validNames       = #()
 
 InLab_RegistrarFamilia cfgBaseCabeceira

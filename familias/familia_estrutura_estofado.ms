@@ -25,6 +25,5 @@ cfgEstruturaEstofado.maxDrawCalls     = 10  -- V-05 · provisório (benchmark 28
 cfgEstruturaEstofado.requiresInterior = false
 cfgEstruturaEstofado.tampoAcessorio   = false
 cfgEstruturaEstofado.materialTypes    = #("zona_acabamento", "palha")   -- V-37 + V-35
-cfgEstruturaEstofado.validNames       = #()
 
 InLab_RegistrarFamilia cfgEstruturaEstofado

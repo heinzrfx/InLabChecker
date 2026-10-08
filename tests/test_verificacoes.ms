@@ -282,7 +282,7 @@ global INLAB_TESTE_SAIDA, INLAB_TESTE_FALHAS
         ---------------------------------------------------------------- V-20
         -- 02/10/2026 (issue #36): os nomes válidos saem do produto importado
         -- (.max = cod_est; objeto = mesh_final; material = material_id).
-        -- Com produto importado a V-20 é CRÍTICA (reprova); sem produto, aviso.
+        -- Com produto importado a V-20 é CRÍTICA (reprova); sem produto também (#138).
         limparCena()
         local jsV20 = "{\"produtos\": [" +
             "{\"cod_est\": \"0020\", \"nome\": \"MESA\", \"bloco_3d\": {\"papel\": \"master\", \"base_codest\": \"0020\"}, \"partes\": [" +
@@ -302,7 +302,8 @@ global INLAB_TESTE_SAIDA, INLAB_TESTE_FALHAS
         local oMesa = Box name:"0020" material:mTampoV
         local oPrato = Box name:"0020_Prato" material:mPratoV pos:[60, 0, 0]
         fn rodar20 cfg p objs arq = ( InLab_ResetarResultados(); InLab_V20_Nomenclatura cfg produto:p objetos:objs nomeArquivo:arq; statusDe "V-20" )
-        checar "V-20: sem produto importado fica em advertência e pede o produto" ((rodar20 cfgEst undefined #(oMesa) "0020") == #warning and (findString (mensagemDe "V-20") "seção Produto") != undefined)
+        -- 08/10/2026 (issue #138): o JSON é obrigatório — sem produto, a V-20 reprova.
+        checar "V-20: sem produto importado reprova (crítica) e pede o produto" ((rodar20 cfgEst undefined #(oMesa) "0020") == #fail and (findString (mensagemDe "V-20") "seção Produto") != undefined and not (InLab_AprovacaoFinal()))
         checar ("V-20: arquivo, objetos e materiais com os nomes do produto passa (" + mensagemDe "V-20" + ")") ((rodar20 cfgEst prodsV20[1] #(oMesa, oPrato) "0020") == #pass)
         checar "V-20: arquivo com outro nome reprova" ((rodar20 cfgEst prodsV20[1] #(oMesa, oPrato) "mesa_final_v3") == #fail and (findString (mensagemDe "V-20") "mesa_final_v3") != undefined)
         checar "V-20: cena não salva reprova" ((rodar20 cfgEst prodsV20[1] #(oMesa, oPrato) "") == #fail)

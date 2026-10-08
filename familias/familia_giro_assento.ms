@@ -29,6 +29,5 @@ cfgGiroAssento.maxDrawCalls     = 12  -- V-05 · provisório (benchmark 28/09/20
 cfgGiroAssento.requiresInterior = false
 cfgGiroAssento.tampoAcessorio   = false
 cfgGiroAssento.materialTypes    = #("zona_acabamento")                      -- V-37
-cfgGiroAssento.validNames       = #()
 
 InLab_RegistrarFamilia cfgGiroAssento

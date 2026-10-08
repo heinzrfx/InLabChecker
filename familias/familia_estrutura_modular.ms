@@ -26,6 +26,5 @@ cfgEstruturaModular.maxDrawCalls     = 16  -- V-05 · provisório (benchmark 28/
 cfgEstruturaModular.requiresInterior = false
 cfgEstruturaModular.tampoAcessorio   = false
 cfgEstruturaModular.materialTypes    = #("zona_acabamento")    -- V-37 · premissa assumida (ver cabeçalho)
-cfgEstruturaModular.validNames       = #()
 
 InLab_RegistrarFamilia cfgEstruturaModular

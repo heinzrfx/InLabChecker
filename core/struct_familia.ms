@@ -22,6 +22,12 @@
  estruturais. As 4 animadas continuam registradas, com as verificações e os
  testes delas: para o v2 basta INLAB_FAMILIAS_ANIMADAS_NA_UI = true.
 
+ 08/10/2026 (issue #138): a família vem da "natureza" do produto no JSON v7
+ em diante. Saem o dropdown, InLab_FamiliasDaUI e
+ INLAB_FAMILIAS_ANIMADAS_NA_UI: produto animado usa a família animada que o
+ JSON mandar. Sai também o campo validNames (V-20): os nomes válidos vêm
+ sempre do produto importado.
+
  05/10/2026 (issue #36): saiu o campo limitesPorParte, junto com a V-04
  (ver o cabeçalho de verifications\verif_peso_poly.ms).
 
@@ -48,7 +54,6 @@ struct FamiliaConfig
     requiresInterior = false,      -- V-39: interior modelado obrigatório (Translação/Rotação)
     tampoAcessorio   = false,      -- V-38: só relevante para Pernas+Tampo
     materialTypes    = #(),        -- ex.: #("zona_acabamento"), #("palha"), #("cristal") → V-35/36/37
-    validNames       = #(),        -- V-20: vazio. Desde 02/10/2026 os nomes saem do produto importado (verif_nomenclatura.ms)
 
     -- Gera a descrição da config como ARRAY de linhas, prontas para o log da UI.
     -- (o listbox do log trabalha linha a linha, por isso não retorna string única)
@@ -66,7 +71,6 @@ struct FamiliaConfig
         append L ("Interior modelado (V-39): " + (if requiresInterior then "obrigatório" else "não se aplica"))
         append L ("Tampo acessório (V-38): " + (if tampoAcessorio then "sim" else "não"))
         append L ("Materiais especiais: " + (if materialTypes.count > 0 then (materialTypes as string) else "nenhum"))
-        append L ("Nomes válidos (V-20): " + (if validNames.count == 0 then "saem do produto importado na seção Produto" else (validNames as string)))
         L
     )
 )
@@ -83,12 +87,11 @@ global InLab_Familias = #()
 -- 23/09/2026: ficou ÓRFÃ da Fase 5.2 até hoje — a seção Família (dropdown +
 -- "Carregar Configuração") saiu da UI e nada mais atribuía este global, então
 -- "Rodar Verificações" e o modo "Alvo da família" do ProOptimizer nunca
--- rodavam. Agora é atribuída SÓ por InLab_DefinirFamiliaAtiva, chamada pelo
--- dropdown "Família" da seção Produto (ui\rollout_main.ms). O export do
--- produto não traz a família do plugin (o campo "familia" do JSON é a LINHA
--- comercial, ex.: "RIZZI"): o dropdown vem pré-preenchido por
--- InLab_Produto_SugerirFamilia (functions\fn_renomear_produto.ms) e o
--- modelador confirma ou troca.
+-- rodavam. Agora é atribuída SÓ por InLab_DefinirFamiliaAtiva.
+-- 08/10/2026 (issue #138): quem chama é a seção Produto (ui\rollout_main.ms),
+-- com a "natureza" do produto escolhido (InLab_Produto_Familia,
+-- functions\fn_renomear_produto.ms). Não há mais dropdown nem sugestão pela
+-- classe. O campo "familia" do JSON continua sendo a LINHA comercial.
 global InLab_FamiliaAtiva = undefined
 
 -- Registra uma config no array global. Se uma família com o mesmo nome já
@@ -103,15 +106,6 @@ fn InLab_RegistrarFamilia cfg =
     cfg
 )
 
--- 02/10/2026: famílias que o dropdown Família oferece. false = só as
--- estruturais (v1: animado entra como estático); true = todas.
-global INLAB_FAMILIAS_ANIMADAS_NA_UI = false
-
-global InLab_FamiliasDaUI
-fn InLab_FamiliasDaUI =
-(
-    for f in InLab_Familias where INLAB_FAMILIAS_ANIMADAS_NA_UI or not f.animado collect f
-)
 
 -- Busca uma config pelo nome interno (ex.: "giro_assento").
 -- Retorna undefined se não encontrada.
