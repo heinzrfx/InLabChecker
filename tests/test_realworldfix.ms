@@ -6,9 +6,13 @@
  Resultado: <pasta temp do Max>\inlab_test_realworldfix.txt (PASS/FAIL por item).
  O visual (render antes/depois) foi conferido à mão em 22/Set, ver o
  cabeçalho de fn_realworldfix.ms. Aqui confere-se o UV da malha e os bitmaps.
+ 08/10/2026 (issue #129): sem colapso (modificadores "InLab RWF" vivos),
+ instância deduplicada, 2ª rodada sem Xform em dobro, Reverter da rodada e o
+ RWF dentro do Auto UV (Desfazer UV desfaz os dois).
 */
 -- Declarados ANTES do bloco: o bloco é compilado antes dos fileIn rodarem.
 global InLab_Log, InLab_EhGeometria, InLab_Instancias, InLab_RealWorldFix
+global InLab_RWF_UltimaRodada, InLab_RWF_Reverter, InLab_AutoUV, InLab_ReverterAutoUV, InLab_UltimoRWF, InLab_UltimoAutoUV
 global INLAB_TESTE_SAIDA, INLAB_TESTE_FALHAS, INLAB_TESTE_LOG
 (
     local dirTeste = getFilenamePath (getSourceFileName())
@@ -85,6 +89,7 @@ global INLAB_TESTE_SAIDA, INLAB_TESTE_FALHAS, INLAB_TESTE_LOG
     try
     (
         fileIn (raiz + @"core\utils.ms")
+        fileIn (raiz + @"verifications\verif_uv.ms")
         fileIn (raiz + @"functions\fn_autouv.ms")
         fileIn (raiz + @"functions\fn_realworldfix.ms")
         checar "Corona instalado" (CoronaBitmap != undefined and CoronaPhysicalMtl != undefined)
@@ -175,21 +180,24 @@ global INLAB_TESTE_SAIDA, INLAB_TESTE_FALHAS, INLAB_TESTE_LOG
         local n = InLab_RealWorldFix #(a, d, e, f, g)
 
         -- 3. OBJETOS
-        checar "Retorno: 7 convertidos (A, B, C, E, E2, F, F2)" (n == 7)
-        checar "A colapsado em Editable_mesh" (classof a.baseobject == Editable_mesh and a.modifiers.count == 0)
+        -- 08/10/2026 (#129): E2 é instância de E — um modificador só, no stack compartilhado.
+        checar ("Retorno: 6 convertidos (A, B, C, E, F, F2; E2 junto com E): " + n as string) (n == 6)
+        fn temRWF o = (for m in o.modifiers where matchPattern m.name pattern:"InLab RWF*" collect m).count
+        checar "A sem colapso: base Box, UVW + Xform InLab RWF + Bend no stack" (classof a.baseobject == Box and a.modifiers.count == 3 and (temRWF a) == 1)
         checar "A: UV = UV antigo ÷ 60×40 (com Bend acima)" ((erroUV uvA (uvAtual a) [60,40]) < 1e-4)
-        checar "B incluído pelo material e colapsado" (classof b.baseobject == Editable_mesh and b.modifiers.count == 0)
+        checar "B incluído pelo material, sem colapso" (classof b.baseobject == Box and (temRWF b) == 1)
         checar "B: UV = UV antigo ÷ 60×40 (gizmo 100)" ((erroUV uvB (uvAtual b) [60,40]) < 1e-4)
         checar "B: log avisa a inclusão" (logTem "t_B: fora da seleção" #warn)
-        checar "C: UV gravado ÷ 60×40, colapsado" (classof c.baseobject == Editable_mesh and (erroUV uvC (uvAtual c) [60,40]) < 1e-4)
+        checar "C: UV gravado ÷ 60×40, Xform no topo, sem colapso" (classof c.baseobject == Box and (temRWF c) == 1 and (erroUV uvC (uvAtual c) [60,40]) < 1e-4)
         checar "C: log avisa a inclusão" (logTem "t_C: fora da seleção" #warn)
         checar "D: ignorado, UVW Map continua" (d.modifiers.count == 1 and (erroUV uvD (uvAtual d) [1,1]) < 1e-6)
         checar "E: UV ÷ 50 (Multi/Sub, difuso nativo)" ((erroUV uvE (uvAtual e) [50,50]) < 1e-4)
         checar "E2: instância também convertida, sem Xform em dobro" ((erroUV uvE2 (uvAtual e2) [50,50]) < 1e-4)
-        checar "E: log avisa a instância" (logTem "t_E: era instância" #warn or logTem "t_E2: era instância" #warn)
-        checar "F: colapsado, UV = Box 75 do Triplanar" (classof f.baseobject == Editable_mesh and (erroUV uvFesp (uvAtual f) [1,1]) < 1e-4)
+        checar "E: instância continua instância, um Xform no stack" ((InLab_Instancias e).count == 2 and (temRWF e) == 1 and (temRWF e2) == 1)
+        checar "E: log avisa a instância" (logTem "instância de t_E" #info or logTem "instância de t_E2" #info)
+        checar "F: sem colapso, UV = Box 75 do Triplanar" (classof f.baseobject == Box and (temRWF f) == 1 and (erroUV uvFesp (uvAtual f) [1,1]) < 1e-4)
         checar "F: Triplanar trocado pelo bitmap no material" (mF.baseTexmap == bmpF and (getClassInstances CoronaTriplanar target:mF).count == 0)
-        checar "F2: incluído pelo Triplanar e colapsado" (classof f2.baseobject == Editable_mesh and (logTem "t_F2: fora da seleção" #warn))
+        checar "F2: incluído pelo Triplanar, sem colapso" (classof f2.baseobject == Box and (logTem "t_F2: fora da seleção" #warn))
         checar "G: Triplanar espaço 2 intocado" (classof g.baseobject == Box and g.material.baseTexmap == tpG)
 
         -- 4. BITMAPS
@@ -201,8 +209,52 @@ global INLAB_TESTE_SAIDA, INLAB_TESTE_FALHAS, INLAB_TESTE_LOG
         checar "Roughness nativo: offset 6,4 cm → 0.1,0.1" ((abs (rough.coords.U_Offset - 0.1)) < 1e-5 and (abs (rough.coords.V_Offset - 0.1)) < 1e-5)
         checar "Difuso nativo E: Real-World off" (not difE.coords.realWorldScale)
 
-        -- 5. NADA A FAZER
+        -- 5. NADA A FAZER (a 2ª rodada também não: o UVW Map do A já tem o Xform)
+        local rodada1 = InLab_RWF_UltimaRodada
         checar "Seleção sem UVW em Real-World devolve 0" ((InLab_RealWorldFix #(d)) == 0)
+        checar "2ª rodada em A/C/E/F não converte de novo (0) nem põe Xform em dobro" \
+            ((InLab_RealWorldFix #(a, c, e, f)) == 0 and (temRWF a) == 1 and (temRWF c) == 1 and (temRWF e) == 1)
+
+        -- 6. REVERTER DA RODADA (08/10/2026, #129)
+        checar ("Registro: bitmaps, Triplanar e modificadores (" + rodada1.bitmaps.count as string + ", " +
+                rodada1.triplanares.count as string + ", " + rodada1.mods.count as string + ")") \
+            (rodada1.bitmaps.count == 4 and rodada1.triplanares.count == 1 and rodada1.mods.count == 6)
+        InLab_RWF_Reverter rodada1
+        checar "Reverter: A volta ao stack original (UVW + Bend) e ao UV antigo" (a.modifiers.count == 2 and (temRWF a) == 0 and (erroUV uvA (uvAtual a) [1,1]) < 1e-6)
+        checar "Reverter: C, E e F sem modificador do RWF" ((temRWF c) == 0 and (temRWF e) == 0 and (temRWF f) == 0 and (temRWF f2) == 0)
+        checar "Reverter: difuso Corona de volta (Real-World 60×40, offset 15,10)" (dif.realWorldScale and dif.uvwScale == [60,40,1] and (distance dif.uvwOffset [15,10,0]) < 1e-5)
+        checar "Reverter: roughness nativo de volta (Real-World, offset 6,4)" (rough.coords.realWorldScale and (abs (rough.coords.U_Offset - 6)) < 1e-5)
+        checar "Reverter: Triplanar de volta no material" (mF.baseTexmap == tpF)
+
+        -- 7. DENTRO DO AUTO UV: RWF antes do Unwrap, Desfazer UV desfaz os dois
+        local h = Box name:"t_H" length:80 width:100 height:50 lengthsegs:2 widthsegs:2 heightsegs:2 pos:[0,300,0]
+        convertToPoly h
+        local hu = Uvwmap maptype:0
+        addModifier h hu
+        hu.realWorldMapSize = true
+        local difH = coronaRW "t_difH" [50,50] [0,0,0]
+        local mH = CoronaPhysicalMtl name:"t_mtlH" baseTexmap:difH
+        h.material = mH
+        local h2 = Box name:"t_H2" pos:[200,300,0] mapcoords:true
+        h2.material = mH
+        append criados h
+        append criados h2
+        classof h
+        local uvH = uvAtual h
+        InLab_UltimoRWF = #()
+        InLab_UltimoAutoUV = #()
+        InLab_AutoUV #(h) resolucao:1024
+        checar "Auto UV: Unwrap no topo, RWF abaixo, base continua poly" \
+            (h.modifiers[1].name == "InLab AutoUV" and (temRWF h) == 1 and classof h.baseobject == Editable_Poly)
+        checar "Auto UV: canal 1 ÷ 50 (RWF rodou)" ((erroUV uvH (uvAtual h) [50,50]) < 1e-4 and not difH.realWorldScale)
+        checar "Auto UV: objeto fora da seleção recebe só o RWF" ((temRWF h2) == 1 and (for m in h2.modifiers where m.name == "InLab AutoUV" collect m).count == 0)
+        checar "Auto UV: rodada do RWF registrada" (InLab_UltimoRWF.count == 1)
+        InLab_AutoUV #(h) resolucao:1024
+        checar "Auto UV 2×: um só Xform do RWF e um só Unwrap" ((temRWF h) == 1 and (for m in h.modifiers where m.name == "InLab AutoUV" collect m).count == 1)
+        InLab_ReverterAutoUV()
+        checar "Desfazer UV: sem Unwrap e sem RWF, UV do material de volta" \
+            (h.modifiers.count == 1 and (temRWF h2) == 0 and (erroUV uvH (uvAtual h) [1,1]) < 1e-6)
+        checar "Desfazer UV: bitmap de volta em Real-World 50×50" (difH.realWorldScale and difH.uvwScale == [50,50,1])
     )
     catch
     (

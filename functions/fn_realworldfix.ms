@@ -49,6 +49,24 @@
 
  Sem botão de reverter (decisão do usuário): o undo do Max cobre.
 
+ 08/10/2026 (issue #129, sondagem docs\superpowers\specs\2026-10-08-rwf-no-
+ autouv-sondagem.md): o RWF roda DENTRO do Auto UV, antes do Unwrap, e o
+ botão próprio saiu da UI. Mudam duas decisões de 22/Set:
+ - NÃO colapsa mais (o passo 2 acima saiu). Os modificadores "InLab RWF*"
+   ficam vivos no stack: canal 1 e glTF idênticos ao colapsado (medido em
+   30 objetos), e o canal 3 do Auto UV não piora (sobre Editable_mesh a
+   Shape018 da Mentha saía com 11 ilhas e distorção 1,65 em vez de 8 e 1,05).
+ - TEM reverter: a rodada fica em InLab_RWF_UltimaRodada (RWFRodada:
+   valores antigos dos bitmaps, slots de cada Triplanar, modificadores
+   adicionados) e o Desfazer UV chama InLab_RWF_Reverter. Triplanar volta
+   por setProperty no slot, não por replaceInstances (que pegaria todos os
+   usos do bitmap).
+ - Instância não vira mais única para colapsar: um modificador no stack
+   compartilhado. Exceção: Triplanar em espaço mundo (gizmo por objeto).
+ - UVW Map em Real-World que já tem o Xform "InLab RWF" logo acima não é
+   convertido de novo (2ª rodada do Auto UV).
+ Objetos fora da seleção que compartilham os mapas recebem o RWF, não o Auto UV.
+
  ENGENHARIA REVERSA DO ARCHTOOLZ (Bake Rendermap > Real World Fix), por
  comparação de estado antes/depois, 22/Set:
  - troca o mapeamento por um Box de gizmo = tamanho do Bitmaptexture nativo
@@ -125,9 +143,99 @@ fn InLab_RWF_MapaDifuso mtl =
 )
 
 -- UVW Maps ativos em Real-World no stack (canal de mapa, não vertex color).
+-- 08/10/2026 (#129): sem o colapso, o UVW Map fica no stack com o Xform do
+-- RWF logo acima; um UVW Map assim já foi convertido e não entra de novo
+-- (senão a 2ª rodada do Auto UV dividiria o UV duas vezes).
 fn InLab_RWF_UVWsRW o =
 (
-    for m in o.modifiers where classof m == Uvwmap and m.enabled and m.realWorldMapSize and m.channel == 0 collect m
+    local res = #()
+    for i = 1 to o.modifiers.count do
+    (
+        local m = o.modifiers[i]
+        if classof m == Uvwmap and m.enabled and m.realWorldMapSize and m.channel == 0 do
+        (
+            local acima = if i > 1 then o.modifiers[i - 1] else undefined
+            local convertido = acima != undefined and classof acima == UVW_Xform and acima.name == "InLab RWF"
+            if not convertido do append res m
+        )
+    )
+    res
+)
+
+--------------------------------------------------------------------------------
+-- REGISTRO DA RODADA (08/10/2026, issue #129) — para o Desfazer UV do Auto UV
+-- desfazer também o RWF (sondagem 2026-10-08-rwf-no-autouv-sondagem.md, item
+-- 4). Por rodada, não por objeto: os bitmaps são compartilhados entre os
+-- objetos que a rodada puxou.
+--------------------------------------------------------------------------------
+struct RWFRodada
+(
+    bitmaps = #(),      -- #(bitmap, #(#(propriedade, valor antigo)...)), antes da conversão
+    triplanares = #(),  -- #(triplanar, #(#(dono, propriedade)...)): slots que apontavam para ele
+    mods = #()          -- #(nó, modificador "InLab RWF*") adicionados
+)
+-- Última rodada do RWF (o Auto UV pega daqui e guarda em InLab_UltimoRWF).
+global InLab_RWF_UltimaRodada
+
+-- Propriedades que a conversão muda num bitmap, com os valores de agora.
+fn InLab_RWF_GuardarBitmap m =
+(
+    local alvo = if classof m == Bitmaptexture then m.coords else m
+    local props = if classof m == Bitmaptexture then
+        #(#realWorldScale, #realWorldWidth, #realWorldHeight, #U_Tiling, #V_Tiling, #U_Offset, #V_Offset)
+    else #(#realWorldScale, #uvwScale, #uvwOffset)
+    #(m, for p in props collect #(p, getProperty alvo p))
+)
+
+fn InLab_RWF_RestaurarBitmap g =
+(
+    local m = g[1]
+    local alvo = if classof m == Bitmaptexture then m.coords else m
+    for pv in g[2] do setProperty alvo pv[1] pv[2]
+)
+
+-- Slots (dono, propriedade) que apontam para o Triplanar. Não cobre lista
+-- (ArrayParameter, ex.: Multi/Sub) — quem não for achado fica logado.
+fn InLab_RWF_SlotsDe t =
+(
+    local slots = #()
+    for d in (refs.dependents t) where (isKindOf d Material or isKindOf d TextureMap) and d != t do
+        for p in (getPropNames d) do
+        (
+            local v = try (getProperty d p) catch undefined
+            if v == t do append slots #(d, p)
+        )
+    slots
+)
+
+-- Desfaz uma rodada: Triplanares de volta aos slots, modificadores fora do
+-- stack e bitmaps com os valores antigos. Quem chama abre o undo. Devolve o
+-- nº de objetos com modificador removido.
+global InLab_RWF_Reverter
+fn InLab_RWF_Reverter rodada =
+(
+    local nos = #()
+    for tr in rodada.triplanares do
+        for s in tr[2] do
+            try ( setProperty s[1] s[2] tr[1] )
+            catch ( InLab_Log (tr[1].name + ": não voltei o Triplanar para " + s[1].name + "." + s[2] as string + " (" + getCurrentException() + ").") tipo:#err )
+    for nm in rodada.mods where isValidNode nm[1] do
+    (
+        local idx = 0
+        for i = 1 to nm[1].modifiers.count where nm[1].modifiers[i] == nm[2] do idx = i
+        if idx == 0 then
+            InLab_Log (nm[1].name + ": modificador " + nm[2].name + " do Real World Fix não está mais no stack (colapsado?).") tipo:#warn
+        else
+        (
+            try ( deleteModifier nm[1] idx; appendIfUnique nos nm[1] )
+            catch ( InLab_Log (nm[1].name + ": não removi " + nm[2].name + " (" + getCurrentException() + ").") tipo:#err )
+        )
+    )
+    for g in rodada.bitmaps do
+        try ( InLab_RWF_RestaurarBitmap g )
+        catch ( InLab_Log (g[1].name + ": não restaurei o Real-World (" + getCurrentException() + ").") tipo:#err )
+    for n in nos do InLab_Log (n.name + ": Real World Fix desfeito.") tipo:#ok
+    nos.count
 )
 
 --------------------------------------------------------------------------------
@@ -299,8 +407,12 @@ fn InLab_RWF_TriplanarSuportado t =
 --   C. CoronaTriplanar no material → UVW Map Box equivalente no topo, e o
 --      Triplanar sai do material (fica o mapa que estava dentro dele).
 --------------------------------------------------------------------------------
-fn InLab_RealWorldFix objs =
+-- 08/10/2026 (#129): roda dentro do Auto UV (InLab_AutoUV), antes do Unwrap.
+-- silencioso:true não loga os "nada a fazer" (o Auto UV chama em toda rodada).
+-- A rodada fica em InLab_RWF_UltimaRodada para o Desfazer UV.
+fn InLab_RealWorldFix objs silencioso:false =
 (
+    InLab_RWF_UltimaRodada = RWFRodada()
     ----------------------------------------------------------------------
     -- 1. Candidatos: geometria com UVW em Real-World, bitmap em
     --    Real-World fora de Triplanar, ou Triplanar suportado no material.
@@ -312,7 +424,7 @@ fn InLab_RealWorldFix objs =
     )
     local alvos = for o in objs where InLab_EhGeometria o and (precisa o) collect o
     local ignorados = objs.count - alvos.count
-    if ignorados > 0 do
+    if ignorados > 0 and not silencioso do
         InLab_Log ("Real World Fix: " + ignorados as string + " objeto(s) da seleção sem Real-World nem Triplanar, ignorado(s).") tipo:#info
 
     ----------------------------------------------------------------------
@@ -337,7 +449,7 @@ fn InLab_RealWorldFix objs =
                 if InLab_EhGeometria n then
                 (
                     append alvos n
-                    InLab_Log (n.name + ": fora da seleção, mas usa " + mp.name + ". Incluído na conversão.") tipo:#warn
+                    InLab_Log (n.name + ": fora da seleção, mas usa " + mp.name + ". Recebe o Real World Fix (sem Auto UV).") tipo:#warn
                 )
                 else InLab_Log (n.name + ": usa " + mp.name + " mas não é geometria. Conferir.") tipo:#warn
             )
@@ -347,7 +459,7 @@ fn InLab_RealWorldFix objs =
 
     if alvos.count == 0 then
     (
-        InLab_Log "Real World Fix: nenhum objeto com Real-World ou Triplanar." tipo:#warn
+        if not silencioso do InLab_Log "Real World Fix: nenhum objeto com Real-World ou Triplanar." tipo:#warn
         0
     )
     else
@@ -355,6 +467,17 @@ fn InLab_RealWorldFix objs =
         --------------------------------------------------------------------
         -- 3. Referência de cada objeto e de cada bitmap.
         --------------------------------------------------------------------
+        -- 08/10/2026 (#129): instâncias compartilham o stack — um
+        -- modificador no 1º nó vale para todas. Sem colapso, não precisa
+        -- mais tornar único (o Auto UV preserva a instância).
+        local soltos = #()
+        for g in (InLab_DeduplicarInstancias alvos) do
+        (
+            append soltos g.no
+            for n in g.instancias where n != g.no and findItem alvos n > 0 do
+                InLab_Log (n.name + ": instância de " + g.no.name + " — recebe o mesmo Real World Fix.") tipo:#info
+        )
+        alvos = soltos
         local refs_ = for o in alvos collect (InLab_RWF_Referencia o)
         local tamBitmap = for b in bitmaps collect undefined
         for k in 1 to alvos.count where refs_[k] != undefined do
@@ -385,13 +508,16 @@ fn InLab_RealWorldFix objs =
                 local ok = true
                 try
                 (
-                    if (InLab_Instancias o).count > 1 do
+                    -- Triplanar em espaço mundo: o gizmo depende do transform de
+                    -- cada nó, um modificador compartilhado não serve. Só aí
+                    -- a instância vira única.
+                    if (InLab_Instancias o).count > 1 and
+                       (for t in (InLab_RWF_Triplanares o.material) where t.space == 1 collect t).count > 0 do
                     (
                         InstanceMgr.MakeObjectsUnique o #individual
-                        InLab_Log (o.name + ": era instância. Ficou único para colapsar.") tipo:#warn
+                        InLab_Log (o.name + ": era instância com Triplanar em espaço mundo. Ficou único (gizmo por objeto).") tipo:#warn
                     )
                     local partes = #()
-                    local nMods = o.modifiers.count
                     local uvws = InLab_RWF_UVWsRW o
                     local canalRW = 0
                     if refs_[k] != undefined do
@@ -407,6 +533,7 @@ fn InLab_RealWorldFix objs =
                                 for iM in 1 to o.modifiers.count where o.modifiers[iM] == u do idx = iM
                                 local x = UVW_Xform name:"InLab RWF" U_Tile:(1.0 / tam.x) V_Tile:(1.0 / tam.y) Map_Channel:u.mapChannel
                                 if idx > 1 then addModifier o x before:(idx - 1) else addModifier o x
+                                append InLab_RWF_UltimaRodada.mods #(o, x)
                                 canalRW = u.mapChannel
                             )
                             append partes ("UV ÷ " + txtTam + " (referência " + refs_[k].name + ")")
@@ -417,7 +544,9 @@ fn InLab_RealWorldFix objs =
                             canalRW = InLab_RWF_CanalBitmap refs_[k]
                             if InLab_RWF_TemCanal o canalRW then
                             (
-                                addModifier o (UVW_Xform name:"InLab RWF" U_Tile:(1.0 / tam.x) V_Tile:(1.0 / tam.y) Map_Channel:canalRW)
+                                local xb = UVW_Xform name:"InLab RWF" U_Tile:(1.0 / tam.x) V_Tile:(1.0 / tam.y) Map_Channel:canalRW
+                                addModifier o xb
+                                append InLab_RWF_UltimaRodada.mods #(o, xb)
                                 append partes ("UV gravado no canal " + canalRW as string + " ÷ " + txtTam + " (referência " + refs_[k].name + ")")
                             )
                             else
@@ -438,25 +567,33 @@ fn InLab_RealWorldFix objs =
                         if canal == canalRW do
                             InLab_Log (o.name + ": Triplanar e bitmap em Real-World no mesmo canal " + canal as string +
                                        ". O UV do Triplanar prevalece; conferir o bitmap.") tipo:#warn
-                        addModifier o (Uvwmap name:"InLab RWF Triplanar" maptype:4 length:t.scale width:t.scale height:t.scale mapChannel:canal)
+                        local ub = Uvwmap name:"InLab RWF Triplanar" maptype:4 length:t.scale width:t.scale height:t.scale mapChannel:canal
+                        addModifier o ub
+                        append InLab_RWF_UltimaRodada.mods #(o, ub)
                         classof o   -- o gizmo só existe depois da 1ª avaliação
-                        o.modifiers[1].gizmo.transform = InLab_RWF_GizmoTriplanar t o
+                        ub.gizmo.transform = InLab_RWF_GizmoTriplanar t o
                         append partes ("Triplanar " + t.name + " → Box " + (formattedPrint t.scale format:".4g") + " no canal " + canal as string +
                                        " (espaço " + (if t.space == 1 then "mundo" else "objeto") + ")")
                     )
-                    if partes.count == 0 do append partes "sem bitmap em Real-World no material; UV colapsado como estava"
+                    if partes.count == 0 do append partes "sem bitmap em Real-World no material; UV como estava"
                     local txt = partes[1]
                     for p in 2 to partes.count do txt += " · " + partes[p]
-                    convertToMesh o
-                    InLab_Log (o.name + ": " + txt + ". Stack de " + nMods as string + " modificador(es) colapsado.") tipo:#ok
+                    -- 08/10/2026 (#129): sem convertToMesh. Colapsar fazia o
+                    -- flatten do Auto UV rodar sobre Editable_mesh (canal 3
+                    -- pior) e apagava o Unwrap; os modificadores ficam vivos.
+                    InLab_Log (o.name + ": " + txt + ".") tipo:#ok
                 )
                 catch
                 (
                     ok = false
                     InLab_Log (o.name + ": falhou (" + getCurrentException() + ").") tipo:#err
-                    -- tira o que o Real World Fix pôs no stack sem colapsar
+                    -- tira o que o Real World Fix pôs no stack NESTA rodada
                     if isValidNode o do
-                        for iM = o.modifiers.count to 1 by -1 where matchPattern o.modifiers[iM].name pattern:"InLab RWF*" do deleteModifier o iM
+                    (
+                        for nm in InLab_RWF_UltimaRodada.mods where nm[1] == o do
+                            for iM = o.modifiers.count to 1 by -1 where o.modifiers[iM] == nm[2] do deleteModifier o iM
+                        InLab_RWF_UltimaRodada.mods = for nm in InLab_RWF_UltimaRodada.mods where nm[1] != o collect nm
+                    )
                 )
                 if ok then feitos += 1 else
                 (
@@ -473,6 +610,10 @@ fn InLab_RealWorldFix objs =
                     InLab_Log (t.name + ": Triplanar mantido, um objeto que o usa falhou.") tipo:#err
                 else
                 (
+                    local slots = InLab_RWF_SlotsDe t
+                    if slots.count == 0 do
+                        InLab_Log (t.name + ": não achei onde o Triplanar está ligado — o Desfazer UV não vai religá-lo.") tipo:#warn
+                    append InLab_RWF_UltimaRodada.triplanares #(t, slots)
                     replaceInstances t t.texmapX
                     nTp += 1
                 )
@@ -484,6 +625,7 @@ fn InLab_RealWorldFix objs =
                     InLab_Log (bitmaps[j].name + ": Real-World mantido, um objeto que o usa falhou.") tipo:#err
                 else if tamBitmap[j] != undefined then
                 (
+                    append InLab_RWF_UltimaRodada.bitmaps (InLab_RWF_GuardarBitmap bitmaps[j])
                     InLab_RWF_ConverterBitmap bitmaps[j] tamBitmap[j]
                     nBitmaps += 1
                 )

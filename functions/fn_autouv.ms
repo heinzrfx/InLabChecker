@@ -83,6 +83,13 @@
  UNDO: undo "InLab ..." + registro dedicado (InLab_UltimoAutoUV) para o
  Reverter, que alcança além do Ctrl+Z.
 
+ 08/10/2026 (issue #129): o Real World Fix (functions\fn_realworldfix.ms)
+ roda no começo do Auto UV, antes de qualquer Unwrap, sem colapsar o stack;
+ o botão próprio saiu. Cada rodada dele vai para InLab_UltimoRWF e o
+ Reverter (Desfazer UV) desfaz também o RWF, depois dos Unwraps. Objetos fora
+ da seleção que compartilham os mapas recebem o RWF, não o Auto UV.
+ Sondagem: docs\superpowers\specs\2026-10-08-rwf-no-autouv-sondagem.md.
+
  24/Set (issue #48, robustez): o processamento de cada objeto (entre abrir e
  fechar o grupo) não tinha `try` próprio — uma exceção não prevista (ex.:
  InLab_MedirUV, uvw.pack) abortava a rodada inteira e deixava os grupos
@@ -158,6 +165,12 @@ struct AutoUVRecord
 -- novo no mesmo objeto, o registro é reaproveitado e a base original
 -- continua sendo a da primeira vez.
 global InLab_UltimoAutoUV = #()
+
+-- 08/10/2026 (issue #129): rodadas do Real World Fix feitas pelo Auto UV
+-- (RWFRodada, functions\fn_realworldfix.ms, carregado depois deste arquivo).
+-- O Desfazer UV desfaz todas, da mais nova para a mais velha.
+global InLab_UltimoRWF = #()
+global InLab_RealWorldFix, InLab_RWF_UltimaRodada, InLab_RWF_Reverter
 
 global InLab_TentarRelax, InLab_PaddingUV, InLab_AutoUV_PrepararBase, InLab_AutoUV_Registro
 global InLab_AbrirGruposAcima, InLab_FecharGrupos, InLab_Instancias, InLab_ContagemCanal
@@ -402,6 +415,19 @@ fn InLab_AutoUV objs angulo:55.0 resolucao:1024 =
     undo "InLab AutoUV" on
     (
         max modify mode
+
+        -- 08/10/2026 (issue #129): Real World Fix ANTES do Unwrap, sem colapso
+        -- (sondagem 2026-10-08-rwf-no-autouv-sondagem.md). Ele só mexe em quem
+        -- tem Real-World ou Triplanar; os de fora da seleção que compartilham os
+        -- mapas recebem o RWF mas não o Auto UV. A rodada vai para o Desfazer UV.
+        try
+        (
+            InLab_RealWorldFix (for o in objs where InLab_EhGeometria o collect o) silencioso:true
+            local r = InLab_RWF_UltimaRodada
+            if r != undefined and (r.mods.count + r.bitmaps.count + r.triplanares.count) > 0 do append InLab_UltimoRWF r
+        )
+        catch ( InLab_Log ("Auto UV: o Real World Fix falhou (" + getCurrentException() + ") — UV do material não convertido.") tipo:#err )
+
         local feitosNaRodada = #() -- nós já cobertos nesta rodada (inclui instâncias)
 
         for o in objs where InLab_EhGeometria o do
@@ -742,11 +768,12 @@ fn InLab_CleanUV objs =
 --------------------------------------------------------------------------------
 fn InLab_ReverterAutoUV =
 (
-    if InLab_UltimoAutoUV.count == 0 then
+    if InLab_UltimoAutoUV.count == 0 and InLab_UltimoRWF.count == 0 then
         InLab_Log "Nenhum Auto UV registrado nesta sessão para reverter." tipo:#warn
     else
     (
         local revertidos = 0
+        local nRWF = 0
         undo "InLab Reverter AutoUV" on
         (
             for r in InLab_UltimoAutoUV where isValidNode r.no do
@@ -764,8 +791,15 @@ fn InLab_ReverterAutoUV =
                     revertidos += 1
                 )
             )
+            -- 08/10/2026 (issue #129): depois dos Unwraps (que ficam acima), o
+            -- Real World Fix de cada rodada, da mais nova para a mais velha.
+            for i = InLab_UltimoRWF.count to 1 by -1 do
+                try ( nRWF += InLab_RWF_Reverter InLab_UltimoRWF[i] )
+                catch ( InLab_Log ("Desfazer UV: o Real World Fix não foi desfeito (" + getCurrentException() + ").") tipo:#err )
         )
         InLab_UltimoAutoUV = #()
-        InLab_Log ("Reversão de UV concluída: " + revertidos as string + " objeto(s).")
+        InLab_UltimoRWF = #()
+        InLab_Log ("Reversão de UV concluída: " + revertidos as string + " objeto(s)" +
+                   (if nRWF > 0 then (" · Real World Fix desfeito em " + nRWF as string + " objeto(s).") else "."))
     )
 )
