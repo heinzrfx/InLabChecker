@@ -34,6 +34,5 @@ cfgCorpoPortasGavetas.maxDrawCalls     = 20  -- V-05 · provisório (igual a Tra
 cfgCorpoPortasGavetas.requiresInterior = false                  -- V-39 é de animado (v2)
 cfgCorpoPortasGavetas.tampoAcessorio   = false
 cfgCorpoPortasGavetas.materialTypes    = #()
-cfgCorpoPortasGavetas.validNames       = #()
 
 InLab_RegistrarFamilia cfgCorpoPortasGavetas

@@ -28,6 +28,5 @@ cfgMovimentoEspecial.maxDrawCalls     = 20  -- V-05 · provisório (benchmark 28
 cfgMovimentoEspecial.requiresInterior = false
 cfgMovimentoEspecial.tampoAcessorio   = false
 cfgMovimentoEspecial.materialTypes    = #("zona_acabamento", "palha")               -- V-37 + V-35
-cfgMovimentoEspecial.validNames       = #()
 
 InLab_RegistrarFamilia cfgMovimentoEspecial

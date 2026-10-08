@@ -4,7 +4,7 @@
 --------------------------------------------------------------------------------
  V-20: nomenclatura oficial. 02/10/2026 (issue #36): os nomes válidos saem do
        PRODUTO importado na seção Produto, não de lista fixa por família
-       (validNames continua vazio nos 8 structs). Convenção confirmada pela
+       (o campo validNames das famílias saiu em 08/10/2026). Convenção confirmada pela
        Bianca (docs\superpowers\specs\2026-10-02-json-v2-respostas-bianca.md):
          arquivo .max = cod_est (ou o cod_est do master, se o produto é cópia
                         de bloco_3d — a cópia sai do .max do master);
@@ -19,6 +19,9 @@
        — nome de objeto ou material errado quebra a ligação com a plataforma e
        o conserto é um clique em "Renomear materiais" / "Renomear objetos".
        Sem produto importado ela continua em advertência, pedindo o .json.
+       08/10/2026 (issue #138): o JSON é obrigatório (a família vem da
+       "natureza" do produto). Sem produto, a V-20 REPROVA (crítica) pedindo
+       o .json; o ramo dos padrões por família (validNames) saiu.
 
  V-21/22 — CORRIGIDOS (auditoria de 08/08/2026, cruzando com a spec v1.0
  recuperada — a versão anterior deste arquivo tinha sido escrita sem acesso
@@ -93,16 +96,8 @@ fn InLab_V20_Nomenclatura cfg produto:undefined objetos:#() nomeArquivo:unsuppli
         else for i = 1 to problemas.count do msg += (if i > 1 then "; " else "") + problemas[i]
         InLab_RegistrarVerif "V-20" titulo (problemas.count == 0) msg critico:true
     )
-    else if cfg.validNames.count == 0 then
-        InLab_RegistrarVerif "V-20" titulo false "pendente: importe o .json e escolha o produto na seção Produto para conferir os nomes — modo advertência" critico:false
     else
-    (
-        local nomeArq = getFilenameFile maxFileName
-        local ok = false
-        for padrao in cfg.validNames while not ok do
-            if matchPattern nomeArq pattern:padrao ignoreCase:true do ok = true
-        InLab_RegistrarVerif "V-20" titulo ok ("arquivo '" + nomeArq + "' vs padrões da família") critico:false
-    )
+        InLab_RegistrarVerif "V-20" titulo false "sem produto: importe o .json e escolha o produto na seção Produto" critico:true
 )
 
 -- V-21 · Sem acentos/espaços — apenas [A-Za-z0-9_] (spec v1.0 · seção 2.7).
@@ -123,7 +118,7 @@ fn InLab_V21_NomesValidos objetos =
 
 -- V-22 · Sufixos numéricos sequenciais sem lacuna (spec v1.0 · seção 2.7).
 -- Detecta grupos "Prefixo_NN" automaticamente a partir dos nomes da cena —
--- não depende da lista oficial (validNames), que ainda está pendente.
+-- não depende dos nomes do produto.
 fn InLab_V22_SufixosSequenciais objetos =
 (
     local grupos = #()

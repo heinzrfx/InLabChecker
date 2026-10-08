@@ -29,6 +29,5 @@ cfgRotacao.maxDrawCalls     = 16  -- V-05 · provisório (benchmark 28/09/2026, 
 cfgRotacao.requiresInterior = true                                          -- V-39
 cfgRotacao.tampoAcessorio   = false
 cfgRotacao.materialTypes    = #()
-cfgRotacao.validNames       = #()
 
 InLab_RegistrarFamilia cfgRotacao

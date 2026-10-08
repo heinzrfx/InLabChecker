@@ -28,6 +28,5 @@ cfgPernasTampo.maxDrawCalls     = 8  -- V-05 · provisório (benchmark 28/09/202
 cfgPernasTampo.requiresInterior = false
 cfgPernasTampo.tampoAcessorio   = false                        -- V-38 · toggle por produto (ver cabeçalho)
 cfgPernasTampo.materialTypes    = #("cristal")                 -- V-36
-cfgPernasTampo.validNames       = #()
 
 InLab_RegistrarFamilia cfgPernasTampo

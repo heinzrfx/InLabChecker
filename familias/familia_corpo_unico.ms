@@ -25,7 +25,6 @@ cfgCorpoUnico.maxDrawCalls     = 6  -- V-05 · provisório (benchmark 28/09/2026
 cfgCorpoUnico.requiresInterior = false
 cfgCorpoUnico.tampoAcessorio   = false
 cfgCorpoUnico.materialTypes    = #()                     -- sem materiais especiais mapeados
-cfgCorpoUnico.validNames       = #()                     -- pendente nomenclatura oficial (V-20 em advertência)
 
 -- Inscreve a config no registro global consumido pela UI.
 InLab_RegistrarFamilia cfgCorpoUnico

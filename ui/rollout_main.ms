@@ -79,6 +79,11 @@
  sem mudar comportamento. A seção Produto repinta o medidor quando a família
  muda (InLab_OtimUI_Atualizar).
 
+ 08/10/2026 (issue #138): sai o dropdown Família da seção Produto. A família
+ ativa é a "natureza" do produto escolhido (InLab_Produto_Familia), mostrada
+ num rótulo; sem produto ou sem natureza válida fica sem família, e Verificar
+ não roda. Família de animação loga #warn (verificações de animação, #117).
+
  08/10/2026 (issue #125, epic #121 — ajustes pós-v1): a seção Otimização SAI
  inteira (passos 1/2/3, medidor, lista, Comparar) e InLab_OtimUI_Atualizar
  com ela. A seção Utilidades Rápidas (InLabSecUtil) deixa de ser rollout e
@@ -182,10 +187,9 @@ rollout InLabSecProduto "Produto" width:420
     label lblProdutoAtivo "Nenhum produto carregado." align:#left
     button btnImportarProduto "Importar informações do produto" width:395 height:24 tooltip:"Abre o arquivo do produto exportado da plataforma (.json)."
     dropdownlist ddlProduto "Produto:" items:#() width:395
-    -- 23/09/2026: família que as verificações e o "Alvo da família" usam.
-    -- Item 1 = nenhuma; os demais seguem a ordem de InLab_FamiliasDaUI (02/10/2026:
-    -- só as estruturais no v1 — ver core\struct_familia.ms).
-    dropdownlist ddlFamilia "Família:" items:#() width:395
+    -- 08/10/2026 (issue #138): família que as verificações usam. Não é mais
+    -- escolhida: vem do campo "natureza" do produto (InLab_Produto_Familia).
+    label lblFamilia "Família: importe o produto" align:#left width:395
     button btnLerSelecao "Ler materiais" width:395 height:24 tooltip:"Lista os materiais dos objetos selecionados."
     listbox lbxPartes "Parte  →  material:" items:#() height:6 width:395
     dropdownlist ddlMaterial "Material da parte:" items:#() width:395
@@ -239,40 +243,31 @@ rollout InLabSecProduto "Produto" width:420
         atualizarMeshes()
     )
 
-    fn familiaEscolhida =
-    (
-        local fams = InLab_FamiliasDaUI()
-        if ddlFamilia.selection > 1 and ddlFamilia.selection <= fams.count + 1 then fams[ddlFamilia.selection - 1].nome else ""
-    )
-
     fn mostrarFamilia =
-    (
-        local fams = InLab_FamiliasDaUI()
-        ddlFamilia.items = #("— nenhuma —") + (for f in fams collect (InLab_FamiliaRotulo f.nome))
-        local idx = 0
-        if InLab_FamiliaAtiva != undefined do
-            for i = 1 to fams.count where fams[i].nome == InLab_FamiliaAtiva.nome do idx = i
-        ddlFamilia.selection = idx + 1
-    )
+        lblFamilia.text = if InLab_FamiliaAtiva == undefined then "Família: importe o produto (vem do campo natureza)"
+                          else ("Família: " + (InLab_FamiliaRotulo InLab_FamiliaAtiva.nome) + "  (natureza do JSON)")
 
-    -- Pré-preenche a família pelo produto escolhido (só sugestão: o
-    -- modelador confirma ou troca no dropdown).
-    fn sugerirFamilia =
+    -- 08/10/2026 (issue #138): a família ativa é a natureza do produto
+    -- escolhido. Sem produto ou sem natureza válida, fica sem família e as
+    -- verificações não rodam.
+    fn aplicarFamilia =
     (
-        local p = produtoEscolhido()
-        if p != undefined do
+        local fam = InLab_Produto_Familia (produtoEscolhido())
+        if fam[1] == "" then
         (
-            local sug = InLab_Produto_SugerirFamilia p
-            if sug[1] == "" then
-                InLab_Log ("Família não sugerida (" + sug[2] + ") — escolha no dropdown Família.") tipo:#warn
-            else
-            (
-                InLab_Log ("Família sugerida pelo produto (" + sug[2] + ") — confira no dropdown Família.") tipo:#warn
-                InLab_DefinirFamiliaAtiva sug[1]
-            )
-            mostrarFamilia()
-            if InLab_UtilUI_AtualizarLimite != undefined do InLab_UtilUI_AtualizarLimite()
+            if InLab_FamiliaAtiva != undefined do InLab_DefinirFamiliaAtiva ""
+            if produtoEscolhido() != undefined do
+                InLab_Log ("Sem família: " + fam[2] + ". As verificações não rodam.") tipo:#err
         )
+        else
+        (
+            InLab_DefinirFamiliaAtiva fam[1]
+            if InLab_FamiliaAtiva != undefined and InLab_FamiliaAtiva.animado do
+                InLab_Log ("Família de animação: as verificações de animação ainda não existem (issue #117) — rodam as gerais com os limites de " +
+                           (InLab_FamiliaRotulo fam[1]) + ".") tipo:#warn
+        )
+        mostrarFamilia()
+        if InLab_UtilUI_AtualizarLimite != undefined do InLab_UtilUI_AtualizarLimite()
     )
 
     -- 02/10/2026: avisos da escolha do produto — bloqueio (ok_3d = false, ou
@@ -299,6 +294,7 @@ rollout InLabSecProduto "Produto" width:420
         lblProdutoAtivo.text = "Nenhum produto carregado."
         sugerir()
         sugerirMeshes()
+        aplicarFamilia()
     )
 
     on btnImportarProduto pressed do
@@ -336,7 +332,7 @@ rollout InLabSecProduto "Produto" width:420
                 )
                 sugerir()
                 sugerirMeshes()
-                sugerirFamilia()
+                aplicarFamilia()
                 avisarNaoLiberado()
             )
         )
@@ -346,17 +342,12 @@ rollout InLabSecProduto "Produto" width:420
     (
         sugerir()
         sugerirMeshes()
-        sugerirFamilia()
+        aplicarFamilia()
         avisarNaoLiberado()
     )
 
-    on ddlFamilia selected i do
-    (
-        InLab_DefinirFamiliaAtiva (familiaEscolhida())
-        if InLab_UtilUI_AtualizarLimite != undefined do InLab_UtilUI_AtualizarLimite()
-    )
-
-    on InLabSecProduto open do mostrarFamilia()
+    -- Reabrir o painel zera a lista de produtos: a família ativa sai junto.
+    on InLabSecProduto open do aplicarFamilia()
 
     on btnLerSelecao pressed do
     (
@@ -566,7 +557,7 @@ rollout InLabSecFase4 "Verificações" width:420
     on btnVerificar pressed do
     (
         if InLab_FamiliaAtiva == undefined then
-            InLab_Log "Escolha a família no dropdown Família da seção Produto antes de verificar." tipo:#warn
+            InLab_Log "Sem família: importe o JSON e escolha o produto na seção Produto (a família vem do campo natureza)." tipo:#warn
         else if InLab_SalvarAntesDeVerificar() do
         (
             -- Produto escolhido na seção Produto vai para o relatório (issue #37)

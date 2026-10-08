@@ -87,6 +87,14 @@
  com matéria-prima vazia gera o aviso "matéria-prima não indicada" na seção
  Produto (InLab_Produto_AvisosMateriaPrima). Só aviso, decisão do usuário:
  os outros tipos de matéria-prima ainda vão ser levantados.
+
+ 08/10/2026 (issue #138, export v7): a família vem do campo "natureza" do
+ produto (InLab_Produto_Familia). Saem a sugestão pela classe
+ (InLab_Produto_SugerirFamilia, INLAB_FAMILIA_POR_CLASSE,
+ INLAB_CLASSES_POR_TECIDO, INLAB_ARQUETIPOS_SEM_FAMILIA,
+ InLab_Produto_AlgumaParte) e o dropdown Família da UI. Produto animado
+ deixa de entrar como estático: vale a natureza do JSON (rotacao,
+ translacao...), mesmo sem as verificações de animação (#117).
 ================================================================================
 */
 
@@ -464,78 +472,25 @@ fn InLab_Produto_SugerirLigacoes partes mtls =
 )
 
 --------------------------------------------------------------------------------
--- SUGESTÃO DE FAMÍLIA (23/09/2026 · arquétipos da equipe em 02/10/2026)
+-- FAMÍLIA DO PRODUTO (08/10/2026, issue #138)
 --------------------------------------------------------------------------------
--- O export não traz a família do plugin: "familia" no JSON é a LINHA comercial
--- (ex.: "RIZZI"). A sugestão sai da "classe" e é só um PRÉ-PREENCHIMENTO do
--- dropdown Família — o modelador confirma ou troca.
--- 02/10/2026 (Bianca): o que o plugin chama de família é o ARQUÉTIPO DE
--- MODELAGEM (blocos), não tem nada de animação. O v1 trata produto animado
--- como estático; os campos de animação do JSON continuam lá, sem uso.
--- Tabela: Arquetipos_Modelagem_FAST.md (5 arquétipos, 34 classes), que
--- substituiu a tabela v3 do mesmo dia (mesas voltaram para Pernas + Tampo).
--- Par #(arquétipo, classes). Desde 05/10/2026 os cinco são famílias do plugin.
-global INLAB_FAMILIA_POR_CLASSE = #(
-    #("pernas_tampo",         #("carro bar", "carro cha", "mesa bar", "mesa componivel", "mesa de centro", "mesa de cha",
-                                "mesa de jantar", "mesa de jogo", "mesa lateral")),
-    #("estrutura_estofado",   #("chaise longue", "modulo", "sofa")),
-    #("corpo_unico",          #("biombo", "cabeceira", "cavalete", "coluna de jantar")),
-    #("corpo_portas_gavetas", #("buffet", "caixa bar", "comoda", "escrivaninha", "estante", "mesa de cabeceira",
-                                "movel bar", "vanity desk")),
-    #("base_cabeceira",       #("bicama", "cama"))
-)
--- Classes de duas famílias, decididas pelo dado (critério aceito pela Bianca):
--- alguma parte em tecido → Estrutura + Estofado; senão Corpo Único.
-global INLAB_CLASSES_POR_TECIDO = #("balanco", "banco", "banqueta", "cadeira", "longarina", "poltrona", "puff")
--- Arquétipos da equipe que AINDA NÃO têm família no plugin (FamiliaConfig com
--- limites): a classe fica sem sugestão e o motivo diz qual arquétipo falta.
--- Par #(arquétipo, rótulo). Vazio desde 05/10/2026: Corpo + Portas/Gavetas e
--- Base + Cabeceira viraram família (familias\). Fica para um arquétipo novo.
-global INLAB_ARQUETIPOS_SEM_FAMILIA = #()
-
--- true se alguma parte do produto tem o campo booleano `campo` ligado e, se
--- `trecho` vier, o nome_parte (sem acento, minúsculo) contém `trecho`.
-global InLab_Produto_AlgumaParte
-fn InLab_Produto_AlgumaParte produto campo trecho:"" =
+-- A família do plugin vem do campo "natureza" do produto (export v7 em
+-- diante; spec das famílias estruturais de 08/10/2026, §0.3), com o mesmo ID
+-- das famílias registradas ("corpo_unico", "rotacao"...). Substitui a
+-- sugestão pela classe (INLAB_FAMILIA_POR_CLASSE, INLAB_CLASSES_POR_TECIDO e
+-- InLab_Produto_SugerirFamilia), que errava 23 dos 66 produtos do v7.
+-- #(nomeFamilia, motivo). nomeFamilia = "" quando o produto não tem natureza
+-- ou ela não é uma família registrada no plugin.
+global InLab_Produto_Familia
+fn InLab_Produto_Familia produto =
 (
-    local partes = InLab_JSON_Obter produto "partes"
-    local achou = false
-    if isKindOf partes Array do
-        for p in partes where not achou and (InLab_Produto_Booleano p campo) do
-            if trecho == "" or (findString (InLab_Produto_Normalizar (InLab_Produto_Texto p "nome_parte")) trecho) != undefined do achou = true
-    achou
-)
-
--- #(nomeFamilia, motivo). nomeFamilia = "" quando não dá para sugerir.
---   Aparador: Pernas + Tampo se o tampo é acessório (parte "Tampo" com
---             acessorio = true); senão Corpo Único.
---   INLAB_CLASSES_POR_TECIDO: Estrutura + Estofado se alguma parte é tecido;
---             senão Corpo Único.
---   demais: INLAB_FAMILIA_POR_CLASSE.
-global InLab_Produto_SugerirFamilia
-fn InLab_Produto_SugerirFamilia produto =
-(
-    local classe = InLab_Produto_Normalizar (InLab_Produto_Texto produto "classe")
-    local sufixo = if InLab_Produto_Booleano produto "animacao" then " · animado: entra como estático nesta versão" else ""
-    if classe == "aparador" then
-    (
-        if InLab_Produto_AlgumaParte produto "acessorio" trecho:"tampo" then #("pernas_tampo", "aparador com tampo acessório" + sufixo)
-        else #("corpo_unico", "aparador sem tampo acessório" + sufixo)
-    )
-    else if (findItem INLAB_CLASSES_POR_TECIDO classe) > 0 then
-    (
-        if InLab_Produto_AlgumaParte produto "tecido" then #("estrutura_estofado", classe + " com parte em tecido" + sufixo)
-        else #("corpo_unico", classe + " sem parte em tecido" + sufixo)
-    )
+    if produto == undefined then #("", "nenhum produto escolhido")
     else
     (
-        local fam = ""
-        for par in INLAB_FAMILIA_POR_CLASSE where fam == "" and (findItem par[2] classe) > 0 do fam = par[1]
-        local rotuloFalta = ""
-        for par in INLAB_ARQUETIPOS_SEM_FAMILIA where par[1] == fam do rotuloFalta = par[2]
-        if fam == "" then #("", (if classe == "" then "produto sem classe" else "classe '" + classe + "' fora da tabela"))
-        else if rotuloFalta != "" then #("", "classe '" + classe + "' é do arquétipo '" + rotuloFalta + "', ainda sem família no plugin")
-        else #(fam, "classe '" + classe + "'" + sufixo)
+        local nat = toLower (trimLeft (trimRight (InLab_Produto_Texto produto "natureza")))
+        if nat == "" then #("", "o produto não tem 'natureza' no JSON — exporte de novo pela plataforma")
+        else if (InLab_ObterFamilia nat) == undefined then #("", "natureza '" + nat + "' não é uma família do plugin")
+        else #(nat, "natureza do JSON")
     )
 )
 
