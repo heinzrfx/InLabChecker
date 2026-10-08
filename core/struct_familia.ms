@@ -28,6 +28,10 @@
  JSON mandar. Sai também o campo validNames (V-20): os nomes válidos vêm
  sempre do produto importado.
 
+ 08/10/2026 (issue #147): InLab_FamiliasEsperadas conta as famílias do
+ manifesto. A abertura do painel comparava com 8 fixo e logava erro falso
+ ("10 de 8") desde as famílias 9 e 10.
+
  05/10/2026 (issue #36): saiu o campo limitesPorParte, junto com a V-04
  (ver o cabeçalho de verifications\verif_peso_poly.ms).
 
@@ -106,6 +110,20 @@ fn InLab_RegistrarFamilia cfg =
     cfg
 )
 
+
+-- 08/10/2026 (issue #147): quantas famílias o painel deve encontrar = arquivos
+-- "familias\..." no manifesto. A checagem da abertura comparava com 8 fixo e,
+-- desde as famílias 9 e 10 (05/10/2026), dava "10 de 8" com erro falso.
+-- `modulos` = undefined usa INLAB_MODULOS (InLabChecker.ms); devolve
+-- undefined se não houver manifesto (módulo carregado sozinho, testes).
+global INLAB_MODULOS
+global InLab_FamiliasEsperadas
+fn InLab_FamiliasEsperadas modulos:undefined =
+(
+    if modulos == undefined do modulos = INLAB_MODULOS
+    if not (isKindOf modulos Array) then undefined
+    else (for m in modulos where matchPattern m pattern:"familias\\*" collect m).count
+)
 
 -- Busca uma config pelo nome interno (ex.: "giro_assento").
 -- Retorna undefined se não encontrada.

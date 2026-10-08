@@ -844,9 +844,12 @@ rollout InLabChecker_Rollout ("InLabChecker · InLab Artefacto · v" + INLAB_VER
         atualizarLimite()
 
         InLab_Log ("Sessão InLabChecker v" + INLAB_VERSAO + " · " + localTime)
-        InLab_Log ("Famílias registradas: " + InLab_Familias.count as string + " de 8")
+        -- 08/10/2026 (issue #147): esperado = famílias do manifesto, não 8 fixo.
+        local esperadas = InLab_FamiliasEsperadas()
+        InLab_Log ("Famílias registradas: " + InLab_Familias.count as string +
+                   (if esperadas == undefined then "" else (" de " + esperadas as string)))
         InLab_Log ("Unidade do sistema: " + (InLab_UnidadeSistema() as string))
-        if InLab_Familias.count != 8 do
+        if esperadas != undefined and InLab_Familias.count != esperadas do
             InLab_Log "Nem todas as famílias foram carregadas — verificar o manifesto." tipo:#err
 
         -- Checagem de atualização (issue #12): retorna na hora, a resposta

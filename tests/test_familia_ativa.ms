@@ -11,7 +11,7 @@
 -- Declarados ANTES do bloco: o bloco é compilado antes dos fileIn rodarem.
 global InLab_ParseJSON, InLab_JSON_Obter, InLab_JSON_LerArquivoUTF8, InLab_Log
 global InLab_Produto_Lista, InLab_Produto_Familia
-global InLab_Familias, InLab_FamiliaAtiva, InLab_DefinirFamiliaAtiva, InLab_FamiliaRotulo
+global InLab_Familias, InLab_FamiliaAtiva, InLab_DefinirFamiliaAtiva, InLab_FamiliaRotulo, InLab_FamiliasEsperadas
 global InLab_RodarVerificacoes, InLab_VerifResults
 global INLAB_TESTE_SAIDA, INLAB_TESTE_FALHAS
 (
@@ -78,6 +78,19 @@ global INLAB_TESTE_SAIDA, INLAB_TESTE_FALHAS
 
         -- 2. DEFINIR FAMÍLIA ATIVA
         checar "10 famílias registradas" (InLab_Familias.count == 10)
+        -- 08/10/2026 (issue #147): o esperado sai do manifesto, não de 8 fixo.
+        local manif = #(@"core\log.ms", @"familias\familia_corpo_unico.ms", @"familias\familia_rotacao.ms", @"functions\fn_json.ms")
+        checar "Esperadas: conta os arquivos familias\ do manifesto (2)" ((InLab_FamiliasEsperadas modulos:manif) == 2)
+        checar "Esperadas: sem manifesto devolve undefined" ((InLab_FamiliasEsperadas modulos:#none) == undefined)
+        local manifReal = undefined
+        try
+        (
+            local txtManif = (dotNetClass "System.IO.File").ReadAllText (raiz + "InLabChecker.ms")
+            -- Entradas @"familias\... do INLAB_MODULOS no arquivo do entry point.
+            manifReal = ((dotNetClass "System.Text.RegularExpressions.Regex").Matches txtManif "@\"familias\\\\").Count
+        )
+        catch ()
+        checar ("Esperadas pelo manifesto real = famílias registradas (" + manifReal as string + ")") (manifReal == InLab_Familias.count)
         InLab_DefinirFamiliaAtiva "pernas_tampo"
         checar "Definir: pernas_tampo" (InLab_FamiliaAtiva != undefined and InLab_FamiliaAtiva.nome == "pernas_tampo")
         InLab_DefinirFamiliaAtiva "nao_existe"
