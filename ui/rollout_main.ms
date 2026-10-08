@@ -259,7 +259,9 @@ rollout InLabSecProduto "Produto" width:420
             if produtoEscolhido() != undefined do
                 InLab_Log ("Sem família: " + fam[2] + ". As verificações não rodam.") tipo:#err
         )
-        else
+        -- Mesma família: não define de novo (a importação e a escolha do
+        -- produto chamam esta função em sequência; o log saía duplicado).
+        else if InLab_FamiliaAtiva == undefined or InLab_FamiliaAtiva.nome != fam[1] do
         (
             InLab_DefinirFamiliaAtiva fam[1]
             if InLab_FamiliaAtiva != undefined and InLab_FamiliaAtiva.animado do
