@@ -89,6 +89,7 @@
             -- (fn_otim_fino.ms) tem o próprio ProOptimizer. Arquivo apagado em 30/09/2026.
             -- Otimização em 3 passos (issue #60): núcleo antes dos passos.
             @"functions\fn_otim_nucleo.ms",
+            @"functions\fn_otim_reduzir.ms",   -- Reduzir 30% por clique (#124)
             @"functions\fn_otim_origem.ms",
             @"functions\fn_otim_fino.ms",
             @"functions\fn_otim_escondidas.ms",
