@@ -79,6 +79,14 @@
  sem mudar comportamento. A seção Produto repinta o medidor quando a família
  muda (InLab_OtimUI_Atualizar).
 
+ 08/10/2026 (issue #125, epic #121 — ajustes pós-v1): a seção Otimização SAI
+ inteira (passos 1/2/3, medidor, lista, Comparar) e InLab_OtimUI_Atualizar
+ com ela. A seção Utilidades Rápidas (InLabSecUtil) deixa de ser rollout e
+ vira um grupo FIXO no painel principal, entre o header e as seções, com os
+ mesmos botões mais ProOptimizer + Desfazer (InLab_OtimReduzir, 30% por
+ clique, functions\fn_otim_reduzir.ms). O código dos passos antigos sai na
+ issue #126. O texto abaixo sobre o medidor é histórico.
+
  24/09/2026 (issue #54): seção Produto ganha "Ler objetos da seleção" + lista
  objeto → nome + dropdown + "Renomear meshes" (InLab_Produto_RenomearMeshes).
  "Aplicar nomes" passa a renomear só materiais e mapas; "Desfazer nomes"
@@ -152,11 +160,9 @@
 -- toda está em functions\fn_renomear_produto.ms; aqui só fica o estado da
 -- tela. Lista + dropdown nativos em vez de tabela dotNet: o número de
 -- partes varia por produto e rollout não cria controles dinamicamente.
--- Repinta o medidor da Otimização. Definida depois de InLabSecOtimizacao;
--- declarada aqui porque a seção Produto (abaixo) a chama quando a família muda.
-global InLab_OtimUI_Atualizar
 -- 24/Set/2026 (issue #47): mesmo padrão pro rótulo do limite do Find Objects
--- (seção Utilidades Rápidas) — definida depois de InLabSecUtil, chamada
+-- (grupo fixo Utilidades Rápidas do painel principal) — definida depois de
+-- InLabChecker_Rollout, chamada
 -- daqui quando a família muda no dropdown.
 global InLab_UtilUI_AtualizarLimite
 global INLAB_OTIM_PROPOSTAS = #()
@@ -266,7 +272,6 @@ rollout InLabSecProduto "Produto" width:420
                 InLab_DefinirFamiliaAtiva sug[1]
             )
             mostrarFamilia()
-            if InLab_OtimUI_Atualizar != undefined do InLab_OtimUI_Atualizar()
             if InLab_UtilUI_AtualizarLimite != undefined do InLab_UtilUI_AtualizarLimite()
         )
     )
@@ -349,7 +354,6 @@ rollout InLabSecProduto "Produto" width:420
     on ddlFamilia selected i do
     (
         InLab_DefinirFamiliaAtiva (familiaEscolhida())
-        if InLab_OtimUI_Atualizar != undefined do InLab_OtimUI_Atualizar()
         if InLab_UtilUI_AtualizarLimite != undefined do InLab_UtilUI_AtualizarLimite()
     )
 
@@ -451,199 +455,6 @@ rollout InLabSecProduto "Produto" width:420
 )
 
 ----------------------------------------------------------------------
--- SEÇÃO: Otimização em 3 passos (issue #60)
-----------------------------------------------------------------------
--- Spec: docs\superpowers\specs\2026-09-23-otimizacao-design.md. Medidor da
--- cena inteira (triângulos x faixa da família) + lista de revisão. A seção
--- só fala com o despachante InLab_Otim_Calcular/Aplicar/Reverter passo
--- (functions\fn_otim_nucleo.ms): cada passo mora no próprio arquivo.
--- O botão antigo do ProOptimizer (percentual + "Alvo da família") saiu: o
--- passo 2 faz o mesmo, por peça, até a issue #62 trazer a meta por peça.
-rollout InLabSecOtimizacao "Otimização" width:420
-(
-    local comparando = false
-    -- true enquanto encherLista() adiciona linhas: Items.Add de linha já
-    -- marcada dispara ItemChecked, e cada disparo redesenharia a viewport.
-    local enchendo = false
-
-    dotNetControl lblMedidor "System.Windows.Forms.Label" width:395 height:24
-    spinner spnMeta "Meta (triângulos):" range:[1000, 5000000, 100000] type:#integer fieldWidth:70 align:#left enabled:false
-    radiobuttons rdoPasso labels:#("1 · Reduzir", "2 · Ajuste fino", "3 · Faces ocultas") default:2 columns:3
-    button btnCalcular "Calcular" width:395 height:24 tooltip:"Mostra o que o passo propõe para a seleção. Nada muda até Aplicar."
-    dotNetControl lvPropostas "System.Windows.Forms.ListView" width:395 height:150
-    button btnAplicar "Aplicar" width:130 height:24 offset:[1,0] across:3 tooltip:"Aplica só as linhas marcadas."
-    button btnComparar "Comparar" width:130 height:24 offset:[-1,0] tooltip:"Liga e desliga o ajuste fino na tela para ver o antes e o depois."
-    button btnReverter "Desfazer" width:130 height:24 offset:[-1,0] tooltip:"Desfaz o último Aplicar deste passo."
-
-    fn pintarMedidor =
-    (
-        local faixa = InLab_Otim_Faixa()
-        spnMeta.enabled = (InLab_FamiliaAtiva == undefined)
-        local total = InLab_Otim_Triangulos (InLab_ObjetosVerificacao())
-        local suf = case (InLab_Otim_Estado total faixa) of
-        (
-            #dentro: "OK"
-            #perto:  "WARN"
-            #longe:  "ERR"
-            default: "INFO"
-        )
-        lblMedidor.Text = InLab_Otim_TextoMedidor total faixa
-        lblMedidor.BackColor = InLab_Kit_Cor ((suf + "_FUNDO") as name)
-        lblMedidor.ForeColor = InLab_Kit_Cor ((suf + "_TEXTO") as name)
-    )
-
-    fn encherLista =
-    (
-        enchendo = true
-        try
-        (
-            lvPropostas.Items.Clear()
-            for p in INLAB_OTIM_PROPOSTAS do
-            (
-                local it = dotNetObject "System.Windows.Forms.ListViewItem" p.rotulo
-                it.Checked = p.marcada
-                lvPropostas.Items.Add it
-            )
-        )
-        catch ( InLab_Log ("Otimização: lista não foi preenchida (" + getCurrentException() + ").") tipo:#err )
-        enchendo = false
-    )
-
-    fn lerMarcadas =
-        for i = 1 to INLAB_OTIM_PROPOSTAS.count where i <= lvPropostas.Items.Count do
-            INLAB_OTIM_PROPOSTAS[i].marcada = lvPropostas.Items.Item[i - 1].Checked
-
-    fn pararComparacao =
-        if comparando do
-        (
-            InLab_OtimFino_Comparar true
-            comparando = false
-            btnComparar.text = "Comparar"
-        )
-
-    on InLabSecOtimizacao open do
-    (
-        lblMedidor.Font = InLab_Kit_Fonte 9
-        lblMedidor.TextAlign = (dotNetClass "System.Drawing.ContentAlignment").MiddleLeft
-        lvPropostas.View = (dotNetClass "System.Windows.Forms.View").Details
-        lvPropostas.CheckBoxes = true
-        lvPropostas.FullRowSelect = true
-        lvPropostas.HeaderStyle = (dotNetClass "System.Windows.Forms.ColumnHeaderStyle").None
-        lvPropostas.Columns.Add "Proposta" 372
-        lvPropostas.BackColor = InLab_Kit_Cor #LOG
-        lvPropostas.ForeColor = InLab_Kit_Cor #TEXTO
-        -- 23/09/2026 (revisão final): sem isto, INLAB_OTIM_META_MANUAL fica
-        -- undefined até o usuário mexer no spinner, mesmo com o spinner
-        -- mostrando 100000 — o medidor caía no texto "digite a meta" com um
-        -- número já visível na tela.
-        if INLAB_OTIM_META_MANUAL != undefined then spnMeta.value = INLAB_OTIM_META_MANUAL
-        else INLAB_OTIM_META_MANUAL = spnMeta.value
-        btnComparar.enabled = (rdoPasso.state == 2)
-        encherLista()
-        pintarMedidor()
-    )
-
-    -- 23/09/2026 (revisão final): fechar o painel (ou InLab_RecarregarPlugin)
-    -- durante uma comparação deixava o ProOptimizer desligado (enabledInViews
-    -- = false) pra sempre na viewport — pararComparacao() nunca era chamado.
-    on InLabSecOtimizacao close do pararComparacao()
-
-    on spnMeta changed v do
-    (
-        INLAB_OTIM_META_MANUAL = v
-        pintarMedidor()
-    )
-
-    on rdoPasso changed s do
-    (
-        pararComparacao()
-        INLAB_OTIM_PROPOSTAS = #()
-        encherLista()
-        btnComparar.enabled = (s == 2)
-        -- Some com o destaque das faces escondidas (o desenho só mostra as
-        -- linhas que estão na lista).
-        redrawViews()
-    )
-
-    -- 24/09/2026 (issue #63): desmarcar uma peça do passo 3 tira o destaque
-    -- dela da viewport na hora.
-    on lvPropostas ItemChecked s e do
-        if rdoPasso.state == 3 and not enchendo do
-        (
-            lerMarcadas()
-            redrawViews()
-        )
-
-    on btnCalcular pressed do
-    (
-        local objs = InLab_SelecaoValida()
-        if objs.count > 0 do
-        (
-            pararComparacao()
-            InLab_ProgressoIniciar "Calculando..."
-            INLAB_OTIM_PROPOSTAS = InLab_Otim_Calcular rdoPasso.state objs
-            InLab_ProgressoParar()
-            encherLista()
-            pintarMedidor()
-            -- Destaque das faces escondidas (passo 3) lê a lista: redesenha já.
-            redrawViews()
-            if INLAB_OTIM_PROPOSTAS.count > 0 do
-                InLab_Log ("Otimização · passo " + rdoPasso.state as string + ": " + INLAB_OTIM_PROPOSTAS.count as string +
-                           " proposta(s). Desmarque o que não quiser e clique em Aplicar.")
-        )
-    )
-
-    on btnAplicar pressed do
-    (
-        -- 23/09/2026 (revisão final): Aplicar durante uma comparação zerava
-        -- InLab_UltimaOtimizacao (InLab_ProOptimizer limpa o registro no
-        -- início) com o ProOptimizer do passo anterior ainda desligado na
-        -- viewport — o registro que ligaria ele de volta sumia antes.
-        pararComparacao()
-        if INLAB_OTIM_PROPOSTAS.count == 0 then
-            InLab_Log "Clique em Calcular antes de Aplicar." tipo:#warn
-        else
-        (
-            lerMarcadas()
-            InLab_ProgressoIniciar "Aplicando..."
-            InLab_Otim_Aplicar rdoPasso.state INLAB_OTIM_PROPOSTAS
-            InLab_ProgressoParar()
-            INLAB_OTIM_PROPOSTAS = #()
-            encherLista()
-            pintarMedidor()
-        )
-    )
-
-    on btnComparar pressed do
-    (
-        -- 23/09/2026 (revisão final): sem o teste de retorno, comparar sem
-        -- nada aplicado (InLab_UltimaOtimizacao vazio) virava "Mostrar
-        -- ajuste" sem alternar coisa nenhuma na viewport — o botão ficava
-        -- preso nesse rótulo até um Aplicar de verdade.
-        local ligar = comparando -- estado ANTES do clique: false liga->desliga, true desliga->liga
-        local n = InLab_OtimFino_Comparar ligar
-        if n == 0 then
-            InLab_Log "Nada para comparar — aplique o passo 2 antes." tipo:#warn
-        else
-        (
-            comparando = not comparando
-            btnComparar.text = if comparando then "Mostrar ajuste" else "Comparar"
-        )
-    )
-
-    on btnReverter pressed do
-    (
-        pararComparacao()
-        InLab_Otim_Reverter rdoPasso.state
-        pintarMedidor()
-    )
-)
-
-fn InLab_OtimUI_Atualizar =
-    try ( InLabSecOtimizacao.pintarMedidor() )
-    catch ( InLab_Log ("Otimização: medidor não atualizou (" + getCurrentException() + ").") tipo:#warn )
-
-----------------------------------------------------------------------
 -- SEÇÃO: UV e Texturas (issue #60)
 ----------------------------------------------------------------------
 -- Auto UV, Clean UV e Real World Fix saíram da seção Otimização sem mudar
@@ -694,72 +505,6 @@ rollout InLabSecUV "UV e Texturas" width:420
         if objs.count > 0 do InLab_RealWorldFix objs
     )
 )
-
-----------------------------------------------------------------------
--- SEÇÃO: Utilidades Rápidas
-----------------------------------------------------------------------
-rollout InLabSecUtil "Utilidades Rápidas" width:420
-(
-    button btnUResetX "Reset XForm" width:130 height:24 across:3
-    button btnUCenter "Center Pivot" width:130 height:24
-    button btnUBase "Base Pivot" width:130 height:24
-
-    label lblFind "Objetos pesados da cena" align:#left across:1
-    label lblFindLimite "limite: escolha a família" align:#left
-    button btnUFind "Find Objects" width:395 height:24 tooltip:(
-        "Seleciona os objetos acima de " + ((INLAB_FIND_FRACAO_POLYMAX * 100) as integer) as string +
-        "% do máximo de triângulos da família. Sem família: os " +
-        INLAB_FIND_TOP_N as string + " objetos mais pesados da cena.")
-
-    button btnUDetach "Separar por material" width:395 height:24 across:1 tooltip:"Divide cada objeto selecionado em um objeto por material."
-
-    -- 24/Set/2026 (issue #47): rótulo do limite do Find Objects — mesma
-    -- lógica do texto que InLab_FindObjectsPesados usa pra decidir o
-    -- critério (functions\fn_utilidades.ms), só pra exibição.
-    fn atualizarLimite =
-    (
-        lblFindLimite.text = if InLab_FamiliaAtiva != undefined then
-            ("limite: " + ((InLab_FamiliaAtiva.polyMax * INLAB_FIND_FRACAO_POLYMAX) as integer) as string +
-             " triângulos (" + ((INLAB_FIND_FRACAO_POLYMAX * 100) as integer) as string +
-             "% do máximo da família '" + InLab_FamiliaAtiva.nome + "')")
-        else
-            ("limite: sem família ativa — mostra os " + INLAB_FIND_TOP_N as string + " objetos mais pesados da cena")
-    )
-
-    on btnUResetX pressed do
-    (
-        local objs = InLab_SelecaoValida()
-        if objs.count > 0 do InLab_ResetXFormSelecao objs
-    )
-    on btnUCenter pressed do
-    (
-        local objs = InLab_SelecaoValida()
-        if objs.count > 0 do InLab_CentralizarPivot objs
-    )
-    on btnUBase pressed do
-    (
-        local objs = InLab_SelecaoValida()
-        if objs.count > 0 do InLab_BasePivot objs
-    )
-    on btnUFind pressed do InLab_FindObjectsPesados()
-    on btnUDetach pressed do
-    (
-        local objs = InLab_SelecaoValida()
-        if objs.count > 0 do InLab_DetachPorMaterialSelecao objs
-    )
-
-    -- Atualiza o rótulo do limite sempre que a seção é exibida — mantém o
-    -- valor visível sincronizado com a família carregada (não é campo
-    -- editável: vem sempre do polyMax, conforme decisão da equipe).
-    -- 24/Set/2026 (issue #47): não bastava mais só no open — InLab_UtilUI_
-    -- AtualizarLimite (definida abaixo) também é chamada pelo dropdown
-    -- Família (seção Produto) sempre que a família muda.
-    on InLabSecUtil open do atualizarLimite()
-)
-
-fn InLab_UtilUI_AtualizarLimite =
-    try ( InLabSecUtil.atualizarLimite() )
-    catch ( InLab_Log ("Utilidades: rótulo do limite não atualizou (" + getCurrentException() + ").") tipo:#warn )
 
 ----------------------------------------------------------------------
 -- SEÇÃO: Converter Material
@@ -1010,7 +755,70 @@ rollout InLabChecker_Rollout ("InLabChecker · InLab Artefacto · v" + INLAB_VER
     -- A posição em si (x/y da janela) é lida das preferências e aplicada
     -- direto no createDialog (InLab_AbrirUI, via pos:) — ver o AJUSTE
     -- 24/09/2026 no cabeçalho do arquivo.
-    subRollout subSecoes width:438 height:508 pos:[4,64]
+    --
+    -- UTILIDADES RÁPIDAS (08/10/2026, issue #125): grupo FIXO entre o header
+    -- e as seções — não abre nem fecha. Recebe os botões da antiga seção
+    -- InLabSecUtil e o ProOptimizer (30% por clique, functions\
+    -- fn_otim_reduzir.ms), que substitui a seção Otimização inteira.
+    -- subSecoes desce de pos:[4,64] para pos:[4,188].
+    groupBox grpUtil "Utilidades Rápidas" pos:[4,60] width:438 height:122
+    button btnUResetX "Reset XForm" pos:[12,78] width:136 height:24
+    button btnUCenter "Center Pivot" pos:[154,78] width:136 height:24
+    button btnUBase "Base Pivot" pos:[296,78] width:138 height:24
+    button btnUOtimizar "ProOptimizer" pos:[12,106] width:208 height:24 tooltip:(
+        "Tira " + ((100 - INLAB_REDUZIR_FATOR * 100 + 0.5) as integer) as string +
+        "% dos vértices de cada peça selecionada. Cada clique é um passo do Ctrl+Z.")
+    button btnUOtimDesfazer "Desfazer" pos:[226,106] width:208 height:24 tooltip:"Volta o último clique do ProOptimizer."
+    button btnUFind "Find Objects" pos:[12,134] width:208 height:24 tooltip:(
+        "Seleciona os objetos acima de " + ((INLAB_FIND_FRACAO_POLYMAX * 100) as integer) as string +
+        "% do máximo de triângulos da família. Sem família: os " +
+        INLAB_FIND_TOP_N as string + " objetos mais pesados da cena.")
+    button btnUDetach "Separar por material" pos:[226,134] width:208 height:24 tooltip:"Divide cada objeto selecionado em um objeto por material."
+    label lblFindLimite "limite: escolha a família" pos:[12,162] width:422
+
+    subRollout subSecoes width:438 height:508 pos:[4,188]
+
+    -- Rótulo do limite do Find Objects (issue #47) — mesma lógica do texto
+    -- que InLab_FindObjectsPesados usa para decidir o critério
+    -- (functions\fn_utilidades.ms), só para exibição. Chamada no open e pela
+    -- seção Produto quando a família muda (InLab_UtilUI_AtualizarLimite).
+    fn atualizarLimite =
+    (
+        lblFindLimite.text = if InLab_FamiliaAtiva != undefined then
+            ("limite do Find Objects: " + ((InLab_FamiliaAtiva.polyMax * INLAB_FIND_FRACAO_POLYMAX) as integer) as string +
+             " triângulos (" + ((INLAB_FIND_FRACAO_POLYMAX * 100) as integer) as string +
+             "% do máximo da família '" + InLab_FamiliaAtiva.nome + "')")
+        else
+            ("limite do Find Objects: sem família ativa — os " + INLAB_FIND_TOP_N as string + " objetos mais pesados da cena")
+    )
+
+    on btnUResetX pressed do
+    (
+        local objs = InLab_SelecaoValida()
+        if objs.count > 0 do InLab_ResetXFormSelecao objs
+    )
+    on btnUCenter pressed do
+    (
+        local objs = InLab_SelecaoValida()
+        if objs.count > 0 do InLab_CentralizarPivot objs
+    )
+    on btnUBase pressed do
+    (
+        local objs = InLab_SelecaoValida()
+        if objs.count > 0 do InLab_BasePivot objs
+    )
+    on btnUOtimizar pressed do
+    (
+        local objs = InLab_SelecaoValida()
+        if objs.count > 0 do InLab_OtimReduzir objs
+    )
+    on btnUOtimDesfazer pressed do InLab_OtimReduzir_Desfazer()
+    on btnUFind pressed do InLab_FindObjectsPesados()
+    on btnUDetach pressed do
+    (
+        local objs = InLab_SelecaoValida()
+        if objs.count > 0 do InLab_DetachPorMaterialSelecao objs
+    )
 
     ------------------------------------------------------------------
     -- EVENTOS
@@ -1035,14 +843,13 @@ rollout InLabChecker_Rollout ("InLabChecker · InLab Artefacto · v" + INLAB_VER
         )
 
         AddSubRollout subSecoes InLabSecProduto
-        AddSubRollout subSecoes InLabSecOtimizacao rolledUp:true
         AddSubRollout subSecoes InLabSecUV rolledUp:true
-        AddSubRollout subSecoes InLabSecUtil rolledUp:true
         AddSubRollout subSecoes InLabSecF5 rolledUp:true
         AddSubRollout subSecoes InLabSecF6 rolledUp:true
         AddSubRollout subSecoes InLabSecFase4 rolledUp:true
         AddSubRollout subSecoes InLabSecUpdate rolledUp:true   -- ui\rollout_update.ms (#14)
         AddSubRollout subSecoes InLabSecLog
+        atualizarLimite()
 
         InLab_Log ("Sessão InLabChecker v" + INLAB_VERSAO + " · " + localTime)
         InLab_Log ("Famílias registradas: " + InLab_Familias.count as string + " de 8")
@@ -1082,6 +889,12 @@ rollout InLabChecker_Rollout ("InLabChecker · InLab Artefacto · v" + INLAB_VER
         InLab_Header_Pastilha = undefined
     )
 )
+
+-- Repinta o rótulo do limite do Find Objects (grupo Utilidades Rápidas do
+-- painel principal). Chamada pela seção Produto quando a família muda.
+fn InLab_UtilUI_AtualizarLimite =
+    try ( InLabChecker_Rollout.atualizarLimite() )
+    catch ( InLab_Log ("Utilidades: rótulo do limite não atualizou (" + getCurrentException() + ").") tipo:#warn )
 
 -- Fecha instância anterior (se existir) e abre a janela já posicionada
 -- conforme a última posição lembrada (padrão: topo à direita).
@@ -1129,5 +942,7 @@ fn InLab_AbrirUI =
     -- A posição (x/y da janela) some daqui: agora é InLab_PosicaoPainelLer(),
     -- lida das preferências e aplicada de uma vez via pos: — sem o "pula pro
     -- canto" que existia dentro de on open.
-    createDialog InLabChecker_Rollout 446 580 pos:(InLab_PosicaoPainelLer())
+    -- 08/10/2026 (issue #125): +124px do grupo fixo Utilidades Rápidas
+    -- (subSecoes em pos:[4,188]): 188 + 508 + 8 de folga = 704.
+    createDialog InLabChecker_Rollout 446 704 pos:(InLab_PosicaoPainelLer())
 )
