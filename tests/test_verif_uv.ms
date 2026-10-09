@@ -98,6 +98,27 @@ global INLAB_TESTE_SAIDA, INLAB_TESTE_FALHAS
         checar "Sobreposição: 4 faces" (m.sobrepostas == 4)
         checar "Sobreposição: gutter 0" (perto m.gutterMin 0.0)
 
+        -- 4b. ENCOSTO (issue #140): ilhas que entram 0,0002 uma na outra (0,2 px
+        -- a 1024) não se sobrepõem de verdade; o selectOverlappedFaces dá 0.
+        o = criarMalha #(quadUV 0.1 0.1 0.3, quadUV (0.4 - 0.0002) 0.1 0.3)
+        append criados o
+        m = InLab_MedirUV o 3
+        checar ("Encosto de 0,2 px: 0 sobrepostas (" + m.sobrepostas as string + ")") (m.sobrepostas == 0)
+        -- 4c. Sobreposição de 2 px continua contando.
+        o = criarMalha #(quadUV 0.1 0.1 0.3, quadUV (0.4 - 0.002) 0.1 0.3)
+        append criados o
+        m = InLab_MedirUV o 3
+        checar ("Sobreposição de 2 px: 4 faces (" + m.sobrepostas as string + ")") (m.sobrepostas == 4)
+        -- 4d. Lasca degenerada (uma aresta de comprimento 0, largura 0,0001)
+        -- deitada na borda de uma ilha: não é sobreposição.
+        o = criarMalha #(quadUV 0.1 0.1 0.3, #([0.1, 0.4, 0], [0.4, 0.4, 0], [0.4, 0.4 - 0.0001, 0], [0.4, 0.4 - 0.0001, 0]))
+        append criados o
+        m = InLab_MedirUV o 3
+        checar ("Lasca degenerada na borda: 0 sobrepostas (" + m.sobrepostas as string + ")") (m.sobrepostas == 0)
+        -- A lasca está no sentido horário, mas é mais fina que meio pixel: não é
+        -- face invertida de verdade (eram as 8 "invertidas" da Shape018).
+        checar ("Lasca degenerada: 0 invertidos (" + m.invertidos as string + ")") (m.invertidos == 0)
+
         -- 5. INVERTIDOS: ilha B espelhada no UV
         o = criarMalha #(quadUV 0.1 0.1 0.3, quadUVEspelhado 0.5 0.1 0.3)
         append criados o

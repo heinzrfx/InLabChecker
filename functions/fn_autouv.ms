@@ -133,6 +133,11 @@
      de novo). Uma chamada a menos por peça: Box008 19,6 s → 16,5 s, peça de
      26,6 mil triângulos 30,7 s → 24,6 s.
 
+ 09/10/2026 (issue #140): a sobreposição que o log do Auto UV mostra (e que
+ decide "OK"/"com problema") passa a ser a do selectOverlappedFaces nativo
+ em toda malha, não só nas grandes: é o critério da V-15. O InLab_MedirUV
+ acusava 366 na Shape018 da Mentha onde o nativo e a V-15 davam 0.
+
  09/10/2026 (issue #131): resolução do bake fixa em 1024 (teste com a Bia).
  Sai o dropdown da UI e INLAB_UV_RESOLUCOES vira INLAB_RESOLUCAO_BAKE, que
  o Converter Material também usa. O parâmetro resolucao: continua (testes).
@@ -621,6 +626,14 @@ fn InLab_AutoUV objs angulo:55.0 resolucao:INLAB_RESOLUCAO_BAKE =
                         else
                         (
                             local met = if metAtual != undefined then metAtual else InLab_MedirUV o INLAB_CANAL_UV_BAKE
+                            -- 09/10/2026 (issue #140): a sobreposição do log é a do
+                            -- selectOverlappedFaces nativo, o mesmo critério da V-15
+                            -- (crítica). O critério geométrico do InLab_MedirUV não
+                            -- bate com o nativo (ver verif_uv.ms), e o log dizia
+                            -- "problema" onde a V-15 passava (e vice-versa).
+                            if met != undefined do
+                                try ( uvw.selectOverlappedFaces() ; met.sobrepostas = (uvw.getSelectedFaces()).numberSet ; uvw.selectFaces #{} )
+                                catch ( InLab_Log (o.name + ": sobreposição nativa não medida (" + getCurrentException() + "); fica a do InLab_MedirUV.") tipo:#warn )
                             local comProblema = met == undefined or met.sobrepostas > 0 or met.foraDe01 > 0 or (met.invertidos > 0 and not met.espelhado)
                             if met != undefined and met.gutterMin != undefined and met.gutterMin > 0.0 and met.gutterMin < padding * 0.98 do
                                 InLab_Log (o.name + ": gutter " + (formattedPrint met.gutterMin format:".4f") + " abaixo do padding " +
