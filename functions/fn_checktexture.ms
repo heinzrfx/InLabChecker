@@ -125,8 +125,11 @@ fn InLab_CheckTexture escopo:#cena objs:#() logar:true =
                     local ext = toLower (getFilenameType caminho)
                     local info = TexturaInfo()
                     info.arquivo   = caminho
-                    info.existe    = doesFileExist caminho
-                    info.resolucao = if info.existe then InLab_ResolucaoBitmap caminho else undefined
+                    -- 09/10/2026 (issue #162): existe pelo caminho que o Max resolve
+                    -- (map paths), não só pelo caminho gravado no bitmap.
+                    local resolvido = InLab_CaminhoTextura caminho
+                    info.existe    = resolvido != ""
+                    info.resolucao = if info.existe then InLab_ResolucaoBitmap resolvido else undefined
                     info.formato   = ext
                     info.ehPNG     = (ext == ".png")
                     info.materiais = InLab_MateriaisDoMapa m

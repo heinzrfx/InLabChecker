@@ -97,6 +97,11 @@
  opacity com transformações diferentes: o bake avalia cada um com a sua
  (renderMap), com aviso de resolução. Bitmap ainda em Real-World: não
  transfere e avisa para rodar o Auto UV antes.
+ 09/10/2026 (issue #162): o arquivo do bitmap é o que o Max resolve pelos
+ map paths (InLab_CaminhoTextura, core\utils.ms), e é esse caminho que vai
+ para o glTF Material. Textura que não existe: #err por material e slot, e
+ o slot fica vazio (antes o GLB apontava para um arquivo inexistente, ou o
+ bake de procedural saía preto sem aviso).
 ================================================================================
 */
 
@@ -271,6 +276,14 @@ fn InLab_AvisosDoSlot tm nomeMtl rotulo =
         for c in xyz do ( InLab_Log (pre + c + " em coordenadas 3D — o bake sai sem o padrão.") tipo:#warn ; n += 1 )
         if falloffs do ( InLab_Log (pre + "falloff — o efeito de borda não vai para o glTF; o bake aproxima.") tipo:#warn ; n += 1 )
         for t in tiling do ( InLab_Log (pre + t + ".") tipo:#warn ; n += 1 )
+        -- #162: bitmap sem arquivo dentro de procedural → o bake sai preto ali.
+        if not ehBitmap do
+            for t in arvore where (InLab_TransformDoBitmap t) != undefined do
+            (
+                local a = try ( t.filename ) catch ( "" )
+                if a != undefined and a != "" and (InLab_CaminhoTextura a) == "" do
+                ( InLab_Log (pre + "textura não encontrada (" + a + ") — o bake sai preto onde ela entra.") tipo:#err ; n += 1 )
+            )
     )
     n
 )
@@ -401,10 +414,19 @@ fn InLab_TexmapParaGLTF texmap nomeBase tamanho fazerBake inverter:false precisa
         InLab_Log (nomeBase + ": bitmap ainda em Real-World — rode o Auto UV antes de converter; a escala da textura não foi transferida.") tipo:#warn
         tr = undefined
     )
-    if ehBitmap and not inverter then
+    -- #162: caminho que o Max resolve; textura ausente não vai para o glTF.
+    local arqBruto = if ehBitmap then (try ( texmap.filename ) catch ( "" )) else ""
+    if arqBruto == undefined do arqBruto = ""
+    local arqResolvido = InLab_CaminhoTextura arqBruto
+    if ehBitmap and arqResolvido == "" then
     (
-        local arq = try ( texmap.filename ) catch ( undefined )
-        if arq != undefined and arq != "" do
+        if arqBruto != "" then
+            InLab_Log (nomeBase + ": textura não encontrada (" + arqBruto + ") — o slot fica vazio no glTF.") tipo:#err
+    )
+    else if ehBitmap and not inverter then
+    (
+        local arq = arqResolvido
+        if arq != "" do
         (
             resultado = InLab_AplicarTransform tr (Bitmaptexture filename:arq)
             if not (InLab_TransformIdentidade tr) do
@@ -451,15 +473,16 @@ fn InLab_BitmapDoTexmap texmap tamanho =
 
     -- Caminho preferencial: pixels do arquivo em disco. #163: só sem
     -- transformação; com tiling/offset, o renderMap avalia o ladrilho certo.
-    if ((classof texmap == Bitmaptexture) or (InLab_ClasseContem texmap "CoronaBitmap")) and (InLab_TransformIdentidade (InLab_TransformDoBitmap texmap)) do
-    (
-        local arq = try ( texmap.filename ) catch ( undefined )
-        if arq != undefined and arq != "" and doesFileExist arq do
-            bmFonte = try ( openBitMap arq ) catch ( undefined )
-    )
+    local ehBitmap = (classof texmap == Bitmaptexture) or (InLab_ClasseContem texmap "CoronaBitmap")
+    local arq = if ehBitmap then (InLab_CaminhoTextura (try ( texmap.filename ) catch ( "" ))) else ""
+    if ehBitmap and (InLab_TransformIdentidade (InLab_TransformDoBitmap texmap)) and arq != "" do
+        bmFonte = try ( openBitMap arq ) catch ( undefined )
 
-    -- Fallback: avaliação via renderMap (procedurais).
-    if bmFonte == undefined do
+    -- Fallback: avaliação via renderMap (procedurais). #162: bitmap sem
+    -- arquivo não vai para o renderMap, que devolveria preto.
+    if ehBitmap and arq == "" then
+        InLab_Log ((try ( texmap.name ) catch ( "bitmap" )) + ": textura não encontrada (" + (try ( texmap.filename ) catch ( "" )) + ").") tipo:#err
+    else if bmFonte == undefined do
         bmFonte = try ( renderMap texmap size:[tamanho, tamanho] display:false ) catch ( undefined )
 
     if bmFonte == undefined then undefined
