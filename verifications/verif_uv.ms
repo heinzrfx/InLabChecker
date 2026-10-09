@@ -36,11 +36,30 @@
  pela aresta — mesmo resultado, 2,1 s → 0,3 s no Box064. Tentativa com a
  mediana em vez da média: célula pequena demais, face grande em milhares de
  células, travou o Max. Não repetir.
+ 09/10/2026 (issue #140): na Shape018 da Mentha (Auto UV), as sobrepostas
+ davam 366 e o selectOverlappedFaces nativo, 0. Todos os 1.089 pares eram
+ da mesma ilha e de dois tipos: (1) 8 lascas degeneradas (uma aresta de
+ comprimento 0, duas de até 0,41, área ~1e-6) deitadas sobre arestas
+ vizinhas, que também saíam como "invertidas"; (2) 362 pares que só
+ encostavam, 357 deles entrando menos de 1e-4 um no outro e o resto menos
+ de 1e-3. A tolerância do eixo separador era 1e-5, mais justa que a
+ precisão do flatten. Passou para meio pixel a 1024 (0,5/1024): com ela a
+ Shape018 dá 0, como o nativo, e uma lasca mais fina que a tolerância conta
+ como separada. Sobreposição de 1 px ou mais continua contando. Pelo mesmo
+ critério, lasca no sentido horário mais fina que a tolerância (altura =
+ 2·área / maior aresta) não conta como invertida: eram as 8 "invertidas".
+ A DIFERENÇA QUE FICA (documentada): o nativo conta encosto entre faces
+ minúsculas que a tolerância ignora. Na Poltrona Zac (Auto UV), a peça
+ "Shape" tem 94 faces selecionadas pelo nativo, todas com área UV abaixo de
+ ~3 px² a 1024, entrando menos de meio pixel umas nas outras: aqui dá 0. Por
+ isso o log do Auto UV e a V-15 usam o nativo, e esta contagem é só métrica.
 ================================================================================
 */
 
 global INLAB_UV_EPS = 1e-6
-global INLAB_UV_TOL_SOBREPOSICAO = 1e-5
+-- 09/10/2026 (issue #140): meio pixel a 1024 (o bake é fixo em 1024, #131).
+-- Era 1e-5, mais justo que a precisão do flatten: contava encosto e lasca.
+global INLAB_UV_TOL_SOBREPOSICAO = 0.5 / 1024.0
 global INLAB_UV_GUTTER_BUSCA = 0.02
 
 struct UVMetricas
@@ -169,7 +188,13 @@ fn InLab_MedirUV obj canal =
         (
             local c = cantos[f]
             local s = InLab_UV_AreaSinal uv[c[1]] uv[c[2]] uv[c[3]]
-            if s < -1e-12 do res.invertidos += 1
+            -- 09/10/2026 (issue #140): lasca mais fina que meio pixel (altura
+            -- 2·área / maior aresta) não conta como invertida.
+            if s < -1e-12 do
+            (
+                local maior = amax #(distance uv[c[1]] uv[c[2]], distance uv[c[2]] uv[c[3]], distance uv[c[3]] uv[c[1]])
+                if (2.0 * (abs s) / maior) >= INLAB_UV_TOL_SOBREPOSICAO do res.invertidos += 1
+            )
             areaUV[f] = abs s
             area3D[f] = meshop.getFaceArea m f
             areaUVIlha[ilhaFace[f]] += areaUV[f]
