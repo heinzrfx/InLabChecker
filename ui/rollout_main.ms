@@ -202,7 +202,9 @@ rollout InLabSecProduto "Produto" width:420
     listbox lbxObjetos "Objeto  →  nome novo:" items:#() height:6 width:395
     dropdownlist ddlMesh "Nome do objeto:" items:#() width:395
     button btnRenomearMeshes "Renomear objetos" width:195 height:24 align:#left offset:[2,0] across:2 tooltip:"Dá a cada objeto da lista o nome escolhido. Objeto sem nome escolhido fica como está."
-    button btnDesfazer "Desfazer nomes" width:195 height:24 align:#right offset:[-1,0] tooltip:"Volta os nomes de materiais, mapas e objetos ao que eram antes de 'Renomear materiais' e 'Renomear objetos'."
+    -- 09/10/2026 (issue #135): "Desfazer nomes" virou Limpar: desfaz os nomes
+    -- e zera as listas. O JSON e o produto escolhido ficam.
+    button btnLimpar "Limpar" width:195 height:24 align:#right offset:[-1,0] tooltip:"Volta os nomes de materiais, mapas e objetos ao que eram antes de renomear e limpa as listas. O produto escolhido continua."
 
     fn produtoEscolhido =
         if ddlProduto.selection > 0 and ddlProduto.selection <= produtos.count then produtos[ddlProduto.selection] else undefined
@@ -442,11 +444,15 @@ rollout InLabSecProduto "Produto" width:420
         )
     )
 
-    on btnDesfazer pressed do
+    on btnLimpar pressed do
     (
-        InLab_Produto_Reverter()
-        atualizarTela()
-        atualizarMeshes()
+        local n = InLab_Produto_Limpar()
+        materiais = #()
+        objsMesh = #()
+        sugerir()       -- sem materiais: nenhuma parte ligada
+        sugerirMeshes() -- sem objetos: lista vazia
+        InLab_Log ("Seção Produto limpa" + (if n > 0 then "" else " (nenhum nome para desfazer)") +
+                   ". O produto escolhido continua.") tipo:#ok
     )
 )
 

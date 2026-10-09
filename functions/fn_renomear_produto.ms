@@ -95,6 +95,11 @@
  InLab_Produto_AlgumaParte) e o dropdown Família da UI. Produto animado
  deixa de entrar como estático: vale a natureza do JSON (rotacao,
  translacao...), mesmo sem as verificações de animação (#117).
+
+ 09/10/2026 (issue #135): botão Limpar na seção Produto, no lugar do
+ "Desfazer nomes". InLab_Produto_Limpar desfaz os nomes (como o Reverter, mas
+ sem o aviso de "nada para desfazer") e a UI zera as listas; o JSON e o
+ produto escolhido ficam.
 ================================================================================
 */
 
@@ -759,4 +764,15 @@ fn InLab_Produto_Reverter =
         InLab_UltimaRenomeacao = #()
         InLab_Log ("Nomes revertidos: " + n as string + ".") tipo:#ok
     )
+)
+
+-- 09/10/2026 (issue #135): parte de nomes do botão Limpar. Desfaz a
+-- renomeação, se houver (sem o aviso do Reverter quando não há). Devolve
+-- quantas renomeações havia. As listas são da UI.
+global InLab_Produto_Limpar
+fn InLab_Produto_Limpar =
+(
+    local n = InLab_UltimaRenomeacao.count
+    if n > 0 do InLab_Produto_Reverter()
+    n
 )
