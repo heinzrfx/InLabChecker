@@ -102,6 +102,9 @@
  para o glTF Material. Textura que não existe: #err por material e slot, e
  o slot fica vazio (antes o GLB apontava para um arquivo inexistente, ou o
  bake de procedural saía preto sem aviso).
+ 09/10/2026 (issue #169): procedural bakeado vai para o canal dos bitmaps de
+ dentro dele, se todos usam o mesmo (o RWF põe o conteúdo do Triplanar no
+ canal 2 quando há bitmap em Real-World no canal 1).
 ================================================================================
 */
 
@@ -451,6 +454,21 @@ fn InLab_TexmapParaGLTF texmap nomeBase tamanho fazerBake inverter:false precisa
         )
         local arq = InLab_BakeTexmap fonte nomeBase tamanho precisaAlpha:precisaAlpha
         if arq != undefined do resultado = InLab_AplicarTransform trBake (Bitmaptexture filename:arq)
+        -- #169: procedural bakeado lê os bitmaps de dentro no canal deles (o
+        -- Real World Fix pode pôr o conteúdo do Triplanar no canal 2): o
+        -- resultado vai para esse canal, se todos usam o mesmo.
+        if resultado != undefined and trBake == undefined do
+        (
+            local canais = #()
+            for t in (InLab_ArvoreDeMapas texmap #()) do
+            (
+                local trt = InLab_TransformDoBitmap t
+                if trt != undefined do appendIfUnique canais trt[5]
+            )
+            if canais.count == 1 then resultado.coords.mapChannel = canais[1]
+            else if canais.count > 1 do
+                InLab_Log (nomeBase + ": procedural com bitmaps em canais diferentes " + canais as string + " — o bake fica no canal 1.") tipo:#warn
+        )
     )
     else
         InLab_Log (nomeBase + ": mapa procedural e bake desabilitado — slot ficará vazio.") tipo:#warn

@@ -306,6 +306,28 @@ global InLab_CaminhoTextura, InLab_CheckTexture
                 logsCapturados = #()
                 local cT6 = coordsDe (mapaBaseDe (InLab_ConverterCoronaMtl mT6 64 false))
                 checar ("#163: Real-World não transfere (" + cT6 + ") e avisa para rodar o Auto UV") (cT6 == "1.00x1.00 off 0.00,0.00 ch1" and avisou "rode o Auto UV")
+                -- #169: procedural com bitmap no canal 2 → bake no canal 2; canais misturados → aviso
+                local mC2 = CoronaLegacyMtl()
+                mC2.name = "mat_c2"
+                local ccC2 = Color_Correction()
+                local bC2 = Bitmaptexture filename:arqT
+                bC2.coords.mapChannel = 2
+                ccC2.map = bC2
+                mC2.texmapDiffuse = ccC2
+                local gC2 = InLab_ConverterCoronaMtl mC2 64 true
+                local cC2 = coordsDe (mapaBaseDe gC2)
+                checar ("#169: procedural com bitmap no canal 2 bakeia no canal 2 (" + cC2 + ")") (cC2 == "1.00x1.00 off 0.00,0.00 ch2")
+                local mMx = CoronaLegacyMtl()
+                mMx.name = "mat_mx"
+                local mixM = Mix()
+                local bM1 = Bitmaptexture filename:arqT
+                local bM2 = Bitmaptexture filename:arqT
+                bM2.coords.mapChannel = 2
+                mixM.map1 = bM1 ; mixM.map2 = bM2
+                mMx.texmapDiffuse = mixM
+                logsCapturados = #()
+                local cMx = coordsDe (mapaBaseDe (InLab_ConverterCoronaMtl mMx 64 true))
+                checar ("#169: procedural com canais misturados fica no canal 1 e avisa (" + cMx + ")") (cMx == "1.00x1.00 off 0.00,0.00 ch1" and avisou "canais diferentes")
                 try ( deleteFile arqT ) catch ()
 
                 -- ===== 9. CAMINHO PELOS MAP PATHS E TEXTURA AUSENTE (09/10/2026, #162) =====
