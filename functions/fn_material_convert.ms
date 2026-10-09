@@ -77,6 +77,14 @@
  (InLab_EspecialDoMaterial). Antes era só o nome, e depois da renomeação
  para o material_id (ART_*) o vidro saía com transmission 0 e a palha sem
  BLEND/doubleSided. Mesma regra das V-35/V-36.
+ 09/10/2026 (issue #110, sondagem 2026-10-09-bake-procedurais-sondagem.md):
+ o renderMap deu o mesmo resultado com o Corona e com o Scanline nos 138
+ slots do piloto (o "preto" era textura ausente, issue #162), e o RWF do
+ Auto UV tira todo Triplanar antes da conversão. Sem Render-To-Texture; a
+ conversão passa a AVISAR por material e slot (InLab_AvisosDoSlot) o que o
+ glTF não reproduz: Triplanar (rodar o Auto UV antes), mapa em coordenada
+ 3D, falloff, tiling não inteiro dentro de procedural (emenda) e tiling de
+ bitmap direto (o glTF Material recebe só o arquivo).
 ================================================================================
 */
 
@@ -196,6 +204,66 @@ fn InLab_EspecialDoMaterial nome especiais:#() =
     local e = undefined
     for t in especiais where t[1] == nome do e = t[2]
     if e != undefined then #(e, #materia) else #(InLab_DetectarEspecial nome, #nome)
+)
+
+--------------------------------------------------------------------------------
+-- 09/10/2026 (issue #110): avisos do que a conversão não reproduz num slot.
+-- tm: o mapa do slot; rotulo: "base color", "roughness"... Só loga (#warn).
+-- Devolve quantos avisos deu.
+--------------------------------------------------------------------------------
+global InLab_ArvoreDeMapas
+fn InLab_ArvoreDeMapas tm acum =
+(
+    if tm != undefined and findItem acum tm == 0 do
+    (
+        append acum tm
+        for i = 1 to (getNumSubTexmaps tm) do InLab_ArvoreDeMapas (getSubTexmap tm i) acum
+    )
+    acum
+)
+
+global InLab_AvisosDoSlot
+fn InLab_AvisosDoSlot tm nomeMtl rotulo =
+(
+    local n = 0
+    if tm != undefined do
+    (
+        local pre = nomeMtl + " (" + rotulo + "): "
+        local ehBitmap = (classof tm == Bitmaptexture) or (InLab_ClasseContem tm "CoronaBitmap")
+        local arvore = InLab_ArvoreDeMapas tm #()
+        local vistos = #()
+        local triplanar = false, falloffs = false, xyz = #(), tiling = #()
+        for t in arvore where findItem vistos t == 0 do
+        (
+            append vistos t
+            local cn = (classof t) as string
+            if matchPattern cn pattern:"*Triplanar*" do triplanar = true
+            if (classof t) == Falloff do falloffs = true
+            local co = try ( t.coords ) catch ( undefined )
+            if co != undefined and (classof co) == StandardXYZGen do appendIfUnique xyz cn
+            -- tiling do bitmap: U_Tiling (Bitmaptexture) ou uvwScale (CoronaBitmap)
+            local tu = undefined, tv = undefined
+            if classof t == Bitmaptexture then ( tu = t.coords.U_Tiling ; tv = t.coords.V_Tiling )
+            else if InLab_ClasseContem t "CoronaBitmap" do ( local s = try ( t.uvwScale ) catch ( undefined ) ; if s != undefined do ( tu = s.x ; tv = s.y ) )
+            if tu != undefined do
+            (
+                local nome = try ( filenameFromPath t.filename ) catch ( t.name )
+                local inteiro = (abs (tu - (floor (tu + 0.5)))) < 1e-3 and (abs (tv - (floor (tv + 0.5)))) < 1e-3
+                if ehBitmap and t == tm then
+                (
+                    if (abs (tu - 1.0)) > 1e-3 or (abs (tv - 1.0)) > 1e-3 do
+                        append tiling (nome + " com tiling " + (formattedPrint tu format:".2f") + "×" + (formattedPrint tv format:".2f") + ": o glTF Material recebe só o arquivo, a textura muda de escala")
+                )
+                else if not inteiro do
+                    append tiling (nome + " com tiling " + (formattedPrint tu format:".2f") + "×" + (formattedPrint tv format:".2f") + " dentro de procedural: o ladrilho bakeado não fecha (emenda no GLB)")
+            )
+        )
+        if triplanar do ( InLab_Log (pre + "CoronaTriplanar no mapa — rode o Auto UV antes de converter (o Real World Fix troca o Triplanar por UVW Map); convertido assim, a textura sai numa projeção errada.") tipo:#warn ; n += 1 )
+        for c in xyz do ( InLab_Log (pre + c + " em coordenadas 3D — o bake sai sem o padrão.") tipo:#warn ; n += 1 )
+        if falloffs do ( InLab_Log (pre + "falloff — o efeito de borda não vai para o glTF; o bake aproxima.") tipo:#warn ; n += 1 )
+        for t in tiling do ( InLab_Log (pre + t + ".") tipo:#warn ; n += 1 )
+    )
+    n
 )
 
 --------------------------------------------------------------------------------
@@ -518,6 +586,14 @@ fn InLab_ConverterCoronaMtl mtl tamanho fazerBake especiais:#() =
             #legacy: InLab_Log (mtl.name + ": perfil CoronaLegacyMtl (workflow glossiness).")
             #vray: InLab_Log (mtl.name + ": perfil VRayMtl (workflow glossiness).")
             default: ()
+        )
+        -- 09/10/2026 (issue #110): o que o glTF não reproduz, por slot.
+        -- Bump: só o CoronaNormal vira normal map (o resto já avisa "bump escalar").
+        for par in #(#(candMapaBase, "base color"), #(candMapaGloss, "roughness"), #(candBump, "normal"), #(candOpacMapa, "opacidade")) do
+        (
+            local tmSlot = InLab_PropSafe mtl par[1]
+            if par[2] != "normal" or (InLab_ClasseContem tmSlot "CoronaNormal") do
+                InLab_AvisosDoSlot tmSlot mtl.name par[2]
         )
 
         ------------------------------------------------------------------
