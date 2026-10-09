@@ -458,8 +458,7 @@ rollout InLabSecProduto "Produto" width:420
 rollout InLabSecUV "UV e Texturas" width:420
 (
     -- 18/Set (issue #1): o padding sai da resolução do bake; o Auto UV grava
-    -- no canal 3 e não toca no canal 1. Os itens do dropdown seguem a ordem
-    -- de INLAB_UV_RESOLUCOES (functions\fn_autouv.ms).
+    -- no canal 3 e não toca no canal 1.
     -- 22/Set: saiu o checkbox "Preferir seams em regiões ocultas", que nunca
     -- teve efeito. 02/10/2026 (issue #4): a sondagem da Tarefa 7b mostrou que
     -- não compensa (docs\superpowers\specs\2026-10-02-autouv-seams-ocultas-
@@ -467,7 +466,8 @@ rollout InLabSecUV "UV e Texturas" width:420
     -- 30/09/2026 (issue #58): saem os rótulos de cima do Auto UV e do Real
     -- World Fix: o nome fica no botão, o detalhe no tooltip. O ângulo do
     -- flatten fica sem rótulo, ao lado do botão Auto UV.
-    dropdownlist ddlResolucaoUV "Resolução do bake:" items:#("1024", "2048", "4096") selection:1 width:120 align:#left
+    -- 09/10/2026 (issue #131): saiu o dropdown de resolução; o bake é sempre
+    -- 1024 (INLAB_RESOLUCAO_BAKE, functions\fn_autouv.ms).
     button btnF2 "Auto UV" width:130 height:24 align:#left offset:[2,0] across:2 tooltip:"Cria um UV próprio para bake de textura e sombra nos objetos selecionados. Antes, converte a escala real dos mapas (Real World Fix) para funcionar na web."
     spinner spnAnguloUV "" range:[10, 90, 55] type:#float fieldWidth:45 align:#left offset:[-63,3] tooltip:"Ângulo de corte (°). Quanto maior, menos cortes no UV."
     -- 22/Set: o Check Texture e o Verificar Escala saíram da aba (as funções
@@ -485,7 +485,7 @@ rollout InLabSecUV "UV e Texturas" width:420
         if objs.count > 0 do
         (
             InLab_ProgressoIniciar "Gerando Auto UV..."
-            InLab_AutoUV objs angulo:spnAnguloUV.value resolucao:INLAB_UV_RESOLUCOES[ddlResolucaoUV.selection]
+            InLab_AutoUV objs angulo:spnAnguloUV.value resolucao:INLAB_RESOLUCAO_BAKE
             InLab_ProgressoParar()
         )
     )
@@ -503,8 +503,9 @@ rollout InLabSecUV "UV e Texturas" width:420
 rollout InLabSecF5 "Converter Material" width:420
 (
     dropdownlist ddlConversao items:#("Corona → glTF (Physical / Legacy / VRay)") selection:1 width:395
-    dropdownlist ddlBakeRes items:#("512", "1024", "2048", "4096") selection:2 width:90 align:#left across:2 tooltip:"Resolução do bake."
-    checkbox chkBakeProc "Bake de mapas procedurais" checked:true align:#right
+    -- 09/10/2026 (issue #131): saiu o dropdown de resolução; o bake é sempre
+    -- 1024 (INLAB_RESOLUCAO_BAKE). Fica o checkbox de bake de procedurais.
+    checkbox chkBakeProc "Bake de mapas procedurais" checked:true align:#left
     button btnF5 "Converter" width:195 height:24 align:#left offset:[2,0] across:2 tooltip:"Converte os materiais dos objetos selecionados."
     button btnF5Rev "Desfazer" width:195 height:24 align:#right offset:[-1,0] tooltip:"Volta os materiais originais."
 
@@ -513,9 +514,8 @@ rollout InLabSecF5 "Converter Material" width:420
         local objs = InLab_SelecaoValida()
         if objs.count > 0 do
         (
-            local tam = ddlBakeRes.selected as integer
             InLab_ProgressoIniciar "Convertendo materiais..."
-            InLab_ConverterObjetos objs tamanhoBake:tam fazerBake:chkBakeProc.checked
+            InLab_ConverterObjetos objs tamanhoBake:INLAB_RESOLUCAO_BAKE fazerBake:chkBakeProc.checked
             InLab_ProgressoParar()
         )
     )

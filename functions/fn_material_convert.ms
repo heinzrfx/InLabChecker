@@ -69,6 +69,8 @@
  06/10/2026 (#118, #119): vidro VRay lê a cor de refração (média dos canais
  → transmission). O roughness do vidro não é mais forçado para 0,05: a V-36
  deixa roughness, IOR e refração livres (vidro jateado é fosco de propósito).
+ 09/10/2026 (issue #131): o bake sai sempre em INLAB_RESOLUCAO_BAKE (1024,
+ definido em fn_autouv.ms); o dropdown de resolução saiu da UI.
 ================================================================================
 */
 

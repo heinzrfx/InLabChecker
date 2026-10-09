@@ -132,6 +132,10 @@
      gutter quando nenhum pack veio depois dela (antes o mesmo UV era medido
      de novo). Uma chamada a menos por peça: Box008 19,6 s → 16,5 s, peça de
      26,6 mil triângulos 30,7 s → 24,6 s.
+
+ 09/10/2026 (issue #131): resolução do bake fixa em 1024 (teste com a Bia).
+ Sai o dropdown da UI e INLAB_UV_RESOLUCOES vira INLAB_RESOLUCAO_BAKE, que
+ o Converter Material também usa. O parâmetro resolucao: continua (testes).
 ================================================================================
 */
 
@@ -141,7 +145,7 @@ global InLab_MedirUV, InLab_AssinaturaCanal, InLab_UVMetricasTexto
 -- ===== PADRÃO InLab: canais de UV (ponto único de mudança) =====
 global INLAB_CANAL_UV_MATERIAL = 1  -- UV do material, em escala real: o Auto UV nunca altera
 global INLAB_CANAL_UV_BAKE = 3      -- 0–1 empacotado por objeto, para bake de textura e AO
-global INLAB_UV_RESOLUCOES = #(1024, 2048, 4096) -- mesma ordem do dropdown da UI
+global INLAB_RESOLUCAO_BAKE = 1024 -- fixa (#131): padding do Auto UV e bake do Converter
 global INLAB_UV_ESPACAMENTO_MAX = 8.0 -- teto da correção do gutter, em múltiplos do padding
 -- Acima disto (triângulos) a malha é "grande": sem pack extra, sem correção
 -- medida do gutter e sem métricas completas no log (ver cabeçalho, 21/Set).
@@ -404,7 +408,7 @@ fn InLab_UnfoldComGuarda uvw np angulo:55.0 espacamento:0.01 =
 --------------------------------------------------------------------------------
 -- AUTO UV sobre a seleção. Grava no canal INLAB_CANAL_UV_BAKE.
 --------------------------------------------------------------------------------
-fn InLab_AutoUV objs angulo:55.0 resolucao:1024 =
+fn InLab_AutoUV objs angulo:55.0 resolucao:INLAB_RESOLUCAO_BAKE =
 (
     local processados = 0
     local padding = InLab_PaddingUV resolucao
