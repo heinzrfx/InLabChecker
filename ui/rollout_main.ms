@@ -836,8 +836,9 @@ rollout InLabChecker_Rollout ("InLabChecker · InLab Artefacto · v" + INLAB_VER
         AddSubRollout subSecoes InLabSecProduto
         AddSubRollout subSecoes InLabSecUV rolledUp:true
         AddSubRollout subSecoes InLabSecF5 rolledUp:true
-        AddSubRollout subSecoes InLabSecF6 rolledUp:true
+        -- 09/10/2026 (issue #137): Verificações entre Converter e Exportar.
         AddSubRollout subSecoes InLabSecFase4 rolledUp:true
+        AddSubRollout subSecoes InLabSecF6 rolledUp:true
         AddSubRollout subSecoes InLabSecUpdate rolledUp:true   -- ui\rollout_update.ms (#14)
         AddSubRollout subSecoes InLabSecLog
         atualizarLimite()
