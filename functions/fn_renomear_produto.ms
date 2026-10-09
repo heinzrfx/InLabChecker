@@ -100,6 +100,10 @@
  "Desfazer nomes". InLab_Produto_Limpar desfaz os nomes (como o Reverter, mas
  sem o aviso de "nada para desfazer") e a UI zera as listas; o JSON e o
  produto escolhido ficam.
+
+ 09/10/2026 (issue #136): busca acima do dropdown Produto. InLab_Produto_Filtrar
+ devolve os produtos cujo "cod_est – nome" contém o termo, sem diferenciar
+ maiúsculas nem acentos (InLab_Produto_Normalizar).
 ================================================================================
 */
 
@@ -186,6 +190,22 @@ fn InLab_Produto_PartesDeMaterial produto =
 (
     local partes = if produto == undefined then undefined else InLab_JSON_Obter produto "partes"
     if isKindOf partes Array then (for p in partes where not (InLab_Produto_Booleano p "so3d") collect p) else #()
+)
+
+-- 09/10/2026 (issue #136): texto do produto no dropdown da seção Produto.
+global InLab_Produto_RotuloDaLista
+fn InLab_Produto_RotuloDaLista produto =
+    (InLab_Produto_Texto produto "cod_est") + " – " + (InLab_Produto_Texto produto "nome")
+
+-- 09/10/2026 (issue #136): índices dos produtos cujo rótulo (código e nome)
+-- contém o termo, sem diferenciar maiúsculas nem acentos. Termo vazio: todos.
+global InLab_Produto_Normalizar -- definida mais abaixo
+global InLab_Produto_Filtrar
+fn InLab_Produto_Filtrar produtos termo =
+(
+    local t = InLab_Produto_Normalizar (trimLeft (trimRight termo))
+    for i = 1 to produtos.count where t == "" or
+        (findString (InLab_Produto_Normalizar (InLab_Produto_RotuloDaLista produtos[i])) t) != undefined collect i
 )
 
 -- Índice (1-based) do produto com esse cod_est; 0 se não houver.

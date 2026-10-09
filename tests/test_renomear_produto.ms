@@ -14,7 +14,7 @@ global InLab_Produto_Aplicar, InLab_Produto_Reverter, InLab_Produto_Renomear, In
 global InLab_Produto_MeshesDoProduto, InLab_Produto_SugerirMeshes, InLab_Produto_RenomearMeshes
 global InLab_Produto_NomeLembraMesh
 global InLab_Produto_MeshesDaParte, InLab_Produto_Liberado3D, InLab_Produto_EhMaeDeSubparte
-global InLab_Produto_PartesDeMaterial
+global InLab_Produto_PartesDeMaterial, InLab_Produto_Filtrar, InLab_Produto_RotuloDaLista
 global InLab_Produto_Variantes, InLab_Produto_IndicePorArquivo
 global InLab_Produto_BaseDaCopia, InLab_Produto_CopiasDe, InLab_Produto_MotivoBloqueio, InLab_Produto_AvisosDeBloco
 global InLab_Produto_PartesSemMateriaPrima, InLab_Produto_AvisosMateriaPrima
@@ -455,6 +455,22 @@ global INLAB_TESTE_SAIDA, INLAB_TESTE_FALHAS
         checar ("Variante: no .max 0030_L12 todo objeto recebe o nome da variante (" + sugV as string + ")") (sugV[1] == "0030_L12" and sugV[2] == "0030_L12")
         local sugV2 = InLab_Produto_SugerirMeshes produtos5[1] #() #(bVarCru) nomeArquivo:"outro_arquivo"
         checar "Variante: .max com outro nome não chuta a variante" (sugV2[1] == "")
+
+        -- 14. BUSCA (issue #136): parte do nome ou do código, sem maiúsculas/acentos
+        local js6 = "{\"produtos\": [" +
+            "{\"cod_est\": \"09125015\", \"nome\": \"MESA LATERAL LOUISE - JATEADA\"}, " +
+            "{\"cod_est\": \"00150099\", \"nome\": \"BANCO KALAO - FREIJÓ\"}, " +
+            "{\"cod_est\": \"07129418\", \"nome\": \"POLTRONA GAP\"}]}"
+        local produtos6 = InLab_Produto_Lista (InLab_ParseJSON js6)
+        checar "Busca: rótulo do dropdown = cod_est – nome" ((InLab_Produto_RotuloDaLista produtos6[3]) == "07129418 – POLTRONA GAP")
+        checar "Busca vazia mostra todos" ((InLab_Produto_Filtrar produtos6 "") as string == #(1, 2, 3) as string)
+        checar "Busca só com espaços mostra todos" ((InLab_Produto_Filtrar produtos6 "   ") as string == #(1, 2, 3) as string)
+        checar "Busca por parte do nome, sem maiúsculas" ((InLab_Produto_Filtrar produtos6 "louise") as string == #(1) as string)
+        checar "Busca sem acento acha nome com acento" ((InLab_Produto_Filtrar produtos6 "freijo") as string == #(2) as string)
+        checar "Busca com acento acha também" ((InLab_Produto_Filtrar produtos6 "FREIJÓ") as string == #(2) as string)
+        checar "Busca por parte do código" ((InLab_Produto_Filtrar produtos6 "0912") as string == #(1) as string)
+        checar "Busca que casa vários" ((InLab_Produto_Filtrar produtos6 "a") as string == #(1, 2, 3) as string)
+        checar "Busca sem resultado" ((InLab_Produto_Filtrar produtos6 "sofa").count == 0)
 
         -- Ctrl+Z nativo NÃO é testável daqui: rodado de dentro do script,
         -- `max undo` desfaz o script inteiro (inclusive a criação das caixas),
