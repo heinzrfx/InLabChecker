@@ -71,6 +71,12 @@
  deixa roughness, IOR e refração livres (vidro jateado é fosco de propósito).
  09/10/2026 (issue #131): o bake sai sempre em INLAB_RESOLUCAO_BAKE (1024,
  definido em fn_autouv.ms); o dropdown de resolução saiu da UI.
+ 09/10/2026 (issue #153): palha e cristal vêm da matéria-prima da parte do
+ produto escolhido (InLab_ConverterObjetos produto:, tabela de
+ InLab_Produto_EspeciaisDoProduto), com volta ao nome
+ (InLab_EspecialDoMaterial). Antes era só o nome, e depois da renomeação
+ para o material_id (ART_*) o vidro saía com transmission 0 e a palha sem
+ BLEND/doubleSided. Mesma regra das V-35/V-36.
 ================================================================================
 */
 
@@ -178,6 +184,18 @@ fn InLab_DetectarEspecial nomeMtl =
     for kw in #("cristal", "vidro", "glass") while achou == #nenhum do
         if (findString n kw) != undefined do achou = #cristal
     achou
+)
+
+-- 09/10/2026 (issue #153): #(especial, fonte) do material `nome`. especiais:
+-- tabela #(#(material_id, especial), ...) da matéria-prima do produto
+-- (InLab_Produto_EspeciaisDoProduto); fonte #materia se veio dela, #nome se
+-- caiu nas palavras-chave (InLab_DetectarEspecial).
+global InLab_EspecialDoMaterial
+fn InLab_EspecialDoMaterial nome especiais:#() =
+(
+    local e = undefined
+    for t in especiais where t[1] == nome do e = t[2]
+    if e != undefined then #(e, #materia) else #(InLab_DetectarEspecial nome, #nome)
 )
 
 --------------------------------------------------------------------------------
@@ -450,7 +468,7 @@ fn InLab_Material_PerfilSlots tipo =
 -- Converte UM CoronaPhysicalMtl em glTF Material. Retorna o material novo
 -- ou undefined (material não-Corona → chamador mantém o original).
 --------------------------------------------------------------------------------
-fn InLab_ConverterCoronaMtl mtl tamanho fazerBake =
+fn InLab_ConverterCoronaMtl mtl tamanho fazerBake especiais:#() =
 (
     if InLab_ClasseContem mtl "CoronaLayeredMtl" then
     (
@@ -479,7 +497,10 @@ fn InLab_ConverterCoronaMtl mtl tamanho fazerBake =
         local cls = InLab_ResolverClasseGLTF()
         local g = cls()
         g.name = mtl.name + "_GLTF"
-        local especial = InLab_DetectarEspecial mtl.name
+        local esp = InLab_EspecialDoMaterial mtl.name especiais:especiais
+        local especial = esp[1]
+        if esp[2] == #materia and especial != #nenhum do
+            InLab_Log (mtl.name + ": " + (if especial == #cristal then "cristal" else "palha") + " pela matéria-prima do JSON.") tipo:#info
 
         -- ===== PERFIL DE PROPRIEDADES por renderizador (bug 4) =====
         local tipoMtl = InLab_TipoDeMaterial mtl
@@ -674,7 +695,7 @@ fn InLab_ConverterCoronaMtl mtl tamanho fazerBake =
 -- crítico para as zonas de acabamento da V-37). Retorna material novo ou
 -- undefined (nada convertível).
 --------------------------------------------------------------------------------
-fn InLab_ConverterMaterialNode mtl tamanho fazerBake =
+fn InLab_ConverterMaterialNode mtl tamanho fazerBake especiais:#() =
 (
     if classof mtl == Multimaterial then
     (
@@ -688,21 +709,24 @@ fn InLab_ConverterMaterialNode mtl tamanho fazerBake =
             local sub = mtl.materialList[i]
             if sub != undefined then
             (
-                local subNovo = InLab_ConverterCoronaMtl sub tamanho fazerBake
+                local subNovo = InLab_ConverterCoronaMtl sub tamanho fazerBake especiais:especiais
                 if subNovo != undefined then ( novo.materialList[i] = subNovo ; converteuAlgum = true )
                 else novo.materialList[i] = sub   -- passa o original adiante
             )
         )
         if converteuAlgum then novo else undefined
     )
-    else InLab_ConverterCoronaMtl mtl tamanho fazerBake
+    else InLab_ConverterCoronaMtl mtl tamanho fazerBake especiais:especiais
 )
 
 --------------------------------------------------------------------------------
 -- Ponto de entrada da UI: converte os materiais dos objetos selecionados.
 --------------------------------------------------------------------------------
-fn InLab_ConverterObjetos objs tamanhoBake:1024 fazerBake:true =
+fn InLab_ConverterObjetos objs tamanhoBake:1024 fazerBake:true produto:undefined =
 (
+    -- #153: palha/cristal pela matéria-prima do produto escolhido, se houver.
+    local especiais = if produto == undefined or InLab_Produto_EspeciaisDoProduto == undefined then #()
+                      else InLab_Produto_EspeciaisDoProduto produto
     -- NÃO zera InLab_UltimaConversao aqui — o histórico acumula entre
     -- chamadas, só o Reverter zera (bug #45, mesmo padrão de
     -- fn_renomear_produto.ms). Zerar aqui fazia "Converter A, depois B" e
@@ -740,7 +764,7 @@ fn InLab_ConverterObjetos objs tamanhoBake:1024 fazerBake:true =
                 else
                 (
                     InLab_BakesDestaConversao = #()
-                    novo = InLab_ConverterMaterialNode orig tamanhoBake fazerBake
+                    novo = InLab_ConverterMaterialNode orig tamanhoBake fazerBake especiais:especiais
                     bakesDoGrupo = InLab_BakesDestaConversao
                     append origens orig
                     append novos novo

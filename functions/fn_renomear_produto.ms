@@ -101,6 +101,11 @@
  sem o aviso de "nada para desfazer") e a UI zera as listas; o JSON e o
  produto escolhido ficam.
 
+ 09/10/2026 (issue #153): a regra matéria-prima → material especial
+ (InLab_Produto_EspecialDaMateria, InLab_Produto_EspeciaisDoProduto) veio de
+ verifications\verif_materiais.ms (#145) para cá: a conversão
+ (fn_material_convert.ms) passa a usar a mesma, e este arquivo carrega antes.
+
  09/10/2026 (issue #136): busca acima do dropdown Produto. InLab_Produto_Filtrar
  devolve os produtos cujo "cod_est – nome" contém o termo, sem diferenciar
  maiúsculas nem acentos (InLab_Produto_Normalizar).
@@ -206,6 +211,49 @@ fn InLab_Produto_Filtrar produtos termo =
     local t = InLab_Produto_Normalizar (trimLeft (trimRight termo))
     for i = 1 to produtos.count where t == "" or
         (findString (InLab_Produto_Normalizar (InLab_Produto_RotuloDaLista produtos[i])) t) != undefined collect i
+)
+
+-- 09/10/2026 (issues #145 e #153): material especial pela matéria-prima da
+-- parte. Contrato com a Bia (spec das famílias estruturais, 08/10/2026), valor
+-- inteiro, nunca trecho ("Fibra de Vidro" não é vidro): familia "Vidro" →
+-- #cristal, exceto materia "Vidro Espelho"; familia "Malacca / Fibra" →
+-- #palha; outra familia → #nenhum. familia vazia ou ausente → undefined (quem
+-- usa cai no nome). Sem diferenciar maiúsculas (o == de string do MaxScript
+-- diferencia: compara em minúsculas).
+global InLab_Produto_EspecialDaMateria
+fn InLab_Produto_EspecialDaMateria parte =
+(
+    local mp = InLab_JSON_Obter parte "materia_prima"
+    local fam = toLower (trimLeft (trimRight (InLab_Produto_Texto mp "familia")))
+    local mat = toLower (trimLeft (trimRight (InLab_Produto_Texto mp "materia")))
+    if fam == "" then undefined
+    else if fam == "vidro" then (if mat == "vidro espelho" then #nenhum else #cristal)
+    else if fam == "malacca / fibra" then #palha
+    else #nenhum
+)
+
+-- #(#(material_id, especial), ...) de todas as partes do produto (so3d
+-- incluídas: a peça só 3D também tem material). Duas partes com o mesmo
+-- material_id e matérias diferentes: vale a que é especial. Sem produto: #().
+global InLab_Produto_EspeciaisDoProduto
+fn InLab_Produto_EspeciaisDoProduto produto =
+(
+    local tabela = #()
+    local partes = if produto == undefined then undefined else InLab_JSON_Obter produto "partes"
+    if isKindOf partes Array do
+        for p in partes do
+        (
+            local id = InLab_Produto_Texto p "material_id"
+            local e = InLab_Produto_EspecialDaMateria p
+            if id != "" and e != undefined do
+            (
+                local achado = undefined
+                for t in tabela where t[1] == id do achado = t
+                if achado == undefined then append tabela #(id, e)
+                else if achado[2] == #nenhum do achado[2] = e
+            )
+        )
+    tabela
 )
 
 -- Índice (1-based) do produto com esse cod_est; 0 se não houver.
