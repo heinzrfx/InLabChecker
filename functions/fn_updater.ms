@@ -17,7 +17,20 @@
    InLab_UpdateReverter()              → troca a instalação pelo .bak
    InLab_UpdateVersaoBak()             → versão guardada no .bak, ou undefined
    InLab_UpdateEstadoTexto()           → frase do estado, para a seção (#14)
+   InLab_UpdateCliquePastilha()        → o clique na pastilha do header (#133)
    InLab_Update                        → estado (struct UpdateEstado)
+
+ 09/10/2026 (issue #133): saiu a seção Atualização (ui\rollout_update.ms).
+ Tudo passa pelo clique na pastilha do header (InLab_UpdateCliquePastilha):
+ em #disponivel, confirma e atualiza; em #ocioso/#erro, procura na hora e, se
+ houver versão nova, confirma e atualiza; senão avisa que está na mais
+ recente. A resposta da busca chega no callback, então a busca do clique leva
+ u.doClique = true e InLab_UpdateProcessar termina em
+ InLab_UpdateRespostaDoClique. Versão ignorada também é oferecida no clique
+ (o artista pediu). Os diálogos são InLab_Update_Confirmar/InLab_Update_Avisar,
+ globais que o teste troca por stub (queryBox trava o Max no MCP). Decisões
+ do usuário (#134): o "Voltar versão" sai da UI (InLab_UpdateReverter fica,
+ sem botão) e a busca automática fica sempre ligada (sai o autoCheck).
 
  POR QUE NÃO HÁ BackgroundWorker, FILA NEM TIMER (medido no Max 2024, 22 e
  23/09/2026): WebClient.DownloadStringAsync retorna em 11–16 ms e o evento
@@ -113,7 +126,10 @@ global InLab_Header_Estado            -- ui\header.ms, carregado depois
 global InLab_Update_Disparar, InLab_UpdatePintarHeader
 global InLab_Update_Recarregar
 global InLab_Update_WC                -- WebClient do download em curso (Cancelar)
-global InLab_SecUpdate_Atualizar      -- ui\rollout_update.ms, carregado depois
+-- 09/10/2026 (#133): diálogos do clique na pastilha. Trocados por stub nos testes.
+global InLab_Update_Confirmar = fn _updConfirmar msg = queryBox msg title:"InLabChecker"
+global InLab_Update_Avisar = fn _updAvisar msg = messageBox msg title:"InLabChecker"
+global InLab_UpdateRespostaDoClique
 
 global INLAB_UPDATE_API = "https://api.github.com/repos/heinzrfx/InLabChecker/releases/latest"
 global INLAB_UPDATE_INTERVALO_S = 4 * 3600
@@ -131,7 +147,8 @@ struct UpdateEstado
     ignorada = false,       -- versaoRemota é a versaoIgnorada do ini
     pct = 0,                -- progresso do download (#13)
     aviso = "",             -- frase de sucesso ("Atualizado para vX.") (#13)
-    publicadaEm = ""        -- data da release, "dd/mm/aaaa" (#14)
+    publicadaEm = "",       -- data da release, "dd/mm/aaaa" (#14)
+    doClique = false        -- a busca em curso veio do clique na pastilha (#133)
 )
 
 global InLab_Update
@@ -221,11 +238,6 @@ fn InLab_UpdatePintarHeader =
     )
     catch
         InLab_UpdateLog ("falha ao pintar a pastilha (" + getCurrentException() + ").") tipo:#warn
-    -- A seção Atualização (#14) repinta junto. Pode não existir (teste, painel
-    -- fechado) e pode chegar depois de um Reload: nada aqui pode levantar.
-    if InLab_SecUpdate_Atualizar != undefined do
-        try ( InLab_SecUpdate_Atualizar() )
-        catch ( InLab_Log ("Atualização: falha ao repintar a seção (" + getCurrentException() + ").") tipo:#warn )
 )
 
 -- Interpreta a resposta. `tok` é o token que a consulta levou; `texto` o corpo
@@ -296,6 +308,13 @@ fn InLab_UpdateProcessar tok texto status:0 erro:undefined =
                 )
                 InLab_UpdatePintarHeader()
             )
+        )
+        -- #133: a busca veio do clique na pastilha; o artista espera resposta.
+        if InLab_Update.doClique do
+        (
+            InLab_Update.doClique = false
+            try ( InLab_UpdateRespostaDoClique() )
+            catch ( InLab_UpdateLog ("falha ao responder o clique (" + getCurrentException() + ").") tipo:#err )
         )
         true
     )
@@ -609,7 +628,7 @@ fn InLab_UpdateConcluir causa versao =
         u.msgErro = ""
         u.ignorada = false
         u.aviso = "Atualizado para v" + versao + "."
-        InLab_UpdateLog ("v" + versao + " instalada. A versão anterior ficou guardada (InLabChecker.bak) e dá para voltar sem fechar o Max.") tipo:#ok
+        InLab_UpdateLog ("v" + versao + " instalada. A versão anterior ficou guardada em InLabChecker.bak.") tipo:#ok
         InLab_UpdatePintarHeader()
     )
     else
@@ -837,8 +856,8 @@ fn InLab_UpdateReverter =
 
 --------------------------------------------------------------------------------
 -- PARTE 3 (issue #14): AÇÕES DA SEÇÃO ATUALIZAÇÃO
--- ui\rollout_update.ms só lê controle e chama InLab_UpdateExecutar com a ação
--- que o botão representa naquele estado. A lógica fica aqui.
+-- Ações do updater. Até 09/10/2026 (#133) eram os botões da seção Atualização
+-- (ui\rollout_update.ms, removida); hoje o clique na pastilha usa as daqui.
 --------------------------------------------------------------------------------
 
 fn InLab_UpdateIgnorar =
@@ -917,7 +936,59 @@ fn InLab_UpdateTamanhoTexto bytes =
     else substituteString (formattedPrint (bytes / 1048576.0) format:".1f") "." "," + " MB"
 )
 
--- Ponto único de entrada dos botões da seção.
+-- 09/10/2026 (#133): confirma com o artista e dispara o download + troca. A
+-- troca recarrega o plugin sozinha (passo 6).
+fn InLab_UpdateConfirmarEAplicar =
+(
+    local u = InLab_Update
+    local tam = InLab_UpdateTamanhoTexto u.tamanhoZip
+    local msg = "Atualizar o InLabChecker da v" + INLAB_VERSAO + " para a v" + u.versaoRemota +
+                (if tam != "" then " (" + tam + ")" else "") + "?\n\nO plugin baixa a versão nova e recarrega o painel sozinho."
+    if InLab_Update_Confirmar msg then InLab_UpdateBaixarEAplicar()
+    else
+    (
+        InLab_UpdateLog ("atualização para a v" + u.versaoRemota + " adiada.") tipo:#info
+        false
+    )
+)
+
+-- 09/10/2026 (#133): resposta da busca disparada pelo clique.
+fn InLab_UpdateRespostaDoClique =
+(
+    local u = InLab_Update
+    if u.estado == #disponivel then InLab_UpdateConfirmarEAplicar()
+    else if u.estado == #erro then InLab_Update_Avisar ("Não foi possível procurar atualização: " + u.msgErro)
+    else if u.msgErro != "" then InLab_Update_Avisar u.msgErro
+    else InLab_Update_Avisar ("Você está na versão mais recente (v" + INLAB_VERSAO + ").")
+)
+
+-- 09/10/2026 (#133): clique na pastilha do header. Devolve true se disparou
+-- alguma coisa (busca ou atualização).
+fn InLab_UpdateCliquePastilha =
+(
+    local u = InLab_Update
+    if u.estado == #checando or u.estado == #baixando or u.estado == #aplicando then
+    (
+        InLab_UpdateLog "já há uma busca ou atualização em andamento." tipo:#info
+        false
+    )
+    else if u.estado == #disponivel then InLab_UpdateConfirmarEAplicar()
+    else if u.estado == #erro and u.urlZip != "" and u.versaoRemota != "" and (InLab_CompararVersao INLAB_VERSAO u.versaoRemota) == -1 then
+        InLab_UpdateConfirmarEAplicar() -- o download falhou: oferece de novo
+    else
+    (
+        u.doClique = true
+        local ok = InLab_UpdateChecar silencioso:false
+        if not ok and u.doClique do
+        (
+            u.doClique = false
+            if u.estado == #erro do InLab_Update_Avisar ("Não foi possível procurar atualização: " + u.msgErro)
+        )
+        ok
+    )
+)
+
+-- Ponto único de entrada das ações (antes, os botões da seção Atualização).
 fn InLab_UpdateExecutar acao =
 (
     case acao of

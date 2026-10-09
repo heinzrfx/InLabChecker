@@ -122,8 +122,8 @@
             @"ui\kit.ms",
             @"ui\header.ms",
             @"ui\splash.ms",
-            -- seção Atualização (issue #14): antes do rollout_main, que a adiciona
-            @"ui\rollout_update.ms",
+            -- 09/10/2026 (issue #133): saiu ui\rollout_update.ms (seção
+            -- Atualização); a atualização é pelo clique na pastilha do header.
             @"ui\rollout_main.ms"
         )
 

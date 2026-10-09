@@ -17,8 +17,9 @@ global InLab_Update, InLab_UpdateChecar, InLab_UpdateProcessar, InLab_UpdateEsta
 global InLab_Update_Disparar, InLab_Header_Estado, InLab_UpdateAgora
 global InLab_UpdateIgnorar, InLab_UpdateTamanhoTexto, InLab_UpdateLog, INLAB_UPDATE_HIST
 global InLab_UpdateTextoDoLog, InLab_UpdateExecutar, InLab_UpdateUltimaChecagemTexto
-global InLab_SecUpdate_Atualizar
+global InLab_UpdateCliquePastilha, InLab_Update_Confirmar, InLab_Update_Avisar, InLab_UpdateBaixarEAplicar
 global INLAB_TESTE_SAIDA, INLAB_TESTE_FALHAS, INLAB_TESTE_DISPAROS, INLAB_TESTE_HEADER
+global INLAB_TESTE_DIALOGOS, INLAB_TESTE_RESPOSTA, INLAB_TESTE_APLICOU
 (
     local dirTeste = getFilenamePath (getSourceFileName())
     local raiz = substring dirTeste 1 (dirTeste.count - 6) -- tira "tests\"
@@ -36,9 +37,6 @@ global INLAB_TESTE_SAIDA, INLAB_TESTE_FALHAS, INLAB_TESTE_DISPAROS, INLAB_TESTE_
     local headerOriginal = InLab_Header_Estado
     local disparoOriginal = undefined
     local updateOriginal = InLab_Update
-    -- A secao Atualizacao do painel aberto repintaria com o estado do teste.
-    local secaoOriginal = InLab_SecUpdate_Atualizar
-    InLab_SecUpdate_Atualizar = undefined
     local histOriginal = INLAB_UPDATE_HIST
     local chaves = #("autoCheck", "ultimaChecagem", "versaoIgnorada")
     local ausente = "__ausente__"
@@ -196,6 +194,93 @@ global INLAB_TESTE_SAIDA, INLAB_TESTE_FALHAS, INLAB_TESTE_DISPAROS, INLAB_TESTE_
         INLAB_TESTE_DISPAROS = #()
         checar "Acao #procurar dispara a checagem manual" ((InLab_UpdateExecutar #procurar) == true and INLAB_TESTE_DISPAROS.count == 1)
         checar "Ultima checagem vira texto dd/MM HH:mm" (matchPattern (InLab_UpdateUltimaChecagemTexto()) pattern:"??/?? ??:??")
+
+        -- 10. CLIQUE NA PASTILHA (#133). Dialogos e download em stub: queryBox
+        -- e messageBox travariam o Max, e o download tocaria a rede.
+        local aplicarOriginal = InLab_UpdateBaixarEAplicar
+        INLAB_TESTE_DIALOGOS = #()
+        INLAB_TESTE_RESPOSTA = true
+        INLAB_TESTE_APLICOU = 0
+        InLab_Update_Confirmar = fn _stubConfirmar msg = ( append INLAB_TESTE_DIALOGOS #(#confirmar, msg); INLAB_TESTE_RESPOSTA )
+        InLab_Update_Avisar = fn _stubAvisar msg = ( append INLAB_TESTE_DIALOGOS #(#avisar, msg); ok )
+        InLab_UpdateBaixarEAplicar = fn _stubAplicar = ( INLAB_TESTE_APLICOU += 1; true )
+        fn ultimoDialogo = if INLAB_TESTE_DIALOGOS.count == 0 then #(#nenhum, "") else INLAB_TESTE_DIALOGOS[INLAB_TESTE_DIALOGOS.count]
+        fn ocioso = ( InLab_Update.estado = #ocioso; InLab_Update.msgErro = ""; InLab_Update.urlZip = ""; InLab_Update.versaoRemota = ""; InLab_Update.doClique = false )
+
+        -- Ocioso, sem versao nova: procura e avisa que esta na mais recente.
+        ocioso()
+        INLAB_TESTE_DISPAROS = #()
+        checar "Clique em #ocioso dispara a busca" ((InLab_UpdateCliquePastilha()) == true and INLAB_TESTE_DISPAROS.count == 1)
+        checar "Busca do clique fica marcada" (InLab_Update.doClique == true and InLab_Update.silencioso == false)
+        InLab_UpdateProcessar InLab_Update.token jsonIgual
+        checar "Sem versao nova: avisa que esta na mais recente" ((ultimoDialogo())[1] == #avisar and matchPattern (ultimoDialogo())[2] pattern:"*mais recente*")
+        checar "Resposta do clique desmarca a busca" (InLab_Update.doClique == false)
+
+        -- Ocioso, com versao nova: procura, confirma e aplica.
+        ocioso()
+        INLAB_TESTE_DIALOGOS = #()
+        InLab_UpdateCliquePastilha()
+        InLab_UpdateProcessar InLab_Update.token jsonMaior
+        checar ("Versao nova: pede confirmacao citando as versoes ('" + (ultimoDialogo())[2] + "')") ((ultimoDialogo())[1] == #confirmar and matchPattern (ultimoDialogo())[2] pattern:("*v" + INLAB_VERSAO + "*v99.0*"))
+        checar "Confirmado: aplica" (INLAB_TESTE_APLICOU == 1)
+
+        -- Em #disponivel: confirma direto, sem nova busca.
+        INLAB_TESTE_DISPAROS = #()
+        INLAB_TESTE_RESPOSTA = false
+        checar "Clique em #disponivel nao busca de novo" ((InLab_UpdateCliquePastilha()) == false and INLAB_TESTE_DISPAROS.count == 0)
+        checar "Recusado: nao aplica" (INLAB_TESTE_APLICOU == 1 and (ultimoDialogo())[1] == #confirmar)
+        INLAB_TESTE_RESPOSTA = true
+        checar "Clique em #disponivel confirmado aplica" ((InLab_UpdateCliquePastilha()) == true and INLAB_TESTE_APLICOU == 2)
+
+        -- Versao ignorada: o clique oferece mesmo assim.
+        InLab_PrefGravar "versaoIgnorada" "99.0"
+        ocioso()
+        INLAB_TESTE_DIALOGOS = #()
+        InLab_UpdateCliquePastilha()
+        InLab_UpdateProcessar InLab_Update.token jsonMaior
+        checar "Ignorada: o clique oferece a atualizacao" (InLab_Update.ignorada and (ultimoDialogo())[1] == #confirmar)
+        InLab_PrefApagar "versaoIgnorada"
+
+        -- Busca em andamento: o clique nao faz nada.
+        InLab_Update.estado = #checando
+        INLAB_TESTE_DISPAROS = #()
+        INLAB_TESTE_DIALOGOS = #()
+        checar "Clique em #checando nao faz nada" ((InLab_UpdateCliquePastilha()) == false and INLAB_TESTE_DISPAROS.count == 0 and INLAB_TESTE_DIALOGOS.count == 0)
+        InLab_Update.estado = #baixando
+        checar "Clique em #baixando nao faz nada" ((InLab_UpdateCliquePastilha()) == false and INLAB_TESTE_DIALOGOS.count == 0)
+
+        -- Sem rede depois do clique: avisa o erro.
+        ocioso()
+        InLab_UpdateCliquePastilha()
+        InLab_UpdateProcessar InLab_Update.token undefined status:0 erro:"The remote name could not be resolved"
+        checar "Erro na busca do clique: avisa o motivo" ((ultimoDialogo())[1] == #avisar and matchPattern (ultimoDialogo())[2] pattern:"*sem conex*")
+        -- Em #erro sem release conhecida: procura de novo.
+        INLAB_TESTE_DISPAROS = #()
+        checar "Clique em #erro sem release procura de novo" ((InLab_UpdateCliquePastilha()) == true and INLAB_TESTE_DISPAROS.count == 1)
+        InLab_UpdateProcessar InLab_Update.token jsonIgual
+
+        -- Em #erro com release mais nova conhecida (download falhou): oferece de novo.
+        InLab_Update.estado = #erro
+        InLab_Update.versaoRemota = "99.0"
+        InLab_Update.urlZip = "https://exemplo/x.zip"
+        INLAB_TESTE_DISPAROS = #()
+        INLAB_TESTE_DIALOGOS = #()
+        InLab_UpdateCliquePastilha()
+        checar "Clique em #erro com release nova oferece de novo, sem buscar" ((ultimoDialogo())[1] == #confirmar and INLAB_TESTE_DISPAROS.count == 0)
+
+        -- 404 depois do clique: avisa que nao ha release.
+        ocioso()
+        InLab_UpdateCliquePastilha()
+        InLab_UpdateProcessar InLab_Update.token undefined status:404 erro:"(404) Not Found"
+        checar "404 do clique: avisa que nao ha release" ((ultimoDialogo())[1] == #avisar and matchPattern (ultimoDialogo())[2] pattern:"Nenhuma release*")
+
+        -- Busca automatica (sem clique): nenhum dialogo.
+        ocioso()
+        INLAB_TESTE_DIALOGOS = #()
+        local tokS = novaConsulta silencioso:true
+        InLab_UpdateProcessar tokS jsonMaior
+        checar "Busca automatica nao abre dialogo" (INLAB_TESTE_DIALOGOS.count == 0)
+        InLab_UpdateBaixarEAplicar = aplicarOriginal
     )
     catch
     (
@@ -215,7 +300,8 @@ global INLAB_TESTE_SAIDA, INLAB_TESTE_FALHAS, INLAB_TESTE_DISPAROS, INLAB_TESTE_
     InLab_Log = logOriginal
     if updateOriginal != undefined do InLab_Update = updateOriginal
     INLAB_UPDATE_HIST = if histOriginal != undefined then histOriginal else #()
-    InLab_SecUpdate_Atualizar = secaoOriginal
+    -- O fileIn de fn_updater.ms no fim volta os dialogos e o download originais.
+    try ( fileIn (raiz + @"functions\fn_updater.ms") ) catch ()
 
     linha ("---- " + (if INLAB_TESTE_FALHAS == 0 then "TUDO OK" else (INLAB_TESTE_FALHAS as string + " FALHA(S)")))
     close INLAB_TESTE_SAIDA
