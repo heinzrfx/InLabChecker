@@ -52,6 +52,13 @@
                       checagens rodam sem erro; V-37 pass (6 materiais).
  Nenhum procedural no difuso virou "base color sem mapa" (os materiais acusados
  têm texmapDiffuse indefinido), nem ID órfão na V-25.
+
+ 09/10/2026 (issue #145): V-35/V-36 escolhem o material especial pela
+ matéria-prima da parte do JSON (InLab_Mat_EspecialDaMateria; material_id da
+ parte = nome do material), com volta ao nome quando não há produto ou a parte
+ vem sem materia_prima.familia. A V-24 herda (palha aceita PNG). A conversão
+ continua pelo nome. As notas dizem quantos vieram do JSON e quais o nome
+ marcaria mas a matéria-prima tirou.
 ================================================================================
 */
 
@@ -103,11 +110,54 @@ fn InLab_Mat_Uso objetos =
 -- se lê nos slots (o próprio, ou o base de um Layered). tipo: #physical,
 -- #legacy, #vray, #outro (a conversão não suporta) ou #gltf (já convertido e
 -- sem registro do original). especial: #palha,
--- #cristal ou #nenhum (mesmas palavras da conversão).
-struct MatInfo ( mtl, base, tipo, especial )
+-- #cristal ou #nenhum. fonte: #materia (matéria-prima da parte no JSON) ou
+-- #nome (mesmas palavras da conversão). especialNome: o que o nome daria.
+struct MatInfo ( mtl, base, tipo, especial, fonte = #nome, especialNome = #nenhum )
 
-fn InLab_Mat_Resolver uso =
+-- 09/10/2026 (issue #145): o especial vem da matéria-prima da parte cujo
+-- material_id é o nome do material. Contrato com a Bia (spec das famílias
+-- estruturais, 08/10/2026), valor inteiro, nunca trecho ("Fibra de Vidro"
+-- não é vidro): familia "Vidro" → #cristal, exceto materia "Vidro Espelho";
+-- familia "Malacca / Fibra" → #palha; outra familia → #nenhum. familia vazia
+-- ou ausente → undefined (cai no nome). Sem diferenciar maiúsculas (o == de
+-- string do MaxScript diferencia: compara em minúsculas).
+fn InLab_Mat_EspecialDaMateria parte =
 (
+    local mp = InLab_JSON_Obter parte "materia_prima"
+    local fam = toLower (trimLeft (trimRight (InLab_Produto_Texto mp "familia")))
+    local mat = toLower (trimLeft (trimRight (InLab_Produto_Texto mp "materia")))
+    if fam == "" then undefined
+    else if fam == "vidro" then (if mat == "vidro espelho" then #nenhum else #cristal)
+    else if fam == "malacca / fibra" then #palha
+    else #nenhum
+)
+
+-- #(#(material_id, especial), ...) de todas as partes do produto (so3d
+-- incluídas: a peça só 3D também tem material). Duas partes com o mesmo
+-- material_id e matérias diferentes: vale a que é especial.
+fn InLab_Mat_EspeciaisDoProduto produto =
+(
+    local tabela = #()
+    local partes = if produto == undefined then undefined else InLab_JSON_Obter produto "partes"
+    if isKindOf partes Array do
+        for p in partes do
+        (
+            local id = InLab_Produto_Texto p "material_id"
+            local e = InLab_Mat_EspecialDaMateria p
+            if id != "" and e != undefined do
+            (
+                local achado = undefined
+                for t in tabela where t[1] == id do achado = t
+                if achado == undefined then append tabela #(id, e)
+                else if achado[2] == #nenhum do achado[2] = e
+            )
+        )
+    tabela
+)
+
+fn InLab_Mat_Resolver uso produto:undefined =
+(
+    local tabela = InLab_Mat_EspeciaisDoProduto produto
     for m in uso.usados collect
     (
         local origem = m
@@ -131,7 +181,13 @@ fn InLab_Mat_Resolver uso =
             if InLab_ClasseContem origem "CoronaLayeredMtl" do base = InLab_PropSafe origem #(#baseMtl, #baseMaterial, #base)
             tipo = if base == undefined then #outro else InLab_TipoDeMaterial base
         )
-        MatInfo mtl:m base:base tipo:tipo especial:(InLab_DetectarEspecial nomeEsp)
+        local pelaMateria = undefined
+        for t in tabela where t[1] == nomeEsp do pelaMateria = t[2]
+        local pelaNome = InLab_DetectarEspecial nomeEsp
+        if pelaMateria != undefined then
+            MatInfo mtl:m base:base tipo:tipo especial:pelaMateria fonte:#materia especialNome:pelaNome
+        else
+            MatInfo mtl:m base:base tipo:tipo especial:pelaNome fonte:#nome especialNome:pelaNome
     )
 )
 
@@ -276,6 +332,18 @@ fn InLab_V25_IDsDeMaterial uso produto:undefined =
     InLab_Mat_Registrar "V-25" titulo uso.orfaos uso.naoMedidos okMsg critico:true nota:nota
 )
 
+-- Nota da V-35/V-36 (issue #145): quantos vieram da matéria-prima do JSON e
+-- quais o nome marcaria mas a matéria-prima tirou (ex.: "Fibra de Vidro").
+fn InLab_Mat_NotaFonte infos esp =
+(
+    local doJson = (for i in infos where i.especial == esp and i.fonte == #materia collect i).count
+    local fora = for i in infos where i.fonte == #materia and i.especialNome == esp and i.especial != esp collect i.mtl.name
+    local nota = ""
+    if doJson > 0 do nota += " · " + doJson as string + " pela matéria-prima do JSON"
+    if fora.count > 0 do nota += " · fora pela matéria-prima: " + InLab_ListaResumida fora
+    nota
+)
+
 -- V-35 · Palha com opacidade (advertência provisória). O 2-sided não é
 -- conferido: a conversão liga doubleSided sozinha e o CoronaLegacyMtl não tem
 -- a propriedade (sondagem de 06/10/2026).
@@ -295,7 +363,7 @@ fn InLab_V35_Palha infos =
         catch ( append naoMedidos (i.mtl.name + " (" + getCurrentException() + ")") )
     )
     local okMsg = if palhas.count == 0 then "não se aplica: nenhum material de palha" else (palhas.count as string + " material(is) de palha com opacidade")
-    InLab_Mat_Registrar "V-35" titulo problemas naoMedidos okMsg critico:true provisorio:true
+    InLab_Mat_Registrar "V-35" titulo problemas naoMedidos okMsg critico:true provisorio:true nota:(InLab_Mat_NotaFonte infos #palha)
 )
 
 -- Refração ligada: VRay pela cor "refraction" (não tem refraction_amount);
@@ -333,7 +401,7 @@ fn InLab_V36_Cristal infos =
         catch ( append naoMedidos (i.mtl.name + " (" + getCurrentException() + ")") )
     )
     local okMsg = if cristais.count == 0 then "não se aplica: nenhum material de cristal/vidro" else (cristais.count as string + " material(is) de cristal com refração")
-    InLab_Mat_Registrar "V-36" titulo problemas naoMedidos okMsg critico:true provisorio:true
+    InLab_Mat_Registrar "V-36" titulo problemas naoMedidos okMsg critico:true provisorio:true nota:(InLab_Mat_NotaFonte infos #cristal)
 )
 
 -- Filtros das partes do produto (globais nomeadas: fn dentro de bloco/lambda
