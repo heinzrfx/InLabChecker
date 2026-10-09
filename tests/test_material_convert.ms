@@ -189,6 +189,62 @@ global InLab_ParseJSON, InLab_Produto_Lista, InLab_Produto_EspeciaisDoProduto, I
                 checar "#153: Reverter volta o Multi/Sub original" (objMp.material == mm)
             )
 
+            -- ===== 7. AVISOS DO QUE O glTF NÃO REPRODUZ (09/10/2026, #110) =====
+            if temGLTF do
+            (
+                fn avisou trecho = ( local a = false ; for l in logsCapturados where l[1] == #warn and (findString l[2] trecho) != undefined do a = true ; a )
+                fn bmTile nome u v = ( local b = Bitmaptexture() ; b.name = nome ; b.coords.U_Tiling = u ; b.coords.V_Tiling = v ; b )
+                -- Triplanar no difuso
+                local mTri = CoronaLegacyMtl()
+                mTri.name = "mat_tri"
+                local tri = CoronaTriplanar()
+                tri.texmapX = bmTile "bm_tri" 1 1
+                mTri.texmapDiffuse = tri
+                logsCapturados = #()
+                InLab_ConverterCoronaMtl mTri 64 false
+                checar "#110: Triplanar avisa para rodar o Auto UV antes" (avisou "mat_tri (base color): CoronaTriplanar")
+                -- Noise 3D no glossiness
+                local mNoise = CoronaLegacyMtl()
+                mNoise.name = "mat_noise"
+                mNoise.texmapReflectGlossiness = Noise()
+                logsCapturados = #()
+                InLab_ConverterCoronaMtl mNoise 64 false
+                checar "#110: Noise em coordenadas 3D avisa" (avisou "mat_noise (roughness): noise em coordenadas 3D")
+                -- falloff no difuso
+                local mFall = CoronaLegacyMtl()
+                mFall.name = "mat_fall"
+                mFall.texmapDiffuse = Falloff()
+                logsCapturados = #()
+                InLab_ConverterCoronaMtl mFall 64 false
+                checar "#110: falloff avisa" (avisou "mat_fall (base color): falloff")
+                -- tiling 0,7 dentro de procedural: emenda
+                local mCC = CoronaLegacyMtl()
+                mCC.name = "mat_cc"
+                local cc = Color_Correction()
+                cc.map = bmTile "bm_07" 0.7 0.7
+                mCC.texmapDiffuse = cc
+                logsCapturados = #()
+                InLab_ConverterCoronaMtl mCC 64 false
+                checar "#110: tiling 0,7 dentro de procedural avisa emenda" (avisou "ladrilho bakeado não fecha")
+                -- bitmap direto com tiling 2: o glTF perde o tiling
+                local mDir = CoronaLegacyMtl()
+                mDir.name = "mat_dir"
+                mDir.texmapDiffuse = bmTile "bm_2" 2 2
+                logsCapturados = #()
+                InLab_ConverterCoronaMtl mDir 64 false
+                checar "#110: bitmap direto com tiling 2 avisa que muda de escala" (avisou "muda de escala")
+                -- caso limpo: bitmap direto tiling 1 e procedural com tiling inteiro → sem aviso de #110
+                local mOk = CoronaLegacyMtl()
+                mOk.name = "mat_ok"
+                local cc2 = Color_Correction()
+                cc2.map = bmTile "bm_3" 3 3
+                mOk.texmapDiffuse = cc2
+                mOk.texmapReflectGlossiness = bmTile "bm_1" 1 1
+                logsCapturados = #()
+                InLab_ConverterCoronaMtl mOk 64 false
+                checar "#110: tiling inteiro e bitmap direto com tiling 1 não avisam" (not (avisou "mat_ok ("))
+            )
+
             -- ===== 4. InLab_BakeBaseComAlpha (issue #51) =====
             -- Bitmaps em memória no lugar de InLab_BitmapDoTexmap (sem arquivo
             -- nem renderMap): base 32 px vermelha, opacity 32 px cinza 60.
