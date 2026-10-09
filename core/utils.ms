@@ -148,6 +148,23 @@ fn InLab_DeduplicarInstancias objs =
 
 -- Tamanho de um arquivo em MB (float). Retorna undefined se o arquivo não
 -- existir. Base para V-01 (.max) e V-02 (.skp).
+-- 09/10/2026 (issue #162): caminho de textura como o Max resolve. O caminho
+-- gravado no bitmap (ex.: Z:\BIBLIOTECA 3D\...) pode não existir na máquina
+-- e o Max achar a textura pelos map paths (pasta do .max, pastas de mapas):
+-- no piloto, 57 de 110 bitmaps só eram achados assim. Devolve o caminho que
+-- existe ("" se nenhum).
+global InLab_CaminhoTextura
+fn InLab_CaminhoTextura arq =
+(
+    if arq == undefined or arq == "" then ""
+    else if doesFileExist arq then arq
+    else
+    (
+        local r = try ( mapPaths.getFullFilePath arq ) catch ( "" )
+        if r != undefined and r != "" and doesFileExist r then r else ""
+    )
+)
+
 fn InLab_TamanhoArquivoMB caminho =
 (
     if caminho != undefined and caminho != "" and doesFileExist caminho then

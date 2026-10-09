@@ -21,6 +21,7 @@ global InLab_SetPropSafe, InLab_BakeBaseComAlpha, InLab_BitmapDoTexmap, InLab_Pa
 global InLab_ConverterCoronaMtl, InLab_PropSafe, InLab_ResolverClasseGLTF
 global INLAB_TESTE_SAIDA, INLAB_TESTE_FALHAS
 global InLab_ParseJSON, InLab_Produto_Lista, InLab_Produto_EspeciaisDoProduto, InLab_EspecialDoMaterial
+global InLab_CaminhoTextura, InLab_CheckTexture
 (
     local dirTeste = getFilenamePath (getSourceFileName())
     local raiz = substring dirTeste 1 (dirTeste.count - 6) -- tira "tests\"
@@ -57,9 +58,11 @@ global InLab_ParseJSON, InLab_Produto_Lista, InLab_Produto_EspeciaisDoProduto, I
         else
         (
             -- #153: produto (matéria-prima) para palha/cristal na conversão.
+            fileIn (raiz + @"core\utils.ms")
             fileIn (raiz + @"functions\fn_json.ms")
             fileIn (raiz + @"functions\fn_renomear_produto.ms")
             fileIn (raiz + @"functions\fn_material_convert.ms")
+            fileIn (raiz + @"functions\fn_checktexture.ms")
 
             local temGLTF = (InLab_ResolverClasseGLTF()) != undefined
             checar "Classe glTF Material resolvida" temGLTF
@@ -304,6 +307,57 @@ global InLab_ParseJSON, InLab_Produto_Lista, InLab_Produto_EspeciaisDoProduto, I
                 local cT6 = coordsDe (mapaBaseDe (InLab_ConverterCoronaMtl mT6 64 false))
                 checar ("#163: Real-World não transfere (" + cT6 + ") e avisa para rodar o Auto UV") (cT6 == "1.00x1.00 off 0.00,0.00 ch1" and avisou "rode o Auto UV")
                 try ( deleteFile arqT ) catch ()
+
+                -- ===== 9. CAMINHO PELOS MAP PATHS E TEXTURA AUSENTE (09/10/2026, #162) =====
+                -- O arquivo existe numa pasta de mapas da sessão; o bitmap aponta para
+                -- um caminho absoluto que não existe (como os Z:\ da biblioteca).
+                fn errou trecho = ( local a = false ; for l in logsCapturados where l[1] == #err and (findString l[2] trecho) != undefined do a = true ; a )
+                local dirMP = (getDir #temp) + "\\inlab_t162\\"
+                makeDir dirMP all:true
+                local arqMP = dirMP + "inlab_t162.jpg"
+                local bmMP = bitmap 8 8 color:green filename:arqMP
+                save bmMP ; close bmMP
+                local bruto = @"Z:\naoexiste\biblioteca\inlab_t162.jpg"
+                local faltando = @"Z:\naoexiste\x_inexistente_t162.jpg"
+                sessionPaths.add #map dirMP
+                try
+                (
+                    checar "#162: InLab_CaminhoTextura acha pelo map path" ((InLab_CaminhoTextura bruto) == arqMP)
+                    checar "#162: InLab_CaminhoTextura devolve o próprio caminho se existe" ((InLab_CaminhoTextura arqMP) == arqMP)
+                    checar "#162: InLab_CaminhoTextura vazio se não acha" ((InLab_CaminhoTextura faltando) == "" and (InLab_CaminhoTextura "") == "")
+                    -- conversão usa o caminho resolvido
+                    local mP1 = CoronaLegacyMtl()
+                    mP1.name = "mat_p1"
+                    mP1.texmapDiffuse = Bitmaptexture filename:bruto
+                    logsCapturados = #()
+                    local tP1 = mapaBaseDe (InLab_ConverterCoronaMtl mP1 64 false)
+                    checar "#162: conversão grava o caminho resolvido" (tP1 != undefined and tP1.filename == arqMP and not (errou "não encontrada"))
+                    -- textura ausente: slot vazio e #err
+                    local mP2 = CoronaLegacyMtl()
+                    mP2.name = "mat_p2"
+                    mP2.texmapDiffuse = Bitmaptexture filename:faltando
+                    logsCapturados = #()
+                    local tP2 = mapaBaseDe (InLab_ConverterCoronaMtl mP2 64 false)
+                    checar "#162: textura ausente deixa o slot vazio e dá #err" (tP2 == undefined and errou "mat_p2_basecolor: textura não encontrada")
+                    -- ausente dentro de procedural: #err (o bake sairia preto)
+                    local mP3 = CoronaLegacyMtl()
+                    mP3.name = "mat_p3"
+                    local ccP = Color_Correction()
+                    ccP.map = Bitmaptexture filename:faltando
+                    mP3.texmapDiffuse = ccP
+                    logsCapturados = #()
+                    InLab_ConverterCoronaMtl mP3 64 false
+                    checar "#162: textura ausente dentro de procedural dá #err" (errou "mat_p3 (base color): textura não encontrada")
+                    -- Check Texture (V-16) acha pelo map path
+                    local bxP = Box name:"obj_p162" material:mP1 pos:[160, 0, 0]
+                    append criados bxP
+                    mP1.texmapDiffuse = Bitmaptexture filename:bruto
+                    local infosP = InLab_CheckTexture escopo:#selecao objs:#(bxP) logar:false
+                    checar "#162: Check Texture dá existe pelo map path" (infosP.count == 1 and infosP[1].existe)
+                )
+                catch ( checar ("#162: exceção " + getCurrentException()) false )
+                for i = (sessionPaths.count #map) to 1 by -1 where (sessionPaths.get #map i) == dirMP or (sessionPaths.get #map i) == (substring dirMP 1 (dirMP.count - 1)) do sessionPaths.delete #map i
+                try ( deleteFile arqMP ) catch ()
                 -- caso limpo: bitmap direto tiling 1 e procedural com tiling inteiro → sem aviso de #110
                 local mOk = CoronaLegacyMtl()
                 mOk.name = "mat_ok"
