@@ -10,7 +10,7 @@ global InLab_Produto_Lista, InLab_Produto_IndicePorCodigo, InLab_Produto_Texto
 global InLab_Produto_ParteValida
 global InLab_Produto_Rotulo, InLab_Produto_Normalizar, InLab_Produto_Canal
 global InLab_Produto_MateriaisDaSelecao, InLab_Produto_SugerirLigacoes
-global InLab_Produto_Aplicar, InLab_Produto_Reverter, InLab_Produto_Renomear
+global InLab_Produto_Aplicar, InLab_Produto_Reverter, InLab_Produto_Renomear, InLab_Produto_Limpar
 global InLab_Produto_MeshesDoProduto, InLab_Produto_SugerirMeshes, InLab_Produto_RenomearMeshes
 global InLab_Produto_NomeLembraMesh
 global InLab_Produto_MeshesDaParte, InLab_Produto_Liberado3D, InLab_Produto_EhMaeDeSubparte
@@ -151,6 +151,15 @@ global INLAB_TESTE_SAIDA, INLAB_TESTE_FALHAS
         checar "Reverter após 2 aplicações: mapas originais" (bmpDif.name == "dif_qualquer" and nb.name == "nb_qualquer")
         InLab_Produto_Reverter()
         checar "Reverter de novo: nada muda" (mTampo.name == "tampo_madeira" and b1.name == "obj_tampo")
+
+        -- 7b. LIMPAR (issue #135): desfaz os nomes; sem nada para desfazer, não avisa
+        InLab_Produto_Aplicar produtos[1] lig
+        checar "Limpar: devolve quantas renomeações havia" ((InLab_Produto_Limpar()) > 0)
+        checar "Limpar: materiais e mapas voltam" (mTampo.name == "tampo_madeira" and bmpDif.name == "dif_qualquer")
+        checar "Limpar: histórico zerado" (InLab_UltimaRenomeacao.count == 0)
+        local nWarnAntes = (for l in logsCapturados where l[1] == #warn collect l).count
+        checar "Limpar sem nada para desfazer: devolve 0" ((InLab_Produto_Limpar()) == 0)
+        checar "Limpar sem nada para desfazer: sem aviso" ((for l in logsCapturados where l[1] == #warn collect l).count == nWarnAntes)
 
         -- 8. PARTE INVÁLIDA: material_id ou mesh_final vazio/null (issue #46)
         -- "Pe": material_id "" (mas mesh_final válido) — material não pode
