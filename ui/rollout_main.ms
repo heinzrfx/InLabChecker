@@ -180,6 +180,9 @@ global InLab_ProdutoAtivo = undefined -- árvore crua do JSON importado (formato
 rollout InLabSecProduto "Produto" width:420
 (
     local produtos = #()  -- itens de "produtos" do export importado
+    -- 09/10/2026 (issue #136): índices de `produtos` que a busca deixa no
+    -- dropdown (paralelo a ddlProduto.items).
+    local visiveis = #()
     local materiais = #() -- materiais lidos da seleção
     local ligacoes = #()  -- paralelo às partes do produto escolhido: material ou undefined
     -- 24/09/2026 (#54): objetos têm lista própria (objeto → nome), mesmo
@@ -190,6 +193,9 @@ rollout InLabSecProduto "Produto" width:420
 
     label lblProdutoAtivo "Nenhum produto carregado." align:#left
     button btnImportarProduto "Importar informações do produto" width:395 height:24 tooltip:"Abre o arquivo do produto exportado da plataforma (.json)."
+    -- 09/10/2026 (issue #136): busca por parte do nome ou do código, sem
+    -- diferenciar maiúsculas nem acentos. Vazia mostra todos.
+    edittext edtBusca "Buscar:" width:395 tooltip:"Filtra a lista de produtos por parte do nome ou do código."
     dropdownlist ddlProduto "Produto:" items:#() width:395
     -- 08/10/2026 (issue #138): família que as verificações usam. Não é mais
     -- escolhida: vem do campo "natureza" do produto (InLab_Produto_Familia).
@@ -207,7 +213,19 @@ rollout InLabSecProduto "Produto" width:420
     button btnLimpar "Limpar" width:195 height:24 align:#right offset:[-1,0] tooltip:"Volta os nomes de materiais, mapas e objetos ao que eram antes de renomear e limpa as listas. O produto escolhido continua."
 
     fn produtoEscolhido =
-        if ddlProduto.selection > 0 and ddlProduto.selection <= produtos.count then produtos[ddlProduto.selection] else undefined
+        if ddlProduto.selection > 0 and ddlProduto.selection <= visiveis.count then produtos[visiveis[ddlProduto.selection]] else undefined
+
+    -- Refaz o dropdown com os produtos que contêm o termo da busca e mantém
+    -- escolhido o produto `idxManter` (índice em `produtos`) se ele continuar
+    -- na lista. Devolve true se o produto escolhido mudou.
+    fn filtrarProdutos idxManter =
+    (
+        visiveis = InLab_Produto_Filtrar produtos edtBusca.text
+        ddlProduto.items = for i in visiveis collect InLab_Produto_RotuloDaLista produtos[i]
+        local pos = findItem visiveis idxManter
+        ddlProduto.selection = if pos > 0 then pos else if visiveis.count > 0 then 1 else 0
+        pos == 0
+    )
 
     -- 02/10/2026 (v3): sem as subpartes so3d — o objeto delas usa o material
     -- da parte-mãe (InLab_Produto_PartesDeMaterial).
@@ -298,6 +316,7 @@ rollout InLabSecProduto "Produto" width:420
     (
         InLab_ProdutoAtivo = undefined
         produtos = #()
+        visiveis = #()
         ddlProduto.items = #()
         lblProdutoAtivo.text = "Nenhum produto carregado."
         sugerir()
@@ -322,7 +341,8 @@ rollout InLabSecProduto "Produto" width:420
                 lblProdutoAtivo.text = "Produto carregado: " + nomeArquivo
                 InLab_Log ("Produto importado com sucesso: " + nomeArquivo) tipo:#ok
                 produtos = InLab_Produto_Lista dados
-                ddlProduto.items = for p in produtos collect ((InLab_Produto_Texto p "cod_est") + " – " + (InLab_Produto_Texto p "nome"))
+                edtBusca.text = ""
+                filtrarProdutos 0
                 if produtos.count == 0 then
                     InLab_Log "Este JSON não tem lista de produtos — importe o export da linha (nomenclatura_export_...json), não o nomenclatura_projeto.json." tipo:#warn
                 else
@@ -336,7 +356,7 @@ rollout InLabSecProduto "Produto" width:420
                         idx = 1
                         InLab_Log ("Nenhum produto com cod_est ou variante '" + cod + "' (nome do .max) — escolha na lista.") tipo:#warn
                     )
-                    ddlProduto.selection = idx
+                    ddlProduto.selection = idx -- busca vazia: visiveis[idx] == idx
                 )
                 sugerir()
                 sugerirMeshes()
@@ -352,6 +372,20 @@ rollout InLabSecProduto "Produto" width:420
         sugerirMeshes()
         aplicarFamilia()
         avisarNaoLiberado()
+    )
+
+    -- A cada tecla: o produto escolhido fica se continuar na lista; se sair,
+    -- passa a ser o 1º da lista filtrada (ou nenhum), como se fosse escolhido.
+    on edtBusca changed txt do
+    (
+        local atual = if ddlProduto.selection > 0 and ddlProduto.selection <= visiveis.count then visiveis[ddlProduto.selection] else 0
+        if filtrarProdutos atual do
+        (
+            sugerir()
+            sugerirMeshes()
+            aplicarFamilia()
+            avisarNaoLiberado()
+        )
     )
 
     -- Reabrir o painel zera a lista de produtos: a família ativa sai junto.
