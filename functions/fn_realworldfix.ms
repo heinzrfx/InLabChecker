@@ -75,6 +75,17 @@
    bitmaps; mantém o offset em cm.
  Resultado: desloca a textura em meio tile e erra o offset. Por isso a
  conversão aqui é própria, não uma cópia.
+
+ 09/10/2026 (issue #169, decisão do usuário: canal separado): material com
+ Triplanar e bitmap (ou UVW Map) em Real-World no MESMO canal. O UVW Box do
+ Triplanar substituía o canal inteiro, e o bitmap de fora passava a seguir a
+ escala e a projeção do Triplanar (piloto: Triplanar de 50 cm, bitmap de
+ 300 cm, 6× mais denso; no Puff Zazah na base color). Agora o Triplanar vai
+ para um canal livre (a partir do 2, nunca o do Auto UV), os bitmaps de
+ dentro dele passam a ler esse canal (o canal antigo fica na rodada, e o
+ Desfazer UV volta) e o bitmap de fora fica no canal 1 com a escala
+ própria. O exportador grava TEXCOORD_1 e texCoord na textura. Bitmap de
+ dentro também usado fora do Triplanar: não separa, aviso como antes.
 ================================================================================
 */
 
@@ -192,6 +203,57 @@ fn InLab_RWF_RestaurarBitmap g =
     local m = g[1]
     local alvo = if classof m == Bitmaptexture then m.coords else m
     for pv in g[2] do setProperty alvo pv[1] pv[2]
+)
+
+-- 09/10/2026 (issue #169): bitmaps de dentro do Triplanar (Bitmaptexture e
+-- CoronaBitmap da árvore dele).
+fn InLab_RWF_BitmapsDoTriplanar t =
+(
+    local bs = getClassInstances Bitmaptexture target:t
+    if CoronaBitmap != undefined do join bs (getClassInstances CoronaBitmap target:t)
+    bs
+)
+
+-- true se algum bitmap de dentro do Triplanar também é usado fora dele (um
+-- canal trocado ali mudaria o outro uso).
+fn InLab_RWF_ArvoreDe tm acum =
+(
+    if tm != undefined and findItem acum tm == 0 do
+    (
+        append acum tm
+        for i = 1 to (getNumSubTexmaps tm) do InLab_RWF_ArvoreDe (getSubTexmap tm i) acum
+    )
+    acum
+)
+fn InLab_RWF_TriplanarCompartilhaBitmap t =
+(
+    local dentro = InLab_RWF_ArvoreDe t #()
+    local fora = false
+    -- refs.dependents é transitivo (o material aparece por conter o
+    -- Triplanar): só conta quem aponta DIRETO para o bitmap numa propriedade.
+    for b in (InLab_RWF_BitmapsDoTriplanar t) while not fora do
+        for d in (refs.dependents b) where (isKindOf d Material or isKindOf d TextureMap) and d != b and findItem dentro d == 0 and not fora do
+            for p in (getPropNames d) where not fora do
+                if (try ( getProperty d p ) catch ( undefined )) == b do fora = true
+    fora
+)
+
+-- Troca o canal de UV de um bitmap; devolve o registro para o Desfazer
+-- (mesmo formato de InLab_RWF_GuardarBitmap).
+fn InLab_RWF_TrocarCanal m canal =
+(
+    if classof m == Bitmaptexture then
+    (
+        local g = #(m, #(#(#mapChannel, m.coords.mapChannel)))
+        m.coords.mapChannel = canal
+        g
+    )
+    else
+    (
+        local g = #(m, #(#(#uvwChannel, m.uvwChannel)))
+        m.uvwChannel = canal
+        g
+    )
 )
 
 -- Slots (dono, propriedade) que apontam para o Triplanar. Não cobre lista
@@ -494,6 +556,44 @@ fn InLab_RealWorldFix objs silencioso:false =
         )
 
         --------------------------------------------------------------------
+        -- 3b. #169: Triplanar e bitmap (ou UVW Map) em Real-World no mesmo
+        --     canal. O UVW Box do Triplanar substituiria o canal inteiro e o
+        --     bitmap de fora passaria a seguir a escala e a projeção do
+        --     Triplanar (piloto: Triplanar de 50 cm e bitmap de 300 cm, 6×
+        --     mais denso). O Triplanar vai para um canal livre (a partir do 2,
+        --     nunca o do Auto UV) e os bitmaps de dentro dele passam a lê-lo; o
+        --     exportador grava TEXCOORD_1 e texCoord na textura. Bitmap de
+        --     dentro também usado fora do Triplanar: fica como antes, com aviso.
+        --------------------------------------------------------------------
+        local canalTp = for t in triplanares collect (InLab_RWF_CanalTriplanar t)
+        for j in 1 to triplanares.count where tpOk[j] do
+        (
+            local t = triplanares[j]
+            local usuarios = for o in alvos where findItem (InLab_RWF_Triplanares o.material) t > 0 collect o
+            local conflito = false
+            for o in usuarios where not conflito do
+            (
+                for b in (InLab_RWF_BitmapsRWFora o.material) where (InLab_RWF_CanalBitmap b) == canalTp[j] do conflito = true
+                for u in (InLab_RWF_UVWsRW o) where u.mapChannel == canalTp[j] do conflito = true
+            )
+            if conflito do
+            (
+                if InLab_RWF_TriplanarCompartilhaBitmap t then
+                    InLab_Log (t.name + ": bitmap de dentro do Triplanar também usado fora dele — Triplanar e bitmap seguem no mesmo canal.") tipo:#warn
+                else
+                (
+                    local livre = 2
+                    while livre == INLAB_CANAL_UV_BAKE or (for o in usuarios where InLab_RWF_TemCanal o livre collect o).count > 0 do livre += 1
+                    for b in (InLab_RWF_BitmapsDoTriplanar t) do
+                        append InLab_RWF_UltimaRodada.bitmaps (InLab_RWF_TrocarCanal b livre)
+                    InLab_Log (t.name + ": bitmap em Real-World no mesmo canal " + canalTp[j] as string + " — o Triplanar vai para o canal " +
+                               livre as string + " (o GLB leva um 2º UV).") tipo:#info
+                    canalTp[j] = livre
+                )
+            )
+        )
+
+        --------------------------------------------------------------------
         -- 4. Conversão.
         --------------------------------------------------------------------
         local feitos = 0
@@ -563,7 +663,7 @@ fn InLab_RealWorldFix objs silencioso:false =
                         local diferentes = for t2 in tps where t2.scale != t.scale or t2.space != t.space or t2.offset != t.offset collect t2
                         if diferentes.count > 0 do
                             InLab_Log (o.name + ": material com Triplanares de escala/espaço/offset diferentes; o UV segue o " + t.name + ".") tipo:#warn
-                        local canal = InLab_RWF_CanalTriplanar t
+                        local canal = canalTp[findItem triplanares t]   -- #169
                         if canal == canalRW do
                             InLab_Log (o.name + ": Triplanar e bitmap em Real-World no mesmo canal " + canal as string +
                                        ". O UV do Triplanar prevalece; conferir o bitmap.") tipo:#warn

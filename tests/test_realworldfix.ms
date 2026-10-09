@@ -255,6 +255,46 @@ global INLAB_TESTE_SAIDA, INLAB_TESTE_FALHAS, INLAB_TESTE_LOG
         checar "Desfazer UV: sem Unwrap e sem RWF, UV do material de volta" \
             (h.modifiers.count == 1 and (temRWF h2) == 0 and (erroUV uvH (uvAtual h) [1,1]) < 1e-6)
         checar "Desfazer UV: bitmap de volta em Real-World 50×50" (difH.realWorldScale and difH.uvwScale == [50,50,1])
+
+        -- 8. TRIPLANAR E BITMAP REAL-WORLD NO MESMO CANAL (09/10/2026, #169)
+        -- Difuso: CoronaBitmap 300×300 em Real-World no canal 1 (UVW Map RW).
+        -- Glossiness: Triplanar de 50 com bitmap também no canal 1. O Box do
+        -- Triplanar vai para o canal 2 e o difuso fica no 1, ÷ 300.
+        local k = caixa "t_K" [0,600,0] maptype:4
+        append criados k
+        local difK = coronaRW "t_difK" [300,300] [0,0,0]
+        local bmpK = CoronaBitmap name:"t_bmpK"
+        local tpK = CoronaTriplanar()
+        tpK.name = "t_tpK"
+        tpK.texmapX = bmpK
+        tpK.onlyTexmapX = true
+        tpK.scale = 50.0
+        local mK = CoronaLegacyMtl()
+        mK.name = "t_mtlK"
+        mK.texmapDiffuse = difK
+        mK.texmapReflectGlossiness = tpK
+        k.material = mK
+        local uvK = uvAtual k
+        INLAB_TESTE_LOG = #()
+        InLab_RealWorldFix #(k)
+        local rodK = InLab_RWF_UltimaRodada
+        local boxK = (for m in k.modifiers where m.name == "InLab RWF Triplanar" collect m)[1]
+        checar "#169: bitmap de dentro do Triplanar passa para o canal 2" (bmpK.uvwChannel == 2)
+        checar "#169: Box do Triplanar no canal 2" (boxK != undefined and boxK.mapChannel == 2)
+        checar ("#169: canal 1 = UV antigo ÷ 300 (o difuso segue o próprio tamanho)") ((erroUV uvK (uvAtual k) [300,300]) < 1e-4)
+        checar "#169: sem o aviso de 'prevalece'" (not (logTem "prevalece" #warn))
+        checar "#169: Triplanar trocado pelo bitmap no glossiness" (mK.texmapReflectGlossiness == bmpK)
+        InLab_RWF_Reverter rodK
+        checar "#169: Desfazer volta o bitmap ao canal 1" (bmpK.uvwChannel == 1)
+        checar "#169: Desfazer volta o UV e o Triplanar" ((erroUV uvK (uvAtual k) [1,1]) < 1e-6 and mK.texmapReflectGlossiness == tpK and difK.realWorldScale)
+        -- Bitmap de dentro do Triplanar usado também direto no bump: não separa.
+        mK.texmapBump = bmpK
+        INLAB_TESTE_LOG = #()
+        InLab_RealWorldFix #(k)
+        local rodK2 = InLab_RWF_UltimaRodada
+        checar "#169: bitmap compartilhado fora do Triplanar fica no canal 1, com aviso" (bmpK.uvwChannel == 1 and (logTem "também usado fora dele" #warn))
+        InLab_RWF_Reverter rodK2
+        mK.texmapBump = undefined
     )
     catch
     (
