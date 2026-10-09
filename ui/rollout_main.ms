@@ -839,7 +839,7 @@ rollout InLabChecker_Rollout ("InLabChecker · InLab Artefacto · v" + INLAB_VER
         -- 09/10/2026 (issue #137): Verificações entre Converter e Exportar.
         AddSubRollout subSecoes InLabSecFase4 rolledUp:true
         AddSubRollout subSecoes InLabSecF6 rolledUp:true
-        AddSubRollout subSecoes InLabSecUpdate rolledUp:true   -- ui\rollout_update.ms (#14)
+        -- 09/10/2026 (issue #133): a seção Atualização saiu (pastilha do header).
         AddSubRollout subSecoes InLabSecLog
         atualizarLimite()
 
@@ -855,10 +855,10 @@ rollout InLabChecker_Rollout ("InLabChecker · InLab Artefacto · v" + INLAB_VER
         -- Checagem de atualização (issue #12): retorna na hora, a resposta
         -- chega depois pelo callback. O intervalo de 4 h fica dentro de
         -- InLab_UpdateChecar, então reabrir/recarregar o painel não consulta
-        -- o GitHub de novo. autoCheck vira checkbox na seção Atualização (#14).
-        if (InLab_PrefLer "autoCheck" "true") == "true" do
-            try ( InLab_UpdateChecar silencioso:true )
-            catch ( InLab_Log ("Atualização: checagem automática falhou (" + getCurrentException() + ").") tipo:#warn )
+        -- o GitHub de novo. 09/10/2026 (issue #133): sempre ligada; a
+        -- preferência autoCheck (e o checkbox da seção Atualização) saiu.
+        try ( InLab_UpdateChecar silencioso:true )
+        catch ( InLab_Log ("Atualização: checagem automática falhou (" + getCurrentException() + ").") tipo:#warn )
     )
 
     -- Fechar o painel destrói os controles dotNet. As globais que apontavam
@@ -882,6 +882,7 @@ rollout InLabChecker_Rollout ("InLabChecker · InLab Artefacto · v" + INLAB_VER
         InLab_Header_Sub = undefined
         InLab_Header_BtnReload = undefined
         InLab_Header_Pastilha = undefined
+        InLab_Header_Dica = undefined
     )
 )
 

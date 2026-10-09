@@ -34,8 +34,9 @@
  OS 5 ESTADOS (Task 4, 22/09/2026): InLab_Header_Estado pinta a mesma
  pastilha para #ocioso | #checando | #disponivel | #baixando | #erro, via
  InLab_Kit_Pastilha. A pastilha E o aviso de atualizacao — fica ambar e
- clicavel em #disponivel, vermelha e clicavel em #erro; nos demais estados o
- clique (InLab_Header_OnPastilha) nao faz nada. Devolve false em vez de
+ clicavel em #disponivel, vermelha e clicavel em #erro. 09/10/2026 (#133): o
+ clique tambem vale em #ocioso (procura atualizacao), com a dica dizendo isso;
+ so em #checando e #baixando ele nao faz nada. Devolve false em vez de
  levantar excecao porque quem chama e um callback assincrono do updater
  (sub-projeto 3, ainda nao existe) — excecao la dentro morre sem rastro.
 
@@ -119,7 +120,8 @@ if InLab_Header_EstadoAtual == undefined do InLab_Header_EstadoAtual = #ocioso
 if InLab_Header_Versao == undefined do InLab_Header_Versao = INLAB_VERSAO
 
 global InLab_Header_Estado, InLab_Header_OnPastilha
-global InLab_SecUpdate_Mostrar   -- ui\rollout_update.ms, carregado depois
+global InLab_UpdateCliquePastilha -- functions\fn_updater.ms (#133)
+global InLab_Header_Dica          -- ToolTip da pastilha (#133)
 
 -- Handler de nivel superior: so le global.
 fn InLab_Header_OnReload sender arg =
@@ -201,6 +203,7 @@ fn InLab_Header_Montar pnl =
     InLab_Header_Pastilha.Location = dotNetObject "System.Drawing.Point" (pnl.Width - 84) 14
     dotNet.addEventHandler InLab_Header_Pastilha "Click" InLab_Header_OnPastilha
     pnl.Controls.Add InLab_Header_Pastilha
+    InLab_Header_Dica = dotNetObject "System.Windows.Forms.ToolTip"
 
     -- RELOAD
     InLab_Header_BtnReload = dotNetObject "System.Windows.Forms.Button"
@@ -222,27 +225,30 @@ fn InLab_Header_Montar pnl =
     true
 )
 
--- Clique na pastilha. Só faz sentido em #disponivel e #erro; nos outros
--- estados a pastilha não é clicável e o handler não faz nada.
---
--- 23/09/2026 (issue #14): o clique desenrola a seção Atualização
--- (InLab_SecUpdate_Mostrar, ui\rollout_update.ms), onde estão os botões. Até
--- a #14 ele só registrava no log. Se a seção não estiver aberta, cai no log.
+-- Clique na pastilha. 09/10/2026 (issue #133): a seção Atualização saiu e o
+-- clique faz tudo (InLab_UpdateCliquePastilha, functions\fn_updater.ms): em
+-- #disponivel confirma e atualiza; em #ocioso e #erro procura na hora. Até a
+-- #133 o clique só desenrolava a seção (#14).
 fn InLab_Header_OnPastilha sender arg =
 (
-    if InLab_Header_EstadoAtual == #disponivel or InLab_Header_EstadoAtual == #erro do
+    if InLab_UpdateCliquePastilha == undefined then
+        InLab_Log "Atualização: o updater não foi carregado." tipo:#err
+    else
+        try ( InLab_UpdateCliquePastilha() )
+        catch ( InLab_Log ("Atualização: o clique na pastilha falhou (" + getCurrentException() + ").") tipo:#err )
+)
+
+-- Dica da pastilha por estado (#133): em #ocioso ela não fica em negrito,
+-- então é a dica que diz que dá para clicar.
+fn InLab_Header_TextoDica estado =
+(
+    case estado of
     (
-        local mostrou = false
-        if InLab_SecUpdate_Mostrar != undefined do
-            try ( mostrou = InLab_SecUpdate_Mostrar() )
-            catch ( InLab_Log ("Falha ao abrir a seção Atualização (" + getCurrentException() + ").") tipo:#warn )
-        if not mostrou do
-        (
-            if InLab_Header_EstadoAtual == #disponivel then
-                InLab_Log ("Atualização v" + InLab_Header_Versao + " disponível — veja a seção Atualização.") tipo:#warn
-            else
-                InLab_Log "A última atualização falhou — o motivo está na seção Atualização e neste log." tipo:#err
-        )
+        #checando: "Procurando atualização..."
+        #disponivel: "Clique para atualizar para a v" + InLab_Header_Versao + "."
+        #baixando: "Baixando a atualização..."
+        #erro: "A última busca ou atualização falhou. Clique para tentar de novo."
+        default: "Clique para procurar atualização."
     )
 )
 
@@ -316,6 +322,7 @@ fn InLab_Header_Estado estado versao:unsupplied pct:0 =
     try
     (
         InLab_Kit_Pastilha InLab_Header_Pastilha tipo texto clicavel:clicavel
+        if InLab_Header_Dica != undefined do InLab_Header_Dica.SetToolTip InLab_Header_Pastilha (InLab_Header_TextoDica estado)
         pintou = true
     )
     catch

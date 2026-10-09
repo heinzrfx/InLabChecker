@@ -88,7 +88,7 @@ rollout _rTesteFake "" width:100 height:60
         -- raiz na mao (mesmo padrao de tests\test_kit_header.ms).
         InLab_Log = fn _logTeste msg tipo:#info = ( format "      [LOG %] %\n" tipo msg to:INLAB_TESTE_SAIDA; flush INLAB_TESTE_SAIDA )
         INLAB_ROOT = raiz
-        for m in #(@"ui\header.ms", @"ui\splash.ms", @"ui\rollout_update.ms", @"ui\rollout_main.ms") do
+        for m in #(@"ui\header.ms", @"ui\splash.ms", @"ui\rollout_main.ms") do
             fileIn (raiz + m)
 
         -- Chave nova (issue #56): nao existe preferencia anterior real pra
