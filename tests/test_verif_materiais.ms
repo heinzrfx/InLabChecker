@@ -3,6 +3,7 @@
  Spec: docs\superpowers\specs\2026-10-06-verif-materiais-grupo7-design.md
  RODAR NUMA CENA VAZIA (File > New): cria e apaga os objetos de cada caso.
  Resultado: <pasta temp do Max>\inlab_test_verif_materiais.txt (PASS/FAIL por item).
+ 09/10/2026 (issue #145): V-35/V-36 pela matéria-prima das partes do JSON.
 */
 -- Declarados ANTES do bloco: o bloco é compilado antes dos fileIn rodarem.
 global InLab_Log, InLab_VerifResults, InLab_ResetarResultados, InLab_ObterFamilia
@@ -273,6 +274,54 @@ struct TesteSlotQuebrado ( texmapDiffuse = 5, texmapReflectGlossiness = 5, texma
             mV.refraction = color 0 0 0
             checar "V-36: VRay com refração preta vira advertência" ((rodarMats InLab_V36_Cristal #(e1) "V-36") == #warning)
         )
+        limparCena()
+
+        ---------------------------------------------------------------- V-35 / V-36 pela matéria-prima (issue #145)
+        local jsMp = "{\"produtos\": [{\"cod_est\": \"0092\", \"nome\": \"MESA\", \"partes\": [" +
+            "{\"nome_parte\": \"Tampo\", \"so3d\": false, \"material_id\": \"ART_E_Tampo\", \"materia_prima\": {\"familia\": \"Vidro\", \"materia\": \"\"}}, " +
+            "{\"nome_parte\": \"Espelho\", \"so3d\": false, \"material_id\": \"ART_E_Espelho\", \"materia_prima\": {\"familia\": \"Vidro\", \"materia\": \"Vidro Espelho\"}}, " +
+            "{\"nome_parte\": \"Base\", \"so3d\": false, \"material_id\": \"ART_P_Vidro_Fibra\", \"materia_prima\": {\"familia\": \"Fibra de Vidro\", \"materia\": \"Microtextura\"}}, " +
+            "{\"nome_parte\": \"Assento\", \"so3d\": false, \"material_id\": \"ART_C_Trama\", \"materia_prima\": {\"familia\": \"Malacca / Fibra\", \"materia\": \"\"}}, " +
+            "{\"nome_parte\": \"Lateral\", \"so3d\": true, \"material_id\": \"ART_E_Lateral\", \"materia_prima\": {\"familia\": \"vidro\", \"materia\": \"\"}}, " +
+            "{\"nome_parte\": \"Pe\", \"so3d\": false, \"material_id\": \"Vidro sem materia\"}, " +
+            "{\"nome_parte\": \"Perna\", \"so3d\": false, \"material_id\": \"ART_P_Perna\", \"materia_prima\": {\"familia\": \"\", \"materia\": \"\"}}]}]}"
+        local prodMp = (InLab_Produto_Lista (InLab_ParseJSON jsMp))[1]
+        fn rodarMatsP f objs idV p = ( InLab_ResetarResultados(); f (InLab_Mat_Resolver (InLab_Mat_Uso objs) produto:p); statusDe idV )
+        fn vidroCom nome refr = ( local m = legacyCom nome undefined; m.levelRefract = refr; m )
+        fn infoDe nome p = ( local o = caixa "tmp" [0, 0, 0]; o.material = legacyCom nome (CoronaColor()); local i = (InLab_Mat_Resolver (InLab_Mat_Uso #(o)) produto:p)[1]; delete o; i )
+        local iT = infoDe "ART_E_Tampo" prodMp
+        checar "#145: familia Vidro → cristal pela matéria-prima" (iT.especial == #cristal and iT.fonte == #materia)
+        local iE = infoDe "ART_E_Espelho" prodMp
+        checar "#145: Vidro Espelho não é cristal" (iE.especial == #nenhum and iE.fonte == #materia)
+        local iFib = infoDe "ART_P_Vidro_Fibra" prodMp
+        checar "#145: Fibra de Vidro não é vidro (o nome diria cristal)" (iFib.especial == #nenhum and iFib.fonte == #materia and iFib.especialNome == #cristal)
+        local iC = infoDe "ART_C_Trama" prodMp
+        checar "#145: Malacca / Fibra → palha" (iC.especial == #palha and iC.fonte == #materia)
+        local iL = infoDe "ART_E_Lateral" prodMp
+        checar "#145: parte so3d também conta, familia sem diferenciar maiúsculas" (iL.especial == #cristal and iL.fonte == #materia)
+        local iS = infoDe "Vidro sem materia" prodMp
+        checar "#145: parte sem materia_prima cai no nome" (iS.especial == #cristal and iS.fonte == #nome)
+        local iP = infoDe "ART_P_Perna" prodMp
+        checar "#145: familia vazia cai no nome" (iP.especial == #nenhum and iP.fonte == #nome)
+        local iFora = infoDe "Palha natural" prodMp
+        checar "#145: material fora do produto cai no nome" (iFora.especial == #palha and iFora.fonte == #nome)
+        local iSem = infoDe "ART_E_Tampo" undefined
+        checar "#145: sem produto, só o nome" (iSem.especial == #nenhum and iSem.fonte == #nome)
+
+        local e2 = caixa "e2" [0, 0, 0]
+        e2.material = vidroCom "ART_E_Tampo" 0.0
+        checar "#145: V-36 pela matéria-prima: tampo sem refração vira advertência" ((rodarMatsP InLab_V36_Cristal #(e2) "V-36" prodMp) == #warning and tem (mensagemDe "V-36") "ART_E_Tampo: refração desligada")
+        e2.material = vidroCom "ART_E_Tampo" 1.0
+        checar "#145: V-36 passa e a nota cita a matéria-prima" ((rodarMatsP InLab_V36_Cristal #(e2) "V-36" prodMp) == #pass and tem (mensagemDe "V-36") "1 pela matéria-prima do JSON")
+        e2.material = vidroCom "ART_E_Espelho" 0.0
+        checar "#145: V-36 com espelho não se aplica" ((rodarMatsP InLab_V36_Cristal #(e2) "V-36" prodMp) == #pass and tem (mensagemDe "V-36") "não se aplica")
+        e2.material = vidroCom "ART_P_Vidro_Fibra" 0.0
+        checar "#145: V-36 com Fibra de Vidro não se aplica e a nota explica" ((rodarMatsP InLab_V36_Cristal #(e2) "V-36" prodMp) == #pass and tem (mensagemDe "V-36") "fora pela matéria-prima: ART_P_Vidro_Fibra")
+        checar "#145: V-36 com Fibra de Vidro sem produto (pelo nome) vira advertência" ((rodarMatsP InLab_V36_Cristal #(e2) "V-36" undefined) == #warning)
+        e2.material = legacyCom "ART_C_Trama" (CoronaColor())
+        checar "#145: V-35 pela matéria-prima: trama sem opacidade vira advertência" ((rodarMatsP InLab_V35_Palha #(e2) "V-35" prodMp) == #warning and tem (mensagemDe "V-35") "ART_C_Trama: sem mapa de opacidade")
+        e2.material.texmapOpacity = CoronaColor()
+        checar "#145: V-35 trama com opacidade passa" ((rodarMatsP InLab_V35_Palha #(e2) "V-35" prodMp) == #pass and tem (mensagemDe "V-35") "1 pela matéria-prima do JSON")
         limparCena()
 
         ---------------------------------------------------------------- V-37 / V-38

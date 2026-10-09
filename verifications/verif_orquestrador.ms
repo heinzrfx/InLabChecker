@@ -48,6 +48,8 @@
 
  02/10/2026 (issue #36): produto: (o produto escolhido na seção Produto) vai
  para a V-20, que confere arquivo, objetos e materiais contra os nomes dele.
+ 09/10/2026 (issue #145): e para InLab_Mat_Resolver, que tira palha/cristal
+ (V-35/V-36) da matéria-prima das partes.
 ================================================================================
 */
 
@@ -161,7 +163,7 @@ fn InLab_RodarVerificacoes cfg tampoAcessorio:false codEst:"" nomeProduto:"" pro
 
         -- ===== Grupo 7 · Materiais (issue #103, verif_materiais.ms) =====
         local uso = InLab_Mat_Uso objetos
-        local mats = InLab_Mat_Resolver uso
+        local mats = InLab_Mat_Resolver uso produto:produto
         InLab_V23_SlotsPBR mats
         InLab_V24_PNG mats
         InLab_V25_IDsDeMaterial uso produto:produto
