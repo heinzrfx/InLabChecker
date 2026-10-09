@@ -279,9 +279,10 @@ global INLAB_TESTE_SAIDA, INLAB_TESTE_FALHAS
         local ab = InLab_Malha_AnalisarCena #(bule)
         local seg = (timeStamp() - t0) / 1000.0
         linha ("      tempo da análise do Teapot " + ab[1].tris as string + " tris: " + seg as string + " s")
-        -- Teto de 20 s (06/10/2026): a análise leva ~15,4 s desde o union-find
-        -- por aresta da V-10b; 15 s ficava no limite (ver cabeçalho de verif_malha.ms).
-        checar ("Desempenho: Teapot de 262 mil triângulos abaixo de 20 s (" + seg as string + " s)") (ab[1].tris == 262144 and seg < 20.0)
+        -- Teto de 20 s (06/10/2026): a análise levava ~15,4 s desde o union-find
+        -- por aresta da V-10b. 09/10/2026 (#112): V-10a e V-10b numa ordenação
+        -- só, ~10 s; o teto volta a 15 s.
+        checar ("Desempenho: Teapot de 262 mil triângulos abaixo de 15 s (" + seg as string + " s)") (ab[1].tris == 262144 and seg < 15.0)
         limparCena()
 
         -- CASOS DAS PRÓXIMAS TASKS ENTRAM AQUI
