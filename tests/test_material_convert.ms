@@ -20,6 +20,7 @@ global InLab_ConverterObjetos, InLab_ReverterConversao, InLab_UltimaConversao
 global InLab_SetPropSafe, InLab_BakeBaseComAlpha, InLab_BitmapDoTexmap, InLab_PastaBake
 global InLab_ConverterCoronaMtl, InLab_PropSafe, InLab_ResolverClasseGLTF
 global INLAB_TESTE_SAIDA, INLAB_TESTE_FALHAS
+global InLab_ParseJSON, InLab_Produto_Lista, InLab_Produto_EspeciaisDoProduto, InLab_EspecialDoMaterial
 (
     local dirTeste = getFilenamePath (getSourceFileName())
     local raiz = substring dirTeste 1 (dirTeste.count - 6) -- tira "tests\"
@@ -55,6 +56,9 @@ global INLAB_TESTE_SAIDA, INLAB_TESTE_FALHAS
         )
         else
         (
+            -- #153: produto (matéria-prima) para palha/cristal na conversão.
+            fileIn (raiz + @"functions\fn_json.ms")
+            fileIn (raiz + @"functions\fn_renomear_produto.ms")
             fileIn (raiz + @"functions\fn_material_convert.ms")
 
             local temGLTF = (InLab_ResolverClasseGLTF()) != undefined
@@ -146,6 +150,43 @@ global INLAB_TESTE_SAIDA, INLAB_TESTE_FALHAS
                     mV.refraction = color 0 0 0
                     checar ("VRay: refração preta → transmission 0 (" + (transmissionDe (InLab_ConverterCoronaMtl mV 256 false)) as string + ")") ((abs (transmissionDe (InLab_ConverterCoronaMtl mV 256 false))) < 1e-4)
                 )
+
+                -- ===== 6. PALHA/CRISTAL PELA MATÉRIA-PRIMA (09/10/2026, #153) =====
+                -- Materiais já renomeados para o material_id: o nome não diz mais
+                -- que é vidro. A tabela do produto decide; sem produto, o nome.
+                local jsMp = "{\"produtos\": [{\"cod_est\": \"0093\", \"nome\": \"MESA\", \"partes\": [" +
+                    "{\"nome_parte\": \"Tampo\", \"so3d\": false, \"material_id\": \"ART_E_Tampo\", \"materia_prima\": {\"familia\": \"Vidro\", \"materia\": \"\"}}, " +
+                    "{\"nome_parte\": \"Base\", \"so3d\": false, \"material_id\": \"ART_P_Vidro_Fibra\", \"materia_prima\": {\"familia\": \"Fibra de Vidro\", \"materia\": \"\"}}, " +
+                    "{\"nome_parte\": \"Assento\", \"so3d\": false, \"material_id\": \"ART_C_Assento\", \"materia_prima\": {\"familia\": \"Malacca / Fibra\", \"materia\": \"\"}}]}]}"
+                local prodMp = (InLab_Produto_Lista (InLab_ParseJSON jsMp))[1]
+                local tabMp = InLab_Produto_EspeciaisDoProduto prodMp
+                checar ("#153: tabela da matéria-prima com as 3 partes (" + tabMp as string + ")") (tabMp.count == 3)
+                checar "#153: consulta pela tabela (#materia)" ((InLab_EspecialDoMaterial "ART_E_Tampo" especiais:tabMp) as string == #(#cristal, #materia) as string)
+                checar "#153: fora da tabela cai no nome (#nome)" ((InLab_EspecialDoMaterial "Vidro solto" especiais:tabMp) as string == #(#cristal, #nome) as string)
+                fn vidroLegacy nome = ( local m = CoronaLegacyMtl(); m.name = nome; m.levelRefract = 1.0; m )
+                local mTampo = vidroLegacy "ART_E_Tampo"
+                checar "#153: ART_E_Tampo sem produto → transmission 0 (o nome não diz vidro)" ((abs (transmissionDe (InLab_ConverterCoronaMtl mTampo 256 false))) < 1e-4)
+                checar "#153: ART_E_Tampo com a matéria-prima Vidro → transmission 1" ((abs ((transmissionDe (InLab_ConverterCoronaMtl mTampo 256 false especiais:tabMp)) - 1.0)) < 1e-4)
+                local mFibra = vidroLegacy "ART_P_Vidro_Fibra"
+                checar "#153: Fibra de Vidro sem produto → transmission 1 (o nome diz vidro)" ((abs ((transmissionDe (InLab_ConverterCoronaMtl mFibra 256 false)) - 1.0)) < 1e-4)
+                checar "#153: Fibra de Vidro com a matéria-prima → transmission 0" ((abs (transmissionDe (InLab_ConverterCoronaMtl mFibra 256 false especiais:tabMp))) < 1e-4)
+                local mAssento = CoronaLegacyMtl()
+                mAssento.name = "ART_C_Assento"
+                local gTrama = InLab_ConverterCoronaMtl mAssento 256 false especiais:tabMp
+                checar "#153: Malacca / Fibra → doubleSided" ((InLab_PropSafe gTrama #(#doubleSided, #twoSided)) == true)
+                local gTramaSem = InLab_ConverterCoronaMtl mAssento 256 false
+                checar "#153: sem produto, ART_C_Assento não é palha" ((InLab_PropSafe gTramaSem #(#doubleSided, #twoSided)) != true)
+                -- Ponta a ponta: InLab_ConverterObjetos produto: (Multi/Sub incluso).
+                local mm = Multimaterial numsubs:2
+                mm.materialList[1] = vidroLegacy "ART_E_Tampo"
+                mm.materialList[2] = vidroLegacy "ART_P_Vidro_Fibra"
+                local objMp = Box name:"obj_mp" material:mm pos:[120, 0, 0]
+                append criados objMp
+                InLab_ConverterObjetos #(objMp) produto:prodMp
+                checar "#153: ConverterObjetos produto: tampo (sub 1) com transmission 1" ((abs ((transmissionDe objMp.material.materialList[1]) - 1.0)) < 1e-4)
+                checar "#153: ConverterObjetos produto: fibra (sub 2) com transmission 0" ((abs (transmissionDe objMp.material.materialList[2])) < 1e-4)
+                InLab_ReverterConversao()
+                checar "#153: Reverter volta o Multi/Sub original" (objMp.material == mm)
             )
 
             -- ===== 4. InLab_BakeBaseComAlpha (issue #51) =====

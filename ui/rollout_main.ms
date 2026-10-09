@@ -554,8 +554,11 @@ rollout InLabSecF5 "Converter Material" width:420
         local objs = InLab_SelecaoValida()
         if objs.count > 0 do
         (
+            -- 09/10/2026 (issue #153): o produto escolhido decide palha/cristal
+            -- pela matéria-prima (materiais já renomeados para o material_id).
+            local p = try (InLabSecProduto.produtoEscolhido()) catch undefined
             InLab_ProgressoIniciar "Convertendo materiais..."
-            InLab_ConverterObjetos objs tamanhoBake:INLAB_RESOLUCAO_BAKE fazerBake:chkBakeProc.checked
+            InLab_ConverterObjetos objs tamanhoBake:INLAB_RESOLUCAO_BAKE fazerBake:chkBakeProc.checked produto:p
             InLab_ProgressoParar()
         )
     )

@@ -54,11 +54,12 @@
  têm texmapDiffuse indefinido), nem ID órfão na V-25.
 
  09/10/2026 (issue #145): V-35/V-36 escolhem o material especial pela
- matéria-prima da parte do JSON (InLab_Mat_EspecialDaMateria; material_id da
- parte = nome do material), com volta ao nome quando não há produto ou a parte
- vem sem materia_prima.familia. A V-24 herda (palha aceita PNG). A conversão
- continua pelo nome. As notas dizem quantos vieram do JSON e quais o nome
- marcaria mas a matéria-prima tirou.
+ matéria-prima da parte do JSON (material_id da parte = nome do material),
+ com volta ao nome quando não há produto ou a parte vem sem
+ materia_prima.familia. A V-24 herda (palha aceita PNG). As notas dizem
+ quantos vieram do JSON e quais o nome marcaria mas a matéria-prima tirou.
+ 09/10/2026 (issue #153): a regra foi para fn_renomear_produto.ms
+ (InLab_Produto_EspeciaisDoProduto) e a conversão passou a usá-la também.
 ================================================================================
 */
 
@@ -115,49 +116,12 @@ fn InLab_Mat_Uso objetos =
 struct MatInfo ( mtl, base, tipo, especial, fonte = #nome, especialNome = #nenhum )
 
 -- 09/10/2026 (issue #145): o especial vem da matéria-prima da parte cujo
--- material_id é o nome do material. Contrato com a Bia (spec das famílias
--- estruturais, 08/10/2026), valor inteiro, nunca trecho ("Fibra de Vidro"
--- não é vidro): familia "Vidro" → #cristal, exceto materia "Vidro Espelho";
--- familia "Malacca / Fibra" → #palha; outra familia → #nenhum. familia vazia
--- ou ausente → undefined (cai no nome). Sem diferenciar maiúsculas (o == de
--- string do MaxScript diferencia: compara em minúsculas).
-fn InLab_Mat_EspecialDaMateria parte =
-(
-    local mp = InLab_JSON_Obter parte "materia_prima"
-    local fam = toLower (trimLeft (trimRight (InLab_Produto_Texto mp "familia")))
-    local mat = toLower (trimLeft (trimRight (InLab_Produto_Texto mp "materia")))
-    if fam == "" then undefined
-    else if fam == "vidro" then (if mat == "vidro espelho" then #nenhum else #cristal)
-    else if fam == "malacca / fibra" then #palha
-    else #nenhum
-)
-
--- #(#(material_id, especial), ...) de todas as partes do produto (so3d
--- incluídas: a peça só 3D também tem material). Duas partes com o mesmo
--- material_id e matérias diferentes: vale a que é especial.
-fn InLab_Mat_EspeciaisDoProduto produto =
-(
-    local tabela = #()
-    local partes = if produto == undefined then undefined else InLab_JSON_Obter produto "partes"
-    if isKindOf partes Array do
-        for p in partes do
-        (
-            local id = InLab_Produto_Texto p "material_id"
-            local e = InLab_Mat_EspecialDaMateria p
-            if id != "" and e != undefined do
-            (
-                local achado = undefined
-                for t in tabela where t[1] == id do achado = t
-                if achado == undefined then append tabela #(id, e)
-                else if achado[2] == #nenhum do achado[2] = e
-            )
-        )
-    tabela
-)
-
+-- material_id é o nome do material (InLab_Produto_EspeciaisDoProduto, em
+-- fn_renomear_produto.ms desde a #153, que a conversão também usa), com
+-- volta ao nome (InLab_EspecialDoMaterial, fn_material_convert.ms).
 fn InLab_Mat_Resolver uso produto:undefined =
 (
-    local tabela = InLab_Mat_EspeciaisDoProduto produto
+    local tabela = InLab_Produto_EspeciaisDoProduto produto
     for m in uso.usados collect
     (
         local origem = m
@@ -181,13 +145,8 @@ fn InLab_Mat_Resolver uso produto:undefined =
             if InLab_ClasseContem origem "CoronaLayeredMtl" do base = InLab_PropSafe origem #(#baseMtl, #baseMaterial, #base)
             tipo = if base == undefined then #outro else InLab_TipoDeMaterial base
         )
-        local pelaMateria = undefined
-        for t in tabela where t[1] == nomeEsp do pelaMateria = t[2]
-        local pelaNome = InLab_DetectarEspecial nomeEsp
-        if pelaMateria != undefined then
-            MatInfo mtl:m base:base tipo:tipo especial:pelaMateria fonte:#materia especialNome:pelaNome
-        else
-            MatInfo mtl:m base:base tipo:tipo especial:pelaNome fonte:#nome especialNome:pelaNome
+        local esp = InLab_EspecialDoMaterial nomeEsp especiais:tabela
+        MatInfo mtl:m base:base tipo:tipo especial:esp[1] fonte:esp[2] especialNome:(InLab_DetectarEspecial nomeEsp)
     )
 )
 
