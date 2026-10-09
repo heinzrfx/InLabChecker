@@ -61,6 +61,8 @@ global INLAB_UV_EPS = 1e-6
 -- Era 1e-5, mais justo que a precisão do flatten: contava encosto e lasca.
 global INLAB_UV_TOL_SOBREPOSICAO = 0.5 / 1024.0
 global INLAB_UV_GUTTER_BUSCA = 0.02
+global INLAB_UV_CONFIRMAR_MAX = 2000 -- faces marcadas pelo nativo acima disso: sem confirmação
+global InLab_UV_SobrepostasNativas
 
 struct UVMetricas
 (
@@ -144,6 +146,51 @@ fn InLab_UV_DistPontoSeg p a b =
 -- Índice (1..n) da célula de x numa grade de n células a partir de "mn",
 -- cada uma com largura "tam".
 fn InLab_UV_Celula x mn tam n = amax 1 (amin n ((floor ((x - mn) / tam)) as integer + 1))
+
+-- 09/10/2026 (V-15 tolera o imperceptível, decisão do usuário): faces
+-- sobrepostas pelo selectOverlappedFaces do Unwrap `uw`, confirmadas pelo
+-- eixo separador com INLAB_UV_TOL_SOBREPOSICAO (meio pixel a 1024). O nativo
+-- conta encosto entre faces minúsculas (Poltrona Zac: 94 faces abaixo de
+-- ~3 px² entrando menos de meio pixel umas nas outras) que não aparece no
+-- bake. Os pares sobrepostos ficam todos entre as faces que o nativo marca,
+-- então a confirmação só olha essas. Acima de INLAB_UV_CONFIRMAR_MAX faces
+-- marcadas não confirma (seria lento, e um UV assim tem problema de verdade).
+-- Precisa do `uw` corrente no painel Modify. Deixa a seleção do Unwrap vazia.
+-- Devolve o nº de faces (polígonos do Unwrap).
+fn InLab_UV_SobrepostasNativas uw =
+(
+    uw.selectOverlappedFaces()
+    local sel = uw.getSelectedFaces()
+    uw.selectFaces #{}
+    if sel.numberSet == 0 or sel.numberSet > INLAB_UV_CONFIRMAR_MAX then sel.numberSet
+    else
+    (
+        -- triângulos em leque de cada polígono marcado, com a caixa
+        local tris = #()
+        for f in sel do
+        (
+            local n = uw.numberPointsInFace f
+            local pts = for k = 1 to n collect ( local p = uw.getVertexPosition 0 (uw.getVertexIndexFromFace f k) ; [p.x, p.y, 0] )
+            for k = 2 to n - 1 do
+            (
+                local t = #(pts[1], pts[k], pts[k + 1])
+                append tris #(f, t, amin #(t[1].x, t[2].x, t[3].x), amin #(t[1].y, t[2].y, t[3].y), amax #(t[1].x, t[2].x, t[3].x), amax #(t[1].y, t[2].y, t[3].y))
+            )
+        )
+        local conf = #{}
+        for i = 1 to tris.count - 1 do
+            for j = i + 1 to tris.count do
+            (
+                local a = tris[i], b = tris[j]
+                if a[1] != b[1] and not (conf[a[1]] and conf[b[1]]) and a[3] < b[5] and b[3] < a[5] and a[4] < b[6] and b[4] < a[6] and (InLab_UV_TriSobrepoe a[2] b[2]) do
+                (
+                    conf[a[1]] = true
+                    conf[b[1]] = true
+                )
+            )
+        conf.numberSet
+    )
+)
 
 fn InLab_MedirUV obj canal =
 (
