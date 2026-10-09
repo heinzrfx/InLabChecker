@@ -72,6 +72,11 @@
    do teste (15 s) ficou no limite e falhava de forma intermitente; subiu
    para 20 s. Custo por etapa hoje: arestas invertidas 2,7 s, elementos do
    avesso 6,5 s, faces duplicadas 5,6 s.
+ 09/10/2026 (issue #112) — V-10a e V-10b numa ordenação só
+   (InLab_Malha_Arestas): uma chave por (aresta sem sentido, face, sentido).
+   No Teapot, as duas etapas foram de 7,5 s para 5,7 s, e a análise inteira
+   levou 9,96 s; o teto do teste voltou a 15 s. Testado e descartado: chave
+   double, bit.shift/bit.and, getElementsUsingFace (ver a função).
 ================================================================================
 */
 
@@ -105,7 +110,8 @@ struct MalhaAnalise
 -- V-10a: quantas arestas (de todas as faces) têm uma gêmea no MESMO sentido
 -- (vizinhas com sentido oposto). Em malha consistente cada aresta dirigida a→b
 -- aparece uma vez. Sort nativo sobre doubles, sem Dictionary.
--- (ver cabeçalho, 05/10/2026).
+-- (ver cabeçalho, 05/10/2026). Desde a #112 a análise usa InLab_Malha_Arestas
+-- (V-10a + V-10b juntas); esta fica para malha que não cabe na chave dela.
 fn InLab_Malha_ArestasInvertidas m =
 (
     local base = (m.numverts + 1) as double
@@ -127,103 +133,121 @@ fn InLab_Malha_ArestasInvertidas m =
     n
 )
 
--- V-10b: elementos FECHADOS (nenhuma aresta aberta) com volume negativo.
-fn InLab_Malha_ElementosDoAvesso m abertas =
+-- V-10a + V-10b numa ordenação só (09/10/2026, issue #112). Devolve
+-- #(invertidas, avesso):
+--   invertidas (V-10a): arestas dirigidas que aparecem mais de uma vez no
+--     mesmo sentido (mesma regra de InLab_Malha_ArestasInvertidas);
+--   avesso (V-10b): elementos FECHADOS (nenhuma aresta aberta) com volume
+--     negativo.
+-- Elementos por conectividade de ARESTA (duas faces no mesmo elemento só se
+-- dividem uma aresta), como meshop.getElementsUsingFace: dois cubos soldados
+-- num só vértice são dois elementos (unir por vértice somaria os volumes e
+-- esconderia o cubo do avesso). Histórico: getElementsUsingFace por elemento
+-- levava 22 s no Teapot de 262 mil triângulos (41 ms por chamada, e as faces
+-- degeneradas dos polos viram centenas de "elementos"); o union-find por
+-- aresta (05/10/2026) levou a 6,5 s, mais 2,7 s da ordenação própria da
+-- V-10a. #112: UMA chave integer64 por (aresta sem sentido, face, sentido) =
+-- aresta · 2nf + 2(face − 1) + sentido, ordenada com sort nativo. Na mesma
+-- passada: faces da mesma aresta se unem (V-10b) e, dentro de cada aresta,
+-- cada sentido com 2 ou mais ocorrências conta como invertida (V-10a).
+-- Teapot 262 mil: V-10a + V-10b de 7,5 s para 5,7 s. Testado e descartado:
+-- chave double (mais lenta), bit.shift/bit.and no lugar da divisão (0,27 s
+-- contra 0,17 s em 786 mil), getElementsUsingFace (acima).
+-- Cabe até nv² · 2nf ~ 9,2e18; passando disso lança erro (quem chama mede a
+-- V-10a pela função própria e a V-10b vira "não medido"), nunca aproxima.
+fn InLab_Malha_Arestas m abertas =
 (
-    -- Perf (05/10/2026): meshop.getElementsUsingFace custa O(faces) por chamada e
-    -- o Teapot de 262 mil triângulos tem centenas de elementos (22 s). Agora um
-    -- union-find sobre as FACES dá o elemento de cada uma; o volume e a
-    -- "abertura" são somados por elemento. Mesma semântica: só elemento sem
-    -- aresta aberta entra no teste de volume.
-    -- Conectividade por ARESTA (duas faces no mesmo elemento só se dividem uma
-    -- aresta), como meshop.getElementsUsingFace: dois cubos soldados num só
-    -- vértice são dois elementos (unir por vértice somaria os volumes e
-    -- esconderia o cubo do avesso). Sem Dictionary: chave integer64 =
-    -- (aresta sem sentido) * nf + (face - 1), ordenada com sort nativo (sort de
-    -- integer64 mede 0,6 s em 786 mil chaves). Cabe até nv² · nf ~ 9,2e18, muito
-    -- além de qualquer produto; passando disso lança erro (a análise loga e a
-    -- V-10 vira "não medido"), nunca aproxima.
     local nf = m.numfaces
     local nv = m.numverts
     local base = (nv + 1) as integer64
-    local nf64 = nf as integer64
-    if ((nv + 1) as double) * ((nv + 1) as double) * (nf as double) >= 9.0e18 do
+    local nf2 = (2 * nf) as integer64
+    if ((nv + 1) as double) * ((nv + 1) as double) * (2.0 * nf) >= 9.0e18 do
         throw ("malha grande demais para a V-10b (" + nv as string + " vértices, " + nf as string + " faces)")
-    fn raiz pai i =
-    (
-        while pai[i] != i do ( pai[i] = pai[pai[i]]; i = pai[i] )
-        i
-    )
     local fv = #()
     fv.count = nf
-    for f = 1 to nf do fv[f] = getFace m f
     local pai = #()
     pai.count = nf
-    for f = 1 to nf do pai[f] = f
     local chaves = #()
     for f = 1 to nf do
     (
-        local v = fv[f]
+        local v = getFace m f
+        fv[f] = v
+        pai[f] = f
         local a = (v.x as integer) as integer64
         local b = (v.y as integer) as integer64
         local c = (v.z as integer) as integer64
-        local fk = (f - 1) as integer64
-        append chaves (((amin a b) * base + (amax a b)) * nf64 + fk)
-        append chaves (((amin b c) * base + (amax b c)) * nf64 + fk)
-        append chaves (((amin c a) * base + (amax c a)) * nf64 + fk)
+        local fk = (2 * (f - 1)) as integer64
+        append chaves ((if a < b then a * base + b else b * base + a) * nf2 + fk + (if a < b then 0L else 1L))
+        append chaves ((if b < c then b * base + c else c * base + b) * nf2 + fk + (if b < c then 0L else 1L))
+        append chaves ((if c < a then c * base + a else a * base + c) * nf2 + fk + (if c < a then 0L else 1L))
     )
     sort chaves
+    local invertidas = 0
     local anterior = -1L
     local fAnt = 0
+    local c0 = 0, c1 = 0
     for k in chaves do
     (
-        local aresta = k / nf64
-        local fa = ((k - aresta * nf64) as integer) + 1
-        if aresta == anterior do
+        local aresta = k / nf2
+        local r = (k - aresta * nf2) as integer
+        local fa = r / 2 + 1
+        if aresta == anterior then
         (
-            local ra = raiz pai fa
-            local rb = raiz pai fAnt
+            local ra = fa, rb = fAnt
+            while pai[ra] != ra do ( pai[ra] = pai[pai[ra]]; ra = pai[ra] )
+            while pai[rb] != rb do ( pai[rb] = pai[pai[rb]]; rb = pai[rb] )
             if ra != rb do pai[ra] = rb
         )
+        else
+        (
+            if c0 >= 2 do invertidas += c0
+            if c1 >= 2 do invertidas += c1
+            c0 = 0
+            c1 = 0
+        )
+        if (mod r 2) == 0 then c0 += 1 else c1 += 1
         anterior = aresta
         fAnt = fa
     )
-    local vol = #()
-    vol.count = nf
-    for f = 1 to nf do vol[f] = 0.0
+    if c0 >= 2 do invertidas += c0
+    if c1 >= 2 do invertidas += c1
+    -- pai[f] = raiz, uma vez
+    for f = 1 to nf do
+    (
+        local x = f
+        while pai[x] != x do x = pai[x]
+        pai[f] = x
+    )
     -- Robustez (05/10/2026): ponto float32 longe da origem perde precisão no
     -- produto misto. Cada elemento subtrai uma âncora (1º vértice da 1ª face
     -- vista) antes do cross e acumula o raio máximo a partir dela; a decisão é
     -- relativa (d = 2·raio, que cobre a diagonal do bbox, sem custo de bbox).
+    local vs = for i = 1 to nv collect getVert m i
+    local vol = #(); vol.count = nf
     local anc = #(); anc.count = nf
     local mn = #(); mn.count = nf   -- raio máximo (distância à âncora) por elemento
     for f = 1 to nf do
     (
         local v = fv[f]
-        local r = raiz pai f
-        local p1 = getVert m v.x
-        local p2 = getVert m v.y
-        local p3 = getVert m v.z
-        if anc[r] == undefined do ( anc[r] = p1; mn[r] = 0.0 )
-        local q1 = p1 - anc[r]
-        local q2 = p2 - anc[r]
-        local q3 = p3 - anc[r]
-        -- raio do elemento a partir da âncora (barato; 2·raio >= diagonal do bbox)
+        local e = pai[f]
+        local p1 = vs[v.x], p2 = vs[v.y], p3 = vs[v.z]
+        if anc[e] == undefined do ( anc[e] = p1; mn[e] = 0.0; vol[e] = 0.0 )
+        local o = anc[e]
+        local q1 = p1 - o, q2 = p2 - o, q3 = p3 - o
         local rr = amax (length q1) (length q2) (length q3)
-        if rr > mn[r] do mn[r] = rr
-        vol[r] += dot q1 (cross q2 q3)
+        if rr > mn[e] do mn[e] = rr
+        vol[e] += dot q1 (cross q2 q3)
     )
     local aberto = #{}
-    for e in abertas do aberto[raiz pai ((e - 1) / 3 + 1)] = true
+    for e in abertas do aberto[pai[(e - 1) / 3 + 1]] = true
     local avesso = 0
-    for f = 1 to nf do
-        if pai[f] == f and not aberto[f] do
-        (
-            local d = 2.0 * mn[f]   -- mn[f] = raio máximo a partir da âncora
-            -- |vol| abaixo de 1e-4·d³ é indeterminado (não conta como avesso)
-            if vol[f] < -(1e-4 * d * d * d) do avesso += 1
-        )
-    avesso
+    for f = 1 to nf where pai[f] == f and not aberto[f] do
+    (
+        local d = 2.0 * mn[f]   -- mn[f] = raio máximo a partir da âncora
+        -- |vol| abaixo de 1e-4·d³ é indeterminado (não conta como avesso)
+        if vol[f] < -(1e-4 * d * d * d) do avesso += 1
+    )
+    #(invertidas, avesso)
 )
 
 -- Agrupa as faces de `lista` pelo valor quantizado do eixo `eixo` de q[f]
@@ -350,12 +374,20 @@ fn InLab_Malha_Analisar o tol:undefined =
         if a.tris > 0 do
         (
             local abertas = meshop.getOpenEdges m
-            a.invertidas = InLab_Malha_ArestasInvertidas m
             a.furos = abertas.numberSet
-            try ( a.avesso = InLab_Malha_ElementosDoAvesso m abertas ) catch
+            -- #112: V-10a e V-10b numa ordenação só. Se a malha não cabe na
+            -- chave, a V-10a é medida à parte e a V-10b fica "não medida".
+            try
+            (
+                local ar = InLab_Malha_Arestas m abertas
+                a.invertidas = ar[1]
+                a.avesso = ar[2]
+            )
+            catch
             (
                 a.erroAvesso = getCurrentException()
                 InLab_Log (o.name + ": V-10b não medida (" + a.erroAvesso + ").") tipo:#warn
+                a.invertidas = InLab_Malha_ArestasInvertidas m
             )
             a.duplicadas = InLab_Malha_FacesDuplicadas m tol
         )
