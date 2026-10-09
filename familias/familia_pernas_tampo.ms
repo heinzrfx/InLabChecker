@@ -6,10 +6,14 @@
  Pernas + Tampo · Lote 1 · sem animação
  Particularidades:
    - Limites de peso e polígono são POR BLOCO (estrutura e tampo separados).
-   - Material de cristal → V-36 (Transmission, não Opacity).
+   - Material de cristal → V-36 (Transmission, não Opacity). Desde
+     09/10/2026 (#145) a V-36 reconhece o vidro pela matéria-prima da parte
+     no JSON (familia "Vidro", exceto "Vidro Espelho"), com volta ao nome.
    - tampoAcessorio: false por padrão. É uma propriedade do PRODUTO, não da
-     família inteira — precisará de toggle na UI quando a V-38 for
-     implementada (decisão registrada na entrega da Fase 0).
+     família inteira (decisão da Fase 0). A V-38 já existe e lê o checkbox
+     "Produto com tampo acessório" da seção Verificações
+     (InLab_TampoAcessorioProduto); este campo só a liga para a família
+     inteira.
 ================================================================================
 */
 
