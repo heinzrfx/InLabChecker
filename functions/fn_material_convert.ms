@@ -85,6 +85,18 @@
  glTF não reproduz: Triplanar (rodar o Auto UV antes), mapa em coordenada
  3D, falloff, tiling não inteiro dentro de procedural (emenda) e tiling de
  bitmap direto (o glTF Material recebe só o arquivo).
+ 09/10/2026 (issue #163): o tiling, o offset e o canal do bitmap passam para
+ o Bitmaptexture do glTF Material (InLab_AplicarTransform), e o exportador
+ do Max grava KHR_texture_transform (testado: tiling 3×5 e offset 0,2 saem
+ como scale [3,5] e offset [-0,6, 0]). CoronaBitmap: uvwScale/uvwOffset
+ mapeiam direto em U/V_Tiling e U/V_Offset (renderMap idêntico, diferença 0).
+ Antes, "Bitmaptexture filename:" zerava a transformação e a textura mudava
+ de escala (Puff Pol: tiling 20×200 no opacity). Bitmap de topo com
+ transformação é processado SEM ela (ladrilho) e recebe a transformação no
+ fim: roughness invertido e base+opacity com a mesma transformação. Base e
+ opacity com transformações diferentes: o bake avalia cada um com a sua
+ (renderMap), com aviso de resolução. Bitmap ainda em Real-World: não
+ transfere e avisa para rodar o Auto UV antes.
 ================================================================================
 */
 
@@ -249,12 +261,9 @@ fn InLab_AvisosDoSlot tm nomeMtl rotulo =
             (
                 local nome = try ( filenameFromPath t.filename ) catch ( t.name )
                 local inteiro = (abs (tu - (floor (tu + 0.5)))) < 1e-3 and (abs (tv - (floor (tv + 0.5)))) < 1e-3
-                if ehBitmap and t == tm then
-                (
-                    if (abs (tu - 1.0)) > 1e-3 or (abs (tv - 1.0)) > 1e-3 do
-                        append tiling (nome + " com tiling " + (formattedPrint tu format:".2f") + "×" + (formattedPrint tv format:".2f") + ": o glTF Material recebe só o arquivo, a textura muda de escala")
-                )
-                else if not inteiro do
+                -- #163: o bitmap direto leva o tiling para o glTF; só o de dentro
+                -- de procedural (bakeado no 0–1) avisa.
+                if not (ehBitmap and t == tm) and not inteiro do
                     append tiling (nome + " com tiling " + (formattedPrint tu format:".2f") + "×" + (formattedPrint tv format:".2f") + " dentro de procedural: o ladrilho bakeado não fecha (emenda no GLB)")
             )
         )
@@ -291,6 +300,60 @@ fn InLab_PastaBake =
     local pasta = base + "InLab_bake\\"
     if not (doesFileExist pasta) do makeDir pasta all:true
     pasta
+)
+
+--------------------------------------------------------------------------------
+-- 09/10/2026 (issue #163): transformação de UV de um bitmap.
+-- #(tileU, tileV, offU, offV, canal, realWorld) de Bitmaptexture ou
+-- CoronaBitmap; undefined se o mapa não é bitmap.
+--------------------------------------------------------------------------------
+global InLab_TransformDoBitmap, InLab_TransformIdentidade, InLab_AplicarTransform, InLab_BitmapSemTransform
+fn InLab_TransformDoBitmap tm =
+(
+    if classof tm == Bitmaptexture then
+        #(tm.coords.U_Tiling, tm.coords.V_Tiling, tm.coords.U_Offset, tm.coords.V_Offset, tm.coords.mapChannel, tm.coords.realWorldScale)
+    else if InLab_ClasseContem tm "CoronaBitmap" then
+    (
+        local s = try ( tm.uvwScale ) catch ( [1, 1, 1] )
+        local o = try ( tm.uvwOffset ) catch ( [0, 0, 0] )
+        #(s.x, s.y, o.x, o.y, (try ( tm.uvwChannel ) catch ( 1 )), (try ( tm.realWorldScale ) catch ( false )))
+    )
+    else undefined
+)
+
+fn InLab_TransformIdentidade t =
+    t == undefined or ((abs (t[1] - 1.0)) < 1e-4 and (abs (t[2] - 1.0)) < 1e-4 and (abs t[3]) < 1e-4 and (abs t[4]) < 1e-4)
+
+-- Põe a transformação `t` no Bitmaptexture `bmp` do glTF Material (o
+-- exportador grava KHR_texture_transform e o TEXCOORD do canal).
+fn InLab_AplicarTransform t bmp =
+(
+    if t != undefined and bmp != undefined do
+    (
+        bmp.coords.U_Tiling = t[1]
+        bmp.coords.V_Tiling = t[2]
+        bmp.coords.U_Offset = t[3]
+        bmp.coords.V_Offset = t[4]
+        bmp.coords.mapChannel = t[5]
+    )
+    bmp
+)
+
+-- Cópia do bitmap sem tiling nem offset (um ladrilho), para bake/composição.
+fn InLab_BitmapSemTransform tm =
+(
+    local c = copy tm
+    if classof c == Bitmaptexture then
+    (
+        c.coords.U_Tiling = 1.0 ; c.coords.V_Tiling = 1.0
+        c.coords.U_Offset = 0.0 ; c.coords.V_Offset = 0.0
+    )
+    else
+    (
+        try ( c.uvwScale = [1, 1, 1] ) catch ()
+        try ( c.uvwOffset = [0, 0, 0] ) catch ()
+    )
+    c
 )
 
 --------------------------------------------------------------------------------
@@ -331,26 +394,41 @@ fn InLab_TexmapParaGLTF texmap nomeBase tamanho fazerBake inverter:false precisa
     local resultado = undefined
     local ehBitmap = (classof texmap == Bitmaptexture) or (InLab_ClasseContem texmap "CoronaBitmap")
 
+    -- #163: a transformação do bitmap de topo vai para o bitmap do glTF.
+    local tr = if ehBitmap then (InLab_TransformDoBitmap texmap) else undefined
+    if tr != undefined and tr[6] do
+    (
+        InLab_Log (nomeBase + ": bitmap ainda em Real-World — rode o Auto UV antes de converter; a escala da textura não foi transferida.") tipo:#warn
+        tr = undefined
+    )
     if ehBitmap and not inverter then
     (
         local arq = try ( texmap.filename ) catch ( undefined )
         if arq != undefined and arq != "" do
-            resultado = Bitmaptexture filename:arq
+        (
+            resultado = InLab_AplicarTransform tr (Bitmaptexture filename:arq)
+            if not (InLab_TransformIdentidade tr) do
+                InLab_Log (nomeBase + ": tiling " + (formattedPrint tr[1] format:".2f") + "×" + (formattedPrint tr[2] format:".2f") + " transferido para o glTF (KHR_texture_transform).") tipo:#ok
+        )
     )
     else if fazerBake then
     (
         local fonte = texmap
+        -- #163: bitmap com transformação é bakeado como um ladrilho, e a
+        -- transformação vai para o resultado.
+        local trBake = if tr != undefined and not (InLab_TransformIdentidade tr) then tr else undefined
+        if trBake != undefined do fonte = InLab_BitmapSemTransform texmap
         if inverter do
         (
             -- Output map com invert: converte mapa de glossiness em roughness.
             local inv = Output()
-            inv.map1 = texmap
+            inv.map1 = fonte
             inv.output.invert = true
             fonte = inv
             InLab_Log (nomeBase + ": glossiness → roughness via bake invertido.") tipo:#warn
         )
         local arq = InLab_BakeTexmap fonte nomeBase tamanho precisaAlpha:precisaAlpha
-        if arq != undefined do resultado = Bitmaptexture filename:arq
+        if arq != undefined do resultado = InLab_AplicarTransform trBake (Bitmaptexture filename:arq)
     )
     else
         InLab_Log (nomeBase + ": mapa procedural e bake desabilitado — slot ficará vazio.") tipo:#warn
@@ -371,8 +449,9 @@ fn InLab_BitmapDoTexmap texmap tamanho =
 (
     local bmFonte = undefined
 
-    -- Caminho preferencial: pixels do arquivo em disco.
-    if (classof texmap == Bitmaptexture) or (InLab_ClasseContem texmap "CoronaBitmap") do
+    -- Caminho preferencial: pixels do arquivo em disco. #163: só sem
+    -- transformação; com tiling/offset, o renderMap avalia o ladrilho certo.
+    if ((classof texmap == Bitmaptexture) or (InLab_ClasseContem texmap "CoronaBitmap")) and (InLab_TransformIdentidade (InLab_TransformDoBitmap texmap)) do
     (
         local arq = try ( texmap.filename ) catch ( undefined )
         if arq != undefined and arq != "" and doesFileExist arq do
@@ -613,10 +692,33 @@ fn InLab_ConverterCoronaMtl mtl tamanho fazerBake especiais:#() =
         if mapaOpac != undefined then
         (
             -- Caminho palha/opacity: composto RGBA único.
-            local arqRGBA = InLab_BakeBaseComAlpha mapaBase corBase mapaOpac (mtl.name + "_basecolor_rgba") tamanho
+            -- #163: base (ou cor) e opacity bitmaps com a MESMA transformação:
+            -- compõe um ladrilho e a transformação vai para o resultado. Senão
+            -- cada um é avaliado com a sua no 0–1 (renderMap), com aviso.
+            local trO = InLab_TransformDoBitmap mapaOpac
+            -- Base procedural sem bitmap na árvore (cor, falloff) não depende do
+            -- UV: compõe como ladrilho junto com a opacity.
+            local baseSemUV = mapaBase != undefined and (InLab_TransformDoBitmap mapaBase) == undefined and                               (for t in (InLab_ArvoreDeMapas mapaBase #()) where (InLab_TransformDoBitmap t) != undefined collect t).count == 0
+            local trB = if mapaBase == undefined or baseSemUV then trO else (InLab_TransformDoBitmap mapaBase)
+            local trComp = undefined
+            local baseComp = mapaBase, opacComp = mapaOpac
+            if trO != undefined and trB != undefined and not trO[6] and not trB[6] and not (InLab_TransformIdentidade trO) and \
+               (for k = 1 to 5 where (abs (trO[k] - trB[k])) > 1e-4 collect k).count == 0 then
+            (
+                trComp = trO
+                opacComp = InLab_BitmapSemTransform mapaOpac
+                if mapaBase != undefined and not baseSemUV do baseComp = InLab_BitmapSemTransform mapaBase
+            )
+            else
+            (
+                for tr in #(trB, trO) where tr != undefined and not (InLab_TransformIdentidade tr) do
+                    if (amax tr[1] tr[2]) > 8.0 do
+                        InLab_Log (mtl.name + ": base e opacity com tiling diferentes (até " + (formattedPrint (amax tr[1] tr[2]) format:".0f") + " repetições no 0–1): o composto respeita a escala, mas cada repetição fica com poucos pixels.") tipo:#warn
+            )
+            local arqRGBA = InLab_BakeBaseComAlpha baseComp corBase opacComp (mtl.name + "_basecolor_rgba") tamanho
             if arqRGBA != undefined do
             (
-                local bmp = Bitmaptexture filename:arqRGBA
+                local bmp = InLab_AplicarTransform trComp (Bitmaptexture filename:arqRGBA)
                 if (InLab_SetPropSafe g #(#baseColorMap, #baseColorTexmap, #base_color_map) bmp) == undefined do
                     InLab_Log (mtl.name + ": slot de base color map não encontrado.") tipo:#err
             )

@@ -226,13 +226,84 @@ global InLab_ParseJSON, InLab_Produto_Lista, InLab_Produto_EspeciaisDoProduto, I
                 logsCapturados = #()
                 InLab_ConverterCoronaMtl mCC 64 false
                 checar "#110: tiling 0,7 dentro de procedural avisa emenda" (avisou "ladrilho bakeado não fecha")
-                -- bitmap direto com tiling 2: o glTF perde o tiling
+                -- bitmap direto com tiling 2: desde a #163 o tiling vai para o glTF, sem aviso de escala
                 local mDir = CoronaLegacyMtl()
                 mDir.name = "mat_dir"
                 mDir.texmapDiffuse = bmTile "bm_2" 2 2
                 logsCapturados = #()
                 InLab_ConverterCoronaMtl mDir 64 false
-                checar "#110: bitmap direto com tiling 2 avisa que muda de escala" (avisou "muda de escala")
+                checar "#110/#163: bitmap direto com tiling 2 não avisa mudança de escala" (not (avisou "muda de escala"))
+
+                -- ===== 8. TILING E OFFSET PARA O glTF (09/10/2026, #163) =====
+                local arqT = (getDir #temp) + "\\inlab_t163.jpg"
+                local bmT = bitmap 16 16 color:gray filename:arqT
+                save bmT ; close bmT
+                fn mapaBaseDe g = InLab_PropSafe g #(#baseColorMap, #baseColorTexmap, #base_color_map)
+                fn coordsDe t = if t == undefined then "undefined" else (formattedPrint t.coords.U_Tiling format:".2f") + "x" + (formattedPrint t.coords.V_Tiling format:".2f") + " off " + (formattedPrint t.coords.U_Offset format:".2f") + "," + (formattedPrint t.coords.V_Offset format:".2f") + " ch" + t.coords.mapChannel as string
+                -- Bitmaptexture direto, tiling 3×5, offset 0,2/0,1
+                local mT1 = CoronaLegacyMtl()
+                mT1.name = "mat_t1"
+                local bT1 = Bitmaptexture filename:arqT
+                bT1.coords.U_Tiling = 3 ; bT1.coords.V_Tiling = 5 ; bT1.coords.U_Offset = 0.2 ; bT1.coords.V_Offset = 0.1
+                mT1.texmapDiffuse = bT1
+                local cT1 = coordsDe (mapaBaseDe (InLab_ConverterCoronaMtl mT1 64 false))
+                checar ("#163: Bitmaptexture direto leva tiling e offset (" + cT1 + ")") (cT1 == "3.00x5.00 off 0.20,0.10 ch1")
+                -- CoronaBitmap direto, uvwScale 2,5×0,7 e offset 0,13/0,17: mapeamento direto
+                local mT2 = CoronaLegacyMtl()
+                mT2.name = "mat_t2"
+                local cbT = CoronaBitmap()
+                cbT.filename = arqT
+                cbT.realWorldScale = false
+                cbT.uvwScale = [2.5, 0.7, 1] ; cbT.uvwOffset = [0.13, 0.17, 0]
+                mT2.texmapDiffuse = cbT
+                local cT2 = coordsDe (mapaBaseDe (InLab_ConverterCoronaMtl mT2 64 false))
+                checar ("#163: CoronaBitmap leva uvwScale e uvwOffset (" + cT2 + ")") (cT2 == "2.50x0.70 off 0.13,0.17 ch1")
+                -- Roughness invertido de um bitmap com tiling 4: bake de um ladrilho + tiling no resultado
+                local mT3 = CoronaLegacyMtl()
+                mT3.name = "mat_t3"
+                local bT3 = Bitmaptexture filename:arqT
+                bT3.coords.U_Tiling = 4 ; bT3.coords.V_Tiling = 4
+                mT3.texmapReflectGlossiness = bT3
+                local gT3 = InLab_ConverterCoronaMtl mT3 64 true
+                local cT3 = coordsDe (InLab_PropSafe gT3 #(#roughnessMap, #roughnessTexmap))
+                checar ("#163: roughness invertido leva o tiling 4 (" + cT3 + ")") (cT3 == "4.00x4.00 off 0.00,0.00 ch1")
+                -- Base e opacity com a mesma transformação: composto de um ladrilho + transformação
+                local mT4 = CoronaLegacyMtl()
+                mT4.name = "mat_t4"
+                local bT4a = Bitmaptexture filename:arqT
+                bT4a.coords.U_Tiling = 10 ; bT4a.coords.V_Tiling = 70
+                local bT4b = Bitmaptexture filename:arqT
+                bT4b.coords.U_Tiling = 10 ; bT4b.coords.V_Tiling = 70
+                mT4.texmapDiffuse = bT4a ; mT4.texmapOpacity = bT4b
+                local cT4 = coordsDe (mapaBaseDe (InLab_ConverterCoronaMtl mT4 64 true))
+                checar ("#163: base+opacity com a mesma transformação levam tiling 10×70 (" + cT4 + ")") (cT4 == "10.00x70.00 off 0.00,0.00 ch1")
+                -- Só opacity com tiling (base é cor): idem
+                local mT5 = CoronaLegacyMtl()
+                mT5.name = "mat_t5"
+                local bT5 = Bitmaptexture filename:arqT
+                bT5.coords.U_Tiling = 20 ; bT5.coords.V_Tiling = 200
+                mT5.texmapOpacity = bT5
+                local cT5 = coordsDe (mapaBaseDe (InLab_ConverterCoronaMtl mT5 64 true))
+                checar ("#163: só opacity com tiling 20×200 leva a transformação (" + cT5 + ")") (cT5 == "20.00x200.00 off 0.00,0.00 ch1")
+                -- Base procedural sem bitmap (falloff) + opacity com tiling: ladrilho + transformação
+                local mT7 = CoronaLegacyMtl()
+                mT7.name = "mat_t7"
+                mT7.texmapDiffuse = Falloff()
+                local bT7 = Bitmaptexture filename:arqT
+                bT7.coords.U_Tiling = 20 ; bT7.coords.V_Tiling = 200
+                mT7.texmapOpacity = bT7
+                local cT7 = coordsDe (mapaBaseDe (InLab_ConverterCoronaMtl mT7 64 true))
+                checar ("#163: base falloff + opacity 20×200 leva a transformação (" + cT7 + ")") (cT7 == "20.00x200.00 off 0.00,0.00 ch1")
+                -- Real-World ligado: não transfere e avisa
+                local mT6 = CoronaLegacyMtl()
+                mT6.name = "mat_t6"
+                local bT6 = Bitmaptexture filename:arqT
+                bT6.coords.realWorldScale = true ; bT6.coords.U_Tiling = 50 ; bT6.coords.V_Tiling = 50
+                mT6.texmapDiffuse = bT6
+                logsCapturados = #()
+                local cT6 = coordsDe (mapaBaseDe (InLab_ConverterCoronaMtl mT6 64 false))
+                checar ("#163: Real-World não transfere (" + cT6 + ") e avisa para rodar o Auto UV") (cT6 == "1.00x1.00 off 0.00,0.00 ch1" and avisou "rode o Auto UV")
+                try ( deleteFile arqT ) catch ()
                 -- caso limpo: bitmap direto tiling 1 e procedural com tiling inteiro → sem aviso de #110
                 local mOk = CoronaLegacyMtl()
                 mOk.name = "mat_ok"
