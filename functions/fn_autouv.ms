@@ -137,6 +137,9 @@
  decide "OK"/"com problema") passa a ser a do selectOverlappedFaces nativo
  em toda malha, não só nas grandes: é o critério da V-15. O InLab_MedirUV
  acusava 366 na Shape018 da Mentha onde o nativo e a V-15 davam 0.
+ No mesmo dia (decisão do usuário): o nativo é confirmado a meio pixel
+ (InLab_UV_SobrepostasNativas, verif_uv.ms), como na V-15 — encosto
+ imperceptível entre faces minúsculas não conta.
 
  09/10/2026 (issue #131): resolução do bake fixa em 1024 (teste com a Bia).
  Sai o dropdown da UI e INLAB_UV_RESOLUCOES vira INLAB_RESOLUCAO_BAKE, que
@@ -145,7 +148,7 @@
 */
 
 -- Pré-declarados: definidos em verifications\verif_uv.ms, carregado depois.
-global InLab_MedirUV, InLab_AssinaturaCanal, InLab_UVMetricasTexto
+global InLab_MedirUV, InLab_AssinaturaCanal, InLab_UVMetricasTexto, InLab_UV_SobrepostasNativas
 
 -- ===== PADRÃO InLab: canais de UV (ponto único de mudança) =====
 global INLAB_CANAL_UV_MATERIAL = 1  -- UV do material, em escala real: o Auto UV nunca altera
@@ -617,7 +620,7 @@ fn InLab_AutoUV objs angulo:55.0 resolucao:INLAB_RESOLUCAO_BAKE =
                             -- Métricas completas em MaxScript levam ~3 min em 300 mil
                             -- faces. Aqui só a checagem nativa de sobreposição.
                             local nSobre = -1
-                            try ( uvw.selectOverlappedFaces() ; nSobre = (uvw.getSelectedFaces()).numberSet ; uvw.selectFaces #{} ) catch()
+                            try ( nSobre = InLab_UV_SobrepostasNativas uvw ) catch()
                             local txtSobre = if nSobre < 0 then "sobreposição não verificada" else "sobrepostas: " + nSobre as string
                             InLab_Log (o.name + (if nSobre != 0 then ": Auto UV com problema no UV (conferir) · " else ": Auto UV OK · ") + metodo +
                                        " → " + packUsado + " · " + nTris as string + " triângulos: métricas completas e gutter não medidos · " + txtSobre) \
@@ -632,7 +635,7 @@ fn InLab_AutoUV objs angulo:55.0 resolucao:INLAB_RESOLUCAO_BAKE =
                             -- bate com o nativo (ver verif_uv.ms), e o log dizia
                             -- "problema" onde a V-15 passava (e vice-versa).
                             if met != undefined do
-                                try ( uvw.selectOverlappedFaces() ; met.sobrepostas = (uvw.getSelectedFaces()).numberSet ; uvw.selectFaces #{} )
+                                try ( met.sobrepostas = InLab_UV_SobrepostasNativas uvw )
                                 catch ( InLab_Log (o.name + ": sobreposição nativa não medida (" + getCurrentException() + "); fica a do InLab_MedirUV.") tipo:#warn )
                             local comProblema = met == undefined or met.sobrepostas > 0 or met.foraDe01 > 0 or (met.invertidos > 0 and not met.espelhado)
                             if met != undefined and met.gutterMin != undefined and met.gutterMin > 0.0 and met.gutterMin < padding * 0.98 do

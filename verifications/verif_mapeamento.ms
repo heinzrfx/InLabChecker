@@ -59,6 +59,13 @@
      "colapsado numa linha" (só um eixo).
    - Abrir/fechar grupos dentro de with undo off; redrawViews() após reativar
      o redesenho.
+
+ 09/10/2026 — V-15 tolera o imperceptível (decisão do usuário): o nativo
+ reprovava a Poltrona Zac (Shape: 94 faces) e o Puff Pol (Shape03: 6) por
+ encosto entre faces minúsculas, abaixo de ~3 px² e entrando menos de meio
+ pixel umas nas outras. A contagem passa a ser InLab_UV_SobrepostasNativas
+ (verif_uv.ms): o nativo marca, o eixo separador a meio pixel a 1024
+ confirma. O log do Auto UV usa a mesma função.
 ================================================================================
 */
 
@@ -173,8 +180,9 @@ fn InLab_Mapa_SobrepostasUnwrap o falharTeste:false =
             select o
             max modify mode
             modPanel.setCurrentObject uw
-            uw.selectOverlappedFaces()
-            n = (uw.getSelectedFaces()).numberSet
+            -- 09/10/2026: nativo confirmado a meio pixel (verif_uv.ms); o
+            -- encosto imperceptível entre faces minúsculas não reprova.
+            n = InLab_UV_SobrepostasNativas uw
         )
     )
     catch

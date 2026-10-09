@@ -5,7 +5,7 @@
  Resultado: <pasta temp do Max>\inlab_test_verif_uv.txt (PASS/FAIL por item).
 */
 -- Declarados ANTES do bloco: o bloco é compilado antes dos fileIn rodarem.
-global InLab_Log, InLab_MedirUV, InLab_AssinaturaCanal, InLab_UVMetricasTexto
+global InLab_Log, InLab_MedirUV, InLab_AssinaturaCanal, InLab_UVMetricasTexto, InLab_UV_SobrepostasNativas
 global INLAB_UV_GUTTER_BUSCA
 global INLAB_TESTE_SAIDA, INLAB_TESTE_FALHAS
 (
@@ -118,6 +118,35 @@ global INLAB_TESTE_SAIDA, INLAB_TESTE_FALHAS
         -- A lasca está no sentido horário, mas é mais fina que meio pixel: não é
         -- face invertida de verdade (eram as 8 "invertidas" da Shape018).
         checar ("Lasca degenerada: 0 invertidos (" + m.invertidos as string + ")") (m.invertidos == 0)
+
+        -- 4e. NATIVO CONFIRMADO (09/10/2026, V-15 tolera o imperceptível):
+        -- InLab_UV_SobrepostasNativas usa o selectOverlappedFaces e só conta
+        -- as faces que entram mais de meio pixel umas nas outras.
+        fn nativoConfirmado o =
+        (
+            local uw = Unwrap_UVW()
+            addModifier o uw
+            uw.setMapChannel 3
+            select o
+            max modify mode
+            modPanel.setCurrentObject uw
+            local r = #((InLab_UV_SobrepostasNativas uw), (uw.getSelectedFaces()).numberSet)
+            deleteModifier o uw
+            r
+        )
+        o = criarMalha #(quadUV 0.1 0.1 0.3, quadUV (0.4 - 0.002) 0.1 0.3)
+        append criados o
+        local rn = nativoConfirmado o
+        checar ("Nativo confirmado, 2 px: 4 faces (" + rn[1] as string + ")") (rn[1] == 4)
+        checar "Nativo confirmado: deixa a seleção vazia" (rn[2] == 0)
+        o = criarMalha #(quadUV 0.1 0.1 0.3, quadUV (0.4 - 0.0002) 0.1 0.3)
+        append criados o
+        rn = nativoConfirmado o
+        checar ("Nativo confirmado, encosto de 0,2 px: 0 faces (" + rn[1] as string + ")") (rn[1] == 0)
+        o = criarMalha #(quadUV 0.1 0.1 0.3, quadUV 0.5 0.1 0.3)
+        append criados o
+        checar "Nativo confirmado, ilhas separadas: 0" ((nativoConfirmado o)[1] == 0)
+        max create mode
 
         -- 5. INVERTIDOS: ilha B espelhada no UV
         o = criarMalha #(quadUV 0.1 0.1 0.3, quadUVEspelhado 0.5 0.1 0.3)
