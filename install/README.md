@@ -31,7 +31,7 @@ A instalação é separada por versão do Max, de propósito: cada build pode ex
 Se o `.mzp` não rodar, baixe o `InLabChecker-v<versão>.zip` e o `inlabchecker_boot.ms` da mesma release e:
 
 1. Feche o 3ds Max.
-2. `Win + R` e abra `%LOCALAPPDATA%\AutodeskdsMax4 - 64bit\ENU\scripts` (troque `2024` pelo ano da sua versão).
+2. `Win + R` e abra `%LOCALAPPDATA%\Autodesk\3dsMax\2024 - 64bit\ENU\scripts` (troque `2024` pelo ano da sua versão).
 3. Crie ali a pasta `InLabChecker` (exatamente assim) e extraia o zip dentro dela. O `InLabChecker.ms` tem que ficar **direto** em `scripts\InLabChecker\`, sem uma pasta a mais no meio.
 4. Copie `inlabchecker_boot.ms` para `scripts\startup\` (crie a pasta se não existir).
 5. Abra o Max e siga o passo 2 acima.
