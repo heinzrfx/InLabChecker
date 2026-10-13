@@ -21,7 +21,7 @@ global InLab_SetPropSafe, InLab_BakeBaseComAlpha, InLab_BitmapDoTexmap, InLab_Pa
 global InLab_ConverterCoronaMtl, InLab_PropSafe, InLab_ResolverClasseGLTF
 global INLAB_TESTE_SAIDA, INLAB_TESTE_FALHAS
 global InLab_ParseJSON, InLab_Produto_Lista, InLab_Produto_EspeciaisDoProduto, InLab_EspecialDoMaterial
-global InLab_CaminhoTextura, InLab_CheckTexture
+global InLab_CaminhoTextura, InLab_CheckTexture, InLab_BakeTexmap
 (
     local dirTeste = getFilenamePath (getSourceFileName())
     local raiz = substring dirTeste 1 (dirTeste.count - 6) -- tira "tests\"
@@ -228,7 +228,8 @@ global InLab_CaminhoTextura, InLab_CheckTexture
                 mCC.texmapDiffuse = cc
                 logsCapturados = #()
                 InLab_ConverterCoronaMtl mCC 64 false
-                checar "#110: tiling 0,7 dentro de procedural avisa emenda" (avisou "ladrilho bakeado não fecha")
+                -- #172: um bitmap só dentro do procedural → o tiling vai para o glTF, sem emenda
+                checar "#110/#172: tiling 0,7 com um bitmap só dentro de procedural não avisa emenda" (not (avisou "ladrilho bakeado não fecha"))
                 -- bitmap direto com tiling 2: desde a #163 o tiling vai para o glTF, sem aviso de escala
                 local mDir = CoronaLegacyMtl()
                 mDir.name = "mat_dir"
@@ -328,6 +329,92 @@ global InLab_CaminhoTextura, InLab_CheckTexture
                 logsCapturados = #()
                 local cMx = coordsDe (mapaBaseDe (InLab_ConverterCoronaMtl mMx 64 true))
                 checar ("#169: procedural com canais misturados fica no canal 1 e avisa (" + cMx + ")") (cMx == "1.00x1.00 off 0.00,0.00 ch1" and avisou "canais diferentes")
+
+                -- ===== 8b. PROCEDURAL EM VOLTA DE BITMAP COM TILING (13/10/2026, #172) =====
+                -- Textura em gradiente (R = x, G = y) para conferir que o bake é UM ladrilho.
+                local arqG = (getDir #temp) + "\\inlab_t172.png"
+                local bmG = bitmap 16 16 filename:arqG
+                for y = 0 to 15 do setPixels bmG [0, y] (for x = 0 to 15 collect (color (x * 16) (y * 16) 0))
+                save bmG ; close bmG
+                -- Color_Correction em volta de Bitmaptexture com tiling 0,7 e offset 0,1
+                local mK1 = CoronaLegacyMtl()
+                mK1.name = "mat_p172a"
+                local ccP1 = Color_Correction()
+                local bP1 = Bitmaptexture filename:arqG
+                bP1.coords.U_Tiling = 0.7 ; bP1.coords.V_Tiling = 0.7 ; bP1.coords.U_Offset = 0.1
+                ccP1.map = bP1
+                mK1.texmapDiffuse = ccP1
+                logsCapturados = #()
+                local tK1 = mapaBaseDe (InLab_ConverterCoronaMtl mK1 16 true)
+                local cK1 = coordsDe tK1
+                checar ("#172: Color_Correction de bitmap com tiling 0,7 leva a transformação (" + cK1 + ")") (cK1 == "0.70x0.70 off 0.10,0.00 ch1")
+                checar "#172: e não avisa emenda" (not (avisou "ladrilho bakeado não fecha"))
+                checar "#172: o bitmap original continua com tiling 0,7 e offset 0,1" (bP1.coords.U_Tiling == 0.7 and bP1.coords.V_Tiling == 0.7 and bP1.coords.U_Offset == 0.1)
+                -- O bake é um ladrilho: igual ao bake do bitmap sozinho com tiling 1, pelo
+                -- mesmo caminho (o Color_Correction padrão não muda a cor). Comparar com o
+                -- PNG de origem não serve: o openBitmap relê o PNG com gama (64 vira 136).
+                local arqRef = InLab_BakeTexmap (Bitmaptexture filename:arqG) "ref_p172" 16
+                local difP1 = 999
+                if tK1 != undefined and doesFileExist tK1.filename and arqRef != undefined do
+                (
+                    local bA = openBitmap arqRef, bB = openBitmap tK1.filename
+                    difP1 = 0
+                    for y = 0 to 15 do
+                    (
+                        local la = getPixels bA [0, y] 16, lb = getPixels bB [0, y] 16
+                        for x = 1 to 16 do difP1 = amax difP1 (abs (la[x].r - lb[x].r)) (abs (la[x].g - lb[x].g))
+                    )
+                    close bA ; close bB
+                    try ( deleteFile arqRef ) catch ()
+                )
+                checar ("#172: o bake é um ladrilho da textura (diferença máxima " + difP1 as string + ")") (difP1 <= 2)
+                -- CoronaBitmap com uvwScale 2,5 dentro de procedural
+                local mK2 = CoronaLegacyMtl()
+                mK2.name = "mat_p172b"
+                local ccP2 = Color_Correction()
+                local cbP2 = CoronaBitmap()
+                cbP2.filename = arqG
+                cbP2.realWorldScale = false
+                cbP2.uvwScale = [2.5, 2.5, 1]
+                ccP2.map = cbP2
+                mK2.texmapDiffuse = ccP2
+                local cK2 = coordsDe (mapaBaseDe (InLab_ConverterCoronaMtl mK2 16 true))
+                checar ("#172: CoronaBitmap 2,5 dentro de procedural leva a transformação (" + cK2 + ")") (cK2 == "2.50x2.50 off 0.00,0.00 ch1")
+                -- Dois bitmaps com a MESMA transformação: também vale
+                local mK3 = CoronaLegacyMtl()
+                mK3.name = "mat_p172c"
+                local mixP3 = Mix()
+                local bP3a = Bitmaptexture filename:arqG, bP3b = Bitmaptexture filename:arqG
+                bP3a.coords.U_Tiling = 0.7 ; bP3a.coords.V_Tiling = 0.7
+                bP3b.coords.U_Tiling = 0.7 ; bP3b.coords.V_Tiling = 0.7
+                mixP3.map1 = bP3a ; mixP3.map2 = bP3b
+                mK3.texmapDiffuse = mixP3
+                local cK3 = coordsDe (mapaBaseDe (InLab_ConverterCoronaMtl mK3 16 true))
+                checar ("#172: dois bitmaps com o mesmo tiling levam a transformação (" + cK3 + ")") (cK3 == "0.70x0.70 off 0.00,0.00 ch1")
+                -- Tilings diferentes: continua um ladrilho 0–1, com aviso
+                local mK4 = CoronaLegacyMtl()
+                mK4.name = "mat_p172d"
+                local mixP4 = Mix()
+                local bP4a = Bitmaptexture filename:arqG, bP4b = Bitmaptexture filename:arqG
+                bP4a.coords.U_Tiling = 0.7 ; bP4a.coords.V_Tiling = 0.7
+                bP4b.coords.U_Tiling = 1.3 ; bP4b.coords.V_Tiling = 1.3
+                mixP4.map1 = bP4a ; mixP4.map2 = bP4b
+                mK4.texmapDiffuse = mixP4
+                logsCapturados = #()
+                local cK4 = coordsDe (mapaBaseDe (InLab_ConverterCoronaMtl mK4 16 true))
+                checar ("#172: bitmaps com tilings diferentes ficam no 0–1 e avisam (" + cK4 + ")") (cK4 == "1.00x1.00 off 0.00,0.00 ch1" and avisou "mat_p172d (base color): inlab_t172.png com tiling")
+                -- Outro mapa de UV (Checker) junto: a transformação não pode ir para ele, continua o aviso
+                local mK5 = CoronaLegacyMtl()
+                mK5.name = "mat_p172e"
+                local mixP5 = Mix()
+                local bP5 = Bitmaptexture filename:arqG
+                bP5.coords.U_Tiling = 0.7 ; bP5.coords.V_Tiling = 0.7
+                mixP5.map1 = bP5 ; mixP5.map2 = Checker()
+                mK5.texmapDiffuse = mixP5
+                logsCapturados = #()
+                local cK5 = coordsDe (mapaBaseDe (InLab_ConverterCoronaMtl mK5 16 true))
+                checar ("#172: com Checker junto fica no 0–1 e avisa (" + cK5 + ")") (cK5 == "1.00x1.00 off 0.00,0.00 ch1" and avisou "mat_p172e (base color): inlab_t172.png com tiling")
+                try ( deleteFile arqG ) catch ()
                 try ( deleteFile arqT ) catch ()
 
                 -- ===== 9. CAMINHO PELOS MAP PATHS E TEXTURA AUSENTE (09/10/2026, #162) =====

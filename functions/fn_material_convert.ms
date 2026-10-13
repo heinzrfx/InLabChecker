@@ -105,6 +105,14 @@
  09/10/2026 (issue #169): procedural bakeado vai para o canal dos bitmaps de
  dentro dele, se todos usam o mesmo (o RWF põe o conteúdo do Triplanar no
  canal 2 quando há bitmap em Real-World no canal 1).
+ 13/10/2026 (issue #172): procedural cujos bitmaps têm todos a mesma
+ transformação (Color_Correction em volta de um tecido com tiling 0,7 ou
+ 2,5, no Puff Dorset e no Puff Pol) é bakeado como um ladrilho, numa cópia
+ com os bitmaps sem tiling (InLab_ProceduralSemTransform; `copy` duplica a
+ árvore), e a transformação vai para o glTF (InLab_TransformComumDoProcedural).
+ Antes o ladrilho 0–1 não fechava e o GLB tinha emenda. Continuam só com
+ aviso: bitmaps com tilings ou canais diferentes, outro mapa de UV junto
+ (Checker, Gradient) e Real-World; isso pede bake sobre o UV da peça.
 ================================================================================
 */
 
@@ -242,7 +250,7 @@ fn InLab_ArvoreDeMapas tm acum =
     acum
 )
 
-global InLab_AvisosDoSlot
+global InLab_AvisosDoSlot, InLab_TransformComumDoProcedural
 fn InLab_AvisosDoSlot tm nomeMtl rotulo =
 (
     local n = 0
@@ -253,6 +261,9 @@ fn InLab_AvisosDoSlot tm nomeMtl rotulo =
         local arvore = InLab_ArvoreDeMapas tm #()
         local vistos = #()
         local triplanar = false, falloffs = false, xyz = #(), tiling = #()
+        -- #172: procedural cujos bitmaps têm a mesma transformação leva o tiling
+        -- para o glTF (bake de um ladrilho): não há emenda a avisar.
+        local procComum = if ehBitmap then undefined else (InLab_TransformComumDoProcedural tm)
         for t in arvore where findItem vistos t == 0 do
         (
             append vistos t
@@ -271,7 +282,7 @@ fn InLab_AvisosDoSlot tm nomeMtl rotulo =
                 local inteiro = (abs (tu - (floor (tu + 0.5)))) < 1e-3 and (abs (tv - (floor (tv + 0.5)))) < 1e-3
                 -- #163: o bitmap direto leva o tiling para o glTF; só o de dentro
                 -- de procedural (bakeado no 0–1) avisa.
-                if not (ehBitmap and t == tm) and not inteiro do
+                if not (ehBitmap and t == tm) and not inteiro and procComum == undefined do
                     append tiling (nome + " com tiling " + (formattedPrint tu format:".2f") + "×" + (formattedPrint tv format:".2f") + " dentro de procedural: o ladrilho bakeado não fecha (emenda no GLB)")
             )
         )
@@ -355,10 +366,9 @@ fn InLab_AplicarTransform t bmp =
     bmp
 )
 
--- Cópia do bitmap sem tiling nem offset (um ladrilho), para bake/composição.
-fn InLab_BitmapSemTransform tm =
+-- Zera tiling e offset do bitmap `c` (no próprio mapa).
+fn InLab_ZerarTransform c =
 (
-    local c = copy tm
     if classof c == Bitmaptexture then
     (
         c.coords.U_Tiling = 1.0 ; c.coords.V_Tiling = 1.0
@@ -369,6 +379,42 @@ fn InLab_BitmapSemTransform tm =
         try ( c.uvwScale = [1, 1, 1] ) catch ()
         try ( c.uvwOffset = [0, 0, 0] ) catch ()
     )
+    c
+)
+
+-- Cópia do bitmap sem tiling nem offset (um ladrilho), para bake/composição.
+fn InLab_BitmapSemTransform tm = InLab_ZerarTransform (copy tm)
+
+--------------------------------------------------------------------------------
+-- 13/10/2026 (issue #172): transformação que os bitmaps de dentro de um
+-- procedural têm em comum. Ela pode sair do bake (um ladrilho) e ir para o
+-- glTF quando todo mapa da árvore que lê o UV é bitmap, todos com o mesmo
+-- tiling, offset e canal, fora de Real-World e não identidade. Outro mapa de
+-- UV (Checker, Gradient...) receberia o tiling junto: aí devolve undefined.
+--------------------------------------------------------------------------------
+fn InLab_TransformComumDoProcedural tm =
+(
+    local comum = undefined, ok = true
+    for t in (InLab_ArvoreDeMapas tm #()) while ok do
+    (
+        local trt = InLab_TransformDoBitmap t
+        if trt == undefined then
+        (
+            if (try ( t.coords ) catch ( undefined )) != undefined do ok = false
+        )
+        else if trt[6] then ok = false
+        else if comum == undefined then comum = trt
+        else if (for k = 1 to 5 where (abs (trt[k] - comum[k])) > 1e-4 collect k).count > 0 do ok = false
+    )
+    if ok and not (InLab_TransformIdentidade comum) then comum else undefined
+)
+
+-- Cópia do procedural (a árvore inteira: `copy` duplica os mapas de dentro)
+-- com os bitmaps sem tiling nem offset.
+fn InLab_ProceduralSemTransform tm =
+(
+    local c = copy tm
+    for t in (InLab_ArvoreDeMapas c #()) where (InLab_TransformDoBitmap t) != undefined do InLab_ZerarTransform t
     c
 )
 
@@ -443,6 +489,17 @@ fn InLab_TexmapParaGLTF texmap nomeBase tamanho fazerBake inverter:false precisa
         -- transformação vai para o resultado.
         local trBake = if tr != undefined and not (InLab_TransformIdentidade tr) then tr else undefined
         if trBake != undefined do fonte = InLab_BitmapSemTransform texmap
+        -- #172: idem para o procedural cujos bitmaps têm a mesma transformação
+        -- (Color_Correction em volta de um tecido com tiling 0,7): sem emenda.
+        if not ehBitmap do
+        (
+            trBake = InLab_TransformComumDoProcedural texmap
+            if trBake != undefined do
+            (
+                fonte = InLab_ProceduralSemTransform texmap
+                InLab_Log (nomeBase + ": procedural bakeado como um ladrilho; tiling " + (formattedPrint trBake[1] format:".2f") + "×" + (formattedPrint trBake[2] format:".2f") + " transferido para o glTF (KHR_texture_transform).") tipo:#ok
+            )
+        )
         if inverter do
         (
             -- Output map com invert: converte mapa de glossiness em roughness.
