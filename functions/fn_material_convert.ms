@@ -113,6 +113,12 @@
  Antes o ladrilho 0–1 não fechava e o GLB tinha emenda. Continuam só com
  aviso: bitmaps com tilings ou canais diferentes, outro mapa de UV junto
  (Checker, Gradient) e Real-World; isso pede bake sobre o UV da peça.
+ 14/10/2026: Converter num Max recém-aberto dava "Call needs function or
+ class, got: undefined" (linha 294) em todo slot com procedural.
+ InLab_AvisosDoSlot chamava InLab_TransformDoBitmap, declarado global só
+ mais abaixo: no 1º fileIn o nome virou local undefined (num reload o global
+ já existe, por isso passou nos testes). Agora ele é pré-declarado junto com
+ InLab_AvisosDoSlot; tests	est_globais_adiantados.ms confere a regra.
 ================================================================================
 */
 
@@ -250,7 +256,7 @@ fn InLab_ArvoreDeMapas tm acum =
     acum
 )
 
-global InLab_AvisosDoSlot, InLab_TransformComumDoProcedural
+global InLab_AvisosDoSlot, InLab_TransformComumDoProcedural, InLab_TransformDoBitmap
 fn InLab_AvisosDoSlot tm nomeMtl rotulo =
 (
     local n = 0

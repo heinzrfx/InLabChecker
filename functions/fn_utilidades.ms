@@ -52,6 +52,10 @@
  polígonos do Max pra triângulos, a mesma contagem que o GLB exporta; usar
  outra unidade aqui deixaria o rótulo do limite (ui\rollout_main.ms) e as
  verificações discordando sobre o mesmo polyMax).
+ 14/10/2026: InLab_ObjetosVerificacao é de verificationserif_orquestrador.ms,
+ carregado depois deste módulo: sem o `global` antes de
+ InLab_FindObjectsPesados, o Find Objects sem argumento chamava undefined num
+ Max recém-aberto (ver tests	est_globais_adiantados.ms).
 ================================================================================
 */
 
@@ -212,6 +216,7 @@ fn InLab_FindCompararPeso a b = (b[2] - a[2])
 -- Critério A (issue #47): com família ativa, pesado é quem passa de
 -- INLAB_FIND_FRACAO_POLYMAX do polyMax da família, em triângulos. Sem
 -- família ativa: os INLAB_FIND_TOP_N objetos com mais triângulos da cena.
+global InLab_ObjetosVerificacao -- verificationserif_orquestrador.ms
 fn InLab_FindObjectsPesados objs:undefined =
 (
     if objs == undefined do objs = InLab_ObjetosVerificacao()

@@ -109,6 +109,10 @@
  09/10/2026 (issue #136): busca acima do dropdown Produto. InLab_Produto_Filtrar
  devolve os produtos cujo "cod_est – nome" contém o termo, sem diferenciar
  maiúsculas nem acentos (InLab_Produto_Normalizar).
+ 14/10/2026: InLab_Produto_AvisosMateriaPrima chamava InLab_Produto_Rotulo
+ antes do `global` dele; num Max recém-aberto, parte sem matéria-prima dava
+ "Call needs function or class". O global agora vem antes (ver
+ tests	est_globais_adiantados.ms).
 ================================================================================
 */
 
@@ -391,7 +395,7 @@ fn InLab_Produto_PartesSemMateriaPrima produto =
         (local mp = InLab_JSON_Obter p "materia_prima"; isKindOf mp Array and (InLab_Produto_Texto mp "familia") == "" and (InLab_Produto_Texto mp "materia") == "") collect p
 )
 
-global InLab_Produto_AvisosMateriaPrima
+global InLab_Produto_AvisosMateriaPrima, InLab_Produto_Rotulo
 fn InLab_Produto_AvisosMateriaPrima produto =
 (
     for p in (InLab_Produto_PartesSemMateriaPrima produto) do
