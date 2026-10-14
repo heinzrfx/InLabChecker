@@ -82,6 +82,9 @@
  08/10/2026 (issue #129): sai o botão Real World Fix da seção UV e Texturas.
  O RWF roda dentro do Auto UV (antes do Unwrap, sem colapsar) e o Desfazer
  UV desfaz os dois. Limpar UV e Desfazer UV ficam lado a lado.
+ 14/10/2026 (#185, ajustes do Rafa, item 5): o botão Real World Fix volta,
+ acima do Auto UV ("1 · Real World Fix", "2 · Auto UV"); o Auto UV fica
+ bloqueado até o objeto passar pelo RWF.
 
  08/10/2026 (issue #138): sai o dropdown Família da seção Produto. A família
  ativa é a "natureza" do produto escolhido (InLab_Produto_Familia), mostrada
@@ -508,7 +511,11 @@ rollout InLabSecUV "UV e Texturas" width:420
     -- flatten fica sem rótulo, ao lado do botão Auto UV.
     -- 09/10/2026 (issue #131): saiu o dropdown de resolução; o bake é sempre
     -- 1024 (INLAB_RESOLUCAO_BAKE, functions\fn_autouv.ms).
-    button btnF2 "Auto UV" width:130 height:24 align:#left offset:[2,0] across:2 tooltip:"Cria um UV próprio para bake de textura e sombra nos objetos selecionados. Antes, converte a escala real dos mapas (Real World Fix) para funcionar na web."
+    -- 14/10/2026 (#185, ajustes do Rafa, item 5): o Real World Fix volta a ter
+    -- botão, em cima, e vem antes do Auto UV: o Auto UV fica bloqueado nos
+    -- objetos que ainda não passaram por ele (InLab_RWF_Feitos).
+    button btnRWF "1 · Real World Fix" width:395 height:24 align:#left offset:[2,0] tooltip:"Converte a escala real dos mapas (Real-World e Triplanar) para funcionar na web. Rode antes do Auto UV."
+    button btnF2 "2 · Auto UV" width:130 height:24 align:#left offset:[2,0] across:2 tooltip:"Cria um UV próprio para bake de textura e sombra nos objetos selecionados. Só roda depois do Real World Fix."
     spinner spnAnguloUV "" range:[10, 90, 55] type:#float fieldWidth:45 align:#left offset:[-63,3] tooltip:"Ângulo de corte (°). Quanto maior, menos cortes no UV."
     -- 22/Set: o Check Texture e o Verificar Escala saíram da aba (as funções
     -- continuam em functions\, a V-19 usa INLAB_UNIDADE_PADRAO). No lugar,
@@ -516,9 +523,15 @@ rollout InLabSecUV "UV e Texturas" width:420
     -- Desfazer UV (30/09/2026, #58).
     -- 08/10/2026 (issue #129): o Real World Fix roda dentro do Auto UV e o
     -- botão saiu; ficam Limpar e Desfazer UV (que desfaz também o RWF).
+    -- 14/10/2026 (#185): o botão voltou (acima do Auto UV).
     button btnF2Clean "Limpar UV" width:195 height:24 align:#left offset:[2,0] across:2 tooltip:"Remove o UV de bake dos objetos selecionados. O UV do material fica."
     button btnF2Reverter "Desfazer UV" width:195 height:24 align:#right offset:[-1,0] tooltip:"Volta os objetos ao que eram antes do Auto UV, inclusive a escala real dos mapas."
 
+    on btnRWF pressed do
+    (
+        local objs = InLab_SelecaoValida()
+        if objs.count > 0 do InLab_RWF_Rodar objs
+    )
     on btnF2 pressed do
     (
         local objs = InLab_SelecaoValida()

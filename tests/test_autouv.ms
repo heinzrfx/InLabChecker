@@ -13,6 +13,7 @@ global InLab_IlhasDoUnwrap, InLab_DistorcaoIlhas, InLab_UnfoldComGuarda
 global InLab_AutoUV_ForcarFalha, InLab_CanalDoModificadorUV
 global INLAB_CANAL_UV_MATERIAL, INLAB_CANAL_UV_BAKE, INLAB_UV_MEDIR_MAX_FACES, INLAB_UV_DISTORCAO_MAX_SOLVE
 global INLAB_TESTE_SAIDA, INLAB_TESTE_FALHAS
+global InLab_RWF_Feitos, InLab_RWF_Pendentes
 (
     local dirTeste = getFilenamePath (getSourceFileName())
     local raiz = substring dirTeste 1 (dirTeste.count - 6) -- tira "tests\"
@@ -33,6 +34,7 @@ global INLAB_TESTE_SAIDA, INLAB_TESTE_FALHAS
     )
 
     local logOriginal = InLab_Log
+    local pendentesReal = undefined -- #185: o teste troca InLab_RWF_Pendentes e devolve no fim
     InLab_Log = fn _logTeste msg tipo:#info = ( format "      [LOG %] %\n" tipo msg to:INLAB_TESTE_SAIDA; flush INLAB_TESTE_SAIDA )
     local criados = #()
 
@@ -41,6 +43,16 @@ global INLAB_TESTE_SAIDA, INLAB_TESTE_FALHAS
         fileIn (raiz + @"core\utils.ms")
         fileIn (raiz + @"verifications\verif_uv.ms")
         fileIn (raiz + @"functions\fn_autouv.ms")
+
+        -- #185: sem o Real World Fix antes, o Auto UV não roda. O resto deste
+        -- teste é do Unwrap: libera todos (a ordem é de test_realworldfix.ms).
+        local bTrava = Box name:"t_trava" mapcoords:true
+        InLab_RWF_Feitos = #()
+        checar "#185: Auto UV sem Real World Fix antes não processa nada" ((InLab_AutoUV #(bTrava) resolucao:1024) == 0)
+        checar "#185: e não põe Unwrap" ((for m in bTrava.modifiers where m.name == "InLab AutoUV" collect m).count == 0)
+        delete bTrava
+        pendentesReal = InLab_RWF_Pendentes
+        InLab_RWF_Pendentes = fn _semPendentes objs = #()
 
         -- 0. PADDING POR RESOLUÇÃO
         checar "Padding 1K = 4 px" (abs ((InLab_PaddingUV 1024) - 4.0 / 1024) < 1e-9)
@@ -316,6 +328,7 @@ global INLAB_TESTE_SAIDA, INLAB_TESTE_FALHAS
 
     for o in criados where isValidNode o do delete o
     InLab_Log = logOriginal
+    if pendentesReal != undefined do InLab_RWF_Pendentes = pendentesReal
     linha ("\n" + (if INLAB_TESTE_FALHAS == 0 then "TUDO OK" else (INLAB_TESTE_FALHAS as string + " FALHA(S)")))
     close INLAB_TESTE_SAIDA
     format "Teste concluído — %\n" arqSaida
