@@ -47,7 +47,9 @@ Write-Host "Lista: $n produtos · exportada em $exportado"
 $destino = Join-Path $raiz "dados\produtos.json"
 New-Item -ItemType Directory -Force -Path (Split-Path $destino) | Out-Null
 Copy-Item -LiteralPath (Resolve-Path -LiteralPath $Json) -Destination $destino -Force
-$listaMudou = [bool](git status --porcelain dados/produtos.json)
+# git diff normaliza o fim de linha (o export vem em LF, o checkout em CRLF).
+git diff --quiet -- dados/produtos.json
+$listaMudou = ($LASTEXITCODE -ne 0)
 
 # 4. versão
 $arqVersao = Join-Path $raiz "core\versao.ms"
