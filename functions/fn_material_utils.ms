@@ -28,8 +28,58 @@
  da UI na issue #55 e ficaram sem nenhuma chamada (grep confirmou). Detach
  por Material é o único uso que sobra deste arquivo (migrou para Utilidades
  Rápidas na mesma #55).
+
+ 14/10/2026 (ajustes do Rafa, item 1): InLab_Mat_SemMaterial acha peça sem
+ material e material com cara do "fallback Material" do exportador glTF (base
+ color preto, metálico 1, rugosidade 1, sem mapa). Um bloco do teste ponta a
+ ponta saiu assim: GLB preto e a plataforma sem material_id para casar a
+ parte. Usada pela V-41 (verif_materiais.ms) e pelo Exportar
+ (fn_export_gltf.ms), que não abre o exportador enquanto houver caso.
 ================================================================================
 */
+
+--------------------------------------------------------------------------------
+-- PEÇA SEM MATERIAL E MATERIAL FALLBACK
+--------------------------------------------------------------------------------
+
+-- Material com cara do fallback do exportador. Só glTF Material: é o que
+-- vai para o GLB depois da conversão.
+fn InLab_Mat_EhFallback m =
+(
+    if m == undefined then false
+    else if (matchPattern m.name pattern:"fallback*") then true
+    else if not (InLab_ClasseContem m "gltf") then false
+    else
+    (
+        local cor = InLab_PropSafe m #(#baseColor, #baseColorFactor, #base_color)
+        local met = InLab_PropSafe m #(#metalness, #metallic, #metallicFactor)
+        local rug = InLab_PropSafe m #(#roughness, #roughnessFactor)
+        local semMapa = (InLab_PropSafe m #(#baseColorMap, #baseColorTexmap, #base_color_map)) == undefined and \
+                        (InLab_PropSafe m #(#metalnessMap, #metallicMap)) == undefined and \
+                        (InLab_PropSafe m #(#roughnessMap, #roughnessTexmap)) == undefined
+        classof cor == Color and cor.r + cor.g + cor.b < 3 and \
+            met != undefined and met >= 0.99 and rug != undefined and rug >= 0.99 and semMapa
+    )
+)
+
+-- #(semMaterial, fallback): nomes das peças de geometria sem material e
+-- "peça: material" das que usam fallback (direto ou como sub-material).
+fn InLab_Mat_SemMaterial objs =
+(
+    local semMat = #()
+    local fallback = #()
+    for o in objs where InLab_EhGeometria o do
+    (
+        local m = o.material
+        if m == undefined then append semMat o.name
+        else
+        (
+            local mats = if classof m == Multimaterial then (for s in m.materialList where s != undefined collect s) else #(m)
+            for s in mats where InLab_Mat_EhFallback s do append fallback (o.name + ": " + s.name)
+        )
+    )
+    #(semMat, fallback)
+)
 
 --------------------------------------------------------------------------------
 -- DETACH POR MATERIAL, COM PROPAGAÇÃO DE IDS

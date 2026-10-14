@@ -13,6 +13,7 @@
    Grupo 5 (UV)             → V-14/15/16                          [ENTREGUE 05/10/2026 — verif_mapeamento.ms, issue #101; V-29/V-39 ficam para o v2]
    Grupo 6 (pesadas)        → V-07, V-08/09/10/13                [ENTREGUE 05/10/2026 — verif_malha.ms, issue #102]
    Grupo 7 (materiais)      → V-23/24/25, V-35/36/37, V-38       [ENTREGUE 06/10/2026 — verif_materiais.ms, issue #103]
+                              V-41 (peça sem material/fallback)  [14/10/2026 — ajustes do Rafa, item 1]
 
  REVISÃO DO GRUPO 3 (auditoria pós-entrega, corrigindo divergências da spec):
    V-03  → agora é UMA verificação só: total de polígonos dentro da faixa
@@ -171,6 +172,7 @@ fn InLab_RodarVerificacoes cfg tampoAcessorio:false codEst:"" nomeProduto:"" pro
         InLab_V36_Cristal mats
         InLab_V37_ZonasEstofado cfg uso produto:produto
         InLab_V38_TampoAcessorio cfg uso produto:produto
+        InLab_V41_PecasComMaterial objetos
 
         -- ===== Grupo 4 · animação avançada (v2) =====
         InLab_Log "Grupo 4 (animação avançada) fica para o v2 — relatório parcial." tipo:#warn

@@ -60,7 +60,7 @@ global INLAB_TESTE_SAIDA, INLAB_TESTE_FALHAS
                    @"functions\fn_otim_nucleo.ms",
                    @"functions\fn_realworldscale.ms",
                    @"functions\fn_json.ms", @"functions\fn_renomear_produto.ms", @"functions\fn_export_gltf.ms",
-                   @"functions\fn_material_convert.ms",
+                   @"functions\fn_material_convert.ms", @"functions\fn_material_utils.ms",
                    @"verifications\verif_peso_poly.ms", @"verifications\verif_pivot.ms",
                    @"verifications\verif_nomenclatura.ms", @"verifications\verif_geometria.ms",
                    @"verifications\verif_malha.ms", @"verifications\verif_animacao.ms",

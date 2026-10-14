@@ -4,6 +4,7 @@
  RODAR NUMA CENA VAZIA (File > New): cria e apaga os objetos de cada caso.
  Resultado: <pasta temp do Max>\inlab_test_verif_materiais.txt (PASS/FAIL por item).
  09/10/2026 (issue #145): V-35/V-36 pela matéria-prima das partes do JSON.
+ 14/10/2026 (ajustes do Rafa, item 1): V-41 e o bloqueio do Exportar.
 */
 -- Declarados ANTES do bloco: o bloco é compilado antes dos fileIn rodarem.
 global InLab_Log, InLab_VerifResults, InLab_ResetarResultados, InLab_ObterFamilia
@@ -14,6 +15,7 @@ global InLab_V35_Palha, InLab_V36_Cristal, InLab_V37_ZonasEstofado, InLab_V38_Ta
 global InLab_TampoAcessorioProduto, InLab_AprovacaoFinal
 global INLAB_TESTE_SAIDA, INLAB_TESTE_FALHAS
 global InLab_UltimaConversao, InLab_ResolverClasseGLTF, ConversaoRecord
+global InLab_V41_PecasComMaterial, InLab_Mat_SemMaterial, InLab_Mat_EhFallback, InLab_AbrirExportadorRealTime
 -- Base cuja leitura de slot lança: getNumSubTexmaps de um inteiro dá erro.
 struct TesteSlotQuebrado ( texmapDiffuse = 5, texmapReflectGlossiness = 5, texmapBump = 5, texmapOpacity = 5 )
 (
@@ -52,6 +54,7 @@ struct TesteSlotQuebrado ( texmapDiffuse = 5, texmapReflectGlossiness = 5, texma
                    @"core\log.ms", @"core\utils.ms",
                    @"familias\familia_corpo_unico.ms", @"familias\familia_pernas_tampo.ms", @"familias\familia_estrutura_estofado.ms",
                    @"functions\fn_json.ms", @"functions\fn_renomear_produto.ms", @"functions\fn_material_convert.ms",
+                   @"functions\fn_material_utils.ms", @"functions\fn_export_gltf.ms",
                    @"verifications\verif_materiais.ms") do
             fileIn (raiz + m)
         -- Depois dos fileIn: core\log.ms redefine InLab_Log.
@@ -445,6 +448,49 @@ struct TesteSlotQuebrado ( texmapDiffuse = 5, texmapReflectGlossiness = 5, texma
         k1.material = legacyCom "Outro material" (CoronaColor())
         checar "V-38: sem nenhuma parte do produto nas faces avisa para ver a V-20" ((rodar38 cfgUnico #(k1) prod) == #pass and tem (mensagemDe "V-38") "nenhuma parte do produto nas faces (ver V-20)")
         InLab_TampoAcessorioProduto = false
+        limparCena()
+
+        ---------------------------------------------------------------- V-41
+        -- Ajustes do Rafa, item 1: peça sem material e material fallback reprovam.
+        local w1 = caixa "0091_a" [0, 0, 0]
+        w1.material = legacyCom "ART_P_Estrutura" (CoronaColor())
+        InLab_ResetarResultados()
+        InLab_V41_PecasComMaterial #(w1)
+        checar "V-41: peça com material passa" ((statusDe "V-41") == #pass)
+        local w2 = caixa "0091_b" [60, 0, 0]
+        InLab_ResetarResultados()
+        InLab_V41_PecasComMaterial #(w1, w2)
+        checar ("V-41: peça sem material reprova ('" + mensagemDe "V-41" + "')") ((statusDe "V-41") == #fail and tem (mensagemDe "V-41") "0091_b: sem material")
+        checar "V-41 é crítica" (for r in InLab_VerifResults where r.id == "V-41" collect r.critico)[1]
+        checar "Exportar bloqueia com peça sem material" ((InLab_AbrirExportadorRealTime #(w1, w2) somenteSelecao:true) == false)
+        local cls = InLab_ResolverClasseGLTF()
+        if cls == undefined then checar "V-41 fallback — pulado: sem glTF Material" true
+        else
+        (
+            local gf = cls()
+            gf.name = "ART_P_Assento"
+            gf.baseColor = black ; gf.metalness = 1.0 ; gf.roughness = 1.0
+            checar "glTF preto, metálico 1, rugosidade 1, sem mapa é fallback" (InLab_Mat_EhFallback gf)
+            local gp = cls()
+            gp.baseColor = black ; gp.metalness = 1.0 ; gp.roughness = 0.4
+            checar "glTF preto metálico com rugosidade 0,4 não é fallback" (not (InLab_Mat_EhFallback gp))
+            local gm = cls()
+            gm.baseColor = black ; gm.metalness = 1.0 ; gm.roughness = 1.0
+            gm.roughnessMap = Bitmaptexture()
+            checar "glTF com mapa de rugosidade não é fallback" (not (InLab_Mat_EhFallback gm))
+            local gn = cls()
+            gn.name = "fallback Material"
+            checar "nome 'fallback Material' é fallback" (InLab_Mat_EhFallback gn)
+            w2.material = gf
+            InLab_ResetarResultados()
+            InLab_V41_PecasComMaterial #(w1, w2)
+            checar ("V-41: material fallback reprova ('" + mensagemDe "V-41" + "')") ((statusDe "V-41") == #fail and tem (mensagemDe "V-41") "0091_b: ART_P_Assento (fallback")
+            local mm = Multimaterial numsubs:2
+            mm.materialList[1] = legacyCom "ART_P_Estrutura" (CoronaColor())
+            mm.materialList[2] = gf
+            w2.material = mm
+            checar "Multi/Sub com sub-material fallback entra na lista" (((InLab_Mat_SemMaterial #(w2))[2]).count == 1)
+        )
         limparCena()
     )
     catch

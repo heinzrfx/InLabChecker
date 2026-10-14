@@ -7,6 +7,8 @@
  Max (confirmado na sondagem da issue #49). Scripting > Run Script... > este
  arquivo.
  Resultado: <pasta temp do Max>\inlab_test_export_gltf.txt (PASS/FAIL por item).
+ 14/10/2026 (#181): as caixas ganham material (o Exportar não abre com peça
+ sem material) e há um caso do bloqueio.
 */
 -- Declarados ANTES do bloco: o bloco é compilado antes dos fileIn rodarem.
 global InLab_Log
@@ -32,7 +34,9 @@ global INLAB_TESTE_SAIDA, INLAB_TESTE_FALHAS
 
     try
     (
-        fileIn (raiz + @"functions\fn_export_gltf.ms")
+        for m in #(@"core\utils.ms", @"functions\fn_material_convert.ms", @"functions\fn_material_utils.ms",
+                   @"functions\fn_export_gltf.ms") do
+            fileIn (raiz + m)
 
         local temGameExporter = (try (GameExporterShown(); true) catch (false))
         if not temGameExporter then
@@ -50,6 +54,12 @@ global INLAB_TESTE_SAIDA, INLAB_TESTE_FALHAS
             local b1 = Box name:"CaixaA" pos:[0,0,0]
             local b2 = Box name:"CaixaB" pos:[200,0,0]
             criados = #(b1, b2)
+
+            -- 2b. #181: peça sem material não abre o exportador.
+            checar "Sem material: retorno false" ((InLab_AbrirExportadorRealTime #(b1) somenteSelecao:true) == false)
+            checar "Sem material: exportador continua fechado" (GameExporterShown() == false)
+            b1.material = StandardMaterial name:"ART_P_A"
+            b2.material = StandardMaterial name:"ART_P_B"
 
             -- 3. MODO "CENA INTEIRA" (somenteSelecao:false) — issue #49: tinha
             -- que limpar a seleção anterior antes de abrir a janela.

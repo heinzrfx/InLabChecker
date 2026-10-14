@@ -18,6 +18,8 @@
  InLab_UltimoRelatorio guarda #(json, html).
  Escrita por System.IO.File.WriteAllText com UTF8Encoding(false): o createFile
  do MaxScript não é confiável para acento e o MCP bloqueia createFile.
+ 14/10/2026 (ajustes do Rafa, item 1): o JSON abre com "formato":
+ "inlabchecker.result/v1", o nome que a plataforma usa para ele.
 ================================================================================
 */
 
@@ -81,6 +83,7 @@ fn InLab_Relatorio_JSON cfg aprovado codEst:"" nomeProduto:"" =
     local q = InLab_Relatorio_JsonTexto
     local ss = stringStream ""
     format "{\n" to:ss
+    format "  \"formato\": \"inlabchecker.result/v1\",\n" to:ss
     format "  \"plugin\": \"InLabChecker\",\n" to:ss
     format "  \"versao_plugin\": %,\n" (q INLAB_VERSAO) to:ss
     format "  \"data\": %,\n" (q (InLab_Relatorio_Agora "yyyy-MM-dd'T'HH:mm:ss")) to:ss
