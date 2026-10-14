@@ -112,7 +112,7 @@
  14/10/2026: InLab_Produto_AvisosMateriaPrima chamava InLab_Produto_Rotulo
  antes do `global` dele; num Max recém-aberto, parte sem matéria-prima dava
  "Call needs function or class". O global agora vem antes (ver
- tests	est_globais_adiantados.ms).
+ tests\test_globais_adiantados.ms).
 ================================================================================
 */
 

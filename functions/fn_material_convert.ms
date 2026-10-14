@@ -118,7 +118,7 @@
  InLab_AvisosDoSlot chamava InLab_TransformDoBitmap, declarado global só
  mais abaixo: no 1º fileIn o nome virou local undefined (num reload o global
  já existe, por isso passou nos testes). Agora ele é pré-declarado junto com
- InLab_AvisosDoSlot; tests	est_globais_adiantados.ms confere a regra.
+ InLab_AvisosDoSlot; tests\test_globais_adiantados.ms confere a regra.
 ================================================================================
 */
 
