@@ -31,7 +31,7 @@ function Falhar($msg) { Write-Host "ERRO: $msg" -ForegroundColor Red; exit 1 }
 $branch = (git rev-parse --abbrev-ref HEAD).Trim()
 if ($branch -ne "main") { Falhar "está na branch '$branch'. Rode na main." }
 if (git status --porcelain --untracked-files=no) { Falhar "há mudança local sem commit. Faça o commit (ou descarte) antes." }
-git pull --ff-only origin main
+git pull --ff-only --tags origin main
 if ($LASTEXITCODE -ne 0) { Falhar "git pull falhou." }
 
 # 2. JSON válido
@@ -91,7 +91,9 @@ if ($LASTEXITCODE -ne 0) { Falhar "git push falhou." }
 $saida = Join-Path ([IO.Path]::GetTempPath()) ("inlab_release_" + $Versao)
 New-Item -ItemType Directory -Force -Path $saida | Out-Null
 & (Join-Path $PSScriptRoot "empacotar.ps1") -Ref HEAD -Saida $saida
-$notas = @("Versão da semana ($hoje).", "", "## Lista de produtos", "", "$n produtos · export de $exportado" + $(if ($listaMudou) { "" } else { " (sem mudança)" }))
+$linhaLista = "$n produtos · export de $exportado"
+if (-not $listaMudou) { $linhaLista += " (sem mudança)" }
+$notas = @("Versão da semana ($hoje).", "", "## Lista de produtos", "", $linhaLista)
 if ($commits.Count -gt 0) { $notas += @("", "## Mudanças desde $ultimaTag", "") + $commits }
 $notas += @("", "## Atualizar", "", "Clique na pastilha de versão, no topo do painel. Máquina nova: arraste o InLabChecker-v$Versao.mzp para o viewport.")
 $arqNotas = Join-Path $saida "notas.md"
