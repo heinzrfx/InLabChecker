@@ -52,6 +52,18 @@ fn InLab_V20_Lista nomes maximo:5 =
     txt
 )
 
+-- O .max (nome sem extensão) vale para o produto? cod_est, o cod_est do
+-- master (cópia de bloco_3d) ou uma variante de posição. 14/10/2026 (#184):
+-- também usado pelo Verificar para pedir o "salvar como <cod_est>.max".
+fn InLab_V20_ArquivoValido produto nomeArquivo =
+(
+    local cod = InLab_Produto_Texto produto "cod_est"
+    local base = InLab_Produto_BaseDaCopia produto
+    nomeArquivo != "" and \
+        ((findItem (InLab_Produto_Variantes produto) nomeArquivo) > 0 or (toLower nomeArquivo) == (toLower cod) or \
+         (base != "" and (toLower nomeArquivo) == (toLower base)))
+)
+
 -- produto: o produto escolhido na seção Produto (formato de InLab_ParseJSON).
 -- objetos: universo da verificação. nomeArquivo: só para teste (o padrão é
 -- o nome do .max aberto, sem extensão).
@@ -69,7 +81,7 @@ fn InLab_V20_Nomenclatura cfg produto:undefined objetos:#() nomeArquivo:unsuppli
         local ehVariante = (findItem variantes nomeArquivo) > 0
         if nomeArquivo == "" then
             append problemas ("cena não salva: o .max leva o código do produto (" + cod + ")")
-        else if not ehVariante and (toLower nomeArquivo) != (toLower cod) and (base == "" or (toLower nomeArquivo) != (toLower base)) do
+        else if not (InLab_V20_ArquivoValido produto nomeArquivo) do
             append problemas ("arquivo '" + nomeArquivo + "' não é o código do produto (" + cod + (if base != "" then " ou " + base + ", o master" else "") +
                                (if variantes.count > 0 then " nem uma variante: " + (InLab_V20_Lista variantes maximo:8) else "") + ")")
 

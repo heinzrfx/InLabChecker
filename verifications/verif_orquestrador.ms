@@ -70,20 +70,37 @@ fn InLab_ObjetosVerificacao =
 -- roda assim mesmo e a V-01 sai "não medido"; Cancelar → não roda.
 -- Devolve true para seguir, false para cancelar. resposta: só para teste
 -- (pula a caixa de diálogo, que é modal).
-fn InLab_SalvarAntesDeVerificar resposta:unsupplied =
+-- 14/10/2026 (#184): com produto escolhido e o .max fora do padrão (nem o
+-- cod_est, nem o master, nem uma variante — InLab_V20_ArquivoValido), a
+-- pergunta pede para salvar como <cod_est>.max: a V-20 compara o nome do
+-- arquivo. Sim → Salvar Como já com <cod_est>.max (na pasta do arquivo
+-- atual); Não → roda e a V-20 reprova. caminho: só para teste (pula o
+-- Salvar Como).
+fn InLab_SalvarAntesDeVerificar produto:undefined resposta:unsupplied caminho:unsupplied =
 (
     local nuncaSalva = (maxFileName == "")
-    if not nuncaSalva and not (getSaveRequired()) then true
+    local cod = if produto == undefined then "" else InLab_Produto_Texto produto "cod_est"
+    local foraDoPadrao = produto != undefined and cod != "" and not (InLab_V20_ArquivoValido produto (getFilenameFile maxFileName))
+    if not nuncaSalva and not (getSaveRequired()) and not foraDoPadrao then true
     else
     (
         if resposta == unsupplied do
-            resposta = yesNoCancelBox ((if nuncaSalva then "A cena ainda não foi salva." else "A cena tem alterações não salvas.") + \
-                "\n\nSalvar antes de verificar? Sem salvar, o peso do arquivo (V-01) não é medido.") title:"InLab · Verificações"
+            resposta = yesNoCancelBox \
+                (if foraDoPadrao then
+                    ("Salve o arquivo com o código do produto: " + cod + ".max\n\n" + \
+                     (if nuncaSalva then "A cena ainda não foi salva." else "O arquivo atual é " + maxFileName + ".") + \
+                     " A verificação confere o nome do arquivo (V-20) e o peso dele (V-01).\n\nSalvar como " + cod + ".max agora?")
+                 else
+                    ((if nuncaSalva then "A cena ainda não foi salva." else "A cena tem alterações não salvas.") + \
+                     "\n\nSalvar antes de verificar? Sem salvar, o peso do arquivo (V-01) não é medido.")) title:"InLab · Verificações"
         case resposta of
         (
             #yes:
             (
-                local caminho = if nuncaSalva then getMaxSaveFileName() else (maxFilePath + maxFileName)
+                if caminho == unsupplied do
+                    caminho = if foraDoPadrao then getMaxSaveFileName filename:(maxFilePath + cod + ".max")
+                              else if nuncaSalva then getMaxSaveFileName()
+                              else (maxFilePath + maxFileName)
                 if caminho == undefined then
                 (
                     InLab_Log "Salvar cancelado — verificação cancelada." tipo:#warn
@@ -92,6 +109,8 @@ fn InLab_SalvarAntesDeVerificar resposta:unsupplied =
                 else if saveMaxFile caminho quiet:true then
                 (
                     InLab_Log ("Cena salva antes de verificar: " + caminho) tipo:#ok
+                    if foraDoPadrao and not (InLab_V20_ArquivoValido produto (getFilenameFile caminho)) do
+                        InLab_Log ("Salvo com outro nome — a V-20 pede " + cod + ".max.") tipo:#warn
                     true
                 )
                 else
@@ -102,7 +121,10 @@ fn InLab_SalvarAntesDeVerificar resposta:unsupplied =
             )
             #no:
             (
-                InLab_Log "Verificando sem salvar — V-01 (peso do arquivo) não será medida." tipo:#warn
+                if foraDoPadrao then
+                    InLab_Log ("Verificando com o arquivo fora do padrão — a V-20 reprova até salvar como " + cod + ".max.") tipo:#warn
+                else
+                    InLab_Log "Verificando sem salvar — V-01 (peso do arquivo) não será medida." tipo:#warn
                 true
             )
             default:

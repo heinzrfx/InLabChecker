@@ -602,16 +602,20 @@ rollout InLabSecFase4 "Verificações" width:420
     (
         if InLab_FamiliaAtiva == undefined then
             InLab_Log "Sem família: importe o JSON e escolha o produto na seção Produto (a família vem do campo natureza)." tipo:#warn
-        else if InLab_SalvarAntesDeVerificar() do
+        else
         (
             -- Produto escolhido na seção Produto vai para o relatório (issue #37)
-            -- e para a V-20, que confere os nomes contra ele (issue #36).
+            -- e para a V-20, que confere os nomes contra ele (issue #36). #184:
+            -- com ele, o salvar pede <cod_est>.max se o arquivo está fora do padrão.
             local p = try (InLabSecProduto.produtoEscolhido()) catch undefined
-            local cod = if p == undefined then "" else InLab_Produto_Texto p "cod_est"
-            local nomeP = if p == undefined then "" else InLab_Produto_Texto p "nome"
-            InLab_ProgressoIniciar "Rodando verificações..."
-            InLab_RodarVerificacoes InLab_FamiliaAtiva tampoAcessorio:chkTampoAcess.checked codEst:cod nomeProduto:nomeP produto:p
-            InLab_ProgressoParar()
+            if InLab_SalvarAntesDeVerificar produto:p do
+            (
+                local cod = if p == undefined then "" else InLab_Produto_Texto p "cod_est"
+                local nomeP = if p == undefined then "" else InLab_Produto_Texto p "nome"
+                InLab_ProgressoIniciar "Rodando verificações..."
+                InLab_RodarVerificacoes InLab_FamiliaAtiva tampoAcessorio:chkTampoAcess.checked codEst:cod nomeProduto:nomeP produto:p
+                InLab_ProgressoParar()
+            )
         )
     )
 )
