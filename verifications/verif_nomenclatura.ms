@@ -109,7 +109,7 @@ fn InLab_V20_Nomenclatura cfg produto:undefined objetos:#() nomeArquivo:unsuppli
         InLab_RegistrarVerif "V-20" titulo (problemas.count == 0) msg critico:true
     )
     else
-        InLab_RegistrarVerif "V-20" titulo false "sem produto: importe o .json e escolha o produto na seção Produto" critico:true
+        InLab_RegistrarVerif "V-20" titulo false "sem produto: cole o cod_est na seção Produto" critico:true
 )
 
 -- V-21 · Sem acentos/espaços — apenas [A-Za-z0-9_] (spec v1.0 · seção 2.7).

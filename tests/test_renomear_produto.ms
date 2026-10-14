@@ -18,7 +18,7 @@ global InLab_Produto_PartesDeMaterial, InLab_Produto_Filtrar, InLab_Produto_Rotu
 global InLab_Produto_Variantes, InLab_Produto_IndicePorArquivo
 global InLab_Produto_BaseDaCopia, InLab_Produto_CopiasDe, InLab_Produto_MotivoBloqueio, InLab_Produto_AvisosDeBloco
 global InLab_Produto_PartesSemMateriaPrima, InLab_Produto_AvisosMateriaPrima
-global InLab_JSON_LerArquivoUTF8
+global InLab_JSON_LerArquivoUTF8, InLab_Produto_CarregarEmbutido, InLab_Produto_ResumoLista
 global INLAB_TESTE_SAIDA, INLAB_TESTE_FALHAS
 (
     local dirTeste = getFilenamePath (getSourceFileName())
@@ -471,6 +471,19 @@ global INLAB_TESTE_SAIDA, INLAB_TESTE_FALHAS
         checar "Busca por parte do código" ((InLab_Produto_Filtrar produtos6 "0912") as string == #(1) as string)
         checar "Busca que casa vários" ((InLab_Produto_Filtrar produtos6 "a") as string == #(1, 2, 3) as string)
         checar "Busca sem resultado" ((InLab_Produto_Filtrar produtos6 "sofa").count == 0)
+
+        -- 14/10/2026 (#183): lista embutida em dados\produtos.json.
+        local emb = InLab_Produto_CarregarEmbutido raiz:raiz
+        local nEmb = if emb == undefined then 0 else (InLab_Produto_Lista emb).count
+        checar ("#183: lista embutida carrega (" + nEmb as string + " produtos)") (nEmb > 0)
+        if nEmb > 0 do
+        (
+            local prodsEmb = InLab_Produto_Lista emb
+            local cod1 = InLab_Produto_Texto prodsEmb[1] "cod_est"
+            checar ("#183: cod_est colado acha o produto (" + cod1 + ")") ((InLab_Produto_IndicePorArquivo prodsEmb cod1) == 1)
+            checar ("#183: resumo da lista ('" + InLab_Produto_ResumoLista emb + "')") (matchPattern (InLab_Produto_ResumoLista emb) pattern:(nEmb as string + " produtos · exportada em ??/??/????"))
+        )
+        checar "#183: pasta sem dados\\produtos.json devolve undefined" ((InLab_Produto_CarregarEmbutido raiz:((getDir #temp) + "\\inlab_sem_lista\\")) == undefined)
 
         -- Ctrl+Z nativo NÃO é testável daqui: rodado de dentro do script,
         -- `max undo` desfaz o script inteiro (inclusive a criação das caixas),

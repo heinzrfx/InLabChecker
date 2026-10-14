@@ -389,7 +389,7 @@ fn InLab_V37_ZonasEstofado cfg uso produto:undefined =
     )
     else
     (
-        local problemas = if uso.usados.count == 1 then #("estofado num único material (pode ser produto sem desmembramento; importe o .json para conferir as partes)") else #()
+        local problemas = if uso.usados.count == 1 then #("estofado num único material (pode ser produto sem desmembramento; cole o cod_est na seção Produto para conferir as partes)") else #()
         local okMsg = if uso.usados.count == 0 then "não se aplica: nenhum material nas peças" else (uso.usados.count as string + " materiais no estofado")
         InLab_Mat_Registrar "V-37" titulo problemas uso.naoMedidos okMsg critico:true provisorio:true
     )
@@ -405,7 +405,7 @@ fn InLab_V38_TampoAcessorio cfg uso produto:undefined =
     if not (InLab_TampoAcessorioProduto == true or cfg.tampoAcessorio) then
         InLab_RegistrarVerif "V-38" titulo true "não se aplica: produto sem tampo acessório" critico:false
     else if produto == undefined then
-        InLab_RegistrarVerif "V-38" titulo false "pendente: importe o .json e escolha o produto na seção Produto para conferir estrutura e tampo" critico:false
+        InLab_RegistrarVerif "V-38" titulo false "pendente: cole o cod_est na seção Produto para conferir estrutura e tampo" critico:false
     else
     (
         local idsTampo = InLab_Mat_IdsDasPartes produto filtro:InLab_Mat_EhTampoAcessorio

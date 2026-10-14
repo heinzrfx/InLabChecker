@@ -36,6 +36,15 @@ Se o `.mzp` não rodar, baixe o `InLabChecker-v<versão>.zip` e o `inlabchecker_
 4. Copie `inlabchecker_boot.ms` para `scripts\startup\` (crie a pasta se não existir).
 5. Abra o Max e siga o passo 2 acima.
 
+## Atualizar
+
+O `.mzp` é só para a primeira instalação. Toda segunda sai uma versão nova, com a lista de produtos da semana e as correções.
+
+- **Automático:** ao abrir o painel, o plugin procura versão nova no GitHub (no máximo uma vez a cada 4 horas). Quando há, a pastilha de versão no topo do painel fica laranja. Clique nela para atualizar.
+- **Na hora:** clique na pastilha mesmo sem ela estar laranja. O plugin procura na hora e, se houver versão nova, pergunta se quer atualizar.
+- A pastilha mostra a versão instalada. Antes de começar o dia de trabalho, confira se ela é a da última release.
+- Se a busca falhar (rede ou firewall bloqueando o GitHub), o log do painel mostra o erro. Nesse caso, baixe o `.mzp` da [última release](https://github.com/heinzrfx/InLabChecker/releases/latest) e arraste para o viewport.
+
 ## Se o botão não aparecer ou o painel não abrir
 
 - A instalação pelo `.mzp` falhou: a mensagem diz em que passo. Mande o texto dela junto com o aviso.
@@ -51,6 +60,22 @@ Apague `scripts\startup\inlabchecker_boot.ms` e a pasta `scripts\InLabChecker`, 
 ---
 
 ## Para quem publica a release
+
+### Release semanal (lista de produtos + correções)
+
+Toda segunda:
+
+1. Exporte a lista de produtos da plataforma (o export da linha, `nomenclatura_export_...json`) e salve em `G:\Meu Drive\Trabalhos\2026\Artefacto\InlabChecker\Lista semanal\produtos.json`, por cima da anterior.
+2. As correções de código da semana já devem estar na `main` (por PR).
+3. Na raiz do repo, na `main`, sem mudança local:
+   ```
+   powershell -ExecutionPolicy Bypass -File install\publicar_semana.ps1 -Json "G:\Meu Drive\Trabalhos\2026\Artefacto\InlabChecker\Lista semanal\produtos.json"
+   ```
+   O script copia a lista para `dados\produtos.json`, sobe a versão (último número + 1, ou `-Versao 1.2.0`), faz o commit e o push na `main` e publica a release com o zip, o mzp e o boot. As notas listam a lista de produtos e os commits desde a última versão. Com `-Teste`, ele só confere a lista e a versão, sem gravar nada.
+
+A lista vai junto no zip público da release: qualquer pessoa pode baixá-la.
+
+### Release manual
 
 1. Suba `INLAB_VERSAO` em `core/versao.ms` e faça o merge na `main`.
 2. Na raiz do repo, com a `main` atualizada:

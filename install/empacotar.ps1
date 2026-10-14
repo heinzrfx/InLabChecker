@@ -15,6 +15,9 @@
 # para o viewport. É o zip mais install\inlabchecker_boot.ms, install\instalar.ms
 # e um mzp.run na raiz (extrai em $temp e roda o instalar.ms). O zip continua
 # sendo o pacote do updater; o mzp é só para a primeira instalação.
+#
+# 14/10/2026 (#183): leva também dados\ (dados\produtos.json, a lista de
+# produtos embutida, trocada toda semana por install\publicar_semana.ps1).
 param(
     [string]$Ref = "HEAD",
     [string]$Saida = "."
@@ -28,7 +31,7 @@ $versao = $m.Groups[1].Value
 
 $zip = Join-Path (Resolve-Path $Saida) "InLabChecker-v$versao.zip"
 git archive --format=zip -o $zip $Ref `
-    InLabChecker.ms core familias functions verifications report ui install/instalar_icone.ms install/registrar.ms
+    InLabChecker.ms core familias functions verifications report ui dados install/instalar_icone.ms install/registrar.ms
 if ($LASTEXITCODE -ne 0) { throw "git archive falhou" }
 
 $mzp = Join-Path (Resolve-Path $Saida) "InLabChecker-v$versao.mzp"
@@ -44,7 +47,7 @@ $conteudo = @(
 ) -join "`r`n"
 [IO.File]::WriteAllText($run, $conteudo + "`r`n", (New-Object Text.UTF8Encoding $false))
 git archive --format=zip -o $mzp --add-file=$run $Ref `
-    InLabChecker.ms core familias functions verifications report ui install/instalar_icone.ms install/registrar.ms `
+    InLabChecker.ms core familias functions verifications report ui dados install/instalar_icone.ms install/registrar.ms `
     install/inlabchecker_boot.ms install/instalar.ms
 $codigo = $LASTEXITCODE
 Remove-Item -Recurse -Force $tmp
