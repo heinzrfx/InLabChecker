@@ -18,7 +18,7 @@
 global InLab_Log
 global InLab_ConverterObjetos, InLab_ReverterConversao, InLab_UltimaConversao
 global InLab_SetPropSafe, InLab_BakeBaseComAlpha, InLab_BitmapDoTexmap, InLab_PastaBake
-global InLab_ConverterCoronaMtl, InLab_PropSafe, InLab_ResolverClasseGLTF
+global InLab_ConverterCoronaMtl, InLab_PropSafe, InLab_ResolverClasseGLTF, InLab_ConverterMaterialNode
 global INLAB_TESTE_SAIDA, INLAB_TESTE_FALHAS
 global InLab_ParseJSON, InLab_Produto_Lista, InLab_Produto_EspeciaisDoProduto, InLab_EspecialDoMaterial
 global InLab_CaminhoTextura, InLab_CheckTexture, InLab_BakeTexmap
@@ -80,6 +80,22 @@ global InLab_CaminhoTextura, InLab_CheckTexture, InLab_BakeTexmap
                 InLab_ConverterObjetos #(objA)
                 checar "Converter A: 1 registro no histórico" (InLab_UltimaConversao.count == 1)
                 checar "Converter A: material do objA mudou" (objA.material != matA)
+                -- Ajustes do Rafa, item 2 (14/10/2026): sem sufixo _GLTF.
+                checar ("Converter A: glTF com o nome do original ('" + objA.material.name + "')") (objA.material.name == "corona_A")
+                local mMulti = Multimaterial numsubs:2 name:"ART_P_Multi"
+                mMulti.materialList[1] = CoronaPhysicalMtl name:"ART_P_Sub1"
+                mMulti.materialList[2] = CoronaPhysicalMtl name:"ART_P_Sub2"
+                local gMulti = InLab_ConverterMaterialNode mMulti 256 false
+                checar ("Multi/Sub convertido mantém os nomes (" + gMulti.name + ", " + gMulti.materialList[1].name + ", " + gMulti.materialList[2].name + ")") \
+                    (gMulti.name == "ART_P_Multi" and gMulti.materialList[1].name == "ART_P_Sub1" and gMulti.materialList[2].name == "ART_P_Sub2")
+                local mLayer = try ( CoronaLayeredMtl name:"ART_P_Layer" ) catch ( undefined )
+                if mLayer == undefined then checar "CoronaLayeredMtl — pulado: classe ausente" true
+                else
+                (
+                    try ( mLayer.baseMtl = CoronaPhysicalMtl name:"base_do_layer" ) catch ()
+                    local gLayer = InLab_ConverterCoronaMtl mLayer 256 false
+                    checar ("CoronaLayeredMtl convertido leva o nome do Layered (" + (if gLayer == undefined then "undefined" else gLayer.name) + ")") (gLayer != undefined and gLayer.name == "ART_P_Layer")
+                )
 
                 InLab_ConverterObjetos #(objB)
                 checar "Converter B: histórico ACUMULOU (não perdeu A)" (InLab_UltimaConversao.count == 2)

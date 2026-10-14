@@ -25,7 +25,8 @@
  06/10/2026 — revisão final: (1) cena já convertida. A conversão troca o
  material por um glTF Material; InLab_Mat_Resolver procura o original em
  InLab_UltimaConversao (materialNovo == glTF) e lê o Corona dele (o especial
- vem do nome do original, porque o glTF ganha sufixo "_GLTF"). Sem registro, o
+ vem do nome do original; até 14/10/2026 o glTF ganhava sufixo "_GLTF", hoje
+ leva o mesmo nome). Sem registro, o
  tipo é #gltf: V-23/V-35/V-36 avisam "já convertido" e a V-24 (crítica) põe o
  material em "não medido", nunca passe limpo sem leitura. (2) InLab_Mat_Registrar
  ganhou nota:, texto " · ..." no fim da mensagem em todos os ramos (roughness/
@@ -416,4 +417,18 @@ fn InLab_V38_TampoAcessorio cfg uso produto:undefined =
         InLab_Mat_Registrar "V-38" titulo problemas uso.naoMedidos \
             (if temTampo then "arquivo só com o tampo" else if temOutros then "arquivo só com a estrutura" else "nenhuma parte do produto nas faces (ver V-20)") critico:false
     )
+)
+
+-- V-41 · Toda peça com material (crítica). Ajustes do Rafa, item 1
+-- (14/10/2026): peça sem material sai do exportador com o "fallback
+-- Material" (preto, metálico 1, rugosidade 1) e sem material_id, e a
+-- plataforma não casa a parte. Reprova a peça sem material e o material com
+-- cara de fallback (InLab_Mat_SemMaterial, fn_material_utils.ms). ID fora
+-- do Multi/Sub é da V-25; nome fora dos material_id, da V-20.
+fn InLab_V41_PecasComMaterial objetos =
+(
+    local r = InLab_Mat_SemMaterial objetos
+    local problemas = for n in r[1] collect (n + ": sem material")
+    join problemas (for n in r[2] collect (n + " (fallback: preto, metálico 1, rugosidade 1)"))
+    InLab_Mat_Registrar "V-41" "Toda peça com material" problemas #() "todas as peças têm material" critico:true
 )
