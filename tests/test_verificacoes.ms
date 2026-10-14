@@ -14,7 +14,7 @@ global InLab_V21_NomesValidos, InLab_V22_SufixosSequenciais, InLab_V30_Keyframes
 global InLab_EhGeometria, InLab_ObjetosVerificacao, InLab_VEx01_Ocultos
 global InLab_V01_PesoMax, InLab_SalvarAntesDeVerificar
 global InLab_DrawCallsDoNo, InLab_V05_DrawCalls, InLab_TetoDrawCalls, InLab_PrefGravar, InLab_PrefApagar
-global InLab_V20_Nomenclatura, InLab_ParseJSON, InLab_Produto_Lista
+global InLab_V20_Nomenclatura, InLab_ParseJSON, InLab_Produto_Lista, InLab_V20_ArquivoValido
 global INLAB_TESTE_SAIDA, INLAB_TESTE_FALHAS
 (
     local dirTeste = getFilenamePath (getSourceFileName())
@@ -60,7 +60,7 @@ global INLAB_TESTE_SAIDA, INLAB_TESTE_FALHAS
                    @"functions\fn_otim_nucleo.ms",
                    @"functions\fn_realworldscale.ms",
                    @"functions\fn_json.ms", @"functions\fn_renomear_produto.ms", @"functions\fn_export_gltf.ms",
-                   @"functions\fn_material_convert.ms",
+                   @"functions\fn_material_convert.ms", @"functions\fn_material_utils.ms",
                    @"verifications\verif_peso_poly.ms", @"verifications\verif_pivot.ms",
                    @"verifications\verif_nomenclatura.ms", @"verifications\verif_geometria.ms",
                    @"verifications\verif_malha.ms", @"verifications\verif_animacao.ms",
@@ -326,6 +326,18 @@ global INLAB_TESTE_SAIDA, INLAB_TESTE_FALHAS
         checar "V-20: variante — objeto com o nome de OUTRA variante reprova" ((rodar20 cfgEst prodsV20[4] #(oMesa) "0023_L12") == #fail and (findString (mensagemDe "V-20") "0023_L12") != undefined)
         checar "V-20: variante — arquivo com variante inexistente reprova" ((rodar20 cfgEst prodsV20[4] #(oMesa) "0023_L99") == #fail)
         oMesa.name = "0020"
+        -- #184: o Verificar pede <cod_est>.max. ArquivoValido aceita o código,
+        -- o master da cópia e a variante; o salvar não grava (só #no/#cancel).
+        checar "#184: ArquivoValido aceita o cod_est" (InLab_V20_ArquivoValido prodsV20[1] "0020")
+        checar "#184: ArquivoValido recusa outro nome e cena sem nome" (not (InLab_V20_ArquivoValido prodsV20[1] "mesa_final_v3") and not (InLab_V20_ArquivoValido prodsV20[1] ""))
+        checar "#184: ArquivoValido aceita o master da cópia e a variante" ((InLab_V20_ArquivoValido prodsV20[2] "0020") and (InLab_V20_ArquivoValido prodsV20[4] "0023_L11"))
+        if maxFileName == "" do
+        (
+            checar "#184: com produto e cena sem nome, 'Cancelar' não roda" (not (InLab_SalvarAntesDeVerificar produto:prodsV20[1] resposta:#cancel))
+            checar "#184: 'Não' segue (a V-20 reprova depois)" (InLab_SalvarAntesDeVerificar produto:prodsV20[1] resposta:#no)
+            checar "#184: Salvar Como cancelado não roda" (not (InLab_SalvarAntesDeVerificar produto:prodsV20[1] resposta:#yes caminho:undefined))
+            checar "#184: nada foi salvo" (maxFileName == "")
+        )
         InLab_RodarVerificacoes cfgEst produto:prodsV20[1]
         checar "V-20: o orquestrador repassa o produto (mensagem cita o código)" ((findString (mensagemDe "V-20") "0020") != undefined)
         limparCena()

@@ -90,6 +90,13 @@
  da seleção que compartilham os mapas recebem o RWF, não o Auto UV.
  Sondagem: docs\superpowers\specs\2026-10-08-rwf-no-autouv-sondagem.md.
 
+ 14/10/2026 (#185, ajustes do Rafa, item 5): o Real World Fix voltou a ter
+ botão (InLab_RWF_Rodar, fn_realworldfix.ms) e saiu de dentro do Auto UV. O
+ Auto UV só roda em objeto que já passou pelo RWF na sessão
+ (InLab_RWF_Feitos, ele ou uma instância); senão loga #err e não faz nada. O
+ resto do #129 fica: sem colapso, rodadas em InLab_UltimoRWF, e o Desfazer UV
+ desfaz o RWF junto (e zera InLab_RWF_Feitos).
+
  24/Set (issue #48, robustez): o processamento de cada objeto (entre abrir e
  fechar o grupo) não tinha `try` próprio — uma exceção não prevista (ex.:
  InLab_MedirUV, uvw.pack) abortava a rodada inteira e deixava os grupos
@@ -183,6 +190,12 @@ global InLab_UltimoAutoUV = #()
 -- O Desfazer UV desfaz todas, da mais nova para a mais velha.
 global InLab_UltimoRWF = #()
 global InLab_RealWorldFix, InLab_RWF_UltimaRodada, InLab_RWF_Reverter
+
+-- 14/10/2026 (#185): nós que já passaram pelo botão Real World Fix nesta
+-- sessão (InLab_RWF_Rodar, fn_realworldfix.ms). O Auto UV só roda neles.
+-- Sobrevive ao reload do plugin; o Desfazer UV zera.
+global InLab_RWF_Feitos
+if InLab_RWF_Feitos == undefined do InLab_RWF_Feitos = #()
 
 global InLab_TentarRelax, InLab_PaddingUV, InLab_AutoUV_PrepararBase, InLab_AutoUV_Registro
 global InLab_AbrirGruposAcima, InLab_FecharGrupos, InLab_Instancias, InLab_ContagemCanal
@@ -416,293 +429,305 @@ fn InLab_UnfoldComGuarda uvw np angulo:55.0 espacamento:0.01 =
 --------------------------------------------------------------------------------
 -- AUTO UV sobre a seleção. Grava no canal INLAB_CANAL_UV_BAKE.
 --------------------------------------------------------------------------------
+-- 14/10/2026 (#185): geometria da lista que ainda não passou pelo Real World
+-- Fix (nem ela nem uma instância dela).
+fn InLab_RWF_Pendentes objs =
+(
+    for o in objs where InLab_EhGeometria o and \
+        (for i in (InLab_Instancias o) where (findItem InLab_RWF_Feitos i) > 0 collect i).count == 0 collect o
+)
+
 fn InLab_AutoUV objs angulo:55.0 resolucao:INLAB_RESOLUCAO_BAKE =
 (
-    local processados = 0
-    local padding = InLab_PaddingUV resolucao
-    local normais = #([1,0,0], [-1,0,0], [0,1,0], [0,-1,0], [0,0,1], [0,0,-1])
-    InLab_Log ("Auto UV: canal " + INLAB_CANAL_UV_BAKE as string + " · ângulo " + (formattedPrint angulo format:".0f") +
-               "° · " + resolucao as string + " px (padding " + (formattedPrint padding format:".4f") + ")")
-
-    undo "InLab AutoUV" on
+    -- 14/10/2026 (#185): o Real World Fix tem botão próprio e vem antes. A
+    -- escala real tem que estar certa antes do UV; sem ele, nada roda.
+    local pendentes = InLab_RWF_Pendentes objs
+    if pendentes.count > 0 then
     (
-        max modify mode
-
-        -- 08/10/2026 (issue #129): Real World Fix ANTES do Unwrap, sem colapso
-        -- (sondagem 2026-10-08-rwf-no-autouv-sondagem.md). Ele só mexe em quem
-        -- tem Real-World ou Triplanar; os de fora da seleção que compartilham os
-        -- mapas recebem o RWF mas não o Auto UV. A rodada vai para o Desfazer UV.
-        try
-        (
-            InLab_RealWorldFix (for o in objs where InLab_EhGeometria o collect o) silencioso:true
-            local r = InLab_RWF_UltimaRodada
-            if r != undefined and (r.mods.count + r.bitmaps.count + r.triplanares.count) > 0 do append InLab_UltimoRWF r
-        )
-        catch ( InLab_Log ("Auto UV: o Real World Fix falhou (" + getCurrentException() + ") — UV do material não convertido.") tipo:#err )
-
-        local feitosNaRodada = #() -- nós já cobertos nesta rodada (inclui instâncias)
-
-        for o in objs where InLab_EhGeometria o do
-        (
-            if (getPolygonCount o)[1] == 0 then
-                InLab_Log (o.name + ": sem faces — ignorado.") tipo:#warn
-            else if findItem feitosNaRodada o > 0 then
-            (
-                InLab_Log (o.name + ": instância de um objeto já processado — recebeu o mesmo Unwrap.")
-                processados += 1
-            )
-            else
-            (
-                local canal1Antes = InLab_ContagemCanal o INLAB_CANAL_UV_MATERIAL
-
-                -- Rodar de novo substitui o Unwrap anterior em vez de empilhar.
-                local rec = InLab_AutoUV_Registro o
-                local recNovo = (rec == undefined) -- fix#48/r1 (MINOR 4): se este registro nasce agora
-                if rec == undefined then
-                (
-                    rec = AutoUVRecord no:o baseOriginal:(InLab_AutoUV_PrepararBase o)
-                    append InLab_UltimoAutoUV rec
-                )
-                else if rec.modificador != undefined do
-                    try ( deleteModifier o rec.modificador )
-                    catch ( InLab_Log (o.name + ": Unwrap anterior do Auto UV não encontrado (removido à mão?).") tipo:#warn )
-
-                -- Grupo fechado: abre durante o Unwrap para o select pegar só o nó.
-                -- 24/Set (#48): todo o processamento do objeto (a partir daqui) fica
-                -- dentro do try abaixo. Uma exceção não prevista (ou a falha forçada
-                -- de teste) é pega, logada com o nome do objeto, e não impede os
-                -- demais objetos nem deixa o grupo aberto — InLab_FecharGrupos roda
-                -- sempre, dentro ou fora do catch.
-                local gruposAbertos = InLab_AbrirGruposAcima o
-                local uvw = undefined
-                local metodo = undefined
-
-                try
-                (
-                    select o
-                    uvw = Unwrap_UVW()
-                    uvw.name = "InLab AutoUV"
-                    addModifier o uvw
-                    modPanel.setCurrentObject uvw
-                    rec.modificador = uvw
-
-                    -- SÓ TESTE (issue #48): ver InLab_AutoUV_ForcarFalha no topo do arquivo.
-                    if InLab_AutoUV_ForcarFalha == o.name do
-                        throw (o.name + ": falha forçada para teste (InLab_AutoUV_ForcarFalha)")
-
-                    local falhou = false
-                    if selection.count != 1 do
-                    (
-                        InLab_Log (o.name + ": seleção com " + selection.count as string + " nós em vez de 1 — Auto UV cancelado neste objeto.") tipo:#err
-                        falhou = true
-                    )
-                    if not falhou do
-                        try ( uvw.setMapChannel INLAB_CANAL_UV_BAKE )
-                        catch ( InLab_Log (o.name + ": falha em setMapChannel.") tipo:#err ; falhou = true )
-                    -- Guarda principal do canal 1: o Unwrap TEM que estar no canal 3.
-                    if not falhou and (uvw.getMapChannel()) != INLAB_CANAL_UV_BAKE do
-                    (
-                        InLab_Log (o.name + ": Unwrap ficou no canal " + (uvw.getMapChannel()) as string + " em vez do " +
-                                   INLAB_CANAL_UV_BAKE as string + " — Auto UV cancelado neste objeto.") tipo:#err
-                        falhou = true
-                    )
-
-                    local nPolysObj = (getPolygonCount o)[1]
-                    local nPolysUV = nPolysObj
-                    try ( nPolysUV = uvw.numberPolygons() )
-                    catch ( InLab_Log (o.name + ": numberPolygons indisponível — usando " + nPolysObj as string + " faces do objeto.") tipo:#warn )
-                    if nPolysUV != nPolysObj do
-                        InLab_Log (o.name + ": Unwrap vê " + nPolysUV as string + " faces e o objeto tem " + nPolysObj as string + " — conferir o resultado.") tipo:#warn
-                    if not falhou do
-                        try ( uvw.selectFaces #{1..nPolysUV} )
-                        catch ( InLab_Log (o.name + ": falha em selectFaces.") tipo:#err ; falhou = true )
-
-                    if not falhou do
-                    (
-                    InLab_Log (o.name + ": Auto UV em processamento (a UI pode congelar alguns segundos)...")
-                    try ( windows.processPostedMessages() ) catch()
-
-                    ------------------------------------------------------
-                    -- 1 · FLATTEN pelo ângulo da UI (provisório até a Fase 3)
-                    ------------------------------------------------------
-                    local nTris = (GetTriMeshFaceCount o)[1]
-                    local grande = nTris > INLAB_UV_MEDIR_MAX_FACES
-                    -- Malha grande: o flatten já empacota com folga no espaçamento e
-                    -- o pack extra (18 s em 300 mil faces) não roda.
-                    local espFlatten = if grande then padding * INLAB_UV_FOLGA_ESPACAMENTO else padding
-                    metodo = undefined -- fix#48/r1 (MINOR 2): já é local lá em cima; reatribuir aqui, sem "local" de novo
-                    try ( uvw.flattenMap angulo normais espFlatten true 0 true true ; metodo = "Flatten " + (formattedPrint angulo format:".0f") + "°" )
-                    catch ( InLab_Log (o.name + ": flattenMap falhou — " + getCurrentException()) tipo:#err )
-
-                    if metodo != undefined do
-                    (
-                        ------------------------------------------------------
-                        -- 1b · UNFOLD COM GUARDA (Fase 3): só em malha pequena.
-                        -- Na pillow 02 (306 mil tris) o solve sozinho leva 49 s.
-                        ------------------------------------------------------
-                        if not grande do
-                        (
-                            local rev = InLab_UnfoldComGuarda uvw nPolysUV angulo:angulo espacamento:espFlatten
-                            if rev < 0 then
-                                InLab_Log (o.name + ": Unfold3DSolve indisponível — fica o flatten.") tipo:#warn
-                            else
-                                metodo += " → Unfold3D" + (if rev > 0 then " (" + rev as string + " ilha(s) voltaram ao flatten)" else "")
-                        )
-
-                        ------------------------------------------------------
-                        -- 2 · PACK com o padding da resolução; fallback Unfold3DPack
-                        ------------------------------------------------------
-                        local packUsado = undefined
-                        if grande then
-                            packUsado = "pack do flatten (malha grande)"
-                        else
-                        (
-                            try ( uvw.pack 1 padding true true true ; packUsado = "pack recursivo" ) catch()
-                            if packUsado == undefined do
-                                try ( uvw.Unfold3DPack() ; packUsado = "Unfold3DPack" ) catch()
-                            if packUsado == undefined do
-                                InLab_Log (o.name + ": pack indisponível — ilhas podem ficar fora do 0-1.") tipo:#warn
-                        )
-
-                        -- Correção do gutter: o pack aplica o espaçamento antes de
-                        -- reescalar para o 0–1, e o gutter real sai menor que o pedido.
-                        -- Até 3 repassadas com o espaçamento aumentado na proporção
-                        -- (teto INLAB_UV_ESPACAMENTO_MAX). Vale a melhor que aumentou o
-                        -- gutter sem derrubar o aproveitamento abaixo de 70% do inicial;
-                        -- no fim o pack é refeito com o espaçamento dela (o pack parte
-                        -- do layout atual, então "voltar" = repackar com esse valor).
-                        -- 24/Set (#51): medição feita sobre o layout ATUAL (nenhum pack
-                        -- depois dela). A medição final reaproveita em vez de medir de
-                        -- novo o mesmo UV — InLab_MedirUV é determinística, o resultado
-                        -- é o mesmo e sai uma chamada de ~3 s no Box008.
-                        local metAtual = undefined
-                        if packUsado == "pack recursivo" do
-                        (
-                            -- 24/Set (#48): InLab_MedirUV devolve undefined quando o canal
-                            -- não existe (mesma guarda que já havia na medição final, l.~536).
-                            local m0 = InLab_MedirUV o INLAB_CANAL_UV_BAKE
-                            metAtual = m0
-                            local g0 = if m0 != undefined then m0.gutterMin else undefined
-                            if g0 != undefined and g0 > 0.0 and g0 < padding * 0.98 do
-                            (
-                                local melhorEsp = padding, melhorG = g0, esp = padding, gAtual = g0
-                                for it = 1 to 3 while melhorG < padding * 0.98 do
-                                (
-                                    esp = amin (esp * (padding / (amax gAtual 1e-5)) * 1.05) (padding * INLAB_UV_ESPACAMENTO_MAX)
-                                    uvw.selectFaces #{1..nPolysUV}
-                                    uvw.pack 1 esp true true true
-                                    local mi = InLab_MedirUV o INLAB_CANAL_UV_BAKE
-                                    metAtual = mi
-                                    gAtual = if mi == undefined or mi.gutterMin == undefined then 0.0 else mi.gutterMin
-                                    if mi != undefined and gAtual > melhorG and mi.aproveitamento >= m0.aproveitamento * 0.7 do
-                                    (
-                                        melhorG = gAtual
-                                        melhorEsp = esp
-                                    )
-                                )
-                                if esp != melhorEsp do
-                                (
-                                    uvw.selectFaces #{1..nPolysUV}
-                                    uvw.pack 1 melhorEsp true true true
-                                    metAtual = undefined -- layout mudou: a medição final mede de novo
-                                )
-                                if melhorEsp != padding do packUsado += " + gutter corrigido"
-                            )
-                        )
-
-                        ------------------------------------------------------
-                        -- 3 · MEDIÇÃO + guarda do canal 1
-                        ------------------------------------------------------
-                        if (InLab_ContagemCanal o INLAB_CANAL_UV_MATERIAL) != canal1Antes do
-                            InLab_Log (o.name + ": o canal 1 mudou durante o Auto UV — reportar.") tipo:#err
-                        if grande then
-                        (
-                            -- Métricas completas em MaxScript levam ~3 min em 300 mil
-                            -- faces. Aqui só a checagem nativa de sobreposição.
-                            local nSobre = -1
-                            try ( nSobre = InLab_UV_SobrepostasNativas uvw ) catch()
-                            local txtSobre = if nSobre < 0 then "sobreposição não verificada" else "sobrepostas: " + nSobre as string
-                            InLab_Log (o.name + (if nSobre != 0 then ": Auto UV com problema no UV (conferir) · " else ": Auto UV OK · ") + metodo +
-                                       " → " + packUsado + " · " + nTris as string + " triângulos: métricas completas e gutter não medidos · " + txtSobre) \
-                                       tipo:(if nSobre != 0 then #warn else #ok)
-                        )
-                        else
-                        (
-                            local met = if metAtual != undefined then metAtual else InLab_MedirUV o INLAB_CANAL_UV_BAKE
-                            -- 09/10/2026 (issue #140): a sobreposição do log é a do
-                            -- selectOverlappedFaces nativo, o mesmo critério da V-15
-                            -- (crítica). O critério geométrico do InLab_MedirUV não
-                            -- bate com o nativo (ver verif_uv.ms), e o log dizia
-                            -- "problema" onde a V-15 passava (e vice-versa).
-                            if met != undefined do
-                                try ( met.sobrepostas = InLab_UV_SobrepostasNativas uvw )
-                                catch ( InLab_Log (o.name + ": sobreposição nativa não medida (" + getCurrentException() + "); fica a do InLab_MedirUV.") tipo:#warn )
-                            local comProblema = met == undefined or met.sobrepostas > 0 or met.foraDe01 > 0 or (met.invertidos > 0 and not met.espelhado)
-                            if met != undefined and met.gutterMin != undefined and met.gutterMin > 0.0 and met.gutterMin < padding * 0.98 do
-                                InLab_Log (o.name + ": gutter " + (formattedPrint met.gutterMin format:".4f") + " abaixo do padding " +
-                                           (formattedPrint padding format:".4f") + " — risco de vazamento no bake.") tipo:#warn
-                            InLab_Log (o.name + (if comProblema then ": Auto UV com problema no UV (conferir) · " else ": Auto UV OK · ") + metodo +
-                                       " → " + (if packUsado != undefined then packUsado else "sem pack") +
-                                       " · " + InLab_UVMetricasTexto met) tipo:(if comProblema then #warn else #ok)
-                        )
-                        processados += 1
-                        join feitosNaRodada (InLab_Instancias o)
-                    )
-                    )
-
-                    -- 24/Set (#48): setMapChannel, selectFaces ou flattenMap falharam
-                    -- (ou a checagem do canal 3) — "metodo" continua undefined e o
-                    -- Unwrap que entrou no stack no início da rodada vira órfão sem
-                    -- aviso. Remove aqui em vez de deixar no objeto.
-                    if metodo == undefined do
-                    (
-                        -- fix#48/r1 (MINOR 3): só loga "removido" se a remoção deu certo.
-                        local removido = true
-                        try ( deleteModifier o uvw )
-                        catch ( InLab_Log (o.name + ": não foi possível remover o Unwrap órfão do canal " + INLAB_CANAL_UV_BAKE as string + ".") tipo:#err ; removido = false )
-                        rec.modificador = undefined
-                        if removido do
-                            InLab_Log (o.name + ": Unwrap órfão removido do stack (etapa anterior falhou).") tipo:#warn
-                    )
-                )
-                catch
-                (
-                    InLab_Log (o.name + ": erro inesperado no Auto UV — " + getCurrentException()) tipo:#err
-                    if uvw != undefined do
-                    (
-                        -- fix#48/r1 (IMPORTANT 1): catch() mudo engolia o erro — loga com o nome do objeto.
-                        try ( deleteModifier o uvw )
-                        catch ( InLab_Log (o.name + ": não foi possível remover o Unwrap órfão do canal " + INLAB_CANAL_UV_BAKE as string + " depois do erro.") tipo:#err )
-                        rec.modificador = undefined
-                    )
-                )
-
-                -- fix#48/r1 (MINOR 4): a rodada falhou para este objeto (rec.modificador
-                -- continua undefined pela limpeza acima) — um registro CRIADO agora não
-                -- tem nada a reverter (baseOriginal também é sempre undefined na Fase 3) e
-                -- só confundiria o Reverter mais tarde; sai de InLab_UltimoAutoUV. Um
-                -- registro que já existia (Auto UV anterior bem-sucedido, removido no topo
-                -- do laço antes desta tentativa) fica — mas o objeto ficou sem nenhum
-                -- Unwrap do Auto UV, então avisa que só o Ctrl+Z devolve o anterior.
-                if rec.modificador == undefined do
-                (
-                    if recNovo then
-                    (
-                        local idx = findItem InLab_UltimoAutoUV rec
-                        if idx > 0 do deleteItem InLab_UltimoAutoUV idx
-                    )
-                    else
-                        InLab_Log (o.name + ": Auto UV falhou nesta rodada e o Unwrap anterior já tinha sido substituído — só o Ctrl+Z restaura este objeto.") tipo:#warn
-                )
-
-                InLab_FecharGrupos gruposAbertos
-            )
-        )
-        try ( select objs ) catch()
+        InLab_Log ("Auto UV bloqueado: rode o Real World Fix antes (a escala real vem antes do UV). Falta em " +
+                   pendentes.count as string + " objeto(s): " + (InLab_ListaResumida (for o in pendentes collect o.name))) tipo:#err
+        0
     )
+    else
+    (
+        local processados = 0
+        local padding = InLab_PaddingUV resolucao
+        local normais = #([1,0,0], [-1,0,0], [0,1,0], [0,-1,0], [0,0,1], [0,0,-1])
+        InLab_Log ("Auto UV: canal " + INLAB_CANAL_UV_BAKE as string + " · ângulo " + (formattedPrint angulo format:".0f") +
+                   "° · " + resolucao as string + " px (padding " + (formattedPrint padding format:".4f") + ")")
 
-    InLab_Log ("Auto UV: " + processados as string + " de " + objs.count as string + " objeto(s).")
-    processados
+        undo "InLab AutoUV" on
+        (
+            max modify mode
+
+            -- 14/10/2026 (#185): o Real World Fix saiu daqui e voltou a ter botão
+            -- (InLab_RWF_Rodar); o bloqueio no começo garante que ele veio antes.
+            -- De 08/10 (#129) a 14/10 ele rodava aqui, antes do Unwrap.
+
+            local feitosNaRodada = #() -- nós já cobertos nesta rodada (inclui instâncias)
+
+            for o in objs where InLab_EhGeometria o do
+            (
+                if (getPolygonCount o)[1] == 0 then
+                    InLab_Log (o.name + ": sem faces — ignorado.") tipo:#warn
+                else if findItem feitosNaRodada o > 0 then
+                (
+                    InLab_Log (o.name + ": instância de um objeto já processado — recebeu o mesmo Unwrap.")
+                    processados += 1
+                )
+                else
+                (
+                    local canal1Antes = InLab_ContagemCanal o INLAB_CANAL_UV_MATERIAL
+
+                    -- Rodar de novo substitui o Unwrap anterior em vez de empilhar.
+                    local rec = InLab_AutoUV_Registro o
+                    local recNovo = (rec == undefined) -- fix#48/r1 (MINOR 4): se este registro nasce agora
+                    if rec == undefined then
+                    (
+                        rec = AutoUVRecord no:o baseOriginal:(InLab_AutoUV_PrepararBase o)
+                        append InLab_UltimoAutoUV rec
+                    )
+                    else if rec.modificador != undefined do
+                        try ( deleteModifier o rec.modificador )
+                        catch ( InLab_Log (o.name + ": Unwrap anterior do Auto UV não encontrado (removido à mão?).") tipo:#warn )
+
+                    -- Grupo fechado: abre durante o Unwrap para o select pegar só o nó.
+                    -- 24/Set (#48): todo o processamento do objeto (a partir daqui) fica
+                    -- dentro do try abaixo. Uma exceção não prevista (ou a falha forçada
+                    -- de teste) é pega, logada com o nome do objeto, e não impede os
+                    -- demais objetos nem deixa o grupo aberto — InLab_FecharGrupos roda
+                    -- sempre, dentro ou fora do catch.
+                    local gruposAbertos = InLab_AbrirGruposAcima o
+                    local uvw = undefined
+                    local metodo = undefined
+
+                    try
+                    (
+                        select o
+                        uvw = Unwrap_UVW()
+                        uvw.name = "InLab AutoUV"
+                        addModifier o uvw
+                        modPanel.setCurrentObject uvw
+                        rec.modificador = uvw
+
+                        -- SÓ TESTE (issue #48): ver InLab_AutoUV_ForcarFalha no topo do arquivo.
+                        if InLab_AutoUV_ForcarFalha == o.name do
+                            throw (o.name + ": falha forçada para teste (InLab_AutoUV_ForcarFalha)")
+
+                        local falhou = false
+                        if selection.count != 1 do
+                        (
+                            InLab_Log (o.name + ": seleção com " + selection.count as string + " nós em vez de 1 — Auto UV cancelado neste objeto.") tipo:#err
+                            falhou = true
+                        )
+                        if not falhou do
+                            try ( uvw.setMapChannel INLAB_CANAL_UV_BAKE )
+                            catch ( InLab_Log (o.name + ": falha em setMapChannel.") tipo:#err ; falhou = true )
+                        -- Guarda principal do canal 1: o Unwrap TEM que estar no canal 3.
+                        if not falhou and (uvw.getMapChannel()) != INLAB_CANAL_UV_BAKE do
+                        (
+                            InLab_Log (o.name + ": Unwrap ficou no canal " + (uvw.getMapChannel()) as string + " em vez do " +
+                                       INLAB_CANAL_UV_BAKE as string + " — Auto UV cancelado neste objeto.") tipo:#err
+                            falhou = true
+                        )
+
+                        local nPolysObj = (getPolygonCount o)[1]
+                        local nPolysUV = nPolysObj
+                        try ( nPolysUV = uvw.numberPolygons() )
+                        catch ( InLab_Log (o.name + ": numberPolygons indisponível — usando " + nPolysObj as string + " faces do objeto.") tipo:#warn )
+                        if nPolysUV != nPolysObj do
+                            InLab_Log (o.name + ": Unwrap vê " + nPolysUV as string + " faces e o objeto tem " + nPolysObj as string + " — conferir o resultado.") tipo:#warn
+                        if not falhou do
+                            try ( uvw.selectFaces #{1..nPolysUV} )
+                            catch ( InLab_Log (o.name + ": falha em selectFaces.") tipo:#err ; falhou = true )
+
+                        if not falhou do
+                        (
+                        InLab_Log (o.name + ": Auto UV em processamento (a UI pode congelar alguns segundos)...")
+                        try ( windows.processPostedMessages() ) catch()
+
+                        ------------------------------------------------------
+                        -- 1 · FLATTEN pelo ângulo da UI (provisório até a Fase 3)
+                        ------------------------------------------------------
+                        local nTris = (GetTriMeshFaceCount o)[1]
+                        local grande = nTris > INLAB_UV_MEDIR_MAX_FACES
+                        -- Malha grande: o flatten já empacota com folga no espaçamento e
+                        -- o pack extra (18 s em 300 mil faces) não roda.
+                        local espFlatten = if grande then padding * INLAB_UV_FOLGA_ESPACAMENTO else padding
+                        metodo = undefined -- fix#48/r1 (MINOR 2): já é local lá em cima; reatribuir aqui, sem "local" de novo
+                        try ( uvw.flattenMap angulo normais espFlatten true 0 true true ; metodo = "Flatten " + (formattedPrint angulo format:".0f") + "°" )
+                        catch ( InLab_Log (o.name + ": flattenMap falhou — " + getCurrentException()) tipo:#err )
+
+                        if metodo != undefined do
+                        (
+                            ------------------------------------------------------
+                            -- 1b · UNFOLD COM GUARDA (Fase 3): só em malha pequena.
+                            -- Na pillow 02 (306 mil tris) o solve sozinho leva 49 s.
+                            ------------------------------------------------------
+                            if not grande do
+                            (
+                                local rev = InLab_UnfoldComGuarda uvw nPolysUV angulo:angulo espacamento:espFlatten
+                                if rev < 0 then
+                                    InLab_Log (o.name + ": Unfold3DSolve indisponível — fica o flatten.") tipo:#warn
+                                else
+                                    metodo += " → Unfold3D" + (if rev > 0 then " (" + rev as string + " ilha(s) voltaram ao flatten)" else "")
+                            )
+
+                            ------------------------------------------------------
+                            -- 2 · PACK com o padding da resolução; fallback Unfold3DPack
+                            ------------------------------------------------------
+                            local packUsado = undefined
+                            if grande then
+                                packUsado = "pack do flatten (malha grande)"
+                            else
+                            (
+                                try ( uvw.pack 1 padding true true true ; packUsado = "pack recursivo" ) catch()
+                                if packUsado == undefined do
+                                    try ( uvw.Unfold3DPack() ; packUsado = "Unfold3DPack" ) catch()
+                                if packUsado == undefined do
+                                    InLab_Log (o.name + ": pack indisponível — ilhas podem ficar fora do 0-1.") tipo:#warn
+                            )
+
+                            -- Correção do gutter: o pack aplica o espaçamento antes de
+                            -- reescalar para o 0–1, e o gutter real sai menor que o pedido.
+                            -- Até 3 repassadas com o espaçamento aumentado na proporção
+                            -- (teto INLAB_UV_ESPACAMENTO_MAX). Vale a melhor que aumentou o
+                            -- gutter sem derrubar o aproveitamento abaixo de 70% do inicial;
+                            -- no fim o pack é refeito com o espaçamento dela (o pack parte
+                            -- do layout atual, então "voltar" = repackar com esse valor).
+                            -- 24/Set (#51): medição feita sobre o layout ATUAL (nenhum pack
+                            -- depois dela). A medição final reaproveita em vez de medir de
+                            -- novo o mesmo UV — InLab_MedirUV é determinística, o resultado
+                            -- é o mesmo e sai uma chamada de ~3 s no Box008.
+                            local metAtual = undefined
+                            if packUsado == "pack recursivo" do
+                            (
+                                -- 24/Set (#48): InLab_MedirUV devolve undefined quando o canal
+                                -- não existe (mesma guarda que já havia na medição final, l.~536).
+                                local m0 = InLab_MedirUV o INLAB_CANAL_UV_BAKE
+                                metAtual = m0
+                                local g0 = if m0 != undefined then m0.gutterMin else undefined
+                                if g0 != undefined and g0 > 0.0 and g0 < padding * 0.98 do
+                                (
+                                    local melhorEsp = padding, melhorG = g0, esp = padding, gAtual = g0
+                                    for it = 1 to 3 while melhorG < padding * 0.98 do
+                                    (
+                                        esp = amin (esp * (padding / (amax gAtual 1e-5)) * 1.05) (padding * INLAB_UV_ESPACAMENTO_MAX)
+                                        uvw.selectFaces #{1..nPolysUV}
+                                        uvw.pack 1 esp true true true
+                                        local mi = InLab_MedirUV o INLAB_CANAL_UV_BAKE
+                                        metAtual = mi
+                                        gAtual = if mi == undefined or mi.gutterMin == undefined then 0.0 else mi.gutterMin
+                                        if mi != undefined and gAtual > melhorG and mi.aproveitamento >= m0.aproveitamento * 0.7 do
+                                        (
+                                            melhorG = gAtual
+                                            melhorEsp = esp
+                                        )
+                                    )
+                                    if esp != melhorEsp do
+                                    (
+                                        uvw.selectFaces #{1..nPolysUV}
+                                        uvw.pack 1 melhorEsp true true true
+                                        metAtual = undefined -- layout mudou: a medição final mede de novo
+                                    )
+                                    if melhorEsp != padding do packUsado += " + gutter corrigido"
+                                )
+                            )
+
+                            ------------------------------------------------------
+                            -- 3 · MEDIÇÃO + guarda do canal 1
+                            ------------------------------------------------------
+                            if (InLab_ContagemCanal o INLAB_CANAL_UV_MATERIAL) != canal1Antes do
+                                InLab_Log (o.name + ": o canal 1 mudou durante o Auto UV — reportar.") tipo:#err
+                            if grande then
+                            (
+                                -- Métricas completas em MaxScript levam ~3 min em 300 mil
+                                -- faces. Aqui só a checagem nativa de sobreposição.
+                                local nSobre = -1
+                                try ( nSobre = InLab_UV_SobrepostasNativas uvw ) catch()
+                                local txtSobre = if nSobre < 0 then "sobreposição não verificada" else "sobrepostas: " + nSobre as string
+                                InLab_Log (o.name + (if nSobre != 0 then ": Auto UV com problema no UV (conferir) · " else ": Auto UV OK · ") + metodo +
+                                           " → " + packUsado + " · " + nTris as string + " triângulos: métricas completas e gutter não medidos · " + txtSobre) \
+                                           tipo:(if nSobre != 0 then #warn else #ok)
+                            )
+                            else
+                            (
+                                local met = if metAtual != undefined then metAtual else InLab_MedirUV o INLAB_CANAL_UV_BAKE
+                                -- 09/10/2026 (issue #140): a sobreposição do log é a do
+                                -- selectOverlappedFaces nativo, o mesmo critério da V-15
+                                -- (crítica). O critério geométrico do InLab_MedirUV não
+                                -- bate com o nativo (ver verif_uv.ms), e o log dizia
+                                -- "problema" onde a V-15 passava (e vice-versa).
+                                if met != undefined do
+                                    try ( met.sobrepostas = InLab_UV_SobrepostasNativas uvw )
+                                    catch ( InLab_Log (o.name + ": sobreposição nativa não medida (" + getCurrentException() + "); fica a do InLab_MedirUV.") tipo:#warn )
+                                local comProblema = met == undefined or met.sobrepostas > 0 or met.foraDe01 > 0 or (met.invertidos > 0 and not met.espelhado)
+                                if met != undefined and met.gutterMin != undefined and met.gutterMin > 0.0 and met.gutterMin < padding * 0.98 do
+                                    InLab_Log (o.name + ": gutter " + (formattedPrint met.gutterMin format:".4f") + " abaixo do padding " +
+                                               (formattedPrint padding format:".4f") + " — risco de vazamento no bake.") tipo:#warn
+                                InLab_Log (o.name + (if comProblema then ": Auto UV com problema no UV (conferir) · " else ": Auto UV OK · ") + metodo +
+                                           " → " + (if packUsado != undefined then packUsado else "sem pack") +
+                                           " · " + InLab_UVMetricasTexto met) tipo:(if comProblema then #warn else #ok)
+                            )
+                            processados += 1
+                            join feitosNaRodada (InLab_Instancias o)
+                        )
+                        )
+
+                        -- 24/Set (#48): setMapChannel, selectFaces ou flattenMap falharam
+                        -- (ou a checagem do canal 3) — "metodo" continua undefined e o
+                        -- Unwrap que entrou no stack no início da rodada vira órfão sem
+                        -- aviso. Remove aqui em vez de deixar no objeto.
+                        if metodo == undefined do
+                        (
+                            -- fix#48/r1 (MINOR 3): só loga "removido" se a remoção deu certo.
+                            local removido = true
+                            try ( deleteModifier o uvw )
+                            catch ( InLab_Log (o.name + ": não foi possível remover o Unwrap órfão do canal " + INLAB_CANAL_UV_BAKE as string + ".") tipo:#err ; removido = false )
+                            rec.modificador = undefined
+                            if removido do
+                                InLab_Log (o.name + ": Unwrap órfão removido do stack (etapa anterior falhou).") tipo:#warn
+                        )
+                    )
+                    catch
+                    (
+                        InLab_Log (o.name + ": erro inesperado no Auto UV — " + getCurrentException()) tipo:#err
+                        if uvw != undefined do
+                        (
+                            -- fix#48/r1 (IMPORTANT 1): catch() mudo engolia o erro — loga com o nome do objeto.
+                            try ( deleteModifier o uvw )
+                            catch ( InLab_Log (o.name + ": não foi possível remover o Unwrap órfão do canal " + INLAB_CANAL_UV_BAKE as string + " depois do erro.") tipo:#err )
+                            rec.modificador = undefined
+                        )
+                    )
+
+                    -- fix#48/r1 (MINOR 4): a rodada falhou para este objeto (rec.modificador
+                    -- continua undefined pela limpeza acima) — um registro CRIADO agora não
+                    -- tem nada a reverter (baseOriginal também é sempre undefined na Fase 3) e
+                    -- só confundiria o Reverter mais tarde; sai de InLab_UltimoAutoUV. Um
+                    -- registro que já existia (Auto UV anterior bem-sucedido, removido no topo
+                    -- do laço antes desta tentativa) fica — mas o objeto ficou sem nenhum
+                    -- Unwrap do Auto UV, então avisa que só o Ctrl+Z devolve o anterior.
+                    if rec.modificador == undefined do
+                    (
+                        if recNovo then
+                        (
+                            local idx = findItem InLab_UltimoAutoUV rec
+                            if idx > 0 do deleteItem InLab_UltimoAutoUV idx
+                        )
+                        else
+                            InLab_Log (o.name + ": Auto UV falhou nesta rodada e o Unwrap anterior já tinha sido substituído — só o Ctrl+Z restaura este objeto.") tipo:#warn
+                    )
+
+                    InLab_FecharGrupos gruposAbertos
+                )
+            )
+            try ( select objs ) catch()
+        )
+
+        InLab_Log ("Auto UV: " + processados as string + " de " + objs.count as string + " objeto(s).")
+        processados
+    )
 )
 
 --------------------------------------------------------------------------------
@@ -819,6 +844,7 @@ fn InLab_ReverterAutoUV =
         )
         InLab_UltimoAutoUV = #()
         InLab_UltimoRWF = #()
+        InLab_RWF_Feitos = #() -- #185: o RWF foi desfeito, o Auto UV volta a pedir
         InLab_Log ("Reversão de UV concluída: " + revertidos as string + " objeto(s)" +
                    (if nRWF > 0 then (" · Real World Fix desfeito em " + nRWF as string + " objeto(s).") else "."))
     )

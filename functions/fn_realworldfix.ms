@@ -67,6 +67,11 @@
    convertido de novo (2ª rodada do Auto UV).
  Objetos fora da seleção que compartilham os mapas recebem o RWF, não o Auto UV.
 
+ 14/10/2026 (#185, ajustes do Rafa, item 5): o botão voltou (InLab_RWF_Rodar,
+ no fim do arquivo) e o RWF saiu de dentro do Auto UV. Ordem obrigatória:
+ o Auto UV fica bloqueado até o objeto passar por aqui. Continua sem colapso
+ e com o Desfazer UV do #129.
+
  ENGENHARIA REVERSA DO ARCHTOOLZ (Bake Rendermap > Real World Fix), por
  comparação de estado antes/depois, 22/Set:
  - troca o mapeamento por um Box de gizmo = tamanho do Bitmaptexture nativo
@@ -737,5 +742,42 @@ fn InLab_RealWorldFix objs silencioso:false =
                    nBitmaps as string + "/" + bitmaps.count as string + " bitmap(s) sem Real-World · " +
                    nTp as string + "/" + triplanares.count as string + " Triplanar(es) removido(s).") tipo:tipoResumo
         feitos
+    )
+)
+
+--------------------------------------------------------------------------------
+-- 14/10/2026 (#185, ajustes do Rafa, item 5): o botão Real World Fix voltou.
+-- Ordem obrigatória RWF → Auto UV: o Auto UV só roda em quem está em
+-- InLab_RWF_Feitos (fn_autouv.ms). Objeto que já tem o Unwrap do Auto UV
+-- bloqueia a rodada (ordem inversa): Desfazer UV e refazer os dois. A rodada
+-- vai para InLab_UltimoRWF, que o Desfazer UV desfaz. Objeto sem Real-World
+-- nem Triplanar também conta como feito: não há o que converter.
+--------------------------------------------------------------------------------
+fn InLab_RWF_TemAutoUV o = (for m in o.modifiers where m.name == "InLab AutoUV" collect m).count > 0
+
+fn InLab_RWF_Rodar objs =
+(
+    local geo = for o in objs where InLab_EhGeometria o collect o
+    local comUV = for o in geo where InLab_RWF_TemAutoUV o collect o.name
+    if comUV.count > 0 then
+    (
+        InLab_Log ("Real World Fix bloqueado: " + comUV.count as string + " objeto(s) já com Auto UV (" + (InLab_ListaResumida comUV) +
+                   "). A ordem é Real World Fix → Auto UV: use Desfazer UV e rode os dois de novo.") tipo:#err
+        0
+    )
+    else
+    (
+        local n = 0
+        local ok = true
+        try ( n = InLab_RealWorldFix geo )
+        catch ( ok = false ; InLab_Log ("Real World Fix falhou (" + getCurrentException() + ") — o Auto UV continua bloqueado nesses objetos.") tipo:#err )
+        if ok do
+        (
+            local r = InLab_RWF_UltimaRodada
+            if r != undefined and (r.mods.count + r.bitmaps.count + r.triplanares.count) > 0 do append InLab_UltimoRWF r
+            for o in geo do for i in (InLab_Instancias o) do appendIfUnique InLab_RWF_Feitos i
+            InLab_Log ("Real World Fix pronto em " + geo.count as string + " objeto(s). Próximo passo: Auto UV.") tipo:#ok
+        )
+        n
     )
 )

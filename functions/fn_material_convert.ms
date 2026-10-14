@@ -118,7 +118,13 @@
  InLab_AvisosDoSlot chamava InLab_TransformDoBitmap, declarado global só
  mais abaixo: no 1º fileIn o nome virou local undefined (num reload o global
  já existe, por isso passou nos testes). Agora ele é pré-declarado junto com
- InLab_AvisosDoSlot; tests	est_globais_adiantados.ms confere a regra.
+ InLab_AvisosDoSlot; tests\test_globais_adiantados.ms confere a regra.
+ 14/10/2026 (ajustes do Rafa, item 2): o glTF Material e o Multi/Sub novo
+ levavam o sufixo "_GLTF" no nome. A V-20 e a curadoria da plataforma casam
+ as partes pelo nome do material no GLB (= material_id), e ART_P_Estrutura_GLTF
+ não casava. Agora o material convertido fica com o nome do original (no
+ CoronaLayeredMtl, o nome do Layered, não o da base). O original continua em
+ InLab_UltimaConversao para o Reverter e para a V-23..V-38.
 ================================================================================
 */
 
@@ -730,7 +736,10 @@ fn InLab_ConverterCoronaMtl mtl tamanho fazerBake especiais:#() =
         if baseMtl != undefined then
         (
             InLab_Log (mtl.name + ": CoronaLayeredMtl → convertendo o material BASE '" + baseMtl.name + "'; camadas descartadas.") tipo:#warn
-            InLab_ConverterCoronaMtl baseMtl tamanho fazerBake
+            -- O glTF leva o nome do Layered (o material ligado à parte), não o da base.
+            local g = InLab_ConverterCoronaMtl baseMtl tamanho fazerBake especiais:especiais
+            if g != undefined do g.name = mtl.name
+            g
         )
         else
         (
@@ -747,7 +756,7 @@ fn InLab_ConverterCoronaMtl mtl tamanho fazerBake especiais:#() =
     (
         local cls = InLab_ResolverClasseGLTF()
         local g = cls()
-        g.name = mtl.name + "_GLTF"
+        g.name = mtl.name -- 14/10/2026: sem sufixo, o GLB leva o material_id puro
         local esp = InLab_EspecialDoMaterial mtl.name especiais:especiais
         local especial = esp[1]
         if esp[2] == #materia and especial != #nenhum do
@@ -984,7 +993,7 @@ fn InLab_ConverterMaterialNode mtl tamanho fazerBake especiais:#() =
         local novo = Multimaterial numsubs:mtl.numsubs
         try ( novo.materialIDList = mtl.materialIDList ) catch()
         try ( novo.names = mtl.names ) catch()
-        novo.name = mtl.name + "_GLTF"
+        novo.name = mtl.name
         local converteuAlgum = false
         for i = 1 to mtl.numsubs do
         (
@@ -1073,7 +1082,7 @@ fn InLab_ConverterObjetos objs tamanhoBake:1024 fazerBake:true produto:undefined
                     )
                     o.material = novo
                     convertidos += 1
-                    InLab_Log (o.name + ": material '" + orig.name + "' → '" + novo.name + "'.") tipo:#ok
+                    InLab_Log (o.name + ": material '" + orig.name + "' convertido para glTF.") tipo:#ok
                 )
             )
         )

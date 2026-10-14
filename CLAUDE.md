@@ -21,6 +21,8 @@ Não há build, linter nem test runner fora do Max. Tudo roda dentro do 3ds Max,
 
 **Carga por manifesto.** `InLabChecker.ms` define `INLAB_MODULOS`, a lista ordenada de todos os `.ms` carregados: core → famílias → funções → verificações/relatório → UI. A ordem é a ordem de dependência. **Módulo novo só existe se for adicionado ali.** Arquivos fora do manifesto não são carregados.
 
+**Lista de produtos embutida.** `dados\produtos.json` é o export da plataforma que a seção Produto carrega sozinha (`InLab_Produto_CarregarEmbutido`). O desenhista só cola o `cod_est`. A lista é trocada toda segunda por `install\publicar_semana.ps1`, que também sobe a versão e publica a release (o time recebe pela pastilha). Pasta nova que tem que ir para a release entra nas listas do `git archive` em `install\empacotar.ps1`.
+
 **Tudo é global.** Não há sistema de módulos. Cada arquivo declara `global`s e `fn`s no escopo global, e os módulos se comunicam só por esses globais. Funções públicas levam o prefixo `InLab_`, constantes `INLAB_MAIUSCULO` (ex.: `INLAB_CANAL_UV` em `fn_autouv.ms`). Um global usado antes do arquivo que o define precisa ser pré-declarado com `global Nome` (ver o topo de `InLabChecker.ms` e dos testes). Vale também dentro do mesmo arquivo: `fn` que chama outro `fn` definido mais abaixo precisa do `global` antes. Sem ele, no **primeiro** `fileIn` (Max recém-aberto) o nome vira local `undefined` e dá "Call needs function or class"; no reload o global já existe e o erro some, por isso só aparece na máquina do usuário. Recursão não precisa. `tests/test_globais_adiantados.ms` confere o manifesto inteiro.
 
 **Camadas:**

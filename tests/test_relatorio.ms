@@ -54,6 +54,7 @@ global INLAB_VERSAO, INLAB_TESTE_SAIDA, INLAB_TESTE_FALHAS
         local d = InLab_ParseJSON js
         checar "JSON: o texto gerado é JSON válido" (d != undefined)
         checar "JSON: versão do plugin" ((InLab_JSON_Obter d "versao_plugin") == INLAB_VERSAO)
+        checar "JSON: formato inlabchecker.result/v1 (#181)" ((InLab_JSON_Obter d "formato") == "inlabchecker.result/v1")
         checar "JSON: família" ((InLab_JSON_Obter d "familia") == "giro_assento")
         checar "JSON: aprovado = false" ((InLab_JSON_Obter d "aprovado") == false)
         checar "JSON: limites_provisorios = true" ((InLab_JSON_Obter d "limites_provisorios") == true)

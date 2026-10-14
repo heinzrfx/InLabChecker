@@ -9,11 +9,14 @@
  08/10/2026 (issue #129): sem colapso (modificadores "InLab RWF" vivos),
  instância deduplicada, 2ª rodada sem Xform em dobro, Reverter da rodada e o
  RWF dentro do Auto UV (Desfazer UV desfaz os dois).
+ 14/10/2026 (#185): o RWF voltou a ter botão (InLab_RWF_Rodar) e o Auto UV
+ fica bloqueado até ele rodar; RWF depois do Auto UV é bloqueado.
 */
 -- Declarados ANTES do bloco: o bloco é compilado antes dos fileIn rodarem.
 global InLab_Log, InLab_EhGeometria, InLab_Instancias, InLab_RealWorldFix
 global InLab_RWF_UltimaRodada, InLab_RWF_Reverter, InLab_AutoUV, InLab_ReverterAutoUV, InLab_UltimoRWF, InLab_UltimoAutoUV
 global INLAB_TESTE_SAIDA, INLAB_TESTE_FALHAS, INLAB_TESTE_LOG
+global InLab_RWF_Rodar, InLab_RWF_Feitos
 (
     local dirTeste = getFilenamePath (getSourceFileName())
     local raiz = substring dirTeste 1 (dirTeste.count - 6) -- tira "tests\"
@@ -243,18 +246,27 @@ global INLAB_TESTE_SAIDA, INLAB_TESTE_FALHAS, INLAB_TESTE_LOG
         local uvH = uvAtual h
         InLab_UltimoRWF = #()
         InLab_UltimoAutoUV = #()
+        InLab_RWF_Feitos = #()
+        -- 14/10/2026 (#185): o RWF tem botão (InLab_RWF_Rodar) e vem antes.
+        checar "#185: Auto UV antes do RWF não roda" ((InLab_AutoUV #(h) resolucao:1024) == 0 and (for m in h.modifiers where m.name == "InLab AutoUV" collect m).count == 0)
+        checar "#185: e não converte o Real-World" ((temRWF h) == 0 and difH.realWorldScale)
+        InLab_RWF_Rodar #(h)
+        checar "Botão RWF: canal 1 ÷ 50" ((erroUV uvH (uvAtual h) [50,50]) < 1e-4 and not difH.realWorldScale)
+        checar "Botão RWF: objeto fora da seleção recebe o RWF" ((temRWF h2) == 1)
+        checar "Botão RWF: rodada registrada para o Desfazer UV" (InLab_UltimoRWF.count == 1)
+        checar "Botão RWF: objeto liberado para o Auto UV" ((findItem InLab_RWF_Feitos h) > 0)
         InLab_AutoUV #(h) resolucao:1024
-        checar "Auto UV: Unwrap no topo, RWF abaixo, base continua poly" \
+        checar "Auto UV depois do RWF: Unwrap no topo, RWF abaixo, base continua poly" \
             (h.modifiers[1].name == "InLab AutoUV" and (temRWF h) == 1 and classof h.baseobject == Editable_Poly)
-        checar "Auto UV: canal 1 ÷ 50 (RWF rodou)" ((erroUV uvH (uvAtual h) [50,50]) < 1e-4 and not difH.realWorldScale)
-        checar "Auto UV: objeto fora da seleção recebe só o RWF" ((temRWF h2) == 1 and (for m in h2.modifiers where m.name == "InLab AutoUV" collect m).count == 0)
-        checar "Auto UV: rodada do RWF registrada" (InLab_UltimoRWF.count == 1)
+        checar "Auto UV: objeto fora da seleção fica sem Auto UV" ((for m in h2.modifiers where m.name == "InLab AutoUV" collect m).count == 0)
+        checar "#185: RWF depois do Auto UV é bloqueado (ordem inversa)" ((InLab_RWF_Rodar #(h)) == 0 and (temRWF h) == 1 and InLab_UltimoRWF.count == 1)
         InLab_AutoUV #(h) resolucao:1024
         checar "Auto UV 2×: um só Xform do RWF e um só Unwrap" ((temRWF h) == 1 and (for m in h.modifiers where m.name == "InLab AutoUV" collect m).count == 1)
         InLab_ReverterAutoUV()
         checar "Desfazer UV: sem Unwrap e sem RWF, UV do material de volta" \
             (h.modifiers.count == 1 and (temRWF h2) == 0 and (erroUV uvH (uvAtual h) [1,1]) < 1e-6)
         checar "Desfazer UV: bitmap de volta em Real-World 50×50" (difH.realWorldScale and difH.uvwScale == [50,50,1])
+        checar "#185: Desfazer UV volta a pedir o RWF" (InLab_RWF_Feitos.count == 0)
 
         -- 8. TRIPLANAR E BITMAP REAL-WORLD NO MESMO CANAL (09/10/2026, #169)
         -- Difuso: CoronaBitmap 300×300 em Real-World no canal 1 (UVW Map RW).

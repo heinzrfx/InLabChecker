@@ -112,7 +112,7 @@
  14/10/2026: InLab_Produto_AvisosMateriaPrima chamava InLab_Produto_Rotulo
  antes do `global` dele; num Max recém-aberto, parte sem matéria-prima dava
  "Call needs function or class". O global agora vem antes (ver
- tests	est_globais_adiantados.ms).
+ tests\test_globais_adiantados.ms).
 ================================================================================
 */
 
@@ -296,6 +296,55 @@ fn InLab_Produto_IndicePorArquivo produtos nomeArquivo =
     local idx = InLab_Produto_IndicePorCodigo produtos nomeArquivo
     for i = 1 to produtos.count where idx == 0 and (findItem (InLab_Produto_Variantes produtos[i]) nomeArquivo) > 0 do idx = i
     idx
+)
+
+--------------------------------------------------------------------------------
+-- LISTA EMBUTIDA (14/10/2026, #183, ajustes do Rafa, item 3)
+--------------------------------------------------------------------------------
+-- O desenhista não importa mais o JSON: o plugin traz o export da plataforma
+-- em dados\produtos.json e ele só cola o cod_est copiado da plataforma. A
+-- lista é trocada toda semana numa release nova (install\publicar_semana.ps1)
+-- e chega pela pastilha, com as correções da semana.
+-- Lida uma vez por carga do plugin: o fileIn deste arquivo (abrir, Reload ou
+-- a atualização) zera o cache, e a lista nova vale na hora.
+global INLAB_ROOT -- InLabChecker.ms (pré-declarado sem valor: não apaga)
+global INLAB_PRODUTOS_ARQUIVO = @"dados\produtos.json"
+global InLab_Produto_EmbutidoCache = undefined
+
+-- Árvore do JSON embutido (formato de InLab_ParseJSON) ou undefined, com
+-- #err no log. raiz: só para teste (o padrão é INLAB_ROOT).
+fn InLab_Produto_CarregarEmbutido raiz:unsupplied =
+(
+    if raiz == unsupplied and InLab_Produto_EmbutidoCache != undefined then InLab_Produto_EmbutidoCache
+    else
+    (
+        local base = if raiz == unsupplied then (if INLAB_ROOT == undefined then "" else INLAB_ROOT) else raiz
+        local arq = base + INLAB_PRODUTOS_ARQUIVO
+        local dados = undefined
+        if not (doesFileExist arq) then
+            InLab_Log ("Lista de produtos não encontrada (" + arq + "). Atualize o plugin pela pastilha ou use 'Outro .json'.") tipo:#err
+        else
+        (
+            local texto = InLab_JSON_LerArquivoUTF8 arq
+            dados = if texto == undefined then undefined else InLab_ParseJSON texto
+            if dados != undefined and (InLab_Produto_Lista dados).count == 0 do
+            (
+                InLab_Log ("Lista de produtos embutida sem produtos (" + arq + ").") tipo:#err
+                dados = undefined
+            )
+        )
+        if raiz == unsupplied do InLab_Produto_EmbutidoCache = dados
+        dados
+    )
+)
+
+-- "66 produtos · exportada em 08/10/2026" (para o rótulo da seção Produto).
+fn InLab_Produto_ResumoLista dados =
+(
+    local n = (InLab_Produto_Lista dados).count
+    local quando = InLab_Produto_Texto dados "exportado_em" -- "2026-10-08T19:19:26.341Z"
+    local data = if quando.count >= 10 then (substring quando 9 2) + "/" + (substring quando 6 2) + "/" + (substring quando 1 4) else ""
+    n as string + " produtos" + (if data != "" then " · exportada em " + data else "")
 )
 
 --------------------------------------------------------------------------------

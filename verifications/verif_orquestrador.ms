@@ -13,6 +13,7 @@
    Grupo 5 (UV)             → V-14/15/16                          [ENTREGUE 05/10/2026 — verif_mapeamento.ms, issue #101; V-29/V-39 ficam para o v2]
    Grupo 6 (pesadas)        → V-07, V-08/09/10/13                [ENTREGUE 05/10/2026 — verif_malha.ms, issue #102]
    Grupo 7 (materiais)      → V-23/24/25, V-35/36/37, V-38       [ENTREGUE 06/10/2026 — verif_materiais.ms, issue #103]
+                              V-41 (peça sem material/fallback)  [14/10/2026 — ajustes do Rafa, item 1]
 
  REVISÃO DO GRUPO 3 (auditoria pós-entrega, corrigindo divergências da spec):
    V-03  → agora é UMA verificação só: total de polígonos dentro da faixa
@@ -69,20 +70,37 @@ fn InLab_ObjetosVerificacao =
 -- roda assim mesmo e a V-01 sai "não medido"; Cancelar → não roda.
 -- Devolve true para seguir, false para cancelar. resposta: só para teste
 -- (pula a caixa de diálogo, que é modal).
-fn InLab_SalvarAntesDeVerificar resposta:unsupplied =
+-- 14/10/2026 (#184): com produto escolhido e o .max fora do padrão (nem o
+-- cod_est, nem o master, nem uma variante — InLab_V20_ArquivoValido), a
+-- pergunta pede para salvar como <cod_est>.max: a V-20 compara o nome do
+-- arquivo. Sim → Salvar Como já com <cod_est>.max (na pasta do arquivo
+-- atual); Não → roda e a V-20 reprova. caminho: só para teste (pula o
+-- Salvar Como).
+fn InLab_SalvarAntesDeVerificar produto:undefined resposta:unsupplied caminho:unsupplied =
 (
     local nuncaSalva = (maxFileName == "")
-    if not nuncaSalva and not (getSaveRequired()) then true
+    local cod = if produto == undefined then "" else InLab_Produto_Texto produto "cod_est"
+    local foraDoPadrao = produto != undefined and cod != "" and not (InLab_V20_ArquivoValido produto (getFilenameFile maxFileName))
+    if not nuncaSalva and not (getSaveRequired()) and not foraDoPadrao then true
     else
     (
         if resposta == unsupplied do
-            resposta = yesNoCancelBox ((if nuncaSalva then "A cena ainda não foi salva." else "A cena tem alterações não salvas.") + \
-                "\n\nSalvar antes de verificar? Sem salvar, o peso do arquivo (V-01) não é medido.") title:"InLab · Verificações"
+            resposta = yesNoCancelBox \
+                (if foraDoPadrao then
+                    ("Salve o arquivo com o código do produto: " + cod + ".max\n\n" + \
+                     (if nuncaSalva then "A cena ainda não foi salva." else "O arquivo atual é " + maxFileName + ".") + \
+                     " A verificação confere o nome do arquivo (V-20) e o peso dele (V-01).\n\nSalvar como " + cod + ".max agora?")
+                 else
+                    ((if nuncaSalva then "A cena ainda não foi salva." else "A cena tem alterações não salvas.") + \
+                     "\n\nSalvar antes de verificar? Sem salvar, o peso do arquivo (V-01) não é medido.")) title:"InLab · Verificações"
         case resposta of
         (
             #yes:
             (
-                local caminho = if nuncaSalva then getMaxSaveFileName() else (maxFilePath + maxFileName)
+                if caminho == unsupplied do
+                    caminho = if foraDoPadrao then getMaxSaveFileName filename:(maxFilePath + cod + ".max")
+                              else if nuncaSalva then getMaxSaveFileName()
+                              else (maxFilePath + maxFileName)
                 if caminho == undefined then
                 (
                     InLab_Log "Salvar cancelado — verificação cancelada." tipo:#warn
@@ -91,6 +109,8 @@ fn InLab_SalvarAntesDeVerificar resposta:unsupplied =
                 else if saveMaxFile caminho quiet:true then
                 (
                     InLab_Log ("Cena salva antes de verificar: " + caminho) tipo:#ok
+                    if foraDoPadrao and not (InLab_V20_ArquivoValido produto (getFilenameFile caminho)) do
+                        InLab_Log ("Salvo com outro nome — a V-20 pede " + cod + ".max.") tipo:#warn
                     true
                 )
                 else
@@ -101,7 +121,10 @@ fn InLab_SalvarAntesDeVerificar resposta:unsupplied =
             )
             #no:
             (
-                InLab_Log "Verificando sem salvar — V-01 (peso do arquivo) não será medida." tipo:#warn
+                if foraDoPadrao then
+                    InLab_Log ("Verificando com o arquivo fora do padrão — a V-20 reprova até salvar como " + cod + ".max.") tipo:#warn
+                else
+                    InLab_Log "Verificando sem salvar — V-01 (peso do arquivo) não será medida." tipo:#warn
                 true
             )
             default:
@@ -171,6 +194,7 @@ fn InLab_RodarVerificacoes cfg tampoAcessorio:false codEst:"" nomeProduto:"" pro
         InLab_V36_Cristal mats
         InLab_V37_ZonasEstofado cfg uso produto:produto
         InLab_V38_TampoAcessorio cfg uso produto:produto
+        InLab_V41_PecasComMaterial objetos
 
         -- ===== Grupo 4 · animação avançada (v2) =====
         InLab_Log "Grupo 4 (animação avançada) fica para o v2 — relatório parcial." tipo:#warn

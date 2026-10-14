@@ -82,6 +82,9 @@
  08/10/2026 (issue #129): sai o botão Real World Fix da seção UV e Texturas.
  O RWF roda dentro do Auto UV (antes do Unwrap, sem colapsar) e o Desfazer
  UV desfaz os dois. Limpar UV e Desfazer UV ficam lado a lado.
+ 14/10/2026 (#185, ajustes do Rafa, item 5): o botão Real World Fix volta,
+ acima do Auto UV ("1 · Real World Fix", "2 · Auto UV"); o Auto UV fica
+ bloqueado até o objeto passar pelo RWF.
 
  08/10/2026 (issue #138): sai o dropdown Família da seção Produto. A família
  ativa é a "natureza" do produto escolhido (InLab_Produto_Familia), mostrada
@@ -191,15 +194,17 @@ rollout InLabSecProduto "Produto" width:420
     local nomesMesh = #()  -- paralelo a objsMesh: mesh_final escolhido ou ""
     local meshesProd = #() -- mesh_final distintos do produto escolhido
 
-    label lblProdutoAtivo "Nenhum produto carregado." align:#left
-    button btnImportarProduto "Importar informações do produto" width:395 height:24 tooltip:"Abre o arquivo do produto exportado da plataforma (.json)."
+    label lblProdutoAtivo "Nenhum produto carregado." align:#left width:395
     -- 09/10/2026 (issue #136): busca por parte do nome ou do código, sem
     -- diferenciar maiúsculas nem acentos. Vazia mostra todos.
-    edittext edtBusca "Buscar:" width:395 tooltip:"Filtra a lista de produtos por parte do nome ou do código."
+    -- 14/10/2026 (#183): a lista vem embutida (dados\produtos.json) e o campo
+    -- é para colar o cod_est copiado da plataforma; código exato (ou variante)
+    -- escolhe o produto direto. O "Importar" virou "Usar outro .json", no fim.
+    edittext edtBusca "Código:" width:395 tooltip:"Cole o cod_est copiado da plataforma. Também filtra por parte do nome."
     dropdownlist ddlProduto "Produto:" items:#() width:395
     -- 08/10/2026 (issue #138): família que as verificações usam. Não é mais
     -- escolhida: vem do campo "natureza" do produto (InLab_Produto_Familia).
-    label lblFamilia "Família: importe o produto" align:#left width:395
+    label lblFamilia "Família: cole o código do produto" align:#left width:395
     button btnLerSelecao "Ler materiais" width:395 height:24 tooltip:"Lista os materiais dos objetos selecionados."
     listbox lbxPartes "Parte  →  material:" items:#() height:6 width:395
     dropdownlist ddlMaterial "Material da parte:" items:#() width:395
@@ -211,6 +216,7 @@ rollout InLabSecProduto "Produto" width:420
     -- 09/10/2026 (issue #135): "Desfazer nomes" virou Limpar: desfaz os nomes
     -- e zera as listas. O JSON e o produto escolhido ficam.
     button btnLimpar "Limpar" width:195 height:24 align:#right offset:[-1,0] tooltip:"Volta os nomes de materiais, mapas e objetos ao que eram antes de renomear e limpa as listas. O produto escolhido continua."
+    button btnImportarProduto "Usar outro .json..." width:195 height:20 align:#right offset:[-1,4] tooltip:"Troca a lista embutida por um export da plataforma (.json) só nesta sessão. Para teste: o time usa a lista que vem com o plugin."
 
     fn produtoEscolhido =
         if ddlProduto.selection > 0 and ddlProduto.selection <= visiveis.count then produtos[visiveis[ddlProduto.selection]] else undefined
@@ -218,13 +224,16 @@ rollout InLabSecProduto "Produto" width:420
     -- Refaz o dropdown com os produtos que contêm o termo da busca e mantém
     -- escolhido o produto `idxManter` (índice em `produtos`) se ele continuar
     -- na lista. Devolve true se o produto escolhido mudou.
+    -- #183: cod_est exato (ou variante) vence o produto que já estava escolhido.
     fn filtrarProdutos idxManter =
     (
         visiveis = InLab_Produto_Filtrar produtos edtBusca.text
         ddlProduto.items = for i in visiveis collect InLab_Produto_RotuloDaLista produtos[i]
-        local pos = findItem visiveis idxManter
+        local exato = InLab_Produto_IndicePorArquivo produtos (trimLeft (trimRight edtBusca.text))
+        local pos = findItem visiveis exato
+        if pos == 0 do pos = findItem visiveis idxManter
         ddlProduto.selection = if pos > 0 then pos else if visiveis.count > 0 then 1 else 0
-        pos == 0
+        (pos == 0) or (visiveis[pos] != idxManter)
     )
 
     -- 02/10/2026 (v3): sem as subpartes so3d — o objeto delas usa o material
@@ -268,7 +277,7 @@ rollout InLabSecProduto "Produto" width:420
     )
 
     fn mostrarFamilia =
-        lblFamilia.text = if InLab_FamiliaAtiva == undefined then "Família: importe o produto (vem do campo natureza)"
+        lblFamilia.text = if InLab_FamiliaAtiva == undefined then "Família: cole o código do produto (vem do campo natureza)"
                           else ("Família: " + (InLab_FamiliaRotulo InLab_FamiliaAtiva.nome) + "  (natureza do JSON)")
 
     -- 08/10/2026 (issue #138): a família ativa é a natureza do produto
@@ -324,44 +333,58 @@ rollout InLabSecProduto "Produto" width:420
         aplicarFamilia()
     )
 
+    -- #183: põe a lista na tela (embutida ou de outro .json). Escolhe o
+    -- produto pelo nome do .max; sem ele, fica o 1º e o desenhista cola o
+    -- cod_est no campo Código.
+    fn carregarDados dados rotulo =
+    (
+        InLab_ProdutoAtivo = dados
+        lblProdutoAtivo.text = rotulo
+        produtos = InLab_Produto_Lista dados
+        edtBusca.text = ""
+        filtrarProdutos 0
+        if produtos.count == 0 then
+            InLab_Log "Este JSON não tem lista de produtos — use o export da linha (nomenclatura_export_...json), não o nomenclatura_projeto.json." tipo:#warn
+        else
+        (
+            local cod = getFilenameFile maxFileName
+            local idx = InLab_Produto_IndicePorArquivo produtos cod -- cod_est ou variante de posição (#92)
+            if idx > 0 then
+                InLab_Log ("Produto do arquivo aberto: " + ddlProduto.items[idx]) tipo:#ok
+            else
+                -- Sem produto escolhido (idx 0): nada de família nem aviso de
+                -- um produto qualquer até o cod_est ser colado.
+                InLab_Log ("Cole o cod_est do produto no campo Código" + (if cod == "" then "." else " (o arquivo '" + cod + "' não é um cod_est da lista).")) tipo:#info
+            ddlProduto.selection = idx -- busca vazia: visiveis[idx] == idx
+        )
+        sugerir()
+        sugerirMeshes()
+        aplicarFamilia()
+        avisarNaoLiberado()
+    )
+
+    fn carregarEmbutido =
+    (
+        local dados = InLab_Produto_CarregarEmbutido()
+        if dados == undefined then limparProduto()
+        else carregarDados dados ("Lista da plataforma: " + InLab_Produto_ResumoLista dados)
+    )
+
     on btnImportarProduto pressed do
     (
         local caminho = getOpenFileName caption:"Selecionar .json do produto" types:"JSON (*.json)|*.json"
         if caminho == undefined then
-            InLab_Log "Importação de produto cancelada — nenhum arquivo selecionado." tipo:#warn
+            InLab_Log "Outro .json cancelado — continua a lista de antes." tipo:#info
         else
         (
             local texto = InLab_JSON_LerArquivoUTF8 caminho
             local dados = if texto == undefined then undefined else InLab_ParseJSON texto
-            if dados == undefined then limparProduto()
+            if dados == undefined then carregarEmbutido()
             else
             (
-                InLab_ProdutoAtivo = dados
                 local nomeArquivo = filenameFromPath caminho
-                lblProdutoAtivo.text = "Produto carregado: " + nomeArquivo
-                InLab_Log ("Produto importado com sucesso: " + nomeArquivo) tipo:#ok
-                produtos = InLab_Produto_Lista dados
-                edtBusca.text = ""
-                filtrarProdutos 0
-                if produtos.count == 0 then
-                    InLab_Log "Este JSON não tem lista de produtos — importe o export da linha (nomenclatura_export_...json), não o nomenclatura_projeto.json." tipo:#warn
-                else
-                (
-                    local cod = getFilenameFile maxFileName
-                    local idx = InLab_Produto_IndicePorArquivo produtos cod -- cod_est ou variante de posição (#92)
-                    if idx > 0 then
-                        InLab_Log ("Produto do arquivo aberto: " + ddlProduto.items[idx]) tipo:#ok
-                    else
-                    (
-                        idx = 1
-                        InLab_Log ("Nenhum produto com cod_est ou variante '" + cod + "' (nome do .max) — escolha na lista.") tipo:#warn
-                    )
-                    ddlProduto.selection = idx -- busca vazia: visiveis[idx] == idx
-                )
-                sugerir()
-                sugerirMeshes()
-                aplicarFamilia()
-                avisarNaoLiberado()
+                InLab_Log ("Lista trocada só nesta sessão: " + nomeArquivo + " (reabrir o painel volta à lista embutida).") tipo:#warn
+                carregarDados dados ("Outro .json: " + nomeArquivo + " · " + InLab_Produto_ResumoLista dados)
             )
         )
     )
@@ -389,7 +412,8 @@ rollout InLabSecProduto "Produto" width:420
     )
 
     -- Reabrir o painel zera a lista de produtos: a família ativa sai junto.
-    on InLabSecProduto open do aplicarFamilia()
+    -- 14/10/2026 (#183): e a lista embutida volta (lida uma vez por carga).
+    on InLabSecProduto open do carregarEmbutido()
 
     on btnLerSelecao pressed do
     (
@@ -508,7 +532,11 @@ rollout InLabSecUV "UV e Texturas" width:420
     -- flatten fica sem rótulo, ao lado do botão Auto UV.
     -- 09/10/2026 (issue #131): saiu o dropdown de resolução; o bake é sempre
     -- 1024 (INLAB_RESOLUCAO_BAKE, functions\fn_autouv.ms).
-    button btnF2 "Auto UV" width:130 height:24 align:#left offset:[2,0] across:2 tooltip:"Cria um UV próprio para bake de textura e sombra nos objetos selecionados. Antes, converte a escala real dos mapas (Real World Fix) para funcionar na web."
+    -- 14/10/2026 (#185, ajustes do Rafa, item 5): o Real World Fix volta a ter
+    -- botão, em cima, e vem antes do Auto UV: o Auto UV fica bloqueado nos
+    -- objetos que ainda não passaram por ele (InLab_RWF_Feitos).
+    button btnRWF "1 · Real World Fix" width:395 height:24 align:#left offset:[2,0] tooltip:"Converte a escala real dos mapas (Real-World e Triplanar) para funcionar na web. Rode antes do Auto UV."
+    button btnF2 "2 · Auto UV" width:130 height:24 align:#left offset:[2,0] across:2 tooltip:"Cria um UV próprio para bake de textura e sombra nos objetos selecionados. Só roda depois do Real World Fix."
     spinner spnAnguloUV "" range:[10, 90, 55] type:#float fieldWidth:45 align:#left offset:[-63,3] tooltip:"Ângulo de corte (°). Quanto maior, menos cortes no UV."
     -- 22/Set: o Check Texture e o Verificar Escala saíram da aba (as funções
     -- continuam em functions\, a V-19 usa INLAB_UNIDADE_PADRAO). No lugar,
@@ -516,9 +544,15 @@ rollout InLabSecUV "UV e Texturas" width:420
     -- Desfazer UV (30/09/2026, #58).
     -- 08/10/2026 (issue #129): o Real World Fix roda dentro do Auto UV e o
     -- botão saiu; ficam Limpar e Desfazer UV (que desfaz também o RWF).
+    -- 14/10/2026 (#185): o botão voltou (acima do Auto UV).
     button btnF2Clean "Limpar UV" width:195 height:24 align:#left offset:[2,0] across:2 tooltip:"Remove o UV de bake dos objetos selecionados. O UV do material fica."
     button btnF2Reverter "Desfazer UV" width:195 height:24 align:#right offset:[-1,0] tooltip:"Volta os objetos ao que eram antes do Auto UV, inclusive a escala real dos mapas."
 
+    on btnRWF pressed do
+    (
+        local objs = InLab_SelecaoValida()
+        if objs.count > 0 do InLab_RWF_Rodar objs
+    )
     on btnF2 pressed do
     (
         local objs = InLab_SelecaoValida()
@@ -601,17 +635,21 @@ rollout InLabSecFase4 "Verificações" width:420
     on btnVerificar pressed do
     (
         if InLab_FamiliaAtiva == undefined then
-            InLab_Log "Sem família: importe o JSON e escolha o produto na seção Produto (a família vem do campo natureza)." tipo:#warn
-        else if InLab_SalvarAntesDeVerificar() do
+            InLab_Log "Sem família: cole o cod_est na seção Produto (a família vem do campo natureza)." tipo:#warn
+        else
         (
             -- Produto escolhido na seção Produto vai para o relatório (issue #37)
-            -- e para a V-20, que confere os nomes contra ele (issue #36).
+            -- e para a V-20, que confere os nomes contra ele (issue #36). #184:
+            -- com ele, o salvar pede <cod_est>.max se o arquivo está fora do padrão.
             local p = try (InLabSecProduto.produtoEscolhido()) catch undefined
-            local cod = if p == undefined then "" else InLab_Produto_Texto p "cod_est"
-            local nomeP = if p == undefined then "" else InLab_Produto_Texto p "nome"
-            InLab_ProgressoIniciar "Rodando verificações..."
-            InLab_RodarVerificacoes InLab_FamiliaAtiva tampoAcessorio:chkTampoAcess.checked codEst:cod nomeProduto:nomeP produto:p
-            InLab_ProgressoParar()
+            if InLab_SalvarAntesDeVerificar produto:p do
+            (
+                local cod = if p == undefined then "" else InLab_Produto_Texto p "cod_est"
+                local nomeP = if p == undefined then "" else InLab_Produto_Texto p "nome"
+                InLab_ProgressoIniciar "Rodando verificações..."
+                InLab_RodarVerificacoes InLab_FamiliaAtiva tampoAcessorio:chkTampoAcess.checked codEst:cod nomeProduto:nomeP produto:p
+                InLab_ProgressoParar()
+            )
         )
     )
 )

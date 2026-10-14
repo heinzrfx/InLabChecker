@@ -110,6 +110,11 @@
       comparei h[3] (o campo "dono" do array de windows.getChildrenHWND) com
       windows.getMAXHWND() — bateu (h[3] == maxHwnd). A busca agora exige
       esse filtro também.
+
+ 14/10/2026 (ajustes do Rafa, item 1): InLab_AbrirExportadorRealTime não
+ abre o exportador se alguma peça do escopo está sem material ou com material
+ fallback (InLab_Mat_SemMaterial, fn_material_utils.ms): loga cada uma como
+ #err e devolve false. O GLB saía preto e sem material_id.
 ================================================================================
 */
 
@@ -298,44 +303,57 @@ fn InLab_TrazerExportadorAoFocoComLog jaAberta =
 --------------------------------------------------------------------------------
 fn InLab_AbrirExportadorRealTime objs somenteSelecao:true =
 (
-    if somenteSelecao then
+    -- 14/10/2026 (ajustes do Rafa, item 1): peça sem material ou com o
+    -- fallback sai preta e sem material_id no GLB. Não abre o exportador.
+    local r = InLab_Mat_SemMaterial (if somenteSelecao and objs != undefined then objs else (objects as array))
+    if r[1].count + r[2].count > 0 then
     (
-        if objs != undefined and objs.count > 0 do select objs
+        for n in r[1] do InLab_Log (n + ": sem material — sairia preto e sem material_id no GLB.") tipo:#err
+        for n in r[2] do InLab_Log (n + ": material fallback (preto, metálico 1, rugosidade 1).") tipo:#err
+        InLab_Log ("Exportação bloqueada: " + (r[1].count + r[2].count) as string + " peça(s) sem material válido. Aplique o material da parte e exporte de novo.") tipo:#err
+        false
     )
     else
     (
-        local qtdAntes = selection.count
-        if qtdAntes > 0 do
+        if somenteSelecao then
         (
-            clearSelection()
-            InLab_Log ("Cena inteira: seleção anterior (" + qtdAntes as string +
-                       " objeto(s)) limpa antes de abrir o exportador — evita que a janela " +
-                       "exporte só essa seleção. Não é restaurada automaticamente; reselecione " +
-                       "depois de fechar o exportador, se precisar.") tipo:#warn
+            if objs != undefined and objs.count > 0 do select objs
         )
-    )
-
-    local jaAberta = try ( GameExporterShown() ) catch ( undefined )
-    if jaAberta == true then
-    (
-        InLab_TrazerExportadorAoFocoComLog true
-        true
-    )
-    else
-    (
-        local ok = try ( GameExporterOpenDialog() ) catch ( undefined )
-        if ok == true then
+        else
         (
-            InLab_Log ("Real-Time Exporter aberto" +
-                       (if somenteSelecao then " · seleção atual (" + objs.count as string + " objeto(s))" else " · cena inteira") +
-                       " — escolha formato/compressão/caminho na própria janela.") tipo:#ok
-            InLab_TrazerExportadorAoFocoComLog false
+            local qtdAntes = selection.count
+            if qtdAntes > 0 do
+            (
+                clearSelection()
+                InLab_Log ("Cena inteira: seleção anterior (" + qtdAntes as string +
+                           " objeto(s)) limpa antes de abrir o exportador — evita que a janela " +
+                           "exporte só essa seleção. Não é restaurada automaticamente; reselecione " +
+                           "depois de fechar o exportador, se precisar.") tipo:#warn
+            )
+        )
+
+        local jaAberta = try ( GameExporterShown() ) catch ( undefined )
+        if jaAberta == true then
+        (
+            InLab_TrazerExportadorAoFocoComLog true
             true
         )
         else
         (
-            InLab_Log "Não foi possível abrir o Real-Time Exporter — GameExporterOpenDialog() falhou ou está indisponível nesta build (requer 3ds Max 2017+)." tipo:#err
-            false
+            local ok = try ( GameExporterOpenDialog() ) catch ( undefined )
+            if ok == true then
+            (
+                InLab_Log ("Real-Time Exporter aberto" +
+                           (if somenteSelecao then " · seleção atual (" + objs.count as string + " objeto(s))" else " · cena inteira") +
+                           " — escolha formato/compressão/caminho na própria janela.") tipo:#ok
+                InLab_TrazerExportadorAoFocoComLog false
+                true
+            )
+            else
+            (
+                InLab_Log "Não foi possível abrir o Real-Time Exporter — GameExporterOpenDialog() falhou ou está indisponível nesta build (requer 3ds Max 2017+)." tipo:#err
+                false
+            )
         )
     )
 )
