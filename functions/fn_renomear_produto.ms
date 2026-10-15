@@ -113,6 +113,10 @@
  antes do `global` dele; num Max recém-aberto, parte sem matéria-prima dava
  "Call needs function or class". O global agora vem antes (ver
  tests\test_globais_adiantados.ms).
+ 15/10/2026: InLab_Produto_AvisoExportCopias monta o aviso da janela do
+ Exportar GLB para master/cópia de bloco_3d (o mesmo produto interno e
+ externo, com cod_est diferentes): um export por código. O "Usar outro .json"
+ saiu da UI; a mensagem de lista não encontrada não cita mais ele.
 ================================================================================
 */
 
@@ -322,7 +326,7 @@ fn InLab_Produto_CarregarEmbutido raiz:unsupplied =
         local arq = base + INLAB_PRODUTOS_ARQUIVO
         local dados = undefined
         if not (doesFileExist arq) then
-            InLab_Log ("Lista de produtos não encontrada (" + arq + "). Atualize o plugin pela pastilha ou use 'Outro .json'.") tipo:#err
+            InLab_Log ("Lista de produtos não encontrada (" + arq + "). Atualize o plugin pela pastilha.") tipo:#err
         else
         (
             local texto = InLab_JSON_LerArquivoUTF8 arq
@@ -427,6 +431,33 @@ fn InLab_Produto_AvisosDeBloco produtos produto =
                        ". Depois de exportar este, escolha cada cópia em Produto, use 'Renomear objetos' e exporte de novo.") tipo:#info
         )
     )
+)
+
+-- 15/10/2026: aviso da janela do Exportar GLB para master/cópia de bloco_3d
+-- (ex.: o mesmo banco interno e externo, com cod_est diferentes). O aviso do
+-- log na escolha do produto passava despercebido. "" se não há o que avisar.
+global InLab_Produto_AvisoExportCopias
+fn InLab_Produto_AvisoExportCopias produtos produto =
+(
+    local msg = ""
+    if produto != undefined do
+    (
+        local cod = InLab_Produto_Texto produto "cod_est"
+        local base = InLab_Produto_BaseDaCopia produto
+        local copias = InLab_Produto_CopiasDe produtos cod
+        if copias.count > 0 then
+        (
+            local lista = ""
+            for c in copias do lista += "\n   " + (InLab_Produto_Texto c "cod_est") + " · " + (InLab_Produto_Texto c "nome")
+            msg = cod + " tem " + (if copias.count == 1 then "uma cópia" else (copias.count as string + " cópias")) +
+                  " com código próprio (mesma modelagem):" + lista +
+                  "\n\nDepois deste export: escolha a cópia em Produto, clique em 'Renomear objetos' e exporte de novo."
+        )
+        else if base != "" do
+            msg = cod + " é cópia do " + base + " (mesma modelagem, código próprio).\n\n" +
+                  "Confira se os objetos já foram renomeados para " + cod + " ('Renomear objetos') antes de exportar."
+    )
+    msg
 )
 
 -- 06/10/2026 (export v6): partes com "materia_prima" vazia ({familia: "",

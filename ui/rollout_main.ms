@@ -159,6 +159,11 @@
  Saíram os rótulos lblF2 (Auto UV), lblF34 (Real World Fix) e lblUDetach;
  o ângulo do flatten (spnAnguloUV) ficou sem rótulo, ao lado do Auto UV.
  Saiu o botão "Fechar Plugin" do Log: a janela fecha pelo X.
+
+ 15/10/2026: saiu o botão "Usar outro .json..." da seção Produto (o time só
+ usa a lista embutida). Verificações ganhou um lembrete fixo acima do
+ Verificar (lblLembreteVerif): exceção pedida à regra de 30/09 de não pôr
+ rótulo explicativo, porque o passo é esquecido antes de verificar.
 ================================================================================
 */
 
@@ -200,6 +205,7 @@ rollout InLabSecProduto "Produto" width:420
     -- 14/10/2026 (#183): a lista vem embutida (dados\produtos.json) e o campo
     -- é para colar o cod_est copiado da plataforma; código exato (ou variante)
     -- escolhe o produto direto. O "Importar" virou "Usar outro .json", no fim.
+    -- 15/10/2026: o "Usar outro .json" saiu.
     edittext edtBusca "Código:" width:395 tooltip:"Cole o cod_est copiado da plataforma. Também filtra por parte do nome."
     dropdownlist ddlProduto "Produto:" items:#() width:395
     -- 08/10/2026 (issue #138): família que as verificações usam. Não é mais
@@ -216,7 +222,6 @@ rollout InLabSecProduto "Produto" width:420
     -- 09/10/2026 (issue #135): "Desfazer nomes" virou Limpar: desfaz os nomes
     -- e zera as listas. O JSON e o produto escolhido ficam.
     button btnLimpar "Limpar" width:195 height:24 align:#right offset:[-1,0] tooltip:"Volta os nomes de materiais, mapas e objetos ao que eram antes de renomear e limpa as listas. O produto escolhido continua."
-    button btnImportarProduto "Usar outro .json..." width:195 height:20 align:#right offset:[-1,4] tooltip:"Troca a lista embutida por um export da plataforma (.json) só nesta sessão. Para teste: o time usa a lista que vem com o plugin."
 
     fn produtoEscolhido =
         if ddlProduto.selection > 0 and ddlProduto.selection <= visiveis.count then produtos[visiveis[ddlProduto.selection]] else undefined
@@ -368,25 +373,6 @@ rollout InLabSecProduto "Produto" width:420
         local dados = InLab_Produto_CarregarEmbutido()
         if dados == undefined then limparProduto()
         else carregarDados dados ("Lista da plataforma: " + InLab_Produto_ResumoLista dados)
-    )
-
-    on btnImportarProduto pressed do
-    (
-        local caminho = getOpenFileName caption:"Selecionar .json do produto" types:"JSON (*.json)|*.json"
-        if caminho == undefined then
-            InLab_Log "Outro .json cancelado — continua a lista de antes." tipo:#info
-        else
-        (
-            local texto = InLab_JSON_LerArquivoUTF8 caminho
-            local dados = if texto == undefined then undefined else InLab_ParseJSON texto
-            if dados == undefined then carregarEmbutido()
-            else
-            (
-                local nomeArquivo = filenameFromPath caminho
-                InLab_Log ("Lista trocada só nesta sessão: " + nomeArquivo + " (reabrir o painel volta à lista embutida).") tipo:#warn
-                carregarDados dados ("Outro .json: " + nomeArquivo + " · " + InLab_Produto_ResumoLista dados)
-            )
-        )
     )
 
     on ddlProduto selected i do
@@ -619,6 +605,15 @@ rollout InLabSecF6 "Exportar" width:420
         else
         (
             local objs = if soSelecao then (for o in selection collect o) else undefined
+            -- 15/10/2026: master/cópia de bloco_3d (interno/externo) precisa
+            -- de um export por código. Janela que o desenhista tem que fechar.
+            local p = try (InLabSecProduto.produtoEscolhido()) catch undefined
+            local aviso = if p == undefined then "" else InLab_Produto_AvisoExportCopias InLabSecProduto.produtos p
+            if aviso != "" do
+            (
+                InLab_Log (substituteString aviso "\n" " ") tipo:#warn
+                messageBox aviso title:"InLabChecker · exportar mais de uma vez"
+            )
             InLab_AbrirExportadorRealTime objs somenteSelecao:soSelecao
         )
     )
@@ -630,6 +625,8 @@ rollout InLabSecF6 "Exportar" width:420
 rollout InLabSecFase4 "Verificações" width:420
 (
     checkbox chkTampoAcess "Produto com tampo acessório" checked:false tooltip:"Só para mesas (família Pernas + Tampo)."
+    -- 15/10/2026: lembrete fixo do que fazer antes de verificar.
+    label lblLembreteVerif "Antes de verificar: Reset XForm, Center Pivot, pivot na base e posição zerada (X, Y e Z = 0)." align:#left width:395 height:28
     button btnVerificar "Verificar" width:395 height:24 tooltip:"Confere o produto e salva o relatório ao lado do arquivo."
 
     on btnVerificar pressed do
