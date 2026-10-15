@@ -45,7 +45,7 @@
  objeto oculto continua contando e a EX-01 (verif_geometria.ms) avisa.
 
  28/09/2026 (issue #37): codEst:/nomeProduto: (produto escolhido na UI) vão
- para o relatório em arquivo (report_generator.ms: JSON + HTML).
+ para o relatório em arquivo (report_generator.ms: JSON; o HTML saiu em 15/10/2026).
 
  02/10/2026 (issue #36): produto: (o produto escolhido na seção Produto) vai
  para a V-20, que confere arquivo, objetos e materiais contra os nomes dele.

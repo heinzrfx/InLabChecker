@@ -17,6 +17,7 @@ global InLab_Produto_MeshesDaParte, InLab_Produto_Liberado3D, InLab_Produto_EhMa
 global InLab_Produto_PartesDeMaterial, InLab_Produto_Filtrar, InLab_Produto_RotuloDaLista
 global InLab_Produto_Variantes, InLab_Produto_IndicePorArquivo
 global InLab_Produto_BaseDaCopia, InLab_Produto_CopiasDe, InLab_Produto_MotivoBloqueio, InLab_Produto_AvisosDeBloco
+global InLab_Produto_AvisoExportCopias
 global InLab_Produto_PartesSemMateriaPrima, InLab_Produto_AvisosMateriaPrima
 global InLab_JSON_LerArquivoUTF8, InLab_Produto_CarregarEmbutido, InLab_Produto_ResumoLista
 global INLAB_TESTE_SAIDA, INLAB_TESTE_FALHAS
@@ -377,6 +378,15 @@ global INLAB_TESTE_SAIDA, INLAB_TESTE_FALHAS
         logsCapturados = #()
         InLab_Produto_AvisosDeBloco produtos4 produtos4[4]
         checar "Avisos: produto não liberado → #warn" (logTem #warn "0013")
+
+        -- 15/10/2026: janela do Exportar GLB para master/cópia (interno/externo).
+        local avM = InLab_Produto_AvisoExportCopias produtos4 produtos4[1]
+        checar "AvisoExport: master cita as duas cópias e o nome" ((findString avM "0011") != undefined and (findString avM "0015") != undefined and (findString avM "P0015") != undefined and (findString avM "2 cópias") != undefined)
+        local avC = InLab_Produto_AvisoExportCopias produtos4 produtos4[2]
+        checar "AvisoExport: cópia cita o master e o próprio código" ((findString avC "cópia do 0010") != undefined and (findString avC "renomeados para 0011") != undefined)
+        checar "AvisoExport: master com uma cópia → 'uma cópia'" ((findString (InLab_Produto_AvisoExportCopias produtos4 produtos4[4]) "uma cópia") != undefined)
+        checar "AvisoExport: produto sem bloco_3d → \"\"" ((InLab_Produto_AvisoExportCopias produtos produtos[1]) == "")
+        checar "AvisoExport: produto undefined → \"\"" ((InLab_Produto_AvisoExportCopias produtos4 undefined) == "")
 
         -- 06/10/2026: matéria-prima não indicada (export v6). Tecido não avisa;
         -- export antigo, sem o campo materia_prima, também não.

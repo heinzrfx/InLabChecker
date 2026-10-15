@@ -1,15 +1,15 @@
 /*
  tests\test_relatorio.ms — teste automático do relatório em arquivo (issue #37)
- Registra resultados à mão, gera o JSON e o HTML numa pasta temporária e
- confere o conteúdo (JSON lido de volta pelo InLab_ParseJSON, acentos,
- escape de HTML, veredito) e o nome/pasta dos arquivos.
+ Registra resultados à mão, gera o JSON numa pasta temporária e confere o
+ conteúdo (JSON lido de volta pelo InLab_ParseJSON, acentos, veredito) e o
+ nome/pasta do arquivo. 15/10/2026: o HTML saiu; confere que não é gravado.
  RODAR NUMA CENA VAZIA (File > New).
  Resultado: <pasta temp do Max>\inlab_test_relatorio.txt (PASS/FAIL por item).
 */
 -- Declarados ANTES do bloco: o bloco é compilado antes dos fileIn rodarem.
 global InLab_Log, InLab_VerifResults, InLab_ResetarResultados, InLab_RegistrarVerif, INLAB_LIMITES_PROVISORIOS
 global InLab_ObterFamilia, InLab_ParseJSON, InLab_JSON_Obter, InLab_JSON_LerArquivoUTF8
-global InLab_Relatorio_JSON, InLab_Relatorio_HTML, InLab_SalvarRelatorio, InLab_GerarRelatorio, InLab_UltimoRelatorio
+global InLab_Relatorio_JSON, InLab_SalvarRelatorio, InLab_GerarRelatorio, InLab_UltimoRelatorio
 global INLAB_VERSAO, INLAB_TESTE_SAIDA, INLAB_TESTE_FALHAS
 (
     local dirTeste = getFilenamePath (getSourceFileName())
@@ -72,35 +72,24 @@ global INLAB_VERSAO, INLAB_TESTE_SAIDA, INLAB_TESTE_FALHAS
         checar "JSON: aspas e acento na mensagem voltam iguais" ((InLab_JSON_Obter v21 "mensagem") == "Pé <Mesa> & \"Cadeira\"")
         checar "JSON: data ISO" (matchPattern (InLab_JSON_Obter d "data") pattern:"????-??-??T??:??:??")
 
-        ---------------------------------------------------------------- HTML
-        local ht = InLab_Relatorio_HTML cfg false codEst:"POL-001" nomeProduto:"Poltrona Iandará"
-        checar "HTML: documento completo" (contem ht "<!DOCTYPE html>" and contem ht "</html>")
-        checar "HTML: veredito REPROVADO" (contem ht "REPROVADO")
-        checar "HTML: escapa < > & \"" (contem ht "Pé &lt;Mesa&gt; &amp; &quot;Cadeira&quot;" and not (contem ht "<Mesa>"))
-        checar "HTML: produto e família" (contem ht "POL-001" and contem ht "Poltrona Iandará" and contem ht "giro_assento")
-        checar "HTML: marca o limite provisório" (contem ht "provisório")
-        local htOk = InLab_Relatorio_HTML cfg true
-        checar "HTML: veredito APROVADO" (contem htOk "APROVADO" and not (contem htOk "REPROVADO"))
-
         ---------------------------------------------------------------- ARQUIVOS
-        local arqs = InLab_SalvarRelatorio cfg false codEst:"POL-001" nomeProduto:"Poltrona Iandará" pasta:pasta base:"POL-001"
-        checar "Arquivos: devolve 2 caminhos" (isKindOf arqs Array and arqs.count == 2)
-        checar ("Arquivos: JSON existe (" + arqs[1] + ")") (doesFileExist arqs[1] and arqs[1] == pasta + "POL-001_verificacao.json")
-        checar ("Arquivos: HTML existe (" + arqs[2] + ")") (doesFileExist arqs[2] and arqs[2] == pasta + "POL-001_verificacao.html")
-        local lido = InLab_ParseJSON (InLab_JSON_LerArquivoUTF8 arqs[1])
+        local arq = InLab_SalvarRelatorio cfg false codEst:"POL-001" nomeProduto:"Poltrona Iandará" pasta:pasta base:"POL-001"
+        checar ("Arquivos: JSON existe (" + arq as string + ")") (isKindOf arq String and doesFileExist arq and arq == pasta + "POL-001_verificacao.json")
+        checar "Arquivos: não grava HTML" (not (doesFileExist (pasta + "POL-001_verificacao.html")))
+        local lido = InLab_ParseJSON (InLab_JSON_LerArquivoUTF8 arq)
         checar "Arquivos: JSON em UTF-8 lido de volta com acento" ((InLab_JSON_Obter (InLab_JSON_Obter lido "produto") "nome") == "Poltrona Iandará")
-        local bytes = (dotNetClass "System.IO.File").ReadAllBytes arqs[1]
+        local bytes = (dotNetClass "System.IO.File").ReadAllBytes arq
         checar "Arquivos: JSON sem BOM (começa com '{')" (bytes.count > 0 and bytes[1] == 123)
-        local arqs2 = InLab_SalvarRelatorio cfg true pasta:pasta base:"POL-001"
-        checar "Arquivos: nova rodada sobrescreve (mesmo nome)" (arqs2[1] == arqs[1] and (getFiles (pasta + "*")).count == 2)
+        local arq2 = InLab_SalvarRelatorio cfg true pasta:pasta base:"POL-001"
+        checar "Arquivos: nova rodada sobrescreve (mesmo nome)" (arq2 == arq and (getFiles (pasta + "*")).count == 1)
 
         -- Pelo gerador (o que o orquestrador chama): cena nunca salva → pasta temp.
         InLab_UltimoRelatorio = undefined
         InLab_GerarRelatorio cfg codEst:"POL-001"
-        checar "Gerador: guarda os caminhos em InLab_UltimoRelatorio" (isKindOf InLab_UltimoRelatorio Array and doesFileExist InLab_UltimoRelatorio[1] and doesFileExist InLab_UltimoRelatorio[2])
+        checar "Gerador: guarda o caminho do JSON em InLab_UltimoRelatorio" (isKindOf InLab_UltimoRelatorio String and doesFileExist InLab_UltimoRelatorio)
         if maxFileName == "" do
-            checar ("Gerador: cena nunca salva grava na pasta temp (" + InLab_UltimoRelatorio[1] + ")") ((getFilenamePath InLab_UltimoRelatorio[1]) == (getDir #temp) + "\\" and (filenameFromPath InLab_UltimoRelatorio[1]) == "POL-001_verificacao.json")
-        for f in InLab_UltimoRelatorio do deleteFile f
+            checar ("Gerador: cena nunca salva grava na pasta temp (" + InLab_UltimoRelatorio + ")") ((getFilenamePath InLab_UltimoRelatorio) == (getDir #temp) + "\\" and (filenameFromPath InLab_UltimoRelatorio) == "POL-001_verificacao.json")
+        deleteFile InLab_UltimoRelatorio
     )
     catch
     (
