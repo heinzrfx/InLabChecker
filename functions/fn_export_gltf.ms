@@ -115,10 +115,84 @@
  abre o exportador se alguma peça do escopo está sem material ou com material
  fallback (InLab_Mat_SemMaterial, fn_material_utils.ms): loga cada uma como
  #err e devolve false. O GLB saía preto e sem material_id.
+
+ 15/10/2026 — GLB PRETO NO MAX 2025 (pasta TempMaterialX sem permissão):
+ o exportador glTF do Max 2025 (ATFExporter.dle, o mesmo do 2027) converte
+ cada material para MaterialX e grava <getDir #export>\TempMaterialX\
+ <material>.mtlx antes de escrever o GLB. Num computador do time o projeto
+ apontava para a pasta de instalação (getDir #export =
+ "C:\Program Files\Autodesk\3ds Max 2025\export"), onde só administrador
+ grava: o log do exportador (<arquivo>.glb.log.txt) trouxe FileException
+ FileNotFound em cada .mtlx e o GLB saiu com "fallback Material" de base
+ preta e sem texturas, com o plugin tendo convertido tudo certo. Não é
+ Corona nem licença. O caminho "\TempMaterialX\" foi achado nas strings do
+ ATFExporter.dle (2027); o Max 2024 exporta pelo GLTF_Export clássico e não
+ cria a pasta. InLab_Export_GarantirPastaMaterialX roda antes de abrir o
+ exportador (e no export sem janela): se não consegue criar e gravar em
+ TempMaterialX, troca a pasta de export da sessão (setDir #export) para
+ Documentos\InLab_export (ou a temp do Max) e avisa no log.
 ================================================================================
 */
 
 global InLab_ClasseExportGLTF = undefined   -- cache do exportador resolvido
+
+--------------------------------------------------------------------------------
+-- true se dá para criar <pasta>\TempMaterialX e gravar um arquivo nela.
+-- makeDir sozinho não basta: a pasta pode já existir sem permissão de escrita.
+--------------------------------------------------------------------------------
+fn InLab_Export_PastaGravavel pasta =
+(
+    local ok = false
+    try
+    (
+        local sub = pasta + "\\TempMaterialX"
+        if not (doesDirectoryExist sub) do makeDir sub all:true
+        if doesDirectoryExist sub do
+        (
+            local arq = sub + "\\inlab_teste_escrita.tmp"
+            local io = dotNetClass "System.IO.File"
+            io.WriteAllText arq "InLab"
+            ok = doesFileExist arq
+            io.Delete arq
+        )
+    )
+    catch ( ok = false )
+    ok
+)
+
+--------------------------------------------------------------------------------
+-- Garante que o exportador glTF (Max 2025+) consiga gravar os .mtlx em
+-- <getDir #export>\TempMaterialX. Se não consegue, troca a pasta de export da
+-- sessão para uma gravável. Devolve true se a pasta final é gravável.
+--------------------------------------------------------------------------------
+fn InLab_Export_GarantirPastaMaterialX =
+(
+    local atual = trimRight (getDir #export) "\\"
+    if InLab_Export_PastaGravavel atual then true
+    else
+    (
+        local docs = try ( (dotNetClass "System.Environment").GetFolderPath (dotNetClass "System.Environment+SpecialFolder").MyDocuments ) catch ( "" )
+        local candidatos = #()
+        if docs != "" do append candidatos (docs + "\\InLab_export")
+        append candidatos ((getDir #temp) + "\\InLab_export")
+
+        local nova = undefined
+        for c in candidatos while nova == undefined do
+            if InLab_Export_PastaGravavel c do nova = c
+
+        if nova == undefined then
+        (
+            InLab_Log ("Pasta de export sem permissão de escrita (" + atual + ") e nenhuma alternativa gravável: o GLB pode sair com material preto (fallback). Mude o projeto em File > Project > Set Active Project.") tipo:#err
+            false
+        )
+        else
+        (
+            setDir #export nova
+            InLab_Log ("Pasta de export do projeto sem permissão de escrita (" + atual + "): o exportador glTF grava os materiais em TempMaterialX ali e, sem isso, o GLB sai preto. Pasta de export trocada para " + nova + ".") tipo:#warn
+            true
+        )
+    )
+)
 
 --------------------------------------------------------------------------------
 -- Resolve a classe do exportador glTF varrendo os exportadores registrados.
@@ -154,6 +228,7 @@ fn InLab_ExportGLTF caminho somenteSelecao:true =
     else
     (
         local ok = false
+        InLab_Export_GarantirPastaMaterialX()
         try
         (
             -- #noPrompt: sem diálogo do exportador — export direto.
@@ -315,6 +390,9 @@ fn InLab_AbrirExportadorRealTime objs somenteSelecao:true =
     )
     else
     (
+        -- 15/10/2026: Max 2025 com o projeto em Arquivos de Programas.
+        InLab_Export_GarantirPastaMaterialX()
+
         if somenteSelecao then
         (
             if objs != undefined and objs.count > 0 do select objs
