@@ -161,8 +161,8 @@
  Saiu o botão "Fechar Plugin" do Log: a janela fecha pelo X.
 
  15/10/2026: saiu o botão "Usar outro .json..." da seção Produto (o time só
- usa a lista embutida). Verificações ganhou um lembrete fixo acima do
- Verificar (lblLembreteVerif): exceção pedida à regra de 30/09 de não pôr
+ usa a lista embutida). Verificações ganhou um lembrete fixo no topo,
+ acima do tampo acessório (lblLembreteVerif): exceção pedida à regra de 30/09 de não pôr
  rótulo explicativo, porque o passo é esquecido antes de verificar.
 ================================================================================
 */
@@ -624,9 +624,9 @@ rollout InLabSecF6 "Exportar" width:420
 ----------------------------------------------------------------------
 rollout InLabSecFase4 "Verificações" width:420
 (
-    checkbox chkTampoAcess "Produto com tampo acessório" checked:false tooltip:"Só para mesas (família Pernas + Tampo)."
     -- 15/10/2026: lembrete fixo do que fazer antes de verificar.
     label lblLembreteVerif "Antes de verificar: Reset XForm, Center Pivot, pivot na base e posição zerada (X, Y e Z = 0)." align:#left width:395 height:28
+    checkbox chkTampoAcess "Produto com tampo acessório" checked:false tooltip:"Só para mesas (família Pernas + Tampo)."
     button btnVerificar "Verificar" width:395 height:24 tooltip:"Confere o produto e salva o relatório ao lado do arquivo."
 
     on btnVerificar pressed do
