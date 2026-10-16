@@ -66,6 +66,28 @@ global INLAB_TESTE_SAIDA, INLAB_TESTE_FALHAS
         n
     )
 
+    -- Conta os <Item> que estão DENTRO do <Items> da Main Toolbar (não em
+    -- qualquer lugar). Pega o bug de anexar no nó errado.
+    fn contaItensNaBarra caminho alvo =
+    (
+        local xml = dotNetObject "System.Xml.XmlDocument"
+        xml.load caminho
+        local itens = xml.selectNodes "//Window[@objectName='Main Toolbar']/Items/Item"
+        local n = 0
+        for i = 0 to itens.count - 1 do
+        (
+            local it = itens.itemOf[i]
+            local aid = undefined
+            for a = 0 to it.Attributes.count - 1 do
+            (
+                local atr = it.Attributes.itemOf[a]
+                if (toLower (atr.Name as string)) == "actionid" do aid = (atr.Value as string)
+            )
+            if aid == alvo do n += 1
+        )
+        n
+    )
+
     try
     (
         -- Só define a função; não chama a garantia na UI viva.
@@ -93,7 +115,15 @@ global INLAB_TESTE_SAIDA, INLAB_TESTE_FALHAS
         escreverCuix fxSemBarra false false
         checar "sem barra devolve #semBarra" ((InLab_GarantirBotaoToolbar caminho:fxSemBarra recarregar:false) == #semBarra)
 
-        for p in #(fx, fxVelho, fxSemBarra) do try ( if doesFileExist p do deleteFile p ) catch ()
+        -- 5. <Items> não é o 1o filho da Window -> o item tem que ir pro <Items>
+        local fxOrdem = (getDir #temp) + "\\inlab_fx_ordem.cuix"
+        File.WriteAllText fxOrdem ("<?xml version=\"1.0\" encoding=\"utf-8\"?>" + \
+            "<ADSK_CUI><CUIWindows><Window objectName=\"Main Toolbar\" name=\"Main Toolbar\" type=\"T\">" + \
+            "<Foo></Foo><Items></Items></Window></CUIWindows></ADSK_CUI>")
+        InLab_GarantirBotaoToolbar caminho:fxOrdem recarregar:false
+        checar "item vai pro <Items> mesmo nao sendo o 1o filho" ((contaItensNaBarra fxOrdem INLAB_TOOLBAR_ACTIONID) == 1)
+
+        for p in #(fx, fxVelho, fxSemBarra, fxOrdem) do try ( if doesFileExist p do deleteFile p ) catch ()
     )
     catch
     (

@@ -96,18 +96,55 @@ fn InLab_GarantirBotaoToolbar caminho:undefined recarregar:true =
 (
     local resultado = #erro
 
-    -- Lê um atributo pelo nome, case-insensitive (o Max pode salvar actionID
-    -- como actionId). Devolve "" se não houver.
-    fn _lerAttr node nome =
+    -- Analisa um XmlDocument já carregado: acha o <Items> da Main Toolbar (pelo
+    -- nome, não por posição), lista os <Item> que casam o nosso actionID e diz se
+    -- já está correto (exatamente 1, com os atributos de identidade). Devolve
+    -- #(itens, casados, correto) ou undefined se não houver Main Toolbar/<Items>.
+    fn _analisar xmlDoc =
     (
-        local alvo = toLower nome
-        local v = ""
-        for a = 0 to node.Attributes.count - 1 do
+        -- Lê um atributo pelo nome, case-insensitive (o Max pode salvar actionID
+        -- como actionId). Devolve "" se não houver.
+        fn _lerAttr node nome =
         (
-            local atr = node.Attributes.itemOf[a]
-            if (toLower (atr.Name as string)) == alvo do v = (atr.Value as string)
+            local alvo = toLower nome
+            local v = ""
+            for a = 0 to node.Attributes.count - 1 do
+            (
+                local atr = node.Attributes.itemOf[a]
+                if (toLower (atr.Name as string)) == alvo do v = (atr.Value as string)
+            )
+            v
         )
-        v
+        local r = undefined
+        local barras = xmlDoc.selectNodes "//ADSK_CUI/CUIWindows/Window[@objectName='Main Toolbar']"
+        if barras.count > 0 do
+        (
+            local itens = barras.itemOf[0].selectSingleNode "Items"
+            if itens != undefined do
+            (
+                local casados = #()
+                for i = 0 to itens.ChildNodes.count - 1 do
+                (
+                    local filho = itens.ChildNodes.itemOf[i]
+                    if (filho.Name == "Item") and ((_lerAttr filho "actionID") == INLAB_TOOLBAR_ACTIONID) do
+                        append casados filho
+                )
+                -- Correto = 1 item com os atributos de identidade. NÃO exige
+                -- imageName=="": o Max pode re-serializá-lo e não é essencial ao
+                -- botão (o ícone vem do macro), então exigir isso daria regravação
+                -- a cada boot (churn).
+                local correto = false
+                if casados.count == 1 do
+                (
+                    local it = casados[1]
+                    correto = ((_lerAttr it "type") == "CTB_MACROBUTTON") and \
+                              ((_lerAttr it "macroType") == "MB_TYPE_ACTION") and \
+                              ((_lerAttr it "actionTableID") == "647394")
+                )
+                r = #(itens, casados, correto)
+            )
+        )
+        r
     )
 
     try
@@ -115,7 +152,7 @@ fn InLab_GarantirBotaoToolbar caminho:undefined recarregar:true =
         local Arq = dotNetClass "System.IO.File"
         local cfg = caminho
         if cfg == undefined do cfg = cui.getConfigFile()
-        if cfg == undefined do cfg = (getDir #maxData) + "UI\\Workspaces\\usersave\\Workspace__usersave__.cuix"
+        if cfg == undefined do cfg = (getDir #maxData) + "\\UI\\Workspaces\\usersave\\Workspace__usersave__.cuix"
 
         if not (doesFileExist cfg) then
         (
@@ -127,49 +164,46 @@ fn InLab_GarantirBotaoToolbar caminho:undefined recarregar:true =
             dotnet.loadAssembly "system.xml"
             local xml = dotNetObject "System.Xml.XmlDocument"
             xml.load cfg
-            local barras = xml.selectNodes "//ADSK_CUI/CUIWindows/Window[@objectName='Main Toolbar']"
-            if barras.count == 0 then
+            local a = _analisar xml
+            if a == undefined then
             (
-                format "InLabChecker: Main Toolbar não encontrada no .cuix\n"
+                format "InLabChecker: Main Toolbar/Items não encontrada no .cuix\n"
                 resultado = #semBarra
             )
+            else if a[3] then
+                resultado = #jaExistia   -- já correto: nada a gravar (caso comum do boot)
             else
             (
-                local barra = barras.itemOf[0]
-                local itens = barra.ChildNodes.itemOf[0]   -- <Items>
-
-                -- Coleta os <Item> que casam o nosso actionID (não remove durante a varredura).
-                local casados = #()
-                for i = 0 to itens.ChildNodes.count - 1 do
+                local escrever = true
+                local bak = cfg + ".inlab.bak"
+                if recarregar do
                 (
-                    local filho = itens.ChildNodes.itemOf[i]
-                    if (filho.Name == "Item") and ((_lerAttr filho "actionID") == INLAB_TOOLBAR_ACTIONID) do
-                        append casados filho
-                )
-
-                -- Já está correto (exatamente 1 e com os atributos certos)?
-                local correto = false
-                if casados.count == 1 do
-                (
-                    local it = casados[1]
-                    correto = ((_lerAttr it "type") == "CTB_MACROBUTTON") and \
-                              ((_lerAttr it "macroType") == "MB_TYPE_ACTION") and \
-                              ((_lerAttr it "actionTableID") == "647394") and \
-                              ((_lerAttr it "imageName") == "")
-                )
-
-                if correto then
-                    resultado = #jaExistia
-                else
-                (
-                    local bak = cfg + ".inlab.bak"
-                    if recarregar do
+                    -- Flush do arranjo atual pro disco ANTES de reler o xml: senão o
+                    -- xml.save (de um xml lido antes do flush) descartaria as
+                    -- mudanças de toolbar não-salvas do usuário.
+                    try ( cui.saveConfig() ) catch ()
+                    -- Backup do estado recém-salvo. Sem backup não há como
+                    -- restaurar, então aborta a gravação em vez de arriscar.
+                    local temBak = false
+                    try ( Arq.Copy cfg bak true; temBak = true ) catch ()
+                    if not temBak then
                     (
-                        try ( cui.saveConfig() ) catch ()   -- flush do arranjo atual pro disco
-                        try ( Arq.Copy cfg bak true ) catch ()
+                        format "InLabChecker: não consegui fazer backup do .cuix; não vou gravar\n"
+                        resultado = #erro
+                        escrever = false
                     )
+                    else
+                    (
+                        xml.load cfg       -- relê já com o flush aplicado
+                        a = _analisar xml
+                        if a == undefined do ( resultado = #erro; escrever = false )
+                    )
+                )
 
-                    for it in casados do itens.RemoveChild it
+                if escrever do
+                (
+                    local itens = a[1]
+                    for it in a[2] do itens.RemoveChild it
                     local novo = xml.createElement "Item"
                     novo.setAttribute "typeID" "2"
                     novo.setAttribute "type" "CTB_MACROBUTTON"
