@@ -10,13 +10,13 @@ Na página da última release (<https://github.com/heinzrfx/InLabChecker/release
 
 ## Passo a passo
 
-**1. Abra o 3ds Max e arraste o `.mzp` para dentro do viewport.** (Ou **Scripting > Run Script...** e escolha o `.mzp`.)
+**1. Abra o 3ds Max e arraste o `.mzp` para dentro do viewport.** (Ou **Scripting > Run Script...** e escolha o `.mzp` — **no Max 2027 arrastar pode não fazer nada; nesse caso use o Run Script**.)
 
 O instalador copia o plugin para a pasta de scripts do seu usuário, instala o script que registra o botão na abertura do Max e abre o painel. No fim aparece a mensagem **"InLabChecker v<versão> instalado"**. Se já havia uma instalação, ela fica guardada como `InLabChecker.bak`.
 
-**2. O botão da lâmpada branca já está na barra** de ferramentas do Max — o instalador o coloca lá sozinho. Nas próximas aberturas do Max o painel **não** abre sozinho: clique no botão para abrir.
+**2. O botão da lâmpada branca vai para a barra** de ferramentas do Max — o instalador o coloca lá sozinho, sem o Customize. Em algumas versões ele aparece na hora; em outras (observado no Max 2027) só na **próxima vez que você abrir o Max**. Se não vir o botão, feche e reabra o Max: na abertura o `inlabchecker_boot.ms` o coloca na barra. Das aberturas seguintes em diante o painel **não** abre sozinho — clique no botão para abrir.
 
-Se o botão não aparecer (por exemplo, depois de resetar a UI do Max ou trocar de workspace), feche e abra o Max: na abertura, o `inlabchecker_boot.ms` recoloca o botão na barra.
+Se o botão sumir depois (resetar a UI do Max ou trocar de workspace), reabrir o Max traz ele de volta.
 
 **3. Confira a versão.** A primeira linha do log do painel mostra `Sessão InLabChecker v<versão> · ...`.
 
