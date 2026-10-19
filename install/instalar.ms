@@ -14,10 +14,12 @@
  3. Põe o .novo no lugar. Falha aqui desfaz a troca e mantém a instalação
     antiga.
  4. Copia install\inlabchecker_boot.ms para (getDir #userStartupScripts).
- 5. Roda install\registrar.ms (macro do botão + ícone) e abre o painel.
+ 5. Roda install\registrar.ms (macro do botão + ícone + o botão na barra) e
+    abre o painel.
 
- NÃO põe o botão na barra de ferramentas: o MaxScript não tem API para isso.
- O aviso final explica o arrasto no Customize User Interface.
+ BOTÃO NA BARRA SOZINHO (16/10/2026): o registrar.ms agora injeta o botão na
+ Main Toolbar nativa (InLab_GarantirBotaoToolbar), então não há mais o passo
+ manual do Customize User Interface — o aviso final só diz que o botão já está lá.
 
  Pasta de checkout (com .git) no destino: não instala por cima, igual ao
  updater (InLab_UpdateEhCheckout).
@@ -128,10 +130,8 @@ global INLAB_INSTALAR_SILENCIOSO, INLAB_INSTALAR_DESTINO, INLAB_INSTALAR_RESULTA
         format "InLabChecker v% instalado em %\n" versao destino
         if not silencioso do
             messageBox ("InLabChecker v" + versao + " instalado.\n\n" + \
-                "Para pôr o botão na barra de ferramentas (só na primeira vez):\n" + \
-                "Customize > Customize User Interface... > aba Toolbars,\n" + \
-                "categoria InLab, e arraste InLabChecker para uma barra.\n\n" + \
-                "O ícone da lâmpada aparece a partir da próxima abertura do Max.") title:"InLabChecker"
+                "O botão da lâmpada já está na barra de ferramentas do Max.\n" + \
+                "Clique nele para abrir o painel.") title:"InLabChecker"
     )
     else
     (

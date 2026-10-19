@@ -9,8 +9,10 @@
 
  NA ABERTURA DO MAX, NÃO ABRE O PAINEL: só roda
    (getDir #userScripts)\InLabChecker\install\registrar.ms
- que registra o botão "InLabChecker" (categoria InLab) e copia o ícone. O
- painel abre no clique do botão da barra de ferramentas.
+ que registra o botão "InLabChecker" (categoria InLab), copia o ícone e
+ GARANTE o botão na Main Toolbar nativa (injeta no .cuix se faltar). É assim
+ que, se o artista resetar a UI e o botão sumir, ele volta sozinho na próxima
+ abertura (rede de segurança — ver registrar.ms). O painel abre no clique.
  23/09/2026: até aqui o boot fazia fileIn do InLabChecker.ms e o painel abria
  sozinho em toda abertura do Max; a equipe pediu abertura só pelo ícone.
 
