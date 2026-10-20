@@ -18,6 +18,11 @@
 #
 # 14/10/2026 (#183): leva também dados\ (dados\produtos.json, a lista de
 # produtos embutida, trocada toda semana por install\publicar_semana.ps1).
+#
+# 20/10/2026: o mzp.run não leva mais a linha "version". O MaxScript lê o valor
+# como número: "version 1.1" passava, mas "version 1.2.2" (três partes) dá
+# "Compile error: Bad number or time syntax" e o .mzp não instala (arrastar para
+# o viewport não faz nada; Run Script mostra o erro). A linha é opcional.
 param(
     [string]$Ref = "HEAD",
     [string]$Saida = "."
@@ -40,7 +45,6 @@ New-Item -ItemType Directory -Path $tmp | Out-Null
 $run = Join-Path $tmp "mzp.run"
 $conteudo = @(
     'name "InLabChecker"',
-    "version $versao",
     'extract to "$temp\InLabChecker_instalar"',
     'run "$temp\InLabChecker_instalar\install\instalar.ms"',
     'clear temp on MAX exit'
