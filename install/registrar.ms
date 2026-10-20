@@ -33,6 +33,16 @@
  abertura (InLab_GarantirBotaoToolbar re-injeta). O botão aponta para um macro e
  um actionID estáveis, então sobrevive à troca da pasta do plugin pela pastilha.
 
+ QUAL .cuix (20/10/2026): num Max 2025 recém-instalado, cui.getConfigFile()
+ devolve o DefaultUI.cuix de C:\Program Files, que não aceita gravação: o
+ backup falhava, a garantia dava #erro e o botão não ia para a barra (o
+ instalador dizia que ia). O arquivo do usuário é o do workspace corrente
+ (WorkspaceManager.GetWriteDirectory() + identificador + ".cuix", na pasta
+ do usuário), e é ele que o Max lê e regrava. Injetado ali, com o
+ cui.loadConfig, o botão aparece na hora, sem reabrir o Max (testado no
+ 2025.3). InLab_Toolbar_CuixAlvo escolhe: workspace → cui.getConfigFile() →
+ usersave.
+
  TESTE: com INLAB_TOOLBAR_SO_DEFINIR == true no fileIn, o arquivo só DEFINE a
  função (não chama a garantia na UI viva). InLab_GarantirBotaoToolbar aceita
  caminho: (um .cuix de fixture) e recarregar:false (não toca na UI). Ver
@@ -43,7 +53,7 @@
  boot, que o artista copia à mão, só faz fileIn deste arquivo e fica estável.
 ================================================================================
 */
-global InLab_GarantirBotaoToolbar, INLAB_TOOLBAR_ACTIONID, INLAB_TOOLBAR_SO_DEFINIR
+global InLab_GarantirBotaoToolbar, InLab_Toolbar_CuixAlvo, INLAB_TOOLBAR_ACTIONID, INLAB_TOOLBAR_SO_DEFINIR
 
 -- actionID do <Item> na toolbar = <macro>`<categoria>.
 INLAB_TOOLBAR_ACTIONID = "InLabChecker_Abrir`InLab"
@@ -87,8 +97,41 @@ macroScript InLabChecker_Abrir
     )
 )
 
+-- .cuix que o Max lê e regrava para este usuário. 1º o do workspace corrente
+-- (pasta do usuário); depois cui.getConfigFile(); por último o usersave.
+-- Devolve undefined se nenhum existir. Ver "QUAL .cuix" no cabeçalho.
+fn InLab_Toolbar_CuixAlvo =
+(
+    local alvo = undefined
+    try
+    (
+        local dirW = WorkspaceManager.GetWriteDirectory()
+        local id = WorkspaceManager.GetCurrentWorkspaceIdentifier()
+        if dirW != undefined and dirW != "" and id != undefined and id != "" do
+        (
+            local ultimo = dirW[dirW.count]
+            if ultimo != "\\" and ultimo != "/" do dirW += "\\"
+            local p = dirW + id + ".cuix"
+            if doesFileExist p do alvo = p
+        )
+    )
+    catch ()
+    if alvo == undefined do
+    (
+        local p = undefined
+        try ( p = cui.getConfigFile() ) catch ()
+        if p != undefined and doesFileExist p do alvo = p
+    )
+    if alvo == undefined do
+    (
+        local p = (getDir #maxData) + "\\UI\\Workspaces\\usersave\\Workspace__usersave__.cuix"
+        if doesFileExist p do alvo = p
+    )
+    alvo
+)
+
 -- Garante o botão na Main Toolbar nativa do Max, injetando um <Item> no .cuix.
---  caminho:    .cuix a editar; undefined usa cui.getConfigFile() (+ fallback).
+--  caminho:    .cuix a editar; undefined usa InLab_Toolbar_CuixAlvo().
 --  recarregar: true faz flush+backup+loadConfig na UI viva; false só edita o
 --              arquivo (seam de teste, não toca na UI).
 -- Devolve: #adicionado | #jaExistia | #semBarra | #erro.
@@ -151,10 +194,9 @@ fn InLab_GarantirBotaoToolbar caminho:undefined recarregar:true =
     (
         local Arq = dotNetClass "System.IO.File"
         local cfg = caminho
-        if cfg == undefined do cfg = cui.getConfigFile()
-        if cfg == undefined do cfg = (getDir #maxData) + "\\UI\\Workspaces\\usersave\\Workspace__usersave__.cuix"
+        if cfg == undefined do cfg = InLab_Toolbar_CuixAlvo()
 
-        if not (doesFileExist cfg) then
+        if cfg == undefined or not (doesFileExist cfg) then
         (
             format "InLabChecker: .cuix não encontrado (%)\n" (cfg as string)
             resultado = #erro
