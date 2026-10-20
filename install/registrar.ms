@@ -40,8 +40,11 @@
  (WorkspaceManager.GetWriteDirectory() + identificador + ".cuix", na pasta
  do usuário), e é ele que o Max lê e regrava. Injetado ali, com o
  cui.loadConfig, o botão aparece na hora, sem reabrir o Max (testado no
- 2025.3). InLab_Toolbar_CuixAlvo escolhe: workspace → cui.getConfigFile() →
- usersave.
+ 2025.3). InLab_Toolbar_CuixAlvo escolhe: cui.getConfigFile() se aceitar
+ gravação → usersave do workspace → <id>.cuix do workspace → usersave antigo.
+ No 2024 o getConfigFile() é o usersave (Workspace1__usersave__.cuix, com as
+ personalizações do usuário) e o <id>.cuix é só o modelo do workspace:
+ carregar o modelo descartaria as personalizações, por isso ele vem depois.
 
  TESTE: com INLAB_TOOLBAR_SO_DEFINIR == true no fileIn, o arquivo só DEFINE a
  função (não chama a garantia na UI viva). InLab_GarantirBotaoToolbar aceita
@@ -97,30 +100,49 @@ macroScript InLabChecker_Abrir
     )
 )
 
--- .cuix que o Max lê e regrava para este usuário. 1º o do workspace corrente
--- (pasta do usuário); depois cui.getConfigFile(); por último o usersave.
--- Devolve undefined se nenhum existir. Ver "QUAL .cuix" no cabeçalho.
+-- .cuix que o Max lê e regrava para este usuário. Ordem:
+--  1. cui.getConfigFile(), se aceitar gravação (caso comum: o usersave);
+--  2. <pasta dos workspaces>\usersave\<id>__usersave__.cuix;
+--  3. <pasta dos workspaces>\<id>.cuix (Max 2025 recém-instalado);
+--  4. o usersave antigo em #maxData.
+-- O usersave vem antes do <id>.cuix porque é ele que guarda as personalizações
+-- do usuário: carregar o <id>.cuix (o modelo do workspace) as descartaria.
+-- Devolve undefined se nenhum servir. Ver "QUAL .cuix" no cabeçalho.
 fn InLab_Toolbar_CuixAlvo =
 (
-    local alvo = undefined
-    try
+    fn _gravavel p =
     (
-        local dirW = WorkspaceManager.GetWriteDirectory()
-        local id = WorkspaceManager.GetCurrentWorkspaceIdentifier()
-        if dirW != undefined and dirW != "" and id != undefined and id != "" do
+        local ok = false
+        try
         (
-            local ultimo = dirW[dirW.count]
-            if ultimo != "\\" and ultimo != "/" do dirW += "\\"
-            local p = dirW + id + ".cuix"
-            if doesFileExist p do alvo = p
+            local fs = (dotNetClass "System.IO.File").Open p (dotNetClass "System.IO.FileMode").Open \
+                (dotNetClass "System.IO.FileAccess").ReadWrite (dotNetClass "System.IO.FileShare").ReadWrite
+            fs.Close()
+            ok = true
         )
+        catch ()
+        ok
     )
-    catch ()
+    local alvo = undefined
+    local p = undefined
+    try ( p = cui.getConfigFile() ) catch ()
+    if p != undefined and doesFileExist p and (_gravavel p) do alvo = p
     if alvo == undefined do
     (
-        local p = undefined
-        try ( p = cui.getConfigFile() ) catch ()
-        if p != undefined and doesFileExist p do alvo = p
+        try
+        (
+            local dirW = WorkspaceManager.GetWriteDirectory()
+            local id = WorkspaceManager.GetCurrentWorkspaceIdentifier()
+            if dirW != undefined and dirW != "" and id != undefined and id != "" do
+            (
+                local ultimo = dirW[dirW.count]
+                if ultimo != "\\" and ultimo != "/" do dirW += "\\"
+                for c in #(dirW + "usersave\\" + id + "__usersave__.cuix", dirW + id + ".cuix") \
+                    while alvo == undefined do
+                    if doesFileExist c and (_gravavel c) do alvo = c
+            )
+        )
+        catch ()
     )
     if alvo == undefined do
     (

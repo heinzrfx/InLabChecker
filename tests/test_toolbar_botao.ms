@@ -136,6 +136,22 @@ global INLAB_TESTE_SAIDA, INLAB_TESTE_FALHAS
         try ( dirW = WorkspaceManager.GetWriteDirectory() ) catch ()
         if dirW != undefined do
             checar "cuix alvo na pasta de escrita dos workspaces" (alvo != undefined and (findString (toLower alvo) (toLower dirW)) == 1)
+        -- Se o cuix corrente do Max aceita gravação, é ele (o usersave guarda as
+        -- personalizações do usuário; o <id>.cuix do workspace é só o modelo).
+        local cfgMax = cui.getConfigFile()
+        local cfgGravavel = false
+        try
+        (
+            local fs = File.Open cfgMax (dotNetClass "System.IO.FileMode").Open \
+                (dotNetClass "System.IO.FileAccess").ReadWrite (dotNetClass "System.IO.FileShare").ReadWrite
+            fs.Close()
+            cfgGravavel = true
+        )
+        catch ()
+        if cfgGravavel then
+            checar ("cuix corrente gravavel e o escolhido (" + cfgMax + ")") (alvo != undefined and (toLower alvo) == (toLower cfgMax))
+        else
+            checar ("cuix corrente nao gravavel (" + cfgMax + ") nao e o escolhido") (alvo != undefined and (toLower alvo) != (toLower cfgMax))
 
         for p in #(fx, fxVelho, fxSemBarra, fxOrdem) do try ( if doesFileExist p do deleteFile p ) catch ()
     )
