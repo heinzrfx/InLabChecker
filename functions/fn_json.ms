@@ -17,6 +17,11 @@
  INLAB_JSON_Leitor diz qual rodou e o log avisa na troca. Teste:
  tests\test_json.ms (rodar no 2024 e no 2027).
 
+ CORREÇÃO 20/10/2026 — MAX 2025 AINDA É .NET FRAMEWORK 4.8: testado no 2025
+ (27.3), o System.Text.Json não carrega e quem roda é o JavaScriptSerializer,
+ igual ao 2024. O .NET 8+ começa no Max 2026. O código não muda (a ordem de
+ tentativa já cobre os dois casos); só os comentários, o log e o teste.
+
  REPRESENTAÇÃO ESCOLHIDA (decisão desta fase, documentada conforme pedido):
    objeto JSON {...}  → Array MAXScript de pares #(chave, valor), chave
                          sempre String — NÃO o struct nativo `dictionary`.
@@ -393,8 +398,8 @@ fn InLab_JSON_DotNetParaNativo v =
 --------------------------------------------------------------------------------
 
 --------------------------------------------------------------------------------
--- PARSER System.Text.Json — Max 2025 a 2027 (ajuste 06/10/2026)
--- Do Max 2025 em diante o Max roda .NET 8+ (o 2027 roda .NET 10), que não
+-- PARSER System.Text.Json — Max 2026 a 2027 (ajuste 06/10/2026)
+-- Do Max 2026 em diante o Max roda .NET 8+ (o 2027 roda .NET 10), que não
 -- tem JavaScriptSerializer: "Cannot resolve type". O plugin caía no parser
 -- MAXScript e travava com o export real (teste no Max 2027: 19 min sem
 -- terminar). System.Text.Json é o leitor nativo do .NET moderno. O
@@ -483,7 +488,7 @@ fn InLab_ParseJSON texto =
         InLab_Log "InLab_ParseJSON: texto vazio ou indefinido — nada para interpretar." tipo:#err
     else if (InLab_JSON_ParseSystemTextJson()) != undefined then
     (
-        if INLAB_JSON_Leitor != #systemTextJson do InLab_Log "InLab_ParseJSON: leitor System.Text.Json (.NET moderno, Max 2025+)." tipo:#info
+        if INLAB_JSON_Leitor != #systemTextJson do InLab_Log "InLab_ParseJSON: leitor System.Text.Json (.NET moderno, Max 2026+)." tipo:#info
         INLAB_JSON_Leitor = #systemTextJson
         local doc = undefined
         local erro = undefined
@@ -513,7 +518,7 @@ fn InLab_ParseJSON texto =
         local ser = InLab_JSON_SerializerDotNet()
         if ser != undefined then
         (
-            if INLAB_JSON_Leitor != #javaScriptSerializer do InLab_Log "InLab_ParseJSON: leitor JavaScriptSerializer (.NET Framework, Max 2024)." tipo:#info
+            if INLAB_JSON_Leitor != #javaScriptSerializer do InLab_Log "InLab_ParseJSON: leitor JavaScriptSerializer (.NET Framework, Max 2024 e 2025)." tipo:#info
             INLAB_JSON_Leitor = #javaScriptSerializer
             local bruto = undefined
             local erro = undefined
