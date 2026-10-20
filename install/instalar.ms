@@ -21,6 +21,10 @@
  Main Toolbar nativa (InLab_GarantirBotaoToolbar), então não há mais o passo
  manual do Customize User Interface — o aviso final só diz que o botão já está lá.
 
+ 20/10/2026: o aviso final confere o botão (InLab_GarantirBotaoToolbar) em vez
+ de afirmar que ele está na barra. No Max 2025 recém-instalado a injeção falhava
+ (cuix em Program Files, ver registrar.ms) e o aviso dizia que tinha dado certo.
+
  Pasta de checkout (com .git) no destino: não instala por cima, igual ao
  updater (InLab_UpdateEhCheckout).
 
@@ -30,6 +34,7 @@
 ================================================================================
 */
 global INLAB_INSTALAR_SILENCIOSO, INLAB_INSTALAR_DESTINO, INLAB_INSTALAR_RESULTADO
+global InLab_GarantirBotaoToolbar -- definido pelo install\registrar.ms no meio do bloco
 (
     local Dir = dotNetClass "System.IO.Directory"
     local Arq = dotNetClass "System.IO.File"
@@ -53,6 +58,7 @@ global INLAB_INSTALAR_SILENCIOSO, INLAB_INSTALAR_DESTINO, INLAB_INSTALAR_RESULTA
     local causa = ""
     local passo = ""
     local antigoParaBak = false
+    local botaoNaBarra = false
 
     -- Versão do pacote, só para as mensagens (lida do core\versao.ms).
     local versao = "?"
@@ -117,6 +123,12 @@ global INLAB_INSTALAR_SILENCIOSO, INLAB_INSTALAR_DESTINO, INLAB_INSTALAR_RESULTA
             -- Com destino de teste, o painel abre direto pelo entry point.
             passo = "registrar o botão"
             fileIn (destino + "\\install\\registrar.ms")
+            -- O registrar já tentou pôr o botão; a 2ª chamada só lê o .cuix e diz
+            -- se ele está lá (#jaExistia) ou tenta de novo.
+            passo = "conferir o botão na barra"
+            local rBotao = InLab_GarantirBotaoToolbar()
+            botaoNaBarra = (rBotao == #jaExistia or rBotao == #adicionado)
+            if not botaoNaBarra do format "InLabChecker: botão não foi para a barra (%)\n" rBotao
             passo = "abrir o painel"
             fileIn (destino + "\\InLabChecker.ms")
         )
@@ -130,8 +142,10 @@ global INLAB_INSTALAR_SILENCIOSO, INLAB_INSTALAR_DESTINO, INLAB_INSTALAR_RESULTA
         format "InLabChecker v% instalado em %\n" versao destino
         if not silencioso do
             messageBox ("InLabChecker v" + versao + " instalado.\n\n" + \
-                "O botão da lâmpada já está na barra de ferramentas do Max.\n" + \
-                "Clique nele para abrir o painel.") title:"InLabChecker"
+                (if botaoNaBarra then
+                    "O botão da lâmpada já está na barra de ferramentas do Max.\nClique nele para abrir o painel."
+                else
+                    "O botão da lâmpada não entrou na barra agora. Feche e abra o Max:\nna abertura ele é colocado lá.")) title:"InLabChecker"
     )
     else
     (

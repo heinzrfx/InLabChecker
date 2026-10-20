@@ -5,10 +5,12 @@
  Monta .cuix de fixture em (getDir #temp) e exercita a injeção do <Item> na
  Main Toolbar com recarregar:false (sem tocar na UI viva do Max).
  Saída: (getDir #temp)\inlab_test_toolbar.txt — PASS/FAIL por item.
+ 20/10/2026: item 6 confere que o .cuix alvo é o do workspace do usuário
+ (InLab_Toolbar_CuixAlvo), não o DefaultUI.cuix de Program Files.
  Usa openFile mode:"wt" (não createFile): o safe_mode do MCP bloqueia createFile.
 */
 -- Declarados ANTES do bloco: o bloco é compilado antes dos fileIn rodarem.
-global InLab_GarantirBotaoToolbar, INLAB_TOOLBAR_ACTIONID, INLAB_TOOLBAR_SO_DEFINIR
+global InLab_GarantirBotaoToolbar, InLab_Toolbar_CuixAlvo, INLAB_TOOLBAR_ACTIONID, INLAB_TOOLBAR_SO_DEFINIR
 global INLAB_TESTE_SAIDA, INLAB_TESTE_FALHAS
 (
     local dirTeste = getFilenamePath (getSourceFileName())
@@ -122,6 +124,34 @@ global INLAB_TESTE_SAIDA, INLAB_TESTE_FALHAS
             "<Foo></Foo><Items></Items></Window></CUIWindows></ADSK_CUI>")
         InLab_GarantirBotaoToolbar caminho:fxOrdem recarregar:false
         checar "item vai pro <Items> mesmo nao sendo o 1o filho" ((contaItensNaBarra fxOrdem INLAB_TOOLBAR_ACTIONID) == 1)
+
+        -- 6. .cuix alvo é o do workspace do usuário, não o de Program Files
+        --    (Max 2025 recém-instalado: cui.getConfigFile() aponta para o
+        --    DefaultUI.cuix da instalação, que não aceita gravação).
+        local alvo = InLab_Toolbar_CuixAlvo()
+        checar ("cuix alvo existe (" + alvo as string + ")") (alvo != undefined and doesFileExist alvo)
+        local raizMax = toLower (getDir #maxRoot)
+        checar "cuix alvo fora da pasta de instalacao do Max" (alvo != undefined and (findString (toLower alvo) raizMax) != 1)
+        local dirW = undefined
+        try ( dirW = WorkspaceManager.GetWriteDirectory() ) catch ()
+        if dirW != undefined do
+            checar "cuix alvo na pasta de escrita dos workspaces" (alvo != undefined and (findString (toLower alvo) (toLower dirW)) == 1)
+        -- Se o cuix corrente do Max aceita gravação, é ele (o usersave guarda as
+        -- personalizações do usuário; o <id>.cuix do workspace é só o modelo).
+        local cfgMax = cui.getConfigFile()
+        local cfgGravavel = false
+        try
+        (
+            local fs = File.Open cfgMax (dotNetClass "System.IO.FileMode").Open \
+                (dotNetClass "System.IO.FileAccess").ReadWrite (dotNetClass "System.IO.FileShare").ReadWrite
+            fs.Close()
+            cfgGravavel = true
+        )
+        catch ()
+        if cfgGravavel then
+            checar ("cuix corrente gravavel e o escolhido (" + cfgMax + ")") (alvo != undefined and (toLower alvo) == (toLower cfgMax))
+        else
+            checar ("cuix corrente nao gravavel (" + cfgMax + ") nao e o escolhido") (alvo != undefined and (toLower alvo) != (toLower cfgMax))
 
         for p in #(fx, fxVelho, fxSemBarra, fxOrdem) do try ( if doesFileExist p do deleteFile p ) catch ()
     )
