@@ -2,6 +2,8 @@
  tests\test_json.ms — leitor de JSON (functions\fn_json.ms) em Max 2024 a 2027
  06/10/2026: Max 2025+ roda .NET 8+ e não tem JavaScriptSerializer
  (System.Web.Extensions); o leitor novo usa System.Text.Json.
+ 20/10/2026: corrigido — o Max 2025 (27000) ainda é .NET Framework 4.8 e usa
+ o JavaScriptSerializer; o .NET 8+ começa no 2026 (28000).
  RODAR NUMA CENA VAZIA. Resultado: <pasta temp do Max>\inlab_test_json.txt
 */
 -- Declarados ANTES do bloco: o bloco é compilado antes dos fileIn rodarem.
@@ -65,7 +67,7 @@ global INLAB_TESTE_SAIDA, INLAB_TESTE_FALHAS
         checar "Texto vazio devolve undefined" ((InLab_ParseJSON "") == undefined)
 
         ---------------------------------------------------------------- leitor
-        local esperado = if versaoMax >= 27000 then #systemTextJson else #javaScriptSerializer
+        local esperado = if versaoMax >= 28000 then #systemTextJson else #javaScriptSerializer
         checar ("Leitor nativo do .NET desta versão: " + INLAB_JSON_Leitor as string + " (esperado " + esperado as string + ")") (INLAB_JSON_Leitor == esperado)
 
         ---------------------------------------------------------------- dado real
