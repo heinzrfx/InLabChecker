@@ -145,3 +145,11 @@ Também: rodada completa do motor com V-14, V-15 e V-16 presentes (`test_verific
 - Densidade de texel, distorção, gutter e aproveitamento: `InLab_MedirUV` mede, mas a spec não pede.
 - Exigir o canal 3 em toda peça: decisão de 05/10/2026, ele é opcional no v1.
 - Corrigir: as verificações só apontam.
+
+## 7. Atualização de 22/10/2026: Auto UV opcional
+
+Decisão com a Bianca: o GLB só precisa do canal 1 mapeado e do Real World Fix. O canal 3 (unwrap do Auto UV) só serve ao bake, que fica para a V2.
+
+- V-15: continua medindo o canal 3 nas peças que o têm, mas a falha vira `#warning` (não crítica) enquanto `INLAB_AUTOUV_OBRIGATORIO = false` (`fn_autouv.ms`). Na V2, com a constante em `true`, volta a reprovar.
+- V-14 (canal 1 presente e não colapsado) continua crítica. V-16 já era advertência.
+- Na UI, o Auto UV e o Limpar UV ficam atrás de um checkbox desmarcado; o Real World Fix e o Desfazer UV ficam sempre ligados.

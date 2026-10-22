@@ -125,6 +125,9 @@
  não casava. Agora o material convertido fica com o nome do original (no
  CoronaLayeredMtl, o nome do Layered, não o da base). O original continua em
  InLab_UltimaConversao para o Reverter e para a V-23..V-38.
+ 22/10/2026: os avisos de Triplanar e de bitmap em Real-World mandam rodar o
+ Real World Fix, não mais o Auto UV (o RWF saiu do Auto UV em 14/10, #185, e
+ o Auto UV virou opcional nesta versão).
 ================================================================================
 */
 
@@ -298,7 +301,7 @@ fn InLab_AvisosDoSlot tm nomeMtl rotulo =
                     append tiling (nome + " com tiling " + (formattedPrint tu format:".2f") + "×" + (formattedPrint tv format:".2f") + " dentro de procedural: o ladrilho bakeado não fecha (emenda no GLB)")
             )
         )
-        if triplanar do ( InLab_Log (pre + "CoronaTriplanar no mapa — rode o Auto UV antes de converter (o Real World Fix troca o Triplanar por UVW Map); convertido assim, a textura sai numa projeção errada.") tipo:#warn ; n += 1 )
+        if triplanar do ( InLab_Log (pre + "CoronaTriplanar no mapa — rode o Real World Fix antes de converter (ele troca o Triplanar por UVW Map); convertido assim, a textura sai numa projeção errada.") tipo:#warn ; n += 1 )
         for c in xyz do ( InLab_Log (pre + c + " em coordenadas 3D — o bake sai sem o padrão.") tipo:#warn ; n += 1 )
         if falloffs do ( InLab_Log (pre + "falloff — o efeito de borda não vai para o glTF; o bake aproxima.") tipo:#warn ; n += 1 )
         for t in tiling do ( InLab_Log (pre + t + ".") tipo:#warn ; n += 1 )
@@ -472,7 +475,7 @@ fn InLab_TexmapParaGLTF texmap nomeBase tamanho fazerBake inverter:false precisa
     local tr = if ehBitmap then (InLab_TransformDoBitmap texmap) else undefined
     if tr != undefined and tr[6] do
     (
-        InLab_Log (nomeBase + ": bitmap ainda em Real-World — rode o Auto UV antes de converter; a escala da textura não foi transferida.") tipo:#warn
+        InLab_Log (nomeBase + ": bitmap ainda em Real-World — rode o Real World Fix antes de converter; a escala da textura não foi transferida.") tipo:#warn
         tr = undefined
     )
     -- #162: caminho que o Max resolve; textura ausente não vai para o glTF.

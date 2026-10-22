@@ -9,6 +9,7 @@ global InLab_Log, InLab_VerifResults, InLab_ResetarResultados
 global InLab_V14_UVPresente, InLab_V15_UVBake, InLab_V16_ResolucaoTexturas, InLab_CheckTexture
 global InLab_AbrirGruposAcima, InLab_FecharGrupos
 global INLAB_TESTE_SAIDA, INLAB_TESTE_FALHAS
+global INLAB_AUTOUV_OBRIGATORIO, InLab_AprovacaoFinal
 (
     local dirTeste = getFilenamePath (getSourceFileName())
     local raiz = substring dirTeste 1 (dirTeste.count - 6) -- tira "tests\"
@@ -51,6 +52,7 @@ global INLAB_TESTE_SAIDA, INLAB_TESTE_FALHAS
     local logOriginal = InLab_Log
     local b2 = undefined
     local unidadeOriginal = units.SystemType
+    local obrigatorioOriginal = undefined
 
     try
     (
@@ -62,6 +64,11 @@ global INLAB_TESTE_SAIDA, INLAB_TESTE_FALHAS
         -- Depois dos fileIn: core\log.ms redefine InLab_Log.
         InLab_Log = fn _logTeste msg tipo:#info = ( format "      [LOG %] %\n" tipo msg to:INLAB_TESTE_SAIDA; flush INLAB_TESTE_SAIDA )
         units.SystemType = #Centimeters
+        -- 22/10/2026: a V-15 só reprova com o Auto UV obrigatório (V2). Os
+        -- casos de detecção abaixo rodam nesse modo; o modo atual (opcional)
+        -- tem bloco próprio depois de "canal 3 sobreposto reprova".
+        obrigatorioOriginal = INLAB_AUTOUV_OBRIGATORIO
+        INLAB_AUTOUV_OBRIGATORIO = true
         limparCena()
 
         ---------------------------------------------------------------- V-14
@@ -171,6 +178,16 @@ global INLAB_TESTE_SAIDA, INLAB_TESTE_FALHAS
         checar "V-15: canal 3 sobreposto reprova" ((rodar InLab_V15_UVBake #(b) "V-15") == #fail)
         checar ("V-15: mensagem diz 'sobreposta' ('" + mensagemDe "V-15" + "')") ((findString (mensagemDe "V-15") "face(s) sobreposta(s)") != undefined)
         checar "V-15: Unwrap removido" (b.modifiers.count == 0)
+        -- 22/10/2026: Auto UV opcional (padrão desta versão) -> advertência, não reprova.
+        INLAB_AUTOUV_OBRIGATORIO = false
+        local st15opc = rodar InLab_V15_UVBake #(b) "V-15"
+        local r15 = undefined
+        for r in InLab_VerifResults where r.id == "V-15" do r15 = r
+        checar ("V-15 opcional: canal 3 sobreposto vira advertência ('" + st15opc as string + "': " + mensagemDe "V-15" + ")") (st15opc == #warning and r15 != undefined and not r15.critico)
+        checar "V-15 opcional: mensagem diz que o UV de bake é opcional" ((findString (mensagemDe "V-15") "opcional, não reprova") != undefined)
+        checar "V-15 opcional: não bloqueia a aprovação" (InLab_AprovacaoFinal())
+        checar "V-15 opcional: Unwrap removido" (b.modifiers.count == 0)
+        INLAB_AUTOUV_OBRIGATORIO = true
         limparCena()
         -- Fora do 0–1.
         pl = Plane length:10 width:10 lengthsegs:4 widthsegs:4 mapcoords:true
@@ -350,6 +367,7 @@ global INLAB_TESTE_SAIDA, INLAB_TESTE_FALHAS
 
     try ( limparCena() ) catch ()
     units.SystemType = unidadeOriginal
+    INLAB_AUTOUV_OBRIGATORIO = obrigatorioOriginal
     InLab_Log = logOriginal
     linha ("\n" + (if INLAB_TESTE_FALHAS == 0 then "TUDO OK" else (INLAB_TESTE_FALHAS as string + " FALHA(S)")))
     close INLAB_TESTE_SAIDA

@@ -61,6 +61,11 @@
  quantos vieram do JSON e quais o nome marcaria mas a matéria-prima tirou.
  09/10/2026 (issue #153): a regra foi para fn_renomear_produto.ms
  (InLab_Produto_EspeciaisDoProduto) e a conversão passou a usá-la também.
+ 22/10/2026 (decisão com a Bianca): V-42, Real World Fix aplicado. Com o Auto
+ UV opcional, o RWF é o que o GLB precisa (com o canal 1 mapeado, V-14).
+ Crítica só no que é Real-World Map Size (bitmap em Real-World fora de
+ Triplanar, UVW Map em Real-World sem o Xform "InLab RWF"); Triplanar
+ esquecido é advertência.
 ================================================================================
 */
 
@@ -431,4 +436,57 @@ fn InLab_V41_PecasComMaterial objetos =
     local problemas = for n in r[1] collect (n + ": sem material")
     join problemas (for n in r[2] collect (n + " (fallback: preto, metálico 1, rugosidade 1)"))
     InLab_Mat_Registrar "V-41" "Toda peça com material" problemas #() "todas as peças têm material" critico:true
+)
+
+-- V-42 · Real World Fix aplicado (22/10/2026, decisão com a Bianca). O glTF
+-- não tem escala real: textura em Real-World Map Size sem o RWF sai no GLB
+-- repetindo a cada unidade de UV. Mesmo critério do botão (fn_realworldfix.ms):
+--   crítico  → UVW Map em Real-World ainda sem o Xform "InLab RWF" acima
+--              (InLab_RWF_UVWsRW) ou bitmap em Real-World fora de Triplanar
+--              (InLab_RWF_BitmapsRWFora);
+--   aviso    → CoronaTriplanar no material (não é Real-World Map Size; a
+--              projeção sai errada no GLB, mas não reprova por enquanto).
+-- Material já convertido para glTF: lê também o original guardado em
+-- InLab_UltimaConversao (a conversão não leva o Real-World para o glTF, só
+-- avisa no log). Uma vez por grupo de instâncias.
+fn InLab_V42_RealWorldFix objetos =
+(
+    local titulo = "Real World Fix aplicado"
+    local criticos = #()
+    local avisos = #()
+    local naoMedidos = #()
+    for g in (InLab_DeduplicarInstancias objetos) do
+    (
+        local o = g.no
+        try
+        (
+            local mats = #()
+            if o.material != undefined do append mats o.material
+            if InLab_UltimaConversao != undefined do
+                for r in InLab_UltimaConversao where r.materialOriginal != undefined and                     (r.no == o or (o.material != undefined and r.materialNovo == o.material)) do appendIfUnique mats r.materialOriginal
+            local bms = #()
+            local tps = #()
+            for m in mats do
+            (
+                for bm in (InLab_RWF_BitmapsRWFora m) do appendIfUnique bms bm
+                for t in (InLab_RWF_Triplanares m) do appendIfUnique tps t
+            )
+            local nUVW = (InLab_RWF_UVWsRW o).count
+            if nUVW > 0 do append criticos (o.name + ": " + nUVW as string + " UVW Map em Real-World sem o Real World Fix")
+            if bms.count > 0 do append criticos (o.name + ": bitmap em Real-World (" + (InLab_ListaResumida (for bm in bms collect bm.name) maximo:3) + ")")
+            if tps.count > 0 do append avisos (o.name + ": Triplanar no material (" + (InLab_ListaResumida (for t in tps collect t.name) maximo:3) + ")")
+        )
+        catch
+        (
+            append naoMedidos (o.name + ": não analisado (" + getCurrentException() + ")")
+            InLab_Log (o.name + ": V-42 não leu o material/stack (" + getCurrentException() + ").") tipo:#err
+        )
+    )
+    local nota = " · rode o Real World Fix (seção UV e Texturas)"
+    if criticos.count > 0 then
+        InLab_Mat_Registrar "V-42" titulo (criticos + avisos) naoMedidos "" critico:true nota:nota
+    else if avisos.count > 0 then
+        InLab_Mat_Registrar "V-42" titulo avisos naoMedidos "" critico:false nota:(nota + " · Triplanar só avisa")
+    else
+        InLab_Mat_Registrar "V-42" titulo #() naoMedidos "nenhum mapeamento em Real-World pendente" critico:true
 )

@@ -521,8 +521,14 @@ rollout InLabSecUV "UV e Texturas" width:420
     -- 14/10/2026 (#185, ajustes do Rafa, item 5): o Real World Fix volta a ter
     -- botão, em cima, e vem antes do Auto UV: o Auto UV fica bloqueado nos
     -- objetos que ainda não passaram por ele (InLab_RWF_Feitos).
-    button btnRWF "1 · Real World Fix" width:395 height:24 align:#left offset:[2,0] tooltip:"Converte a escala real dos mapas (Real-World e Triplanar) para funcionar na web. Rode antes do Auto UV."
-    button btnF2 "2 · Auto UV" width:130 height:24 align:#left offset:[2,0] across:2 tooltip:"Cria um UV próprio para bake de textura e sombra nos objetos selecionados. Só roda depois do Real World Fix."
+    -- 22/10/2026 (decisão com a Bianca): o Auto UV é opcional nesta versão (o
+    -- canal 3 só serve ao bake, que é V2). Saem os números "1 ·"/"2 ·"; o Auto
+    -- UV e o Limpar UV só ligam com o chkAutoUV, desmarcado ao abrir
+    -- (INLAB_AUTOUV_OBRIGATORIO, fn_autouv.ms). O Desfazer UV fica sempre
+    -- ligado: ele também desfaz o Real World Fix.
+    button btnRWF "Real World Fix" width:395 height:24 align:#left offset:[2,0] tooltip:"Converte a escala real dos mapas (Real-World e Triplanar) para funcionar na web. Obrigatório antes de converter e exportar."
+    checkbox chkAutoUV "Unwrap" checked:INLAB_AUTOUV_OBRIGATORIO align:#left offset:[2,0]
+    button btnF2 "Auto UV" width:130 height:24 align:#left offset:[2,0] across:2 tooltip:"Cria um UV próprio para bake de textura e sombra (canal 3) nos objetos selecionados. Só roda depois do Real World Fix."
     spinner spnAnguloUV "" range:[10, 90, 55] type:#float fieldWidth:45 align:#left offset:[-63,3] tooltip:"Ângulo de corte (°). Quanto maior, menos cortes no UV."
     -- 22/Set: o Check Texture e o Verificar Escala saíram da aba (as funções
     -- continuam em functions\, a V-19 usa INLAB_UNIDADE_PADRAO). No lugar,
@@ -532,7 +538,16 @@ rollout InLabSecUV "UV e Texturas" width:420
     -- botão saiu; ficam Limpar e Desfazer UV (que desfaz também o RWF).
     -- 14/10/2026 (#185): o botão voltou (acima do Auto UV).
     button btnF2Clean "Limpar UV" width:195 height:24 align:#left offset:[2,0] across:2 tooltip:"Remove o UV de bake dos objetos selecionados. O UV do material fica."
-    button btnF2Reverter "Desfazer UV" width:195 height:24 align:#right offset:[-1,0] tooltip:"Volta os objetos ao que eram antes do Auto UV, inclusive a escala real dos mapas."
+    button btnF2Reverter "Desfazer UV" width:195 height:24 align:#right offset:[-1,0] tooltip:"Desfaz o Real World Fix e o Auto UV dos objetos (a escala real dos mapas volta)."
+
+    fn ligarAutoUV estado =
+    (
+        btnF2.enabled = estado
+        spnAnguloUV.enabled = estado
+        btnF2Clean.enabled = estado
+    )
+    on InLabSecUV open do ligarAutoUV chkAutoUV.checked
+    on chkAutoUV changed estado do ligarAutoUV estado
 
     on btnRWF pressed do
     (
