@@ -66,6 +66,8 @@
  Crítica só no que é Real-World Map Size (bitmap em Real-World fora de
  Triplanar, UVW Map em Real-World sem o Xform "InLab RWF"); Triplanar
  esquecido é advertência.
+ 22/10/2026 (bug do time): V-43, materiais convertidos para glTF. Produto
+ sem converter era aprovado: nada conferia a conversão.
 ================================================================================
 */
 
@@ -489,4 +491,21 @@ fn InLab_V42_RealWorldFix objetos =
         InLab_Mat_Registrar "V-42" titulo avisos naoMedidos "" critico:false nota:(nota + " · Triplanar só avisa")
     else
         InLab_Mat_Registrar "V-42" titulo #() naoMedidos "nenhum mapeamento em Real-World pendente" critico:true
+)
+
+-- V-43 · Materiais convertidos para glTF (crítica). 22/10/2026, bug do time:
+-- um produto que não passou pelo Converter Material foi APROVADO. O grupo 7
+-- lê o Corona de origem de propósito (funciona antes e depois da conversão),
+-- e nenhuma verificação conferia a conversão em si; desde a #137 a ordem da
+-- UI é Converter → Verificações → Exportar. Confere todo material usado por
+-- faces (sub-material de Multi/Sub sem faces não conta, InLab_Mat_Uso): tem
+-- de ser glTF Material. Peça sem material é da V-41.
+fn InLab_V43_MateriaisGltf uso =
+(
+    local titulo = "Materiais convertidos para glTF"
+    local problemas = for m in uso.usados where not (InLab_ClasseContem m "gltf") collect
+        (m.name + " (" + (classof m) as string + ")")
+    local nota = if problemas.count > 0 then " · rode o Converter Material" else ""
+    InLab_Mat_Registrar "V-43" titulo problemas uso.naoMedidos \
+        (if uso.usados.count == 0 then "nenhum material nas peças (ver V-41)" else (uso.usados.count as string + " material(is) em glTF")) critico:true nota:nota
 )

@@ -5,7 +5,7 @@
  Resultado: <pasta temp do Max>\inlab_test_verif_materiais.txt (PASS/FAIL por item).
  09/10/2026 (issue #145): V-35/V-36 pela matéria-prima das partes do JSON.
  14/10/2026 (ajustes do Rafa, item 1): V-41 e o bloqueio do Exportar.
- 22/10/2026: V-42 (Real World Fix aplicado).
+ 22/10/2026: V-42 (Real World Fix aplicado) e V-43 (materiais convertidos).
 */
 -- Declarados ANTES do bloco: o bloco é compilado antes dos fileIn rodarem.
 global InLab_Log, InLab_VerifResults, InLab_ResetarResultados, InLab_ObterFamilia
@@ -16,7 +16,7 @@ global InLab_V35_Palha, InLab_V36_Cristal, InLab_V37_ZonasEstofado, InLab_V38_Ta
 global InLab_TampoAcessorioProduto, InLab_AprovacaoFinal
 global INLAB_TESTE_SAIDA, INLAB_TESTE_FALHAS
 global InLab_UltimaConversao, InLab_ResolverClasseGLTF, ConversaoRecord
-global InLab_V42_RealWorldFix, InLab_RealWorldFix, MatInfo
+global InLab_V42_RealWorldFix, InLab_RealWorldFix, MatInfo, InLab_V43_MateriaisGltf
 global InLab_V41_PecasComMaterial, InLab_Mat_SemMaterial, InLab_Mat_EhFallback, InLab_AbrirExportadorRealTime
 -- Base cuja leitura de slot lança: getNumSubTexmaps de um inteiro dá erro.
 struct TesteSlotQuebrado ( texmapDiffuse = 5, texmapReflectGlossiness = 5, texmapBump = 5, texmapOpacity = 5 )
@@ -560,6 +560,42 @@ struct TesteSlotQuebrado ( texmapDiffuse = 5, texmapReflectGlossiness = 5, texma
             checar ("V-42: Triplanar vira advertência ('" + mensagemDe "V-42" + "')") ((st42) == #warning and not (critico42()) and tem (mensagemDe "V-42") "rw_d: Triplanar no material")
             checar "V-42: bitmap de dentro do Triplanar não reprova" (not (tem (mensagemDe "V-42") "dentro_tri"))
             checar "V-42: Triplanar não bloqueia a aprovação" (InLab_AprovacaoFinal())
+        )
+        limparCena()
+
+        ---------------------------------------------------------------- V-43
+        -- 22/10/2026 (bug do time): produto sem converter era aprovado. Todo
+        -- material usado pelas faces tem de ser glTF Material.
+        fn rodar43 objs = ( InLab_ResetarResultados(); InLab_V43_MateriaisGltf (InLab_Mat_Uso objs); statusDe "V-43" )
+        local st43 = undefined
+        local cls43 = InLab_ResolverClasseGLTF()
+        local nc = caixa "conv_a" [0, 0, 0]
+        nc.material = legacyCom "ART_P_Estrutura" (CoronaColor())
+        st43 = rodar43 #(nc)
+        checar ("V-43: material Corona sem converter reprova ('" + mensagemDe "V-43" + "')") (st43 == #fail and tem (mensagemDe "V-43") "ART_P_Estrutura" and (for r in InLab_VerifResults where r.id == "V-43" collect r.critico)[1])
+        checar "V-43: material sem converter bloqueia a aprovação" (not (InLab_AprovacaoFinal()))
+        if cls43 == undefined then checar "V-43 glTF — pulado: sem glTF Material" true
+        else
+        (
+            local g43 = cls43()
+            g43.name = "ART_P_Estrutura"
+            nc.material = g43
+            st43 = rodar43 #(nc)
+            checar ("V-43: glTF Material passa ('" + mensagemDe "V-43" + "')") (st43 == #pass)
+            -- Multi/Sub: só o sub-material usado por faces conta.
+            local mm43 = Multimaterial numsubs:3
+            mm43.materialList[1] = g43
+            mm43.materialList[2] = legacyCom "ART_P_Assento" (CoronaColor())
+            mm43.materialList[3] = legacyCom "Sobra_sem_faces" (CoronaColor())
+            local np = convertToPoly (Box name:"conv_b" length:10 width:10 height:10)
+            np.material = mm43
+            polyop.setFaceMatID np #{1..3} 1
+            polyop.setFaceMatID np #{4..6} 2
+            st43 = rodar43 #(np)
+            checar ("V-43: Multi/Sub com sub Corona usado reprova ('" + mensagemDe "V-43" + "')") (st43 == #fail and tem (mensagemDe "V-43") "ART_P_Assento" and not (tem (mensagemDe "V-43") "Sobra_sem_faces") and not (tem (mensagemDe "V-43") "ART_P_Estrutura"))
+            polyop.setFaceMatID np #{1..6} 1
+            st43 = rodar43 #(np)
+            checar ("V-43: Multi/Sub só com glTF nas faces passa ('" + mensagemDe "V-43" + "')") (st43 == #pass)
         )
         limparCena()
     )
