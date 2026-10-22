@@ -16,6 +16,7 @@
    Grupo 7 (materiais)      → V-23/24/25, V-35/36/37, V-38       [ENTREGUE 06/10/2026 — verif_materiais.ms, issue #103]
                               V-41 (peça sem material/fallback)  [14/10/2026 — ajustes do Rafa, item 1]
                               V-42 (Real World Fix aplicado)     [22/10/2026 — Auto UV opcional, RWF obrigatório]
+                              V-43 (materiais convertidos glTF)  [22/10/2026 — produto sem converter era aprovado]
 
  REVISÃO DO GRUPO 3 (auditoria pós-entrega, corrigindo divergências da spec):
    V-03  → agora é UMA verificação só: total de polígonos dentro da faixa
@@ -198,6 +199,7 @@ fn InLab_RodarVerificacoes cfg tampoAcessorio:false codEst:"" nomeProduto:"" pro
         InLab_V38_TampoAcessorio cfg uso produto:produto
         InLab_V41_PecasComMaterial objetos
         InLab_V42_RealWorldFix objetos
+        InLab_V43_MateriaisGltf uso
 
         -- ===== Grupo 4 · animação avançada (v2) =====
         InLab_Log "Grupo 4 (animação avançada) fica para o v2 — relatório parcial." tipo:#warn
