@@ -151,6 +151,13 @@
  09/10/2026 (issue #131): resolução do bake fixa em 1024 (teste com a Bia).
  Sai o dropdown da UI e INLAB_UV_RESOLUCOES vira INLAB_RESOLUCAO_BAKE, que
  o Converter Material também usa. O parâmetro resolucao: continua (testes).
+
+ 22/10/2026 (decisão com a Bianca): o Auto UV deixa de ser etapa obrigatória.
+ O GLB só precisa do canal 1 mapeado + Real World Fix; o canal 3 só serve ao
+ bake, que fica para a V2. INLAB_AUTOUV_OBRIGATORIO = false: na seção UV e
+ Texturas o Auto UV e o Limpar UV ficam desligados atrás de um checkbox
+ (desmarcado ao abrir) e a V-15 (verif_mapeamento.ms) vira advertência. O
+ código fica inteiro; na V2 basta voltar a constante para true.
 ================================================================================
 */
 
@@ -161,6 +168,9 @@ global InLab_MedirUV, InLab_AssinaturaCanal, InLab_UVMetricasTexto, InLab_UV_Sob
 global INLAB_CANAL_UV_MATERIAL = 1  -- UV do material, em escala real: o Auto UV nunca altera
 global INLAB_CANAL_UV_BAKE = 3      -- 0–1 empacotado por objeto, para bake de textura e AO
 global INLAB_RESOLUCAO_BAKE = 1024 -- fixa (#131): padding do Auto UV e bake do Converter
+-- 22/10/2026: false = Auto UV opcional (UI desligada por padrão, V-15 só avisa).
+-- Volta a true na V2, com o bake.
+global INLAB_AUTOUV_OBRIGATORIO = false
 global INLAB_UV_ESPACAMENTO_MAX = 8.0 -- teto da correção do gutter, em múltiplos do padding
 -- Acima disto (triângulos) a malha é "grande": sem pack extra, sem correção
 -- medida do gutter e sem métricas completas no log (ver cabeçalho, 21/Set).

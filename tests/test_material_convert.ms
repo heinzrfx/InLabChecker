@@ -221,7 +221,7 @@ global InLab_CaminhoTextura, InLab_CheckTexture, InLab_BakeTexmap
                 mTri.texmapDiffuse = tri
                 logsCapturados = #()
                 InLab_ConverterCoronaMtl mTri 64 false
-                checar "#110: Triplanar avisa para rodar o Auto UV antes" (avisou "mat_tri (base color): CoronaTriplanar")
+                checar "#110: Triplanar avisa para rodar o Real World Fix antes" (avisou "mat_tri (base color): CoronaTriplanar")
                 -- Noise 3D no glossiness
                 local mNoise = CoronaLegacyMtl()
                 mNoise.name = "mat_noise"
@@ -322,7 +322,7 @@ global InLab_CaminhoTextura, InLab_CheckTexture, InLab_BakeTexmap
                 mT6.texmapDiffuse = bT6
                 logsCapturados = #()
                 local cT6 = coordsDe (mapaBaseDe (InLab_ConverterCoronaMtl mT6 64 false))
-                checar ("#163: Real-World não transfere (" + cT6 + ") e avisa para rodar o Auto UV") (cT6 == "1.00x1.00 off 0.00,0.00 ch1" and avisou "rode o Auto UV")
+                checar ("#163: Real-World não transfere (" + cT6 + ") e avisa para rodar o Real World Fix") (cT6 == "1.00x1.00 off 0.00,0.00 ch1" and avisou "rode o Real World Fix")
                 -- #169: procedural com bitmap no canal 2 → bake no canal 2; canais misturados → aviso
                 local mC2 = CoronaLegacyMtl()
                 mC2.name = "mat_c2"

@@ -5,6 +5,7 @@
  Resultado: <pasta temp do Max>\inlab_test_verif_materiais.txt (PASS/FAIL por item).
  09/10/2026 (issue #145): V-35/V-36 pela matéria-prima das partes do JSON.
  14/10/2026 (ajustes do Rafa, item 1): V-41 e o bloqueio do Exportar.
+ 22/10/2026: V-42 (Real World Fix aplicado).
 */
 -- Declarados ANTES do bloco: o bloco é compilado antes dos fileIn rodarem.
 global InLab_Log, InLab_VerifResults, InLab_ResetarResultados, InLab_ObterFamilia
@@ -15,6 +16,7 @@ global InLab_V35_Palha, InLab_V36_Cristal, InLab_V37_ZonasEstofado, InLab_V38_Ta
 global InLab_TampoAcessorioProduto, InLab_AprovacaoFinal
 global INLAB_TESTE_SAIDA, INLAB_TESTE_FALHAS
 global InLab_UltimaConversao, InLab_ResolverClasseGLTF, ConversaoRecord
+global InLab_V42_RealWorldFix, InLab_RealWorldFix, MatInfo
 global InLab_V41_PecasComMaterial, InLab_Mat_SemMaterial, InLab_Mat_EhFallback, InLab_AbrirExportadorRealTime
 -- Base cuja leitura de slot lança: getNumSubTexmaps de um inteiro dá erro.
 struct TesteSlotQuebrado ( texmapDiffuse = 5, texmapReflectGlossiness = 5, texmapBump = 5, texmapOpacity = 5 )
@@ -55,6 +57,7 @@ struct TesteSlotQuebrado ( texmapDiffuse = 5, texmapReflectGlossiness = 5, texma
                    @"familias\familia_corpo_unico.ms", @"familias\familia_pernas_tampo.ms", @"familias\familia_estrutura_estofado.ms",
                    @"functions\fn_json.ms", @"functions\fn_renomear_produto.ms", @"functions\fn_material_convert.ms",
                    @"functions\fn_material_utils.ms", @"functions\fn_export_gltf.ms",
+                   @"functions\fn_autouv.ms", @"functions\fn_realworldfix.ms",
                    @"verifications\verif_materiais.ms") do
             fileIn (raiz + m)
         -- Depois dos fileIn: core\log.ms redefine InLab_Log.
@@ -490,6 +493,73 @@ struct TesteSlotQuebrado ( texmapDiffuse = 5, texmapReflectGlossiness = 5, texma
             mm.materialList[2] = gf
             w2.material = mm
             checar "Multi/Sub com sub-material fallback entra na lista" (((InLab_Mat_SemMaterial #(w2))[2]).count == 1)
+        )
+        limparCena()
+
+        ---------------------------------------------------------------- V-42
+        -- 22/10/2026: Real World Fix aplicado. Crítica no Real-World Map Size
+        -- (bitmap e UVW Map); Triplanar só avisa.
+        fn rodar42 objs = ( InLab_ResetarResultados(); InLab_V42_RealWorldFix objs; statusDe "V-42" )
+        local st42 = undefined
+        fn critico42 = ( (for r in InLab_VerifResults where r.id == "V-42" collect r.critico)[1] )
+        local bmRW = Bitmaptexture name:"tecido_rw"
+        local rw = caixa "rw_a" [0, 0, 0]
+        rw.material = standardMaterial diffuseMap:bmRW
+        st42 = rodar42 #(rw)
+        checar ("V-42: bitmap sem Real-World passa ('" + mensagemDe "V-42" + "')") ((st42) == #pass and critico42())
+        bmRW.coords.realWorldScale = true
+        bmRW.coords.realWorldWidth = 50.0
+        bmRW.coords.realWorldHeight = 50.0
+        st42 = rodar42 #(rw)
+        checar ("V-42: bitmap em Real-World reprova ('" + mensagemDe "V-42" + "')") ((st42) == #fail and critico42() and tem (mensagemDe "V-42") "rw_a: bitmap em Real-World (tecido_rw)")
+        local rwi = instance rw
+        rwi.pos = [30, 0, 0]
+        rodar42 #(rw, rwi)
+        checar ("V-42: instâncias listadas uma vez ('" + mensagemDe "V-42" + "')") (not (tem (mensagemDe "V-42") rwi.name))
+        delete rwi
+        -- Depois do botão Real World Fix o mesmo objeto passa.
+        InLab_RealWorldFix #(rw)
+        st42 = rodar42 #(rw)
+        checar ("V-42: depois do Real World Fix passa ('" + mensagemDe "V-42" + "' · bitmap RW " + bmRW.coords.realWorldScale as string + ")") (st42 == #pass)
+        limparCena()
+        -- UVW Map em Real-World no stack, bitmap comum.
+        local uv = caixa "rw_b" [0, 0, 0]
+        uv.material = standardMaterial diffuseMap:(Bitmaptexture name:"comum")
+        local uvw = Uvwmap maptype:4 realWorldMapSize:true length:50 width:50 height:50
+        addModifier uv uvw
+        st42 = rodar42 #(uv)
+        checar ("V-42: UVW Map em Real-World reprova ('" + mensagemDe "V-42" + "')") ((st42) == #fail and critico42() and tem (mensagemDe "V-42") "rw_b: 1 UVW Map em Real-World")
+        local xf = UVW_Xform()
+        xf.name = "InLab RWF"
+        addModifier uv xf
+        st42 = rodar42 #(uv)
+        checar ("V-42: UVW Map com o Xform do RWF acima passa ('" + mensagemDe "V-42" + "')") ((st42) == #pass)
+        limparCena()
+        -- Material já convertido: o original guardado na conversão conta.
+        local cv = caixa "rw_c" [0, 0, 0]
+        local origRW = standardMaterial diffuseMap:(Bitmaptexture name:"orig_rw")
+        origRW.diffuseMap.coords.realWorldScale = true
+        cv.material = standardMaterial name:"convertido"
+        local convAntes = InLab_UltimaConversao
+        InLab_UltimaConversao = #(ConversaoRecord no:cv materialOriginal:origRW materialNovo:cv.material)
+        st42 = rodar42 #(cv)
+        checar ("V-42: original da conversão em Real-World reprova ('" + mensagemDe "V-42" + "')") ((st42) == #fail and tem (mensagemDe "V-42") "orig_rw")
+        InLab_UltimaConversao = convAntes
+        limparCena()
+        -- Triplanar: advertência, e o bitmap em Real-World de dentro dele não conta.
+        if CoronaTriplanar == undefined then checar "V-42 Triplanar — pulado: sem Corona" true
+        else
+        (
+            local tp = caixa "rw_d" [0, 0, 0]
+            local tri = CoronaTriplanar()
+            local dentro = Bitmaptexture name:"dentro_tri"
+            dentro.coords.realWorldScale = true
+            tri.texmapX = dentro
+            tp.material = legacyCom "mat_tri" tri
+            st42 = rodar42 #(tp)
+            checar ("V-42: Triplanar vira advertência ('" + mensagemDe "V-42" + "')") ((st42) == #warning and not (critico42()) and tem (mensagemDe "V-42") "rw_d: Triplanar no material")
+            checar "V-42: bitmap de dentro do Triplanar não reprova" (not (tem (mensagemDe "V-42") "dentro_tri"))
+            checar "V-42: Triplanar não bloqueia a aprovação" (InLab_AprovacaoFinal())
         )
         limparCena()
     )

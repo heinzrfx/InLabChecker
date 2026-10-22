@@ -91,6 +91,9 @@
  Desfazer UV volta) e o bitmap de fora fica no canal 1 com a escala
  própria. O exportador grava TEXCOORD_1 e texCoord na textura. Bitmap de
  dentro também usado fora do Triplanar: não separa, aviso como antes.
+
+ 22/10/2026 (decisão com a Bianca): o Auto UV virou opcional (bake na V2) e o
+ RWF segue obrigatório para o GLB. O log do fim não manda mais para o Auto UV.
 ================================================================================
 */
 
@@ -776,7 +779,7 @@ fn InLab_RWF_Rodar objs =
             local r = InLab_RWF_UltimaRodada
             if r != undefined and (r.mods.count + r.bitmaps.count + r.triplanares.count) > 0 do append InLab_UltimoRWF r
             for o in geo do for i in (InLab_Instancias o) do appendIfUnique InLab_RWF_Feitos i
-            InLab_Log ("Real World Fix pronto em " + geo.count as string + " objeto(s). Próximo passo: Auto UV.") tipo:#ok
+            InLab_Log ("Real World Fix pronto em " + geo.count as string + " objeto(s).") tipo:#ok
         )
         n
     )

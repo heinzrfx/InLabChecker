@@ -12,6 +12,8 @@
    Itens critico:false aparecem no relatório mas não bloqueiam a aprovação.
    Implementados hoje como não críticos: V-02 (SKP, externa),
    V-16 (resolução das texturas; acrescentada em 05/10/2026, issue #101),
+   V-15 (UV de bake, canal 3) enquanto INLAB_AUTOUV_OBRIGATORIO = false
+   (22/10/2026: Auto UV opcional, o bake fica para a V2),
    V-38 (tampo acessório; 06/10/2026, issue #103),
    V-05 (famílias sem regra numérica), V-06, V-08 (arestas abertas),
    V-20, V-22, V-30 em família estática e EX-01 (extra, fora da spec:

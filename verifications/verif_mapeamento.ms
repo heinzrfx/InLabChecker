@@ -66,6 +66,11 @@
  pixel umas nas outras. A contagem passa a ser InLab_UV_SobrepostasNativas
  (verif_uv.ms): o nativo marca, o eixo separador a meio pixel a 1024
  confirma. O log do Auto UV usa a mesma função.
+
+ 22/10/2026 (decisão com a Bianca): o canal 3 só serve ao bake, que fica para
+ a V2, e o Auto UV virou opcional (fn_autouv.ms). A V-15 continua medindo,
+ mas a falha só reprova com INLAB_AUTOUV_OBRIGATORIO = true; hoje sai como
+ advertência. A V-14 (canal 1) segue crítica.
 ================================================================================
 */
 
@@ -291,15 +296,18 @@ fn InLab_V15_UVBake objetos falharTeste:false =
         catch ( InLab_Log ("V-15: não restaurei a seleção (" + getCurrentException() + ")") tipo:#warn )
         try ( setCommandPanelTaskMode modo ) catch ( InLab_Log ("V-15: não restaurei o painel (" + getCurrentException() + ")") tipo:#warn )
     )
+    -- 22/10/2026: UV de bake opcional até a V2 (INLAB_AUTOUV_OBRIGATORIO).
+    local critico = (INLAB_AUTOUV_OBRIGATORIO == true)
+    local nota = if critico then "" else " · UV de bake é opcional, não reprova"
     if itens.count > 0 then
-        InLab_RegistrarVerif "V-15" titulo false (InLab_ListaResumida (itens + naoMedidos)) critico:true
+        InLab_RegistrarVerif "V-15" titulo false ((InLab_ListaResumida (itens + naoMedidos)) + nota) critico:critico
     else if naoMedidos.count > 0 then
         InLab_RegistrarVerif "V-15" titulo false ("não medido: " + InLab_ListaResumida naoMedidos) critico:false
     else if comCanal.count == 0 then
-        InLab_RegistrarVerif "V-15" titulo true "não se aplica: nenhuma peça com UV de bake (canal 3)" critico:true
+        InLab_RegistrarVerif "V-15" titulo true "não se aplica: nenhuma peça com UV de bake (canal 3)" critico:critico
     else
         InLab_RegistrarVerif "V-15" titulo true ("canal 3 sem sobreposição e dentro do 0–1 em " + comCanal.count as string + " peça(s)" + \
-            (if semCanal.count > 0 then (" · não se aplica a " + semCanal.count as string + " peça(s) sem canal 3") else "")) critico:true
+            (if semCanal.count > 0 then (" · não se aplica a " + semCanal.count as string + " peça(s) sem canal 3") else "")) critico:critico
 )
 
 -- V-16 · Resolução das texturas usadas pelas peças (advertência). Textura sem
