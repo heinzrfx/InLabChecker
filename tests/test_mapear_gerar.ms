@@ -205,8 +205,10 @@ global InLab_Mapear_GerarGrande
         local rTp = InLab_Mapear_GerarTubo toro fT esc
         checar "Tubo fora da origem: reconhece e mapa completo" (rTp != undefined and rTp[2].count == fT.numberSet)
 
-        -- 6c. PEÇA GRANDE (spec 5.4): esfera achatada, GerarGrande não pode ter mais
-        -- emenda à vista que o GerarBox na mesma peça, e nada espelhado
+        -- 6c. PEÇA GRANDE (spec 5.4): hoje GerarGrande é alias de GerarBox (a projeção
+        -- alisada reprovou na Mentha, sondagem 2026-10-23-mapear-pecas-grandes-sondagem.md).
+        -- O check do alias falha de propósito se a implementação mudar: atualize o teste
+        -- conscientemente. A emenda "não pior que o Box" é guarda de regressão, não de melhora.
         local esf = Sphere radius:40 segs:32 mapcoords:true name:"TESTE_mg_esfera"
         append criados esf
         esf.scale = [1, 1, 0.6]
@@ -219,10 +221,13 @@ global InLab_Mapear_GerarGrande
         checar "GerarGrande existe" (InLab_Mapear_GerarGrande != undefined)
         local rEG = InLab_Mapear_GerarGrande esf fE esc
         checar "GerarGrande: mapa cobre todas as faces" (rEG[2].count == fE.numberSet)
+        local mesmos = rEG[1].count == rEB[1].count and rEG[2].count == rEB[2].count
+        if mesmos do for k = 1 to rEG[1].count while mesmos do if (distance rEG[1][k] rEB[1][k]) > 1e-4 do mesmos = false
+        checar "GerarGrande é alias de GerarBox (mesmos UVs na mesma peça)" mesmos
         InLab_Mapear_Gravar esf rEG[1] rEG[2]
         local mEG = InLab_Mapear_Medir esf
-        linha ("      esfera achatada: emenda box=" + mEB.emendaVistaQuebra as string + " grande=" + mEG.emendaVistaQuebra as string + " esp=" + mEG.espelhado as string + " escala=" + mEG.escala as string)
-        checar "GerarGrande: emendaVistaQuebra <= a do GerarBox" (mEG.emendaVistaQuebra <= mEB.emendaVistaQuebra)
+        linha ("      esfera achatada: emenda box=" + (mEB.emendaVistaQuebra as string) + " grande=" + (mEG.emendaVistaQuebra as string) + " esp=" + (mEG.espelhado as string) + " escala=" + (mEG.escala as string))
+        checar "GerarGrande: emenda à vista não pior que a do GerarBox (guarda de regressão)" (mEG.emendaVistaQuebra <= mEB.emendaVistaQuebra)
         checar "GerarGrande: espelhado == 0" (mEG.espelhado == 0.0)
         -- nó espelhado: continua sem espelhar
         esf.scale = [-1, 1, 1]
