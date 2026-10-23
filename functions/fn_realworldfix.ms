@@ -294,7 +294,7 @@ fn InLab_RWF_Reverter rodada =
         local idx = 0
         for i = 1 to nm[1].modifiers.count where nm[1].modifiers[i] == nm[2] do idx = i
         if idx == 0 then
-            InLab_Log (nm[1].name + ": modificador " + nm[2].name + " do Real World Fix não está mais no stack (colapsado?).") tipo:#warn
+            InLab_Log (nm[1].name + ": modificador " + nm[2].name + " do Real World Fix não está mais no stack (colapsado, ou tirado pelo Mapear); nada a desfazer nele.") tipo:#info
         else
         (
             try ( deleteModifier nm[1] idx; appendIfUnique nos nm[1] )

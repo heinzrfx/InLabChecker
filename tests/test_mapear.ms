@@ -8,6 +8,7 @@ global InLab_Log, InLab_ParseJSON, InLab_Produto_Lista, InLab_RWF_Feitos
 global InLab_Mapear, InLab_ReverterMapear, InLab_UltimoMapear, InLab_Mapear_LerCanal1
 global InLab_Mapear_Medir, InLab_Mapear_GerarTubo, InLab_Mapear_Gravar
 global InLab_Instancias, InLab_RWF_Rodar, InLab_Mapear_ForcarFalha
+global InLab_ReverterAutoUV, InLab_UltimoRWF, InLab_UltimoAutoUV
 global INLAB_TESTE_MEDIR_ORIG, INLAB_TESTE_MEDIR_N
 global INLAB_TESTE_SAIDA, INLAB_TESTE_FALHAS
 (
@@ -463,6 +464,76 @@ global INLAB_TESTE_SAIDA, INLAB_TESTE_FALHAS
         InLab_Mapear_Medir = INLAB_TESTE_MEDIR_ORIG
         checar "H2: remedição que falha não vira pulada" (nH2 == 1 and (temLog logs #warn "TESTE_fx_h2" "medição de conferência falhou") and \
             (temLog logs #ok "Mapear: 1 refeita(s), 0 mantida(s), 0 pulada(s)" "."))
+        InLab_ReverterMapear()
+
+        ------------------------------------------------------------------
+        -- 14. CASOS DE BORDA DO STACK (Tarefa 6)
+        ------------------------------------------------------------------
+        -- TurboSmooth e Symmetry acima da base: mapeia na base e avisa
+        local ts = comUVBox (Cylinder radius:2.5 height:80 heightsegs:5 sides:16 mapcoords:true name:"TESTE_t6_turbo" pos:[0,-700,0])
+        ts.material = mPe; append criados ts
+        addModifier ts (TurboSmooth iterations:1)
+        local sy = comUVBox (Cylinder radius:2.5 height:80 heightsegs:5 sides:16 mapcoords:true name:"TESTE_t6_simetria" pos:[100,-700,0])
+        sy.material = mPe; append criados sy
+        addModifier sy (Symmetry())
+        local canalTsAntes = InLab_Mapear_LerCanal1 ts
+        logs.count = 0
+        local nT6 = InLab_Mapear #(ts, sy) produto
+        linha ("      t6 stack: refeitas = " + nT6 as string)
+        checar "T6 TurboSmooth acima: mapeada na base com #warn \"UV calculado na base, abaixo de\"" ((temLog logs #ok "TESTE_t6_turbo" "refeito") and             (temLog logs #warn "TESTE_t6_turbo" "UV calculado na base, abaixo de") and ts.modifiers.count == 1 and classof ts.modifiers[1] == TurboSmooth and             not (igualCanal canalTsAntes (InLab_Mapear_LerCanal1 ts)))
+        checar "T6 Symmetry acima: #warn \"pode espelhar o UV\"" ((temLog logs #ok "TESTE_t6_simetria" "refeito") and (temLog logs #warn "TESTE_t6_simetria" "pode espelhar o UV"))
+        InLab_ReverterMapear()
+        checar "T6 Desfazer devolve o canal 1 da peça com TurboSmooth" (igualCanal canalTsAntes (InLab_Mapear_LerCanal1 ts) and ts.modifiers.count == 1)
+
+        -- Multi/Sub: ID 1 Madeira (laterais, veio atravessado) + ID 2 Metal (tampas, UV bom, mantido)
+        local ms1 = comUVBox (Cylinder radius:2.5 height:80 heightsegs:5 sides:16 mapcoords:true name:"TESTE_t6_multi" pos:[200,-700,0])
+        for f = 1 to (polyop.getNumFaces ms1) do
+            polyop.setFaceMatID ms1 f (if (abs (polyop.getFaceNormal ms1 f).z) > 0.9 then 2 else 1)
+        local mmT6 = Multimaterial numsubs:2
+        mmT6.materialList[1] = mPe; mmT6.materialList[2] = mMet
+        ms1.material = mmT6; append criados ms1
+        local uvT6id1 = canalID ms1 1
+        local uvT6id2 = canalID ms1 2
+        logs.count = 0
+        InLab_Mapear #(ms1) produto
+        checar "T6 Multi/Sub: ID 1 madeira refeito pela regra da madeira" (temLog logs #ok "TESTE_t6_multi (ID 1)" "refeito (madeira")
+        checar "T6 Multi/Sub: ID 2 mantido, faces do ID 2 com o UV de antes" ((temLog logs #ok "TESTE_t6_multi (ID 2)" "mantido") and igualLista uvT6id2 (canalID ms1 2))
+        checar "T6 Multi/Sub: faces do ID 1 mudaram" (not (igualLista uvT6id1 (canalID ms1 1)))
+        InLab_ReverterMapear()
+        checar "T6 Multi/Sub: Desfazer devolve o UV dos dois IDs" (igualLista uvT6id1 (canalID ms1 1) and igualLista uvT6id2 (canalID ms1 2))
+
+        -- Multi/Sub: ID 1 Madeira + ID 2 Tecido (cada um com a sua regra)
+        local ms2 = Torus radius1:30 radius2:3 segments:48 sides:12 mapcoords:true name:"TESTE_t6_multi2" pos:[300,-700,0]
+        addModifier ms2 (Uvwmap maptype:4 length:60 width:60 height:60)
+        convertToPoly ms2
+        local nf2 = polyop.getNumFaces ms2
+        for f = 1 to nf2 do polyop.setFaceMatID ms2 f (if f <= nf2 / 2 then 1 else 2)
+        local mmT6b = Multimaterial numsubs:2
+        mmT6b.materialList[1] = mPe; mmT6b.materialList[2] = mTec
+        ms2.material = mmT6b; append criados ms2
+        logs.count = 0
+        InLab_Mapear #(ms2) produto
+        checar "T6 Multi/Sub madeira+tecido: cada ID com a sua regra" ((contaLog logs "TESTE_t6_multi2 (ID 1)" "(madeira") == 1 and (contaLog logs "TESTE_t6_multi2 (ID 2)" "(tecido") == 1)
+        InLab_ReverterMapear()
+
+        -- RWF + Mapear + Desfazer UV (Reverter do Auto UV) sem exceção
+        local mPeRWC = criarMaterial "ART_PeRWB" arqImg
+        mPeRWC.diffuseMap.coords.realWorldScale = true
+        mPeRWC.diffuseMap.coords.realWorldWidth = 60; mPeRWC.diffuseMap.coords.realWorldHeight = 60
+        local rr = Cylinder radius:2.5 height:80 heightsegs:5 sides:16 mapcoords:true name:"TESTE_t6_rwf" pos:[400,-700,0]
+        addModifier rr (Uvwmap maptype:4 length:1 width:1 height:1)
+        convertToPoly rr
+        rr.material = mPeRWC; append criados rr
+        InLab_UltimoRWF = #(); InLab_UltimoAutoUV = #()
+        InLab_RWF_Rodar #(rr)
+        InLab_Mapear #(rr) produto
+        checar "T6 RWF+Mapear: modificadores InLab RWF saíram" (rr.modifiers.count == 0)
+        logs.count = 0
+        local excRev = undefined
+        try ( InLab_ReverterAutoUV() ) catch ( excRev = getCurrentException() )
+        if excRev != undefined do linha ("      exceção no Desfazer UV: " + excRev)
+        checar "T6 RWF+Mapear+Desfazer UV (InLab_ReverterAutoUV): sem exceção" (excRev == undefined)
+        checar "T6 Desfazer UV avisa do modificador ausente (#info) e conclui" ((temLog logs #info "TESTE_t6_rwf" "não está mais no stack") and (temLog logs #info "Reversão de UV concluída" ""))
         InLab_ReverterMapear()
     )
     catch ( linha ("FAIL  exceção no teste: " + (getCurrentException())); INLAB_TESTE_FALHAS += 1 )
