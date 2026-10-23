@@ -145,6 +145,24 @@ global InLab_Mapear_GerarGrande
         local fB = #{1..(polyop.getNumFaces bx)}
         checar "Box comum: GerarTubo devolve undefined" ((InLab_Mapear_GerarTubo bx fB esc) == undefined)
 
+        -- 3b. PROPORÇÃO DE TUBO (fix round 1): esfera e Box segmentado não são tubo
+        local sp = Sphere radius:30 segs:24 mapcoords:true name:"TESTE_mg_esfera_tubo"
+        append criados sp
+        convertToPoly sp
+        checar "Sphere: GerarTubo devolve undefined" ((InLab_Mapear_GerarTubo sp #{1..(polyop.getNumFaces sp)} esc) == undefined)
+        local bs = Box length:50 width:50 height:50 lengthsegs:6 widthsegs:6 heightsegs:6 mapcoords:true name:"TESTE_mg_box_segs"
+        append criados bs
+        convertToPoly bs
+        checar "Box 6x6x6 segs: GerarTubo devolve undefined" ((InLab_Mapear_GerarTubo bs #{1..(polyop.getNumFaces bs)} esc) == undefined)
+        local ch = Box length:60 width:60 height:12 lengthsegs:4 widthsegs:4 heightsegs:2 mapcoords:true name:"TESTE_mg_almofada"
+        append criados ch
+        convertToPoly ch
+        checar "almofada de quads: GerarTubo devolve undefined" ((InLab_Mapear_GerarTubo ch #{1..(polyop.getNumFaces ch)} esc) == undefined)
+        local tf = Torus radius1:20 radius2:1 segments:48 sides:8 mapcoords:true name:"TESTE_mg_toro_fino"
+        append criados tf
+        convertToPoly tf
+        checar "toro fino (raio 20, seção 1): é tubo" ((InLab_Mapear_GerarTubo tf #{1..(polyop.getNumFaces tf)} esc) != undefined)
+
         -- 4. MADEIRA: cone fino de pé, nó normal e nó espelhado
         local cn = Cone radius1:3 radius2:1.5 height:45 heightsegs:5 sides:24 mapcoords:true name:"TESTE_mg_cone"
         append criados cn

@@ -17,7 +17,11 @@
    #semDirecao = #horizontal.
  - InLab_Mapear_GerarTubo o faces escala : grade comprimento x volta por quads, um
    elemento de cada vez (spec 5.3). undefined se nenhum elemento é tubo (grade
-   irregular ou menos de 8 quads). Tampas ficam fora do mapa.
+   irregular, menos de 8 quads ou comprimento < INLAB_MAPEAR_TUBO_RAZAO x a volta).
+   Tampas ficam fora do mapa.
+   Fix round 1 (23/10/2026): esfera, Box segmentado e almofada de quads passavam
+   como "tubo" (a grade de quads em anel fecha). Agora o comprimento médio ao longo
+   tem de ser >= 4x a volta média; vivos reais medidos: 40x a 500x.
  - InLab_Mapear_GerarBox o faces escala : projeção por face pelo eixo dominante
    (laterais U horizontal, topo U = X, T x B = normal), vértices de UV por
    (vértice, eixo, sinal) (spec 5.5).
@@ -46,6 +50,8 @@ global InLab_Mapear_MadeiraLocal, InLab_Mapear_BoxLocal
 global InLab_Mapear_GerarMadeira, InLab_Mapear_GerarTubo, InLab_Mapear_GerarBox, InLab_Mapear_Gravar
 global InLab_Mapear_GerarGrande
 global InLab_Mapear_PolyDe, InLab_Mapear_TMObjeto
+-- tubo só se comprimento >= isto x a volta (vivos reais: 40x a 500x)
+global INLAB_MAPEAR_TUBO_RAZAO = 4.0
 
 -- Tarefa 5 (23/10/2026): polyop no NÓ avalia o topo do stack e dá "EPoly operation on
 -- non-Editable Poly" quando há modificador acima da base (UVW Map, TurboSmooth). Os
@@ -198,6 +204,8 @@ fn InLab_Mapear_TuboElemento o faces s base =
     local Lj = for j = 0 to nj - 1 collect ( local t = 0.0; for i = 0 to ni - 1 do t += distance (polyop.getVert po (vert Q i j ni nj)) (polyop.getVert po (vert Q i (j+1) ni nj)); t / ni )
     local totI = 0.0; for x in Li do totI += x
     local totJ = 0.0; for x in Lj do totJ += x
+    -- proporção de tubo: comprimento (o maior) >= INLAB_MAPEAR_TUBO_RAZAO x a volta
+    if (amax totI totJ) < INLAB_MAPEAR_TUBO_RAZAO * (amin totI totJ) do return undefined
     -- emendas: volta -> lado que aponta para o centro do elemento; comprimento -> atrás (+Y de mundo, via transform do nó)
     local centro = [0,0,0]; local nvc = 0
     for f in cobertas do ( centro += polyop.getFaceCenter po f; nvc += 1 )
