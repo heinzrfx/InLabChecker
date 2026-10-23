@@ -4,20 +4,27 @@
 
  O que faz:
    - struct MapearMedida (temCanal, escala, p10, p90, emendaVistaQuebra, espelhado,
-     veioOk, faces). Frações de 0.0 a 1.0; escala/p10/p90 em UV/cm.
+     veioOk, faces, amostra, falhou). Frações de 0.0 a 1.0; escala/p10/p90 em UV/cm.
+     `faces` = triângulos considerados (após `faces:`/`matID:`); `amostra` =
+     quantos deles foram de fato medidos (UV não degenerado; nunca mais que INLAB_MAPEAR_MAX_AMOSTRA);
+     `falhou` = true se a medição caiu numa exceção no meio (as outras medidas
+     são parciais e não valem).
    - InLab_Mapear_Medir o faces:undefined matID:undefined -> MapearMedida. Mede o
      canal 1 do nó avaliado (snapshotAsMesh). `faces` restringe aos triângulos da
      malha triangulada; `matID` filtra os triângulos por getFaceMatID (a Tarefa 5
      mede por ID de material). Só lê: não altera a cena.
    - InLab_Mapear_Motivo med regra alvoCmPorTile -> "" (bom) ou o texto do primeiro
-     critério violado, na ordem da tabela da spec 7. veioOk só vale com #madeira;
+     critério violado ("medição falhou" antes de todos, se med.falhou), na ordem da tabela da spec 7. veioOk só vale com #madeira;
      "escala longe do alvo" só com alvoCmPorTile != undefined.
    - INLAB_MAPEAR_LIMITES: limites provisórios da spec 7 (ajustáveis).
 
  Decisões:
    - Escala = sqrt(áreaUV/área3D) por triângulo (Spike_EscalaAtual); mediana, p10
      e p90 da amostra. Amostra: no máximo INLAB_MAPEAR_MAX_AMOSTRA (20 mil) faces,
-     por passo fixo.
+     por passo fixo (teto da divisão: acima de 20 mil o passo é >= 2).
+   - Correção 23/10/2026 (rodada de revisão 1): medição que falha no meio marca
+     falhou (antes virava "bom"); passo de amostragem com teto da divisão (antes
+     a divisão inteira media tudo até 39.999 faces).
    - Emenda à vista com quebra de direção: aresta com UV diferente dos dois lados,
      em superfície lisa (diedro < 30 graus) e com o U girando mais de 30 graus
      (sonda de cortes). Fração do comprimento total das arestas pareadas. Acima da
@@ -43,7 +50,8 @@ global INLAB_MAPEAR_LIMITES = #(
 struct MapearMedida
 (
     temCanal = false, escala = 0.0, p10 = 0.0, p90 = 0.0,
-    emendaVistaQuebra = 0.0, espelhado = 0.0, veioOk = 1.0, faces = 0
+    emendaVistaQuebra = 0.0, espelhado = 0.0, veioOk = 1.0, faces = 0,
+    amostra = 0, falhou = false
 )
 
 global InLab_Mapear_Limite, InLab_Mapear_Tangente, InLab_Mapear_Quantil
@@ -130,7 +138,7 @@ fn InLab_Mapear_Medir o faces:undefined matID:undefined =
             if lista.count > 0 do
             (
                 local maxA = INLAB_MAPEAR_MAX_AMOSTRA
-                local passo = amax 1 (lista.count / maxA)
+                local passo = amax 1 ((lista.count + maxA - 1) / maxA)
                 local tm = o.transform
                 local sinalNo = if (dot (cross tm.row1 tm.row2) tm.row3) < 0 then -1 else 1
                 local cache = #()
@@ -150,6 +158,7 @@ fn InLab_Mapear_Medir o faces:undefined matID:undefined =
                         if t[4] >= 0 do ( alongadas += 1; alongOk += t[4] )
                     )
                 )
+                med.amostra = nT
                 sort esc
                 med.escala = InLab_Mapear_Quantil esc 0.5
                 med.p10 = InLab_Mapear_Quantil esc 0.1
@@ -207,7 +216,11 @@ fn InLab_Mapear_Medir o faces:undefined matID:undefined =
             )
         )
     )
-    catch ( InLab_Log (o.name + ": Mapear, medição falhou (" + (getCurrentException()) + ")") tipo:#err )
+    catch
+    (
+        med.falhou = true
+        InLab_Log (o.name + ": Mapear, medição falhou (" + (getCurrentException()) + ")") tipo:#err
+    )
     try ( delete m )
     catch ( InLab_Log (o.name + ": Mapear, não liberou o snapshot (" + (getCurrentException()) + ")") tipo:#warn )
     med
@@ -225,7 +238,8 @@ fn InLab_Mapear_Num x =
 fn InLab_Mapear_Motivo med regra alvoCmPorTile =
 (
     local r = ""
-    if not med.temCanal then r = "sem canal 1"
+    if med.falhou then r = "medição falhou"
+    else if not med.temCanal then r = "sem canal 1"
     else if med.escala > (InLab_Mapear_Limite #escalaRealWorld) then
         r = "UV na escala do Real-World (1 tile a cada " + (InLab_Mapear_Num (1.0 / med.escala)) + " cm)"
     else if alvoCmPorTile != undefined and alvoCmPorTile > 0 and med.escala > 0 and \

@@ -125,6 +125,23 @@ global INLAB_MAPEAR_LIMITES, INLAB_TESTE_SAIDA, INLAB_TESTE_FALHAS
         checar "Cilindro alto com UVW Box: veio atravessado (veioOk < 60%)" (med6.veioOk < 0.6)
         checar "veio só conta em #madeira: tecido não cita veio" (not (contem (InLab_Mapear_Motivo med6 #tecido 60.0) "veio"))
 
+        -- 7b. FALHA NO MEIO DA MEDIÇÃO NÃO VIRA "BOM"
+        local medOk = InLab_Mapear_Medir b1
+        checar "peça normal: falhou = false" (not medOk.falhou)
+        local medFalha = InLab_Mapear_Medir b1 faces:42 -- bitarray * inteiro dá exceção dentro da medição
+        checar "exceção na medição: falhou = true" medFalha.falhou
+        checar "Motivo = 'medição falhou'" ((InLab_Mapear_Motivo medFalha #madeira 60.0) == "medição falhou")
+
+        -- 7c. TETO DA AMOSTRA (20 mil < triângulos < 40 mil)
+        local pl = Plane length:100 width:100 lengthsegs:130 widthsegs:130 mapcoords:true name:"TESTE_mm_plano_grande"
+        append criados pl
+        addModifier pl (Uvwmap maptype:0 length:60 width:60)
+        local medPl = InLab_Mapear_Medir pl
+        linha ("      plano grande: faces=" + medPl.faces as string + " amostra=" + medPl.amostra as string)
+        checar "malha entre 20 e 40 mil triângulos" (medPl.faces > 20000 and medPl.faces < 40000)
+        checar "amostra não passa de 20 mil" (medPl.amostra > 0 and medPl.amostra <= 20000)
+        checar "malha grande ainda mede a escala" (abs (medPl.escala - 1.0/60) < (1.0/60) * 0.05)
+
         -- 8. MOTIVO SOBRE MEDIDAS SINTÉTICAS (ordem da tabela da spec 7)
         local ok0 = MapearMedida temCanal:true escala:(1.0/60) p10:(1.0/60) p90:(1.0/60) veioOk:1.0 faces:100
         checar "sintética boa = ''" ((InLab_Mapear_Motivo ok0 #madeira 60.0) == "")
