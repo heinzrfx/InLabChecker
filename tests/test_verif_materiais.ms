@@ -14,7 +14,8 @@ global InLab_Mat_Uso, InLab_Mat_Resolver, InLab_Mat_MapasDoSlot, InLab_Mat_Arqui
 global InLab_V23_SlotsPBR, InLab_V24_PNG, InLab_V25_IDsDeMaterial
 global InLab_V35_Palha, InLab_V36_Cristal, InLab_V37_ZonasEstofado, InLab_V38_TampoAcessorio
 global InLab_TampoAcessorioProduto, InLab_AprovacaoFinal
-global INLAB_TESTE_SAIDA, INLAB_TESTE_FALHAS
+global INLAB_TESTE_SAIDA, INLAB_TESTE_FALHAS, INLAB_TESTE_LOGS
+global InLab_RWF_OriginaisRW
 global InLab_UltimaConversao, InLab_ResolverClasseGLTF, ConversaoRecord
 global InLab_V42_RealWorldFix, InLab_RealWorldFix, MatInfo, InLab_V43_MateriaisGltf
 global InLab_V41_PecasComMaterial, InLab_Mat_SemMaterial, InLab_Mat_EhFallback, InLab_AbrirExportadorRealTime
@@ -544,6 +545,18 @@ struct TesteSlotQuebrado ( texmapDiffuse = 5, texmapReflectGlossiness = 5, texma
         InLab_UltimaConversao = #(ConversaoRecord no:cv materialOriginal:origRW materialNovo:cv.material)
         st42 = rodar42 #(cv)
         checar ("V-42: original da conversão em Real-World reprova ('" + mensagemDe "V-42" + "')") ((st42) == #fail and tem (mensagemDe "V-42") "orig_rw")
+        -- 23/10/2026 (bug do time): converteu ANTES do RWF. A V-42 segue
+        -- reprovando (o glTF ficou sem a escala), mas diz como sair, e o RWF
+        -- avisa em vez de "nenhum objeto com Real-World".
+        checar ("V-42: convertido antes do RWF manda reverter e converter de novo ('" + mensagemDe "V-42" + "')") (tem (mensagemDe "V-42") "rw_c: convertido para glTF antes do Real World Fix" and tem (mensagemDe "V-42") "reverta a conversão")
+        INLAB_TESTE_LOGS = #()
+        InLab_Log = fn _logCaptura msg tipo:#info = ( append INLAB_TESTE_LOGS #(tipo, msg); format "      [LOG %] %\n" tipo msg to:INLAB_TESTE_SAIDA; flush INLAB_TESTE_SAIDA )
+        InLab_RealWorldFix #(cv)
+        local avisoRWF = (for l in INLAB_TESTE_LOGS where l[1] == #warn and tem l[2] "rw_c: convertido para glTF antes do Real World Fix" and tem l[2] "Reverta a conversão" collect l).count == 1
+        local nenhum = (for l in INLAB_TESTE_LOGS where tem l[2] "nenhum objeto com Real-World" collect l).count
+        InLab_Log = fn _logTeste msg tipo:#info = ( format "      [LOG %] %\n" tipo msg to:INLAB_TESTE_SAIDA; flush INLAB_TESTE_SAIDA )
+        checar "Real World Fix: peça convertida antes avisa como sair, sem 'nenhum objeto com Real-World'" (avisoRWF and nenhum == 0)
+        checar ("V-42: depois do RWF segue reprovando ('" + mensagemDe "V-42" + "')") ((rodar42 #(cv)) == #fail)
         InLab_UltimaConversao = convAntes
         limparCena()
         -- Triplanar: advertência, e o bitmap em Real-World de dentro dele não conta.

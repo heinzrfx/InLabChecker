@@ -451,12 +451,17 @@ fn InLab_V41_PecasComMaterial objetos =
 -- Material já convertido para glTF: lê também o original guardado em
 -- InLab_UltimaConversao (a conversão não leva o Real-World para o glTF, só
 -- avisa no log). Uma vez por grupo de instâncias.
+-- 23/10/2026 (bug do time): Real-World só no original (convertido antes do
+-- RWF, InLab_RWF_OriginaisRW) sai com mensagem própria, e a nota manda
+-- reverter a conversão, rodar o RWF e converter de novo: o RWF sozinho não
+-- age sobre o original, e a mensagem antiga não tinha saída.
 fn InLab_V42_RealWorldFix objetos =
 (
     local titulo = "Real World Fix aplicado"
     local criticos = #()
     local avisos = #()
     local naoMedidos = #()
+    local convertidoAntes = false
     for g in (InLab_DeduplicarInstancias objetos) do
     (
         local o = g.no
@@ -466,16 +471,19 @@ fn InLab_V42_RealWorldFix objetos =
             if o.material != undefined do append mats o.material
             if InLab_UltimaConversao != undefined do
                 for r in InLab_UltimaConversao where r.materialOriginal != undefined and                     (r.no == o or (o.material != undefined and r.materialNovo == o.material)) do appendIfUnique mats r.materialOriginal
-            local bms = #()
+            local bms = InLab_RWF_BitmapsRWFora o.material
+            local orig = for bm in (InLab_RWF_OriginaisRW o) where findItem bms bm == 0 collect bm
             local tps = #()
             for m in mats do
-            (
-                for bm in (InLab_RWF_BitmapsRWFora m) do appendIfUnique bms bm
                 for t in (InLab_RWF_Triplanares m) do appendIfUnique tps t
-            )
             local nUVW = (InLab_RWF_UVWsRW o).count
             if nUVW > 0 do append criticos (o.name + ": " + nUVW as string + " UVW Map em Real-World sem o Real World Fix")
             if bms.count > 0 do append criticos (o.name + ": bitmap em Real-World (" + (InLab_ListaResumida (for bm in bms collect bm.name) maximo:3) + ")")
+            if orig.count > 0 do
+            (
+                append criticos (o.name + ": convertido para glTF antes do Real World Fix, bitmap em Real-World no original (" + (InLab_ListaResumida (for bm in orig collect bm.name) maximo:3) + ")")
+                convertidoAntes = true
+            )
             if tps.count > 0 do append avisos (o.name + ": Triplanar no material (" + (InLab_ListaResumida (for t in tps collect t.name) maximo:3) + ")")
         )
         catch
@@ -484,7 +492,9 @@ fn InLab_V42_RealWorldFix objetos =
             InLab_Log (o.name + ": V-42 não leu o material/stack (" + getCurrentException() + ").") tipo:#err
         )
     )
-    local nota = " · rode o Real World Fix (seção UV e Texturas)"
+    local nota = if convertidoAntes then
+        " · reverta a conversão (seção Converter Material), rode o Real World Fix (seção UV e Texturas) e converta de novo"
+    else " · rode o Real World Fix (seção UV e Texturas)"
     if criticos.count > 0 then
         InLab_Mat_Registrar "V-42" titulo (criticos + avisos) naoMedidos "" critico:true nota:nota
     else if avisos.count > 0 then
