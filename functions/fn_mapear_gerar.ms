@@ -33,6 +33,9 @@
  como 100% espelhado; por isso madeira e box invertem o V quando o nó tem escala
  negativa (23/10/2026). O tubo usa o sinal da maioria das faces (InLab_Mapear_SinalUV,
  com a correção do transform do nó).
+ 23/10/2026 (Tarefa 5): tudo lê e grava no objeto BASE (InLab_Mapear_PolyDe), não no
+ nó: polyop no nó falha com modificador acima da base (o Mapear tira os "InLab RWF*"
+ depois de gerar e mantém o resto do stack). A volta para o mundo usa o objectTransform.
  Pegadinhas: "for e in array by N" não parseia (laço por índice); fn usado antes
  de definido precisa de global.
 */
@@ -42,15 +45,24 @@ global InLab_Mapear_Outro, InLab_Mapear_Passo, InLab_Mapear_TuboElemento
 global InLab_Mapear_MadeiraLocal, InLab_Mapear_BoxLocal
 global InLab_Mapear_GerarMadeira, InLab_Mapear_GerarTubo, InLab_Mapear_GerarBox, InLab_Mapear_Gravar
 global InLab_Mapear_GerarGrande
+global InLab_Mapear_PolyDe, InLab_Mapear_TMObjeto
+
+-- Tarefa 5 (23/10/2026): polyop no NÓ avalia o topo do stack e dá "EPoly operation on
+-- non-Editable Poly" quando há modificador acima da base (UVW Map, TurboSmooth). Os
+-- geradores leem e gravam no objeto BASE (Editable_Poly), em espaço de objeto puro.
+fn InLab_Mapear_PolyDe o = ( if isValidNode o then o.baseobject else o )
+-- transform de objeto (inclui o offset do pivot): base em espaço de objeto -> mundo
+fn InLab_Mapear_TMObjeto o = ( if isValidNode o then o.objectTransform else (matrix3 1) )
 
 -- nó com escala negativa (espelhado)
-fn InLab_Mapear_NoEspelhado o = ( local t = o.transform; (dot (cross t.row1 t.row2) t.row3) < 0 )
+fn InLab_Mapear_NoEspelhado o = ( local t = InLab_Mapear_TMObjeto o; (dot (cross t.row1 t.row2) t.row3) < 0 )
 
 -- orientação do UV de uma face (+1 normal, -1 espelhado), no sentido de render
 fn InLab_Mapear_SinalUV o f idx uvs base =
 (
-    local vs = polyop.getFaceVerts o f
-    local p1 = polyop.getVert o vs[1]; local p2 = polyop.getVert o vs[2]; local p3 = polyop.getVert o vs[3]
+    local po = InLab_Mapear_PolyDe o
+    local vs = polyop.getFaceVerts po f
+    local p1 = polyop.getVert po vs[1]; local p2 = polyop.getVert po vs[2]; local p3 = polyop.getVert po vs[3]
     local t1 = uvs[idx[1] - base]; local t2 = uvs[idx[2] - base]; local t3 = uvs[idx[3] - base]
     local e1 = p2 - p1; local e2 = p3 - p1
     local d1 = t2 - t1; local d2 = t3 - t1
@@ -63,7 +75,8 @@ fn InLab_Mapear_SinalUV o f idx uvs base =
 -- vizinho do polígono f pela aresta (a,b), dentro do conjunto permitido
 fn InLab_Mapear_Vizinho o f a b permitidos =
 (
-    local fs = ((polyop.getFacesUsingVert o a) * (polyop.getFacesUsingVert o b)) - #{f}
+    local po = InLab_Mapear_PolyDe o
+    local fs = ((polyop.getFacesUsingVert po a) * (polyop.getFacesUsingVert po b)) - #{f}
     local r = undefined
     for g in fs where permitidos[g] do r = g
     r
@@ -72,7 +85,8 @@ fn InLab_Mapear_Vizinho o f a b permitidos =
 -- no polígono g, o vizinho de v no ciclo que não é w
 fn InLab_Mapear_Outro o g v w =
 (
-    local vs = polyop.getFaceVerts o g
+    local po = InLab_Mapear_PolyDe o
+    local vs = polyop.getFaceVerts po g
     local k = findItem vs v; local n = vs.count
     local ant = vs[if k == 1 then n else k - 1]; local prox = vs[if k == n then 1 else k + 1]
     if ant == w then prox else ant
@@ -105,11 +119,12 @@ fn InLab_Mapear_Passo o q dir permitidos =
 -- mapeia um elemento tubular; #(uvs, mapa, cobertas) ou undefined. `base` desloca os índices.
 fn InLab_Mapear_TuboElemento o faces s base =
 (
+    local po = InLab_Mapear_PolyDe o
     local quads = #{}
-    for f in faces where polyop.getFaceDeg o f == 4 do quads[f] = true
+    for f in faces where polyop.getFaceDeg po f == 4 do quads[f] = true
     if quads.numberSet < 8 do return undefined
     local f0 = (for f in quads collect f)[1]
-    local vs = polyop.getFaceVerts o f0
+    local vs = polyop.getFaceVerts po f0
     local q0 = #(f0, vs[1], vs[2], vs[3], vs[4])
     -- faixa i (direita), fechada ou aberta
     local faixa = #(q0); local fechadaI = false
@@ -179,19 +194,20 @@ fn InLab_Mapear_TuboElemento o faces s base =
         local qq = Q[ii + 1][jj + 1]
         if i < ni and j < nj then qq[2] else if i == ni and j < nj then qq[3] else if i < ni and j == nj then qq[5] else qq[4]
     )
-    local Li = for i = 0 to ni - 1 collect ( local t = 0.0; for j = 0 to nj - 1 do t += distance (polyop.getVert o (vert Q i j ni nj)) (polyop.getVert o (vert Q (i+1) j ni nj)); t / nj )
-    local Lj = for j = 0 to nj - 1 collect ( local t = 0.0; for i = 0 to ni - 1 do t += distance (polyop.getVert o (vert Q i j ni nj)) (polyop.getVert o (vert Q i (j+1) ni nj)); t / ni )
+    local Li = for i = 0 to ni - 1 collect ( local t = 0.0; for j = 0 to nj - 1 do t += distance (polyop.getVert po (vert Q i j ni nj)) (polyop.getVert po (vert Q (i+1) j ni nj)); t / nj )
+    local Lj = for j = 0 to nj - 1 collect ( local t = 0.0; for i = 0 to ni - 1 do t += distance (polyop.getVert po (vert Q i j ni nj)) (polyop.getVert po (vert Q i (j+1) ni nj)); t / ni )
     local totI = 0.0; for x in Li do totI += x
     local totJ = 0.0; for x in Lj do totJ += x
     -- emendas: volta -> lado que aponta para o centro do elemento; comprimento -> atrás (+Y de mundo, via transform do nó)
     local centro = [0,0,0]; local nvc = 0
-    for f in cobertas do ( centro += polyop.getFaceCenter o f; nvc += 1 )
+    for f in cobertas do ( centro += polyop.getFaceCenter po f; nvc += 1 )
     centro /= nvc
     local i0 = 0; local j0 = 0
     local voltaEhJ = totJ <= totI
     -- índice de início da dimensão "volta" (fechada): linha mais virada para o centro
     fn escolherVolta o Q ni nj centro voltaEhJ =
     (
+        local po = InLab_Mapear_PolyDe o
         local melhor = 0; local mv = 1e9
         local n = if voltaEhJ then nj else ni
         for k = 0 to n - 1 do
@@ -202,7 +218,7 @@ fn InLab_Mapear_TuboElemento o faces s base =
             (
                 local qq = if voltaEhJ then Q[t+1][k+1] else Q[k+1][t+1]
                 local f = qq[1]
-                sc += dot (polyop.getFaceNormal o f) (normalize (centro - (polyop.getFaceCenter o f)))
+                sc += dot (polyop.getFaceNormal po f) (normalize (centro - (polyop.getFaceCenter po f)))
             )
             if -sc < mv do ( mv = -sc; melhor = k )
         )
@@ -210,13 +226,14 @@ fn InLab_Mapear_TuboElemento o faces s base =
     )
     fn escolherAtras o Q ni nj voltaEhJ =
     (
+        local po = InLab_Mapear_PolyDe o
         local melhor = 0; local mv = -1e9
         local n = if voltaEhJ then ni else nj
         for k = 0 to n - 1 do
         (
             local qq = if voltaEhJ then Q[k+1][1] else Q[1][k+1]
             -- "atrás" = +Y de MUNDO (frente do produto em -Y): centro local passado pelo transform do nó
-            local y = ((polyop.getFaceCenter o qq[1]) * o.transform).y
+            local y = ((polyop.getFaceCenter po qq[1]) * (InLab_Mapear_TMObjeto o)).y
             if y > mv do ( mv = y; melhor = k )
         )
         melhor
@@ -252,7 +269,7 @@ fn InLab_Mapear_TuboElemento o faces s base =
         idx[2] = (p+1)*(nj+1) + r + 1       -- BR
         idx[3] = (p+1)*(nj+1) + (r+1) + 1   -- TR
         idx[4] = p*(nj+1) + (r+1) + 1       -- TL
-        local fv = polyop.getFaceVerts o qq[1]
+        local fv = polyop.getFaceVerts po qq[1]
         local m = for v in fv collect ( local k = findItem #(qq[2], qq[3], qq[4], qq[5]) v; base + idx[k] )
         append mapa #(qq[1], m)
     )
@@ -266,13 +283,14 @@ fn InLab_Mapear_TuboElemento o faces s base =
 -- tubo(s): um elemento de `faces` por vez; undefined se nenhum é tubo
 fn InLab_Mapear_GerarTubo o faces escala =
 (
+    local po = InLab_Mapear_PolyDe o
     local uvs = #(); local mapa = #()
     local resto = copy faces
     local tubos = 0; local naoTubo = 0
     while not resto.isEmpty do
     (
         local f1 = (for i in resto collect i)[1]
-        local el = (polyop.getElementsUsingFace o #{f1}) * faces
+        local el = (polyop.getElementsUsingFace po #{f1}) * faces
         resto -= el
         resto[f1] = false
         local r = undefined
@@ -292,19 +310,20 @@ fn InLab_Mapear_GerarTubo o faces escala =
 -- madeira: projeção por face com o veio (U) na aresta longa, alisada, sem espelhar
 fn InLab_Mapear_MadeiraLocal o faces escala veio =
 (
-    local nf = polyop.getNumFaces o
+    local po = InLab_Mapear_PolyDe o
+    local nf = polyop.getNumFaces po
     local eixo = #(); local sinal = #(); local voto = #(); local peso = #()
     eixo.count = nf; sinal.count = nf; voto.count = nf; peso.count = nf
     for f in faces do
     (
-        local n = polyop.getFaceNormal o f
+        local n = polyop.getFaceNormal po f
         local a = if abs n.x >= abs n.y and abs n.x >= abs n.z then 1 else if abs n.y >= abs n.z then 2 else 3
         eixo[f] = a; sinal[f] = (if n[a] >= 0 then 1 else -1)
-        local vs = polyop.getFaceVerts o f
+        local vs = polyop.getFaceVerts po f
         local lg = [0,0,0]; local mx = 0.0; local mn = 1e9
         for k = 1 to vs.count do
         (
-            local e = (polyop.getVert o vs[if k == vs.count then 1 else k + 1]) - (polyop.getVert o vs[k])
+            local e = (polyop.getVert po vs[if k == vs.count then 1 else k + 1]) - (polyop.getVert po vs[k])
             local l = length e
             if l > mx do ( mx = l; lg = e )
             if l < mn do mn = l
@@ -315,7 +334,7 @@ fn InLab_Mapear_MadeiraLocal o faces escala veio =
     )
     -- vizinhos por aresta (só dentro de `faces`)
     local viz = #(); viz.count = nf
-    for f in faces do viz[f] = ((polyop.getFacesUsingEdge o (polyop.getFaceEdges o f)) - #{f}) * faces
+    for f in faces do viz[f] = ((polyop.getFacesUsingEdge po (polyop.getFaceEdges po f)) - #{f}) * faces
     for passe = 1 to 4 do
     (
         local novo = copy voto #nomap
@@ -339,13 +358,13 @@ fn InLab_Mapear_MadeiraLocal o faces escala veio =
         local nAx = (if a == 1 then X else if a == 2 then Y else Z) * sg
         local T = if a == 3 then (if voto[f] > 0 then X else Y) else (if voto[f] > 0 then Z else (if a == 1 then Y else X))
         local B = cross nAx T
-        local vs = polyop.getFaceVerts o f
+        local vs = polyop.getFaceVerts po f
         local m = for v in vs collect
         (
             local chave = v as string + "_" + a as string + "_" + sg as string + "_" + voto[f] as string
             if not (hasDictValue dic chave) do
             (
-                local p = polyop.getVert o v
+                local p = polyop.getVert po v
                 local u = (dot p T) * escala; local w = (dot p B) * escala
                 -- veio vertical: gira 90 graus, (U,V) -> (-V,U), sem espelhar
                 append uvs (if girar then [-w, u, 0] else [u, w, 0])
@@ -363,25 +382,26 @@ fn InLab_Mapear_MadeiraLocal o faces escala veio =
 -- caixa por face: eixo dominante; laterais U horizontal (B = Z), topo/base U = X; T x B = normal
 fn InLab_Mapear_BoxLocal o faces escala =
 (
+    local po = InLab_Mapear_PolyDe o
     local dic = Dictionary #string
     local uvs = #(); local mapa = #()
     local X = [1,0,0]; local Y = [0,1,0]; local Z = [0,0,1]
     for f in faces do
     (
-        local n = polyop.getFaceNormal o f
+        local n = polyop.getFaceNormal po f
         local a = if abs n.x >= abs n.y and abs n.x >= abs n.z then 1 else if abs n.y >= abs n.z then 2 else 3
         local sg = if n[a] >= 0 then 1 else -1
         local nAx = (if a == 1 then X else if a == 2 then Y else Z) * sg
         local T, B
         if a == 3 then ( T = X; B = cross nAx T )
         else ( B = Z; T = cross B nAx )
-        local vs = polyop.getFaceVerts o f
+        local vs = polyop.getFaceVerts po f
         local m = for v in vs collect
         (
             local chave = v as string + "_" + a as string + "_" + sg as string
             if not (hasDictValue dic chave) do
             (
-                local p = polyop.getVert o v
+                local p = polyop.getVert po v
                 append uvs [(dot p T) * escala, (dot p B) * escala, 0]
                 dic[chave] = uvs.count
             )
@@ -417,8 +437,9 @@ fn InLab_Mapear_Gravar o uvs mapa =
     local ok = false
     try
     (
-        local nf = polyop.getNumFaces o
-        local tinha = polyop.getMapSupport o 1
+        local po = InLab_Mapear_PolyDe o
+        local nf = polyop.getNumFaces po
+        local tinha = polyop.getMapSupport po 1
         local temMapa = #{}
         local porFace = #(); porFace.count = nf
         for e in mapa do ( temMapa[e[1]] = true; porFace[e[1]] = e[2] )
@@ -429,24 +450,24 @@ fn InLab_Mapear_Gravar o uvs mapa =
             -- copia o UV atual das faces que o mapa não cobre
             for f in semMapa do
             (
-                local mf = polyop.getMapFace o 1 f
-                porFace[f] = for mv in mf collect ( append todos (polyop.getMapVert o 1 mv); todos.count )
+                local mf = polyop.getMapFace po 1 f
+                porFace[f] = for mv in mf collect ( append todos (polyop.getMapVert po 1 mv); todos.count )
             )
         )
         else
         (
-            polyop.setMapSupport o 1 true
+            polyop.setMapSupport po 1 true
             -- canal novo: faces sem mapa apontam para um vértice de UV neutro
             if not semMapa.isEmpty do
             (
                 append todos [0,0,0]
                 local neutro = todos.count
-                for f in semMapa do porFace[f] = for k = 1 to (polyop.getFaceDeg o f) collect neutro
+                for f in semMapa do porFace[f] = for k = 1 to (polyop.getFaceDeg po f) collect neutro
             )
         )
-        polyop.setNumMapVerts o 1 todos.count keep:false
-        for k = 1 to todos.count do polyop.setMapVert o 1 k todos[k]
-        for f = 1 to nf do polyop.setMapFace o 1 f porFace[f]
+        polyop.setNumMapVerts po 1 todos.count keep:false
+        for k = 1 to todos.count do polyop.setMapVert po 1 k todos[k]
+        for f = 1 to nf do polyop.setMapFace po 1 f porFace[f]
         ok = true
     )
     catch InLab_Log (o.name + ": Mapear, não gravou o canal 1 (" + (getCurrentException()) + ")") tipo:#err

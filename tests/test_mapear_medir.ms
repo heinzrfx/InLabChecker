@@ -6,6 +6,7 @@
 global InLab_Log
 global InLab_Mapear_Medir, InLab_Mapear_Motivo, InLab_Mapear_Limite, MapearMedida
 global INLAB_MAPEAR_LIMITES, INLAB_TESTE_SAIDA, INLAB_TESTE_FALHAS
+global InLab_Mapear_GerarMadeira, InLab_Mapear_Gravar
 (
     local dirTeste = getFilenamePath (getSourceFileName())
     local raiz = substring dirTeste 1 (dirTeste.count - 6) -- tira "tests\"
@@ -141,6 +142,20 @@ global INLAB_MAPEAR_LIMITES, INLAB_TESTE_SAIDA, INLAB_TESTE_FALHAS
         checar "malha entre 20 e 40 mil triângulos" (medPl.faces > 20000 and medPl.faces < 40000)
         checar "amostra não passa de 20 mil" (medPl.amostra > 0 and medPl.amostra <= 20000)
         checar "malha grande ainda mede a escala" (abs (medPl.escala - 1.0/60) < (1.0/60) * 0.05)
+
+        -- 7d. VEIO VERTICAL (Tarefa 5): cone de madeira gerado com veio #vertical
+        -- (V na aresta longa) tem de passar no critério do veio com veio:#vertical
+        fileIn (raiz + @"functions\fn_mapear_gerar.ms")
+        local cv = Cone radius1:3 radius2:1.5 height:45 heightsegs:5 sides:24 mapcoords:true name:"TESTE_mm_cone_vertical"
+        append criados cv
+        convertToPoly cv
+        local rCv = InLab_Mapear_GerarMadeira cv #{1..(polyop.getNumFaces cv)} (1.0/60) #vertical
+        InLab_Mapear_Gravar cv rCv[1] rCv[2]
+        local medV = InLab_Mapear_Medir cv
+        linha ("      cone vertical: veioOk=" + medV.veioOk as string + " veioOkV=" + medV.veioOkV as string)
+        checar "cone #vertical: veioOkV > 0.8" (medV.veioOkV > 0.8)
+        checar "cone #vertical: Motivo com veio:#vertical não cita veio" (not (contem (InLab_Mapear_Motivo medV #madeira undefined veio:#vertical) "veio"))
+        checar "cone #vertical: Motivo com veio:#horizontal cita veio" (contem (InLab_Mapear_Motivo medV #madeira undefined veio:#horizontal) "veio")
 
         -- 8. MOTIVO SOBRE MEDIDAS SINTÉTICAS (ordem da tabela da spec 7)
         local ok0 = MapearMedida temCanal:true escala:(1.0/60) p10:(1.0/60) p90:(1.0/60) veioOk:1.0 faces:100

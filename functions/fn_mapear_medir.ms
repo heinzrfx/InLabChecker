@@ -4,7 +4,7 @@
 
  O que faz:
    - struct MapearMedida (temCanal, escala, p10, p90, emendaVistaQuebra, espelhado,
-     veioOk, faces, amostra, falhou). Frações de 0.0 a 1.0; escala/p10/p90 em UV/cm.
+     veioOk, veioOkV, faces, amostra, falhou). Frações de 0.0 a 1.0; escala/p10/p90 em UV/cm.
      `faces` = triângulos considerados (após `faces:`/`matID:`); `amostra` =
      quantos deles foram de fato medidos (UV não degenerado; nunca mais que INLAB_MAPEAR_MAX_AMOSTRA);
      `falhou` = true se a medição caiu numa exceção no meio (as outras medidas
@@ -13,7 +13,7 @@
      canal 1 do nó avaliado (snapshotAsMesh). `faces` restringe aos triângulos da
      malha triangulada; `matID` filtra os triângulos por getFaceMatID (a Tarefa 5
      mede por ID de material). Só lê: não altera a cena.
-   - InLab_Mapear_Motivo med regra alvoCmPorTile -> "" (bom) ou o texto do primeiro
+   - InLab_Mapear_Motivo med regra alvoCmPorTile veio:#horizontal -> "" (bom) ou o texto do primeiro
      critério violado ("medição falhou" antes de todos, se med.falhou), na ordem da tabela da spec 7. veioOk só vale com #madeira;
      "escala longe do alvo" só com alvoCmPorTile != undefined.
    - INLAB_MAPEAR_LIMITES: limites provisórios da spec 7 (ajustáveis).
@@ -35,6 +35,10 @@
    - veioOk: entre as faces alongadas (aresta longa > 2x a curta), fração com
      |cos| > 0,9 entre a aresta longa e o U (sonda de assets). Sem face
      alongada = 1.0.
+   - 23/10/2026 (Tarefa 5, veio vertical): veioOkV = a mesma fração, mas com o V
+     (dP/dv) na aresta longa. Textura de veio vertical (V = veio) é gerada com o
+     UV girado 90 graus e teria veioOk ~0; o Motivo da #madeira usa veioOkV quando
+     veio == #vertical (o orquestrador passa o veio detectado no difuso).
 */
 
 global InLab_Log
@@ -50,7 +54,7 @@ global INLAB_MAPEAR_LIMITES = #(
 struct MapearMedida
 (
     temCanal = false, escala = 0.0, p10 = 0.0, p90 = 0.0,
-    emendaVistaQuebra = 0.0, espelhado = 0.0, veioOk = 1.0, faces = 0,
+    emendaVistaQuebra = 0.0, espelhado = 0.0, veioOk = 1.0, veioOkV = 1.0, faces = 0,
     amostra = 0, falhou = false
 )
 
@@ -67,7 +71,7 @@ fn InLab_Mapear_Limite nome =
 
 -- #(tangenteU normalizada, escala UV/cm, sinal do UV, alongada) ou undefined se a
 -- face for degenerada em 3D ou em UV. alongada: -1 = não alongada, 1 = U ao longo
--- da aresta longa, 0 = U atravessado
+-- da aresta longa, 0 = U atravessado; 5º item: o mesmo para o V (veio vertical)
 fn InLab_Mapear_Tangente m f =
 (
     local fv = getFace m f
@@ -94,10 +98,14 @@ fn InLab_Mapear_Tangente m f =
             if (length e3) > (length lg) do lg = e3
             local curta = amin (length e1) (amin (length e2) (length e3))
             local along = -1
+            local alongV = -1
             if curta > 1e-9 and (length lg) > 2.0 * curta do
+            (
                 along = if (abs (dot (normalize lg) tu)) > 0.9 then 1 else 0
+                alongV = if (abs (dot (normalize lg) (dPdv / lv))) > 0.9 then 1 else 0
+            )
             local sinal = if (dot (cross dPdu dPdv) nn) > 0 then 1 else -1
-            r = #(tu, (sqrt ((abs det) / a3)), sinal, along)
+            r = #(tu, (sqrt ((abs det) / a3)), sinal, along, alongV)
         )
     )
     r
@@ -146,7 +154,7 @@ fn InLab_Mapear_Medir o faces:undefined matID:undefined =
                 local feito = #{}
 
                 -- escala, espelhamento e veio, por amostra de passo fixo
-                local esc = #(); local esp = 0; local nT = 0; local alongadas = 0; local alongOk = 0
+                local esc = #(); local esp = 0; local nT = 0; local alongadas = 0; local alongOk = 0; local alongOkV = 0
                 for i = 1 to lista.count by passo do
                 (
                     local t = InLab_Mapear_TangenteCache m lista[i] cache feito
@@ -155,7 +163,7 @@ fn InLab_Mapear_Medir o faces:undefined matID:undefined =
                         nT += 1
                         append esc t[2]
                         if t[3] * sinalNo < 0 do esp += 1
-                        if t[4] >= 0 do ( alongadas += 1; alongOk += t[4] )
+                        if t[4] >= 0 do ( alongadas += 1; alongOk += t[4]; alongOkV += t[5] )
                     )
                 )
                 med.amostra = nT
@@ -165,6 +173,7 @@ fn InLab_Mapear_Medir o faces:undefined matID:undefined =
                 med.p90 = InLab_Mapear_Quantil esc 0.9
                 if nT > 0 do med.espelhado = esp as float / nT
                 med.veioOk = if alongadas > 0 then alongOk as float / alongadas else 1.0
+                med.veioOkV = if alongadas > 0 then alongOkV as float / alongadas else 1.0
 
                 -- emendas à vista com quebra de direção
                 local candidatas = lista
@@ -235,9 +244,10 @@ fn InLab_Mapear_Num x =
     substituteString s "." ","
 )
 
-fn InLab_Mapear_Motivo med regra alvoCmPorTile =
+fn InLab_Mapear_Motivo med regra alvoCmPorTile veio:#horizontal =
 (
     local r = ""
+    local fracVeio = if veio == #vertical then med.veioOkV else med.veioOk
     if med.falhou then r = "medição falhou"
     else if not med.temCanal then r = "sem canal 1"
     else if med.escala > (InLab_Mapear_Limite #escalaRealWorld) then
@@ -251,7 +261,7 @@ fn InLab_Mapear_Motivo med regra alvoCmPorTile =
         r = "emendas à vista com quebra de direção (" + (InLab_Mapear_Pct med.emendaVistaQuebra) + ")"
     else if med.espelhado > (InLab_Mapear_Limite #espelhado) then
         r = "UV espelhado (" + (InLab_Mapear_Pct med.espelhado) + " das faces)"
-    else if regra == #madeira and med.veioOk < (InLab_Mapear_Limite #veioOk) then
-        r = "veio atravessado (" + (InLab_Mapear_Pct med.veioOk) + " das faces no sentido certo)"
+    else if regra == #madeira and fracVeio < (InLab_Mapear_Limite #veioOk) then
+        r = "veio atravessado (" + (InLab_Mapear_Pct fracVeio) + " das faces no sentido certo)"
     r
 )
