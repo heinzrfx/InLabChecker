@@ -190,10 +190,21 @@ fn InLab_Mapear_DifusoDe mtl =
             if hasProperty mtl p do bmp = InLab_Mapear_BitmapDoMapa (getProperty mtl p)
         if bmp != undefined do
         (
-            if classof bmp == Bitmaptexture then
-                res = #(bmp.filename, bmp.coords.W_Angle)
-            else
-                res = #(bmp.filename, bmp.wAngle)
+            try
+            (
+                local arq = bmp.filename
+                if arq == undefined then arq = ""
+                local w = 0.0
+                if classof bmp == Bitmaptexture then w = bmp.coords.W_Angle
+                else if hasProperty bmp #wAngle then w = bmp.wAngle
+                if w == undefined then w = 0.0
+                res = #(arq, w)
+            )
+            catch
+            (
+                InLab_Log ("Difuso: não consegui ler o bitmap do material: " + getCurrentException()) tipo:#warn
+                res = undefined
+            )
         )
     )
     res

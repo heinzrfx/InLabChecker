@@ -110,6 +110,35 @@ global INLAB_TESTE_SAIDA, INLAB_TESTE_FALHAS
         checar "DifusoDe acha arquivo e W do Bitmaptexture" (d != undefined and d[1] == arq2 and abs(d[2] - 90.0) < 0.01)
         checar "DifusoDe sem mapa -> undefined" ((InLab_Mapear_DifusoDe (Standardmaterial())) == undefined)
 
+        -- 3b. DIFUSO robusto
+        local excD = false
+        local dv = undefined
+        local rv = #semDirecao
+        try
+        (
+            dv = InLab_Mapear_DifusoDe (Standardmaterial diffuseMap:(Bitmaptexture()))
+            if dv != undefined then rv = InLab_Mapear_VeioDaImagem dv[1] dv[2]
+        ) catch ( excD = true )
+        checar "Bitmaptexture sem arquivo: DifusoDe e VeioDaImagem sem excecao" (not excD and rv == #semDirecao)
+        if CoronaBitmap != undefined then
+        (
+            local cb = CoronaBitmap filename:arq2
+            cb.wAngle = 90.0
+            local mc = CoronaPhysicalMtl baseTexmap:cb
+            local dc = InLab_Mapear_DifusoDe mc
+            checar "Corona: CoronaBitmap no difuso (W=90)" (dc != undefined and dc[1] == arq2 and abs(dc[2] - 90.0) < 0.01)
+            local tp = CoronaTriplanar()
+            tp.texmapX = CoronaBitmap filename:arq2
+            local mt = CoronaPhysicalMtl baseTexmap:tp
+            local dt = InLab_Mapear_DifusoDe mt
+            checar "Corona: CoronaTriplanar com CoronaBitmap dentro" (dt != undefined and dt[1] == arq2)
+        )
+        else
+        (
+            checar "pulado: sem Corona (CoronaBitmap)" true
+            checar "pulado: sem Corona (CoronaTriplanar)" true
+        )
+
         -- 4. WENGÉ (se houver Corona)
         local wenge = ""
         for cand in #(@"C:\Program Files\Chaos\Corona\materials\assets\10eb4f3be7b1.jpg") do
