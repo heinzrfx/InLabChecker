@@ -5,14 +5,16 @@ global SondaUV_MaxAmostra = 3000
 
 fn SondaUV_Q arr p = if arr.count == 0 then 0 else arr[amax 1 (amin arr.count ((p*arr.count) as integer))]
 fn SondaUV_F v = formattedPrint v format:".2f"
+-- bitmap sem arquivo (filename undefined) quebrava o filenameFromPath
+fn SondaUV_Arq f = if f == undefined or f == "" then "(sem arquivo)" else filenameFromPath f
 fn pct a b = if b == 0 then "-" else ((100*a/b) as integer) as string + "%"
 
 -- texturas de um material (recursivo, só bitmaps)
 fn SondaUV_Bitmaps t lista = (
     if t == undefined then return lista
     local c = classof t
-    if c == Bitmaptexture then append lista ("BMP " + (filenameFromPath t.filename) + " rw:" + t.coords.realWorldScale as string + " tile:" + (SondaUV_F t.coords.U_Tiling) + "/" + (SondaUV_F t.coords.V_Tiling) + " W:" + (SondaUV_F t.coords.W_angle) + " ch:" + t.coords.mapChannel as string + (if t.coords.realWorldScale then " rwW:" + (SondaUV_F t.coords.realWorldWidth) else ""))
-    else if c == CoronaBitmap then append lista ("CBMP " + (filenameFromPath t.filename) + " rw:" + t.realWorldScale as string + " scale:" + t.uvwScale as string + " w:" + (SondaUV_F t.wAngle) + " ch:" + t.uvwChannel as string + " env:" + t.enviroMapping as string)
+    if c == Bitmaptexture then append lista ("BMP " + (SondaUV_Arq t.filename) + " rw:" + t.coords.realWorldScale as string + " tile:" + (SondaUV_F t.coords.U_Tiling) + "/" + (SondaUV_F t.coords.V_Tiling) + " W:" + (SondaUV_F t.coords.W_angle) + " ch:" + t.coords.mapChannel as string + (if t.coords.realWorldScale then " rwW:" + (SondaUV_F t.coords.realWorldWidth) else ""))
+    else if c == CoronaBitmap then append lista ("CBMP " + (SondaUV_Arq t.filename) + " rw:" + t.realWorldScale as string + " scale:" + t.uvwScale as string + " w:" + (SondaUV_F t.wAngle) + " ch:" + t.uvwChannel as string + " env:" + t.enviroMapping as string)
     else if c == CoronaTriplanar then append lista ("TRIPLANAR scale:" + t.scale as string + " rot:" + t.rotation as string + " space:" + t.space as string)
     for i = 1 to (getNumSubTexmaps t) do SondaUV_Bitmaps (getSubTexmap t i) lista
     lista
