@@ -94,16 +94,24 @@ global InLab_Mapear_GerarMadeira, InLab_Mapear_GerarTubo, InLab_Mapear_GerarBox,
             for uv in rTr[1] do ( mx.x = amax mx.x uv.x; mx.y = amax mx.y uv.y; mn.x = amin mn.x uv.x; mn.y = amin mn.y uv.y )
             local eixoU = (mx.x - mn.x) >= (mx.y - mn.y)
             local minimo = if eixoU then mn.x else mn.y
+            -- centro de mundo explícito: centro local * transform do nó
+            local yMax = -1e9; local yMin = 1e9
+            for f in fTr do
+            (
+                local cw = (in coordsys local (polyop.getFaceCenter tr f)) * tr.transform
+                yMax = amax yMax cw.y; yMin = amin yMin cw.y
+            )
             local soma = 0.0; local n = 0
             for e in rTr[2] do
             (
                 local naEmenda = false
                 for i in e[2] do ( local c = if eixoU then rTr[1][i].x else rTr[1][i].y; if (abs (c - minimo)) < 1e-4 do naEmenda = true )
-                if naEmenda do ( soma += (in coordsys world (polyop.getFaceCenter tr e[1])).y - tr.pos.y; n += 1 )
+                if naEmenda do ( soma += ((in coordsys local (polyop.getFaceCenter tr e[1])) * tr.transform).y; n += 1 )
             )
             local yMedio = if n == 0 then 0.0 else soma / n
-            linha ("      toro rot " + ang as string + ": emenda do comprimento, Y de mundo relativo = " + yMedio as string + " (faces " + n as string + ")")
-            checar ("Toro girado " + ang as string + " graus: emenda do comprimento atrás (+Y de mundo)") (yMedio > 20.0)
+            local yCentro = (yMax + yMin) / 2; local meia = (yMax - yMin) / 2
+            linha ("      toro rot " + ang as string + ": Y de mundo das faces da emenda = " + yMedio as string + " (máx " + yMax as string + ", centro " + yCentro as string + ", faces " + n as string + ")")
+            checar ("Toro girado " + ang as string + " graus: emenda do comprimento atrás (+Y de mundo)") (n > 0 and yMedio > yCentro + 0.8 * meia)
         )
 
         -- 2. TUBO ABERTO COM TAMPAS
