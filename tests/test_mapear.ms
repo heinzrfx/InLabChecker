@@ -7,7 +7,8 @@
 global InLab_Log, InLab_ParseJSON, InLab_Produto_Lista, InLab_RWF_Feitos
 global InLab_Mapear, InLab_ReverterMapear, InLab_UltimoMapear, InLab_Mapear_LerCanal1
 global InLab_Mapear_Medir, InLab_Mapear_GerarTubo, InLab_Mapear_Gravar
-global InLab_Instancias
+global InLab_Instancias, InLab_RWF_Rodar, InLab_Mapear_ForcarFalha
+global INLAB_TESTE_MEDIR_ORIG, INLAB_TESTE_MEDIR_N
 global INLAB_TESTE_SAIDA, INLAB_TESTE_FALHAS
 (
     local dirTeste = getFilenamePath (getSourceFileName())
@@ -131,6 +132,10 @@ global INLAB_TESTE_SAIDA, INLAB_TESTE_FALHAS
             "{\"nome_parte\": \"Capa\", \"familia\": \"Tecido\", \"materia\": \"\", \"material_id\": \"ART_Capa\"}, " +
             "{\"nome_parte\": \"Base\", \"familia\": \"Metal\", \"materia\": \"\", \"material_id\": \"ART_Metal\"}, " +
             "{\"nome_parte\": \"BaseRW\", \"familia\": \"Metal\", \"materia\": \"\", \"material_id\": \"ART_MetalRW\"}, " +
+            "{\"nome_parte\": \"CapaB\", \"familia\": \"Tecido\", \"materia\": \"\", \"material_id\": \"ART_CapaB\"}, " +
+            "{\"nome_parte\": \"CapaH\", \"familia\": \"Tecido\", \"materia\": \"\", \"material_id\": \"ART_CapaH\"}, " +
+            "{\"nome_parte\": \"PeRW\", \"familia\": \"Madeira\", \"materia\": \"Cedro\", \"material_id\": \"ART_PeRW\"}, " +
+            "{\"nome_parte\": \"PeRWB\", \"familia\": \"Madeira\", \"materia\": \"Cedro\", \"material_id\": \"ART_PeRWB\"}, " +
             "{\"nome_parte\": \"Acabamento\", \"familia\": \"\", \"materia\": \"\", \"material_id\": \"ART_Vazia\"}]}]}"
         local produto = (InLab_Produto_Lista (InLab_ParseJSON js))[1]
         arqImg = gerarImagem "inlab_test_mapear_listras.png"
@@ -245,8 +250,8 @@ global INLAB_TESTE_SAIDA, INLAB_TESTE_FALHAS
         checar "registros acumulados" (InLab_UltimoMapear.count == nRef and nRef >= 6)
 
         -- 11. unwrap opcional nas peças grandes de tecido
-        -- (GeoSphere: só triângulos, não é tubo; a Sphere comum vira "tubo" pela grade de quads)
-        local esf = GeoSphere radius:30 segs:6 mapcoords:true name:"TESTE_map_esfera" pos:[0,300,0]
+        -- (fix round 1: a Sphere de quads não passa mais por tubo, proporção < 4x)
+        local esf = Sphere radius:30 segs:24 mapcoords:true name:"TESTE_map_esfera" pos:[0,300,0]
         convertToPoly esf
         esf.material = mTec; append criados esf
         polyop.setMapSupport esf.baseobject 1 false
@@ -258,7 +263,7 @@ global INLAB_TESTE_SAIDA, INLAB_TESTE_FALHAS
         checar "unwrapGrande: nó temporário apagado" ((for o in objects where matchPattern o.name pattern:"InLab_Mapear_tmp*" collect o).count == 0)
         checar "unwrapGrande: caminho do Unwrap rodou (sem queda para a caixa)" (not (temLog logs #warn "TESTE_map_esfera" "Unwrap da peça grande falhou"))
         -- peça grande de tecido sem unwrap: Box simples e aviso de corte à vista
-        local esf2 = GeoSphere radius:30 segs:6 mapcoords:true name:"TESTE_map_esfera2" pos:[0,450,0]
+        local esf2 = Sphere radius:30 segs:24 mapcoords:true name:"TESTE_map_esfera2" pos:[0,450,0]
         convertToPoly esf2
         polyop.setMapSupport esf2.baseobject 1 false
         esf2.material = mTec; append criados esf2
@@ -284,6 +289,181 @@ global INLAB_TESTE_SAIDA, INLAB_TESTE_FALHAS
         checar "Desfazer: esfera sem canal 1 de novo" (not (polyop.getMapSupport esf.baseobject 1))
         checar "Desfazer zera InLab_UltimoMapear" (InLab_UltimoMapear.count == 0)
         checar "canal 3 intacto depois do Desfazer" (igualLista canal3Antes (canalSnapshot cp 3))
+
+        ------------------------------------------------------------------
+        -- 13. FIX ROUND 1
+        ------------------------------------------------------------------
+        logs.count = 0
+        local mPeRW = criarMaterial "ART_PeRW" arqImg
+        mPeRW.diffuseMap.coords.realWorldScale = true
+        mPeRW.diffuseMap.coords.realWorldWidth = 60; mPeRW.diffuseMap.coords.realWorldHeight = 60
+        local mPeRWB = criarMaterial "ART_PeRWB" arqImg
+        mPeRWB.diffuseMap.coords.realWorldScale = true
+        mPeRWB.diffuseMap.coords.realWorldWidth = 60; mPeRWB.diffuseMap.coords.realWorldHeight = 60
+        local mCapaA = criarMaterial "ART_Capa" arqImg canal:2
+        local mCapaB = criarMaterial "ART_CapaB" arqImg canal:2
+        local mCapaH = criarMaterial "ART_CapaH" arqImg canal:2
+
+        -- B: bases que não são Editable_Poly
+        local b1 = Box length:40 width:40 height:40 mapcoords:false name:"TESTE_fx_box_prim" pos:[0,-400,0]
+        b1.material = mVaz; append criados b1
+        local b2 = Box length:40 width:40 height:40 mapcoords:false name:"TESTE_fx_box_inst1" pos:[100,-400,0]
+        b2.material = mVaz; append criados b2
+        local b2i = instance b2 name:"TESTE_fx_box_inst2" pos:[150,-400,0]
+        append criados b2i
+        local b3 = Box length:40 width:40 height:40 mapcoords:true name:"TESTE_fx_mesh" pos:[200,-400,0]
+        convertToMesh b3
+        meshop.setMapSupport b3 1 false
+        b3.material = mVaz; append criados b3
+        local b4 = Box length:40 width:40 height:40 mapcoords:true name:"TESTE_fx_mesh_unwrap" pos:[300,-400,0]
+        convertToMesh b4
+        meshop.setMapSupport b4 1 false
+        b4.material = mVaz; append criados b4
+        select b4; max modify mode
+        local uw = Unwrap_UVW(); uw.name = "InLab AutoUV"
+        addModifier b4 uw
+        modPanel.setCurrentObject uw
+        uw.setMapChannel 3
+        clearSelection()
+        local canal3B4 = canalSnapshot b4 3
+        local b5 = Cylinder radius:5 height:20 sides:24 mapcoords:false name:"TESTE_fx_cil_prim" pos:[400,-400,0]
+        b5.material = mVaz; append criados b5
+
+        -- C: Multi/Sub com dois IDs lendo o canal 2 do RWF; o ID 2 falha de propósito
+        local mc = Box length:50 width:50 height:50 mapcoords:true name:"TESTE_fx_multi" pos:[0,-550,0]
+        convertToPoly mc
+        for f = 1 to 6 do polyop.setFaceMatID mc f (if f <= 3 then 1 else 2)
+        local mm = Multimaterial numsubs:2
+        mm.materialList[1] = mCapaA; mm.materialList[2] = mCapaB
+        mc.material = mm; append criados mc
+        local rwfC = Uvwmap name:"InLab RWF Triplanar" maptype:4 length:50 width:50 height:50 mapChannel:2
+        addModifier mc rwfC
+        append InLab_RWF_Feitos mc
+
+        -- E1: UV avaliado do ID mantido com RWF no canal 1
+        local ma = Box length:50 width:50 height:150 mapcoords:true name:"TESTE_fx_avaliado" pos:[100,-550,0]
+        convertToPoly ma
+        for f = 1 to (polyop.getNumFaces ma) do
+            polyop.setFaceMatID ma f (if (abs (polyop.getFaceNormal ma f).z) > 0.9 then 1 else 2)
+        local mm2 = Multimaterial numsubs:2
+        mm2.materialList[1] = mMet; mm2.materialList[2] = mPe
+        ma.material = mm2; append criados ma
+        addModifier ma (Uvwmap name:"InLab RWF Triplanar" maptype:4 length:60 width:60 height:60 mapChannel:1)
+        append InLab_RWF_Feitos ma
+        fn canalID o id =
+        (
+            local m = snapshotAsMesh o
+            local r = #()
+            for f = 1 to m.numfaces where (getFaceMatID m f) == id do
+            (
+                local tv = meshop.getMapFace m 1 f
+                for k = 1 to 3 do append r (meshop.getMapVert m 1 tv[k])
+            )
+            delete m
+            r
+        )
+        local uvID1Antes = canalID ma 1
+
+        -- E3: caso B do RWF (UV em cm na malha + bitmap Real-World -> Xform no topo)
+        local eb = Cylinder radius:2.5 height:80 heightsegs:5 sides:16 mapcoords:true name:"TESTE_fx_rwf_b" pos:[300,-550,0]
+        addModifier eb (Uvwmap maptype:4 length:1 width:1 height:1)
+        convertToPoly eb
+        eb.material = mPeRWB; append criados eb
+        InLab_RWF_Rodar #(eb)
+        local modsEB = for m in eb.modifiers collect m
+        checar "caso B: RWF pôs o Xform \"InLab RWF\" no topo" (modsEB.count == 1 and classof modsEB[1] == UVW_Xform and modsEB[1].name == "InLab RWF")
+        local canalEBAntes = InLab_Mapear_LerCanal1 eb
+
+        -- H1: densidade do canal do RWF implausível (1 cm) -> 60 cm sem compensar o tiling
+        local hp = Box length:50 width:50 height:50 mapcoords:true name:"TESTE_fx_h1" pos:[400,-550,0]
+        convertToPoly hp
+        hp.material = mCapaH; append criados hp
+        addModifier hp (Uvwmap name:"InLab RWF Triplanar" maptype:4 length:1 width:1 height:1 mapChannel:2)
+        append InLab_RWF_Feitos hp
+
+        -- G: peça sem faces
+        local gz = Box length:10 width:10 height:10 name:"TESTE_fx_vazia" pos:[500,-550,0]
+        convertToPoly gz
+        polyop.deleteFaces gz #{1..(polyop.getNumFaces gz)}
+        gz.material = mVaz; append criados gz
+
+        InLab_Mapear_ForcarFalha = "TESTE_fx_multi (ID 2)"
+        logs.count = 0
+        local nFx = InLab_Mapear #(b1, b2, b2i, b3, b4, b5, mc, ma, eb, hp, gz) produto
+        InLab_Mapear_ForcarFalha = undefined
+        linha ("      fix round 1: refeitas = " + nFx as string)
+        -- B
+        checar "B: Box primitiva sem modificador vira Editable_Poly com canal 1" ((classof b1.baseobject) == Editable_Poly and (polyop.getMapSupport b1.baseobject 1))
+        checar "B: Box primitiva com 2 instâncias: continuam instâncias, UV gravado" ((InLab_Instancias b2).count == 2 and \
+            (classof b2i.baseobject) == Editable_Poly and igualLista (canalSnapshot b2 1) (canalSnapshot b2i 1))
+        checar "B: Editable_Mesh sem modificador vira Editable_Poly com canal 1" ((classof b3.baseobject) == Editable_Poly and (polyop.getMapSupport b3.baseobject 1))
+        checar "B: Editable_Mesh com Unwrap acima: pulada com #warn e canal 3 intacto" ((classof b4.baseobject) == Editable_mesh and \
+            (temLog logs #warn "TESTE_fx_mesh_unwrap" "Unwrap acima da base") and igualLista canal3B4 (canalSnapshot b4 3))
+        checar "B: Cylinder primitiva (triângulos mudam): #err e base devolvida" ((classof b5.baseobject) == Cylinder and \
+            (temLog logs #err "TESTE_fx_cil_prim" "triângulos de render"))
+        -- C
+        checar "C: modificador do canal 2 continua com o ID 2 não refeito" ((findItem (for m in mc.modifiers collect m) rwfC) > 0 and \
+            (temLog logs #warn "TESTE_fx_multi" "canal 2 do Real World Fix continua"))
+        checar "C: bitmap do ID não refeito continua lendo o canal 2" (mCapaB.diffuseMap.coords.mapChannel == 2)
+        checar "C: ID 1 refeito" (temLog logs #ok "TESTE_fx_multi (ID 1)" "refeito")
+        -- E1
+        checar "E1: ID 2 refeito e RWF do canal 1 tirado" ((temLog logs #ok "TESTE_fx_avaliado (ID 2)" "refeito") and ma.modifiers.count == 0)
+        checar "E1: UV visível do ID mantido não muda (UV avaliado copiado)" (igualLista uvID1Antes (canalID ma 1))
+        -- E3
+        checar "caso B: refeita e Xform \"InLab RWF\" tirado" ((temLog logs #ok "TESTE_fx_rwf_b" "refeito") and eb.modifiers.count == 0)
+        -- H1
+        local mH = InLab_Mapear_Medir hp
+        checar "H1: canal implausível -> 60 cm, tiling não compensado e #warn verdadeiro" ((abs (mCapaH.diffuseMap.coords.U_Tiling - 1.0)) < 1e-4 and \
+            mCapaH.diffuseMap.coords.mapChannel == 1 and (abs (mH.escala - 1.0/60)) < (1.0/60) * 0.05 and (temLog logs #warn "TESTE_fx_h1" "passa a 60,0 cm"))
+        -- G
+        checar "G: peça sem faces: #info 'nada a mapear' e fora das contagens" ((temLog logs #info "TESTE_fx_vazia" "nada a mapear") and \
+            (temLog logs #warn "Mapear: 7 refeita(s), 0 mantida(s), 2 pulada(s)" "."))
+
+        -- E2 + D: caso A do RWF (UVW Map Real-World com o Xform logo acima), Ctrl+Z e Desfazer
+        local ea = Cylinder radius:2.5 height:80 heightsegs:5 sides:16 mapcoords:true name:"TESTE_fx_rwf_a" pos:[200,-550,0]
+        convertToPoly ea
+        ea.material = mPeRW; append criados ea
+        local uRW = Uvwmap maptype:4 length:1 width:1 height:1
+        uRW.realWorldMapSize = true
+        addModifier ea uRW
+        InLab_RWF_Rodar #(ea)
+        local modsEA = for m in ea.modifiers collect m
+        checar "caso A: RWF pôs o Xform \"InLab RWF\" logo acima do UVW Map" (modsEA.count == 2 and modsEA[1].name == "InLab RWF" and modsEA[2] == uRW)
+        local canalEAAntes = InLab_Mapear_LerCanal1 ea
+        local uvEAAntes = canalSnapshot ea 1
+        logs.count = 0
+        InLab_Mapear #(ea) produto
+        checar "caso A: refeita, UVW Map e Xform saem juntos" ((temLog logs #ok "TESTE_fx_rwf_a" "refeito") and ea.modifiers.count == 0)
+        max undo
+        checar "D: Ctrl+Z devolveu os modificadores" (ea.modifiers.count == 2)
+        InLab_ReverterMapear()
+        local nUVW = (for m in ea.modifiers where m == uRW collect m).count
+        local nX = (for m in ea.modifiers where m == modsEA[1] collect m).count
+        checar "D: Desfazer depois do Ctrl+Z: cada modificador uma vez só" (ea.modifiers.count == 2 and nUVW == 1 and nX == 1 and ea.modifiers[1] == modsEA[1])
+        checar "D: canal 1 original (base e visível)" (igualCanal canalEAAntes (InLab_Mapear_LerCanal1 ea) and igualLista uvEAAntes (canalSnapshot ea 1))
+        checar "caso B: Desfazer devolve o Xform e o canal" (eb.modifiers.count == 1 and eb.modifiers[1] == modsEB[1] and igualCanal canalEBAntes (InLab_Mapear_LerCanal1 eb))
+        checar "E1: Desfazer devolve o RWF do canal 1 e o UV visível" (ma.modifiers.count == 1 and igualLista uvID1Antes (canalID ma 1))
+
+        -- H2: a remedição falha depois de refeita: conta como refeita
+        local h2 = Box length:40 width:40 height:40 mapcoords:true name:"TESTE_fx_h2" pos:[600,-550,0]
+        convertToPoly h2
+        polyop.setMapSupport h2 1 false
+        h2.material = mVaz; append criados h2
+        INLAB_TESTE_MEDIR_ORIG = InLab_Mapear_Medir
+        INLAB_TESTE_MEDIR_N = 0
+        InLab_Mapear_Medir = fn _medirTeste o faces:undefined matID:undefined =
+        (
+            INLAB_TESTE_MEDIR_N += 1
+            if INLAB_TESTE_MEDIR_N > 1 do throw "remedição forçada a falhar"
+            INLAB_TESTE_MEDIR_ORIG o faces:faces matID:matID
+        )
+        logs.count = 0
+        local nH2 = 0
+        try ( nH2 = InLab_Mapear #(h2) produto ) catch ( linha ("      H2 exceção: " + getCurrentException()) )
+        InLab_Mapear_Medir = INLAB_TESTE_MEDIR_ORIG
+        checar "H2: remedição que falha não vira pulada" (nH2 == 1 and (temLog logs #warn "TESTE_fx_h2" "medição de conferência falhou") and \
+            (temLog logs #ok "Mapear: 1 refeita(s), 0 mantida(s), 0 pulada(s)" "."))
+        InLab_ReverterMapear()
     )
     catch ( linha ("FAIL  exceção no teste: " + (getCurrentException())); INLAB_TESTE_FALHAS += 1 )
 

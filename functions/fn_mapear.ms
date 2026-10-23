@@ -32,6 +32,8 @@
         (é assim que as peças grandes de tecido saem marcadas: GerarGrande hoje é
         o Box simples).
      7. Resumo "Mapear: N refeita(s), M mantida(s), K pulada(s)."
+     - (fix round 1) peça sem nenhuma face a medir: #info "nada a mapear", fora
+       das contagens.
    - InLab_ReverterMapear() -> nº de peças restauradas (canal 1 exato da base,
      modificadores "InLab RWF*" de volta na mesma posição, canal e tiling dos
      bitmaps). A classe da base não volta (só logada). Zera InLab_UltimoMapear.
@@ -53,6 +55,24 @@
      0 e 1 contam como canal 1.
    - polyop no NÓ falha com modificador acima da base: tudo lê e grava em
      o.baseobject (ver InLab_Mapear_PolyDe em fn_mapear_gerar.ms).
+
+ Fix round 1 (23/10/2026, revisão da Tarefa 5):
+   - Base que não é Editable_Poly com Unwrap_UVW acima (inclusive o "InLab
+     AutoUV"): peça pulada (#warn). O Unwrap guarda o UV por índice de face e a
+     conversão mesh -> poly muda as faces. A conversão vem depois do registro; se
+     os triângulos de render mudam (Cylinder primitiva: 96 -> 92), a base antiga
+     volta (cópia) e a peça não é tocada (#err). Peça abandonada depois da
+     conversão: #warn de que a base ficou Editable_Poly.
+   - "InLab RWF*" de um canal fora do 1 só sai se todos os IDs que leem esse
+     canal foram refeitos; senão o canal fica (modificador e bitmaps) e #warn.
+   - Caso A do RWF (spec 12.1): UVW Map com o Xform "InLab RWF" logo acima é do
+     RWF e sai junto (entra no registro). Sem o Xform acima, é do usuário.
+   - Restaurar não repõe modificador que já está no stack (Desfazer depois de
+     Ctrl+Z duplicava).
+   - Densidade do canal do RWF implausível -> alvo da tabela SEM compensar o
+     tiling (o #warn "a textura passa a X cm" é verdade).
+   - Falha na remedição do passo 6 só avisa: a peça já refeita conta como refeita.
+   - InLab_Mapear_ForcarFalha (só teste): rótulo do ID cujo gerador falha.
 */
 
 global InLab_Log, InLab_EhGeometria, InLab_Instancias, InLab_DeduplicarInstancias
@@ -100,6 +120,8 @@ global InLab_Mapear_Decidir, InLab_Mapear_FacesDoID, InLab_Mapear_Juntar
 global InLab_Mapear_UVAvaliado, InLab_Mapear_UnwrapElemento, InLab_Mapear_GerarRegra
 global InLab_Mapear_LerCanal1, InLab_Mapear_Restaurar, InLab_Mapear_ConverterBase
 global InLab_Mapear_Peca, InLab_Mapear, InLab_ReverterMapear
+-- SÓ TESTE: rótulo ("<nó>" ou "<nó> (ID n)") do ID cujo gerador deve falhar
+global InLab_Mapear_ForcarFalha = undefined
 
 --------------------------------------------------------------------------------
 -- Stack
@@ -556,7 +578,8 @@ fn InLab_Mapear_Restaurar rec =
         for k = 1 to c[1] do polyop.setMapVert po 1 k c[2][k]
         for e in c[3] do polyop.setMapFace po 1 e[1] e[2]
     )
-    for mt in rec.modsTirados do
+    -- modificador que já voltou (Ctrl+Z depois do Mapear) não entra de novo
+    for mt in rec.modsTirados where (findItem (for m in o.modifiers collect m) mt[1]) == 0 do
     (
         local idx = mt[2]
         if idx <= 1 then addModifier o mt[1]
@@ -585,11 +608,8 @@ fn InLab_Mapear_ConverterBase o =
         local depois = classof o.baseobject
         if nInst > 1 and (InLab_Instancias o).count != nInst do
             InLab_Log (o.name + ": a conversão da base quebrou a instância (" + nInst as string + " -> " + (InLab_Instancias o).count as string + " nós).") tipo:#warn
-        if depois == Editable_Poly then
-        (
-            InLab_Log (o.name + ": base " + antes as string + " convertida para Editable_Poly (o Desfazer devolve o UV, não a classe).") tipo:#warn
-            true
-        )
+        -- o aviso da conversão sai em InLab_Mapear_Peca, depois de conferir os triângulos
+        if depois == Editable_Poly then true
         else
         (
             InLab_Log (o.name + ": a base não virou Editable_Poly (" + depois as string + ").") tipo:#err
@@ -599,20 +619,28 @@ fn InLab_Mapear_ConverterBase o =
 )
 
 --------------------------------------------------------------------------------
--- Uma peça (o primeiro nó de um grupo de instâncias): #refeita, #mantida ou #pulada
+-- Uma peça (o primeiro nó de um grupo de instâncias): #refeita, #mantida,
+-- #pulada ou #nada (nenhuma face a medir em nenhum ID).
 --------------------------------------------------------------------------------
 fn InLab_Mapear_Peca o produto unwrapGrande =
 (
     -- 1. stack
     local rwfMods = #()       -- #(modificador, índice, canal)
     local bloqueio = undefined
+    local temUnwrap = false
     local avisos = #()
     for i = 1 to o.modifiers.count do
     (
         local m = o.modifiers[i]
         local canal = InLab_Mapear_CanalModUV m
+        if classof m == Unwrap_UVW do temUnwrap = true
+        -- caso A do RWF (spec 12.1): UVW Map com o Xform "InLab RWF" logo acima é
+        -- mapeamento do Real World Fix e sai junto com o Xform
+        local acima = if i > 1 then o.modifiers[i - 1] else undefined
+        local xformRWFAcima = acima != undefined and classof acima == UVW_Xform and (InLab_Mapear_EhRWF acima)
         if InLab_Mapear_EhRWF m then append rwfMods #(m, i, canal)
         else if m.name == "InLab AutoUV" then ok
+        else if classof m == Uvwmap and xformRWFAcima then append rwfMods #(m, i, canal)
         else if canal != undefined then
         (
             if canal == 1 and bloqueio == undefined do bloqueio = m.name
@@ -629,6 +657,8 @@ fn InLab_Mapear_Peca o produto unwrapGrande =
     )
     else
     (
+        -- densidade (UV/cm) de cada canal do RWF fora do canal 1: U_Tile do Xform
+        -- "InLab RWF" (UV em cm dividido) ou 1/length do UVW Map "InLab RWF*"
         local rwfCanais = #()
         local temRWFCanal1 = false
         for r in rwfMods do
@@ -637,38 +667,79 @@ fn InLab_Mapear_Peca o produto unwrapGrande =
             else
             (
                 local dens = undefined
-                if classof r[1] == Uvwmap and r[1].length > 1e-6 do dens = 1.0 / r[1].length
-                if dens == undefined do
-                    InLab_Log (o.name + ": " + r[1].name + " no canal " + r[3] as string + " sem tamanho conhecido; o tiling dos bitmaps religados não é ajustado.") tipo:#warn
-                append rwfCanais #(r[3], dens)
+                if classof r[1] == UVW_Xform then
+                    dens = try ( r[1].U_Tile ) catch ( InLab_Log (o.name + ": não li o U_Tile de " + r[1].name + " (" + getCurrentException() + ").") tipo:#warn; undefined )
+                else if classof r[1] == Uvwmap and (InLab_Mapear_EhRWF r[1]) and r[1].length > 1e-6 do dens = 1.0 / r[1].length
+                local k = findItem (for rc in rwfCanais collect rc[1]) r[3]
+                if k == 0 then append rwfCanais #(r[3], dens)
+                else if rwfCanais[k][2] == undefined do rwfCanais[k][2] = dens
             )
         )
+        for rc in rwfCanais where rc[2] == undefined do
+            InLab_Log (o.name + ": canal " + rc[1] as string + " do Real World Fix sem tamanho conhecido; o tiling dos bitmaps religados não é ajustado.") tipo:#warn
 
         -- 2. decisão por ID
         local decs = for g in (InLab_Mapear_Grupos o) collect (InLab_Mapear_Decidir o produto g[1] g[2] rwfCanais)
         local refazer = for d in decs where d.acao == #refazer collect d
-        if refazer.count == 0 then
+        if (for d in decs where d.acao != #nada collect d).count == 0 then
+        (
+            InLab_Log (o.name + ": nada a mapear.") tipo:#info
+            #nada
+        )
+        else if refazer.count == 0 then
             (if (for d in decs where d.acao == #pular collect d).count > 0 then #pulada else #mantida)
+        else if (classof o.baseobject) != Editable_Poly and temUnwrap then
+        (
+            -- o Unwrap guarda o UV por índice de face: converter a base muda as faces
+            InLab_Log (o.name + ": Unwrap acima da base " + ((classof o.baseobject) as string) +
+                       "; converter a base para Editable_Poly mudaria as faces que ele guarda. Peça não tocada.") tipo:#warn
+            #pulada
+        )
         else
         (
             for a in avisos do InLab_Log (o.name + ": " + a + ".") tipo:#warn
             for d in refazer where d.trocouEscala do
                 InLab_Log (d.rotulo + ": densidade atual de " + (InLab_Mapear_Num d.cmAntes) + " cm por tile fora da faixa (" +
-                           (InLab_Mapear_Num INLAB_MAPEAR_CM_MIN) + " a " + (InLab_Mapear_Num INLAB_MAPEAR_CM_MAX) + "); passa a " +
-                           (InLab_Mapear_Num d.alvo) + " cm.") tipo:#warn
+                           (InLab_Mapear_Num INLAB_MAPEAR_CM_MIN) + " a " + (InLab_Mapear_Num INLAB_MAPEAR_CM_MAX) + "); a textura passa a " +
+                           (InLab_Mapear_Num d.alvo) + " cm por tile.") tipo:#warn
             local resultado = #pulada
-            -- 3. base Editable_Poly
+            -- 3. registro (classe antiga) e base Editable_Poly
             local baseAntes = classof o.baseobject
-            if not (InLab_Mapear_ConverterBase o) then resultado = #pulada
-            else
+            local rec = MapearRecord no:o baseAntes:baseAntes modsTirados:#() bitmapsAntes:#()
+            local convertida = false
+            local baseOk = true
+            if baseAntes != Editable_Poly do
             (
-                -- 4. gera tudo antes de mexer na cena
+                local trisAntes = (GetTriMeshFaceCount o)[1]
+                local copia = copy o.baseobject
+                baseOk = InLab_Mapear_ConverterBase o
+                local trisDepois = (GetTriMeshFaceCount o)[1]
+                if baseOk and trisDepois != trisAntes do
+                (
+                    InLab_Log (o.name + ": a conversão para Editable_Poly mudou os triângulos de render (" + trisAntes as string + " -> " +
+                               trisDepois as string + "); base " + baseAntes as string + " devolvida, peça não tocada.") tipo:#err
+                    baseOk = false
+                )
+                if baseOk then
+                (
+                    convertida = true
+                    InLab_Log (o.name + ": base " + baseAntes as string + " convertida para Editable_Poly (o Desfazer devolve o UV, não a classe).") tipo:#warn
+                )
+                else
+                    try ( o.baseobject = copia )
+                    catch ( InLab_Log (o.name + ": não devolvi a base " + baseAntes as string + " (" + getCurrentException() + "); use o Ctrl+Z.") tipo:#err )
+            )
+            if baseOk do
+            (
+                -- 4. gera tudo antes de mexer no UV
                 local acc = #(#(), #())
                 local feitos = #()
                 for d in refazer do
                 (
                     try
                     (
+                        -- SÓ TESTE: InLab_Mapear_ForcarFalha = rótulo do ID que deve falhar
+                        if InLab_Mapear_ForcarFalha == d.rotulo do throw ("falha forçada para teste (" + d.rotulo + ")")
                         local fs = InLab_Mapear_FacesDoID o d.id
                         local r = InLab_Mapear_GerarRegra o fs d unwrapGrande
                         if r == undefined or r[2].count == 0 then
@@ -677,9 +748,22 @@ fn InLab_Mapear_Peca o produto unwrapGrande =
                     )
                     catch ( InLab_Log (d.rotulo + ": falha ao gerar o UV (" + getCurrentException() + "); ID como estava.") tipo:#err )
                 )
+                -- canais do RWF fora do canal 1 que ficam: algum ID não refeito lê o canal
+                local canaisPresos = #()
+                for rc in rwfCanais do
+                    for d in decs where (findItem feitos d) == 0 do
+                        if (for b in d.rebind where (InLab_RWF_CanalBitmap b) == rc[1] collect b).count > 0 do
+                        (
+                            if (findItem canaisPresos rc[1]) == 0 do
+                                InLab_Log (o.name + ": o canal " + rc[1] as string + " do Real World Fix continua (" + d.rotulo +
+                                           " não foi refeito e lê esse canal).") tipo:#warn
+                            appendIfUnique canaisPresos rc[1]
+                        )
+                local tirar = for r in rwfMods where (findItem canaisPresos r[3]) == 0 collect r
+                local tiraCanal1 = (for r in tirar where r[3] == undefined or r[3] == 1 collect r).count > 0
                 -- faces que não são refeitas precisam do UV avaliado se um RWF do canal 1 sai
                 local ok = feitos.count > 0
-                if ok and temRWFCanal1 do
+                if ok and tiraCanal1 do
                 (
                     local refeitas = #{}
                     for e in acc[2] do refeitas[e[1]] = true
@@ -697,24 +781,27 @@ fn InLab_Mapear_Peca o produto unwrapGrande =
                 )
                 if ok do
                 (
-                    -- 5. registro, RWF fora, bitmaps religados, gravação
-                    local rec = MapearRecord no:o baseAntes:baseAntes canal1Antes:(InLab_Mapear_LerCanal1 o) modsTirados:#() bitmapsAntes:#()
+                    -- 5. canal 1 de antes, RWF fora, bitmaps religados, gravação
+                    rec.canal1Antes = InLab_Mapear_LerCanal1 o
                     try
                     (
-                        for k = rwfMods.count to 1 by -1 do
+                        for k = tirar.count to 1 by -1 do
                         (
-                            deleteModifier o rwfMods[k][2]
-                            insertItem #(rwfMods[k][1], rwfMods[k][2]) rec.modsTirados 1
+                            deleteModifier o tirar[k][2]
+                            insertItem #(tirar[k][1], tirar[k][2]) rec.modsTirados 1
                         )
                         for d in feitos do
-                            for b in d.rebind where (for x in rec.bitmapsAntes where x[1] == b collect x).count == 0 do
+                            for b in d.rebind where (findItem canaisPresos (InLab_RWF_CanalBitmap b)) == 0 and \
+                                (for x in rec.bitmapsAntes where x[1] == b collect x).count == 0 do
                             (
                                 local c = InLab_RWF_CanalBitmap b
                                 local t = InLab_Mapear_Tiling b
                                 append rec.bitmapsAntes #(b, c, t.x, t.y)
                                 local k = findItem (for rc in rwfCanais collect rc[1]) c
                                 local dc = if k > 0 then rwfCanais[k][2] else undefined
-                                local razao = if dc == undefined then 1.0 else dc / d.escala
+                                -- densidade trocada (implausível -> tabela): sem compensar, a
+                                -- textura passa mesmo ao tamanho novo (o #warn acima diz isso)
+                                local razao = if dc == undefined or d.trocouEscala then 1.0 else dc / d.escala
                                 InLab_Mapear_SetCanal b 1
                                 InLab_Mapear_SetTiling b (t * razao)
                                 InLab_Log (b.name + ": passa a ler o canal 1 (era o " + c as string + ")" +
@@ -730,20 +817,26 @@ fn InLab_Mapear_Peca o produto unwrapGrande =
                         try ( InLab_Mapear_Restaurar rec )
                         catch ( InLab_Log (o.name + ": não restaurei a peça (" + getCurrentException() + "); use o Ctrl+Z.") tipo:#err )
                     )
-                    -- 6. medir de novo
+                    -- 6. medir de novo (a peça já está refeita: falha aqui só avisa)
                     if resultado == #refeita do
-                        for d in feitos do
+                        try
                         (
-                            local m2 = InLab_Mapear_Medir o matID:d.id
-                            InLab_Log (d.rotulo + ": " + d.motivo + " → refeito (" + (InLab_Mapear_NomeRegra d.regra) + ", 1 tile a cada " +
-                                       (InLab_Mapear_Num d.alvo) + " cm).") tipo:#ok
-                            if d.regra == #semFamilia do
-                                InLab_Log (d.rotulo + ": parte sem matéria-prima no JSON (Box simples).") tipo:#warn
-                            if m2.emendaVistaQuebra > (InLab_Mapear_Limite #emendaVistaQuebra) do
-                                InLab_Log (d.rotulo + ": corte à vista (" + (InLab_Mapear_Num (m2.emendaVistaQuebra * 100.0)) +
-                                           "% das arestas): considere o Unwrap.") tipo:#warn
+                            for d in feitos do
+                            (
+                                local m2 = InLab_Mapear_Medir o matID:d.id
+                                InLab_Log (d.rotulo + ": " + d.motivo + " → refeito (" + (InLab_Mapear_NomeRegra d.regra) + ", 1 tile a cada " +
+                                           (InLab_Mapear_Num d.alvo) + " cm).") tipo:#ok
+                                if d.regra == #semFamilia do
+                                    InLab_Log (d.rotulo + ": parte sem matéria-prima no JSON (Box simples).") tipo:#warn
+                                if m2.emendaVistaQuebra > (InLab_Mapear_Limite #emendaVistaQuebra) do
+                                    InLab_Log (d.rotulo + ": corte à vista (" + (InLab_Mapear_Num (m2.emendaVistaQuebra * 100.0)) +
+                                               "% das arestas): considere o Unwrap.") tipo:#warn
+                            )
                         )
+                        catch ( InLab_Log (o.name + ": refeita, mas a medição de conferência falhou (" + getCurrentException() + ").") tipo:#warn )
                 )
+                if resultado != #refeita and convertida do
+                    InLab_Log (o.name + ": peça não refeita, mas a base ficou Editable_Poly (era " + baseAntes as string + "); o Ctrl+Z devolve.") tipo:#warn
             )
             resultado
         )
@@ -786,7 +879,10 @@ fn InLab_Mapear objs produto unwrapGrande:false =
             try
             (
                 if (getPolygonCount o)[1] == 0 then
-                    InLab_Log (o.name + ": sem faces, ignorado.") tipo:#warn
+                (
+                    InLab_Log (o.name + ": sem faces, nada a mapear.") tipo:#info
+                    r = #nada
+                )
                 else r = InLab_Mapear_Peca o produto unwrapGrande
             )
             catch ( InLab_Log (o.name + ": erro inesperado no Mapear (" + getCurrentException() + ").") tipo:#err; r = #pulada )
@@ -795,6 +891,7 @@ fn InLab_Mapear objs produto unwrapGrande:false =
             (
                 #refeita: refeitas += 1
                 #mantida: mantidas += 1
+                #nada: ok
                 default: puladas += 1
             )
         )
