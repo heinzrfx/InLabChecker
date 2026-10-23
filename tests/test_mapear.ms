@@ -2,7 +2,8 @@
  tests\test_mapear.ms — teste de functions\fn_mapear.ms (orquestrador do botão
  Mapear, registro e Desfazer). RODAR NUMA CENA VAZIA (resetMaxFile #noPrompt).
  Resultado: <pasta temp do Max>\inlab_test_mapear.txt (PASS/FAIL por item).
- 23/10/2026 (Tarefa 5).
+ 23/10/2026 (Tarefa 5). Seção 14 (Tarefa 6): casos de borda do stack, Multi/Sub e
+ RWF + Mapear + Desfazer UV (InLab_ReverterAutoUV desfaz antes o Mapear).
 */
 global InLab_Log, InLab_ParseJSON, InLab_Produto_Lista, InLab_RWF_Feitos
 global InLab_Mapear, InLab_ReverterMapear, InLab_UltimoMapear, InLab_Mapear_LerCanal1
@@ -525,6 +526,8 @@ global INLAB_TESTE_SAIDA, INLAB_TESTE_FALHAS
         convertToPoly rr
         rr.material = mPeRWC; append criados rr
         InLab_UltimoRWF = #(); InLab_UltimoAutoUV = #()
+        local canalRRAntes = InLab_Mapear_LerCanal1 rr
+        local uvRRAntes = canalSnapshot rr 1
         InLab_RWF_Rodar #(rr)
         InLab_Mapear #(rr) produto
         checar "T6 RWF+Mapear: modificadores InLab RWF saíram" (rr.modifiers.count == 0)
@@ -533,8 +536,21 @@ global INLAB_TESTE_SAIDA, INLAB_TESTE_FALHAS
         try ( InLab_ReverterAutoUV() ) catch ( excRev = getCurrentException() )
         if excRev != undefined do linha ("      exceção no Desfazer UV: " + excRev)
         checar "T6 RWF+Mapear+Desfazer UV (InLab_ReverterAutoUV): sem exceção" (excRev == undefined)
-        checar "T6 Desfazer UV avisa do modificador ausente (#info) e conclui" ((temLog logs #info "TESTE_t6_rwf" "não está mais no stack") and (temLog logs #info "Reversão de UV concluída" ""))
-        InLab_ReverterMapear()
+        checar "T6 Desfazer UV desfez antes o Mapear (#info) e concluiu" ((temLog logs #info "Desfazer UV" "desfazendo antes o Mapear") and (temLog logs #info "Reversão de UV concluída" ""))
+        checar "T6 Desfazer UV: InLab_UltimoMapear vazio e sem modificadores" (InLab_UltimoMapear.count == 0 and rr.modifiers.count == 0)
+        checar "T6 Desfazer UV: canal 1 igual ao de antes do RWF" (igualCanal canalRRAntes (InLab_Mapear_LerCanal1 rr) and igualLista uvRRAntes (canalSnapshot rr 1))
+        checar "T6 Desfazer UV: bitmap com Real-World como antes do RWF" (mPeRWC.diffuseMap.coords.realWorldScale and             (abs (mPeRWC.diffuseMap.coords.realWorldWidth - 60)) < 1e-3 and mPeRWC.diffuseMap.coords.mapChannel == 1)
+        -- stack colapsado pelo usuário depois do RWF: continua #warn
+        local rc = Cylinder radius:2.5 height:80 heightsegs:5 sides:16 mapcoords:true name:"TESTE_t6_colapsado" pos:[500,-700,0]
+        addModifier rc (Uvwmap maptype:4 length:1 width:1 height:1)
+        convertToPoly rc
+        rc.material = mPeRWC; append criados rc
+        InLab_UltimoRWF = #(); InLab_UltimoAutoUV = #()
+        InLab_RWF_Rodar #(rc)
+        convertToPoly rc
+        logs.count = 0
+        try ( InLab_ReverterAutoUV() ) catch ( linha ("      exceção: " + getCurrentException()) )
+        checar "T6 stack colapsado pelo usuário: #warn \"não está mais no stack\"" (temLog logs #warn "TESTE_t6_colapsado" "não está mais no stack")
     )
     catch ( linha ("FAIL  exceção no teste: " + (getCurrentException())); INLAB_TESTE_FALHAS += 1 )
 
