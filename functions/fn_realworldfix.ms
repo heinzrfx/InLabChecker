@@ -94,11 +94,21 @@
 
  22/10/2026 (decisão com a Bianca): o Auto UV virou opcional (bake na V2) e o
  RWF segue obrigatório para o GLB. O log do fim não manda mais para o Auto UV.
+
+ 23/10/2026 (bug do time): quem converteu o material para glTF ANTES do RWF
+ ficava preso. O RWF só lê o material atual (o glTF, sem Real-World) e
+ respondia "nenhum objeto com Real-World"; a V-42 lê o original guardado na
+ conversão e seguia reprovando. A reprovação está certa (a conversão não
+ leva a escala do Real-World para o glTF). Decisão do humano: só avisar.
+ InLab_RWF_OriginaisRW acha o caso, e o RWF e a V-42 mandam reverter a
+ conversão, rodar o RWF e converter de novo.
 ================================================================================
 */
 
 -- Definida mais abaixo, usada antes (InLab_RWF_Referencia).
 global InLab_RWF_BitmapsRWFora
+-- Definida em fn_material_convert.ms, carregado depois deste.
+global InLab_UltimaConversao
 
 -- Slots de difuso/base color, em ordem de tentativa (Corona Physical,
 -- Corona Legacy, Physical Material, Standard).
@@ -395,6 +405,19 @@ fn InLab_RWF_BitmapsRWFora mtl =
     for b in (InLab_RWF_BitmapsRW mtl) where findItem dentro b == 0 collect b
 )
 
+-- 23/10/2026: bitmaps em Real-World no material ORIGINAL de uma peça já
+-- convertida para glTF (InLab_UltimaConversao). O RWF não age sobre eles:
+-- o caminho é reverter a conversão, rodar o RWF e converter de novo.
+fn InLab_RWF_OriginaisRW o =
+(
+    local res = #()
+    if InLab_UltimaConversao != undefined do
+        for r in InLab_UltimaConversao where r.materialOriginal != undefined and r.materialOriginal != o.material and
+            (r.no == o or (o.material != undefined and r.materialNovo == o.material)) do
+            for b in (InLab_RWF_BitmapsRWFora r.materialOriginal) do appendIfUnique res b
+    res
+)
+
 -- true se o objeto tem UV no canal. getMapSupport dá erro com canal >=
 -- getNumMaps em vez de devolver false (ver CLAUDE.md).
 fn InLab_RWF_TemCanal o canal =
@@ -527,9 +550,23 @@ fn InLab_RealWorldFix objs silencioso:false =
     )
     local tpOk = for t in triplanares collect (InLab_RWF_TriplanarSuportado t)
 
+    -- 23/10/2026: peça convertida para glTF antes do RWF (ver cabeçalho).
+    local convertidos = 0
+    for o in objs where InLab_EhGeometria o do
+    (
+        local orig = InLab_RWF_OriginaisRW o
+        if orig.count > 0 do
+        (
+            convertidos += 1
+            InLab_Log (o.name + ": convertido para glTF antes do Real World Fix. O material original tem bitmap em Real-World (" +
+                       (InLab_ListaResumida (for b in orig collect b.name) maximo:3) +
+                       ") e o glTF ficou sem essa escala. Reverta a conversão (seção Converter Material), rode o Real World Fix e converta de novo.") tipo:#warn
+        )
+    )
+
     if alvos.count == 0 then
     (
-        if not silencioso do InLab_Log "Real World Fix: nenhum objeto com Real-World ou Triplanar." tipo:#warn
+        if not silencioso and convertidos == 0 do InLab_Log "Real World Fix: nenhum objeto com Real-World ou Triplanar." tipo:#warn
         0
     )
     else
