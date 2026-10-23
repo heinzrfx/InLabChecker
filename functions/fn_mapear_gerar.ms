@@ -21,6 +21,11 @@
  - InLab_Mapear_GerarBox o faces escala : projeção por face pelo eixo dominante
    (laterais U horizontal, topo U = X, T x B = normal), vértices de UV por
    (vértice, eixo, sinal) (spec 5.5).
+ - InLab_Mapear_GerarGrande o faces escala : peças grandes de tecido (spec 5.4). Hoje é
+   o próprio GerarBox (alias): o alisamento do lado da caixa por voto dos vizinhos não
+   passou no critério da spec 12, item 4 (Mentha: 0,79% -> 0,69% no melhor caso, o
+   pedido era metade). Ver docs\superpowers\specs\2026-10-23-mapear-pecas-grandes-sondagem.md
+   (23/10/2026). O orquestrador (Tarefa 5) mede e avisa o corte à vista.
  - InLab_Mapear_Gravar o uvs mapa : grava no canal 1; faces sem mapa mantêm o UV atual.
 
  Decisões/lições: o spike acertou a madeira SEM inverter o B para nó espelhado, mas
@@ -36,6 +41,7 @@ global InLab_Mapear_NoEspelhado, InLab_Mapear_SinalUV, InLab_Mapear_Vizinho
 global InLab_Mapear_Outro, InLab_Mapear_Passo, InLab_Mapear_TuboElemento
 global InLab_Mapear_MadeiraLocal, InLab_Mapear_BoxLocal
 global InLab_Mapear_GerarMadeira, InLab_Mapear_GerarTubo, InLab_Mapear_GerarBox, InLab_Mapear_Gravar
+global InLab_Mapear_GerarGrande
 
 -- nó com escala negativa (espelhado)
 fn InLab_Mapear_NoEspelhado o = ( local t = o.transform; (dot (cross t.row1 t.row2) t.row3) < 0 )
@@ -401,6 +407,9 @@ fn InLab_Mapear_GerarBox o faces escala =
     in coordsys local ( r = InLab_Mapear_BoxLocal o faces escala )
     r
 )
+-- peça grande de tecido (spec 5.4): Box simples, porque a projeção alisada não passou
+-- no critério (sondagem de 23/10/2026). Ponto único para trocar se surgir algo melhor.
+fn InLab_Mapear_GerarGrande o faces escala = InLab_Mapear_GerarBox o faces escala
 
 -- grava uvs + mapa no canal 1; faces sem mapa mantêm o UV atual. true = gravou
 fn InLab_Mapear_Gravar o uvs mapa =

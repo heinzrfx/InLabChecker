@@ -7,6 +7,7 @@ global InLab_Log
 global InLab_Mapear_Medir, InLab_Mapear_Motivo, InLab_Mapear_Limite, MapearMedida
 global INLAB_MAPEAR_LIMITES, INLAB_MAPEAR_MAX_AMOSTRA, INLAB_TESTE_SAIDA, INLAB_TESTE_FALHAS
 global InLab_Mapear_GerarMadeira, InLab_Mapear_GerarTubo, InLab_Mapear_GerarBox, InLab_Mapear_Gravar
+global InLab_Mapear_GerarGrande
 (
     local dirTeste = getFilenamePath (getSourceFileName())
     local raiz = substring dirTeste 1 (dirTeste.count - 6) -- tira "tests\"
@@ -203,6 +204,32 @@ global InLab_Mapear_GerarMadeira, InLab_Mapear_GerarTubo, InLab_Mapear_GerarBox,
         toro.pos = [300, 200, 10]
         local rTp = InLab_Mapear_GerarTubo toro fT esc
         checar "Tubo fora da origem: reconhece e mapa completo" (rTp != undefined and rTp[2].count == fT.numberSet)
+
+        -- 6c. PEÇA GRANDE (spec 5.4): esfera achatada, GerarGrande não pode ter mais
+        -- emenda à vista que o GerarBox na mesma peça, e nada espelhado
+        local esf = Sphere radius:40 segs:32 mapcoords:true name:"TESTE_mg_esfera"
+        append criados esf
+        esf.scale = [1, 1, 0.6]
+        resetXForm esf
+        convertToPoly esf
+        local fE = #{1..(polyop.getNumFaces esf)}
+        local rEB = InLab_Mapear_GerarBox esf fE esc
+        InLab_Mapear_Gravar esf rEB[1] rEB[2]
+        local mEB = InLab_Mapear_Medir esf
+        checar "GerarGrande existe" (InLab_Mapear_GerarGrande != undefined)
+        local rEG = InLab_Mapear_GerarGrande esf fE esc
+        checar "GerarGrande: mapa cobre todas as faces" (rEG[2].count == fE.numberSet)
+        InLab_Mapear_Gravar esf rEG[1] rEG[2]
+        local mEG = InLab_Mapear_Medir esf
+        linha ("      esfera achatada: emenda box=" + mEB.emendaVistaQuebra as string + " grande=" + mEG.emendaVistaQuebra as string + " esp=" + mEG.espelhado as string + " escala=" + mEG.escala as string)
+        checar "GerarGrande: emendaVistaQuebra <= a do GerarBox" (mEG.emendaVistaQuebra <= mEB.emendaVistaQuebra)
+        checar "GerarGrande: espelhado == 0" (mEG.espelhado == 0.0)
+        -- nó espelhado: continua sem espelhar
+        esf.scale = [-1, 1, 1]
+        local rEG2 = InLab_Mapear_GerarGrande esf fE esc
+        InLab_Mapear_Gravar esf rEG2[1] rEG2[2]
+        checar "GerarGrande em nó espelhado: espelhado == 0" ((InLab_Mapear_Medir esf).espelhado == 0.0)
+        esf.scale = [1, 1, 1]
 
         -- 7. GRAVAR: canal novo e faces sem mapa mantêm o UV
         local pl = Box length:10 width:10 height:10 mapcoords:false name:"TESTE_mg_gravar"
