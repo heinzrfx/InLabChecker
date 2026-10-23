@@ -79,6 +79,33 @@ global InLab_Mapear_GerarMadeira, InLab_Mapear_GerarTubo, InLab_Mapear_GerarBox,
             checar "Toro: escala ≈ pedida (±10%)" (abs (mT.escala - esc) < esc * 0.1)
         )
 
+        -- 1b. EMENDA DO COMPRIMENTO "ATRÁS" (+Y de mundo) com o nó girado e fora da origem
+        for ang in #(0, 180) do
+        (
+            local tr = Torus radius1:30 radius2:3 segments:48 sides:12 name:"TESTE_mg_toro_rot"
+            append criados tr
+            convertToPoly tr
+            tr.rotation = (eulerAngles 0 0 ang)
+            tr.pos = [200, -150, 20]
+            local fTr = #{1..(polyop.getNumFaces tr)}
+            local rTr = InLab_Mapear_GerarTubo tr fTr esc
+            -- eixo do comprimento = o de maior extensão do UV; emenda = faces com um vértice no mínimo desse eixo
+            local mx = [-1e9,-1e9,0]; local mn = [1e9,1e9,0]
+            for uv in rTr[1] do ( mx.x = amax mx.x uv.x; mx.y = amax mx.y uv.y; mn.x = amin mn.x uv.x; mn.y = amin mn.y uv.y )
+            local eixoU = (mx.x - mn.x) >= (mx.y - mn.y)
+            local minimo = if eixoU then mn.x else mn.y
+            local soma = 0.0; local n = 0
+            for e in rTr[2] do
+            (
+                local naEmenda = false
+                for i in e[2] do ( local c = if eixoU then rTr[1][i].x else rTr[1][i].y; if (abs (c - minimo)) < 1e-4 do naEmenda = true )
+                if naEmenda do ( soma += (in coordsys world (polyop.getFaceCenter tr e[1])).y - tr.pos.y; n += 1 )
+            )
+            local yMedio = if n == 0 then 0.0 else soma / n
+            linha ("      toro rot " + ang as string + ": emenda do comprimento, Y de mundo relativo = " + yMedio as string + " (faces " + n as string + ")")
+            checar ("Toro girado " + ang as string + " graus: emenda do comprimento atrás (+Y de mundo)") (yMedio > 20.0)
+        )
+
         -- 2. TUBO ABERTO COM TAMPAS
         local cil = Cylinder radius:1 height:60 sides:18 heightsegs:5 capsegs:1 mapcoords:true name:"TESTE_mg_tubo"
         append criados cil

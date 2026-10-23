@@ -142,9 +142,16 @@ fn InLab_Mapear_TuboElemento o faces s base =
         if not fc do
         (
             p = qi
+            local passosDesce = 0
             -- descer: usa #cima a partir do quad virado (BL<->TL, BR<->TR)
             while true do
             (
+                passosDesce += 1
+                if passosDesce > 100000 do
+                (
+                    InLab_Log (o.name + ": Mapear, tubo: descida da coluna sem fim (malha helicoidal ou não-manifold), elemento ignorado") tipo:#warn
+                    return undefined
+                )
                 local virado = #(p[1], p[5], p[4], p[3], p[2])
                 local d = InLab_Mapear_Passo o virado #cima quads
                 if d == undefined then exit
@@ -170,7 +177,7 @@ fn InLab_Mapear_TuboElemento o faces s base =
     local Lj = for j = 0 to nj - 1 collect ( local t = 0.0; for i = 0 to ni - 1 do t += distance (polyop.getVert o (vert Q i j ni nj)) (polyop.getVert o (vert Q i (j+1) ni nj)); t / ni )
     local totI = 0.0; for x in Li do totI += x
     local totJ = 0.0; for x in Lj do totJ += x
-    -- emendas: volta -> lado que aponta para o centro do elemento; comprimento -> atrás (+Y)
+    -- emendas: volta -> lado que aponta para o centro do elemento; comprimento -> atrás (+Y de mundo, via transform do nó)
     local centro = [0,0,0]; local nvc = 0
     for f in cobertas do ( centro += polyop.getFaceCenter o f; nvc += 1 )
     centro /= nvc
@@ -202,7 +209,8 @@ fn InLab_Mapear_TuboElemento o faces s base =
         for k = 0 to n - 1 do
         (
             local qq = if voltaEhJ then Q[k+1][1] else Q[1][k+1]
-            local y = (polyop.getFaceCenter o qq[1]).y
+            -- "atrás" = +Y de MUNDO (frente do produto em -Y): centro local passado pelo transform do nó
+            local y = ((polyop.getFaceCenter o qq[1]) * o.transform).y
             if y > mv do ( mv = y; melhor = k )
         )
         melhor
