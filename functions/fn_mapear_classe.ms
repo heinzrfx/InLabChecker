@@ -165,7 +165,7 @@ fn InLab_Mapear_VeioDaImagem arquivo wAngulo =
 )
 
 -- Primeiro bitmap (CoronaBitmap/Bitmaptexture) de um mapa, abrindo o triplanar.
-fn InLab_Mapear_BitmapDoMapa mapa =
+fn InLab_Mapear_BitmapDoMapa mapa nivel:0 =
 (
     if mapa == undefined then undefined
     else if classof mapa == Bitmaptexture then mapa
@@ -174,10 +174,28 @@ fn InLab_Mapear_BitmapDoMapa mapa =
     (
         local r = undefined
         for p in #(#texmapX, #texmapY, #texmapZ) while r == undefined do
-            if hasProperty mapa p do r = InLab_Mapear_BitmapDoMapa (getProperty mapa p)
+            if hasProperty mapa p do r = InLab_Mapear_BitmapDoMapa (getProperty mapa p) nivel:(nivel + 1)
         r
     )
-    else undefined
+    else
+    (
+        -- 23/10/2026 (fix round 1): mapa intermediário (CoronaColorCorrect,
+        -- Output, Composite, Mix...): desce pelos subtexmaps, em profundidade,
+        -- até o primeiro bitmap. Wengé das poltronas: ColorCorrect > CoronaBitmap.
+        local r = undefined
+        if nivel < 8 do
+            try
+            (
+                for i = 1 to (getNumSubTexmaps mapa) while r == undefined do
+                    r = InLab_Mapear_BitmapDoMapa (getSubTexmap mapa i) nivel:(nivel + 1)
+            )
+            catch
+            (
+                InLab_Log ("Difuso: não consegui descer no mapa '" + (classof mapa) as string + "': " + getCurrentException()) tipo:#warn
+                r = undefined
+            )
+        r
+    )
 )
 
 fn InLab_Mapear_DifusoDe mtl =

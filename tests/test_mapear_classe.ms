@@ -110,6 +110,15 @@ global INLAB_TESTE_SAIDA, INLAB_TESTE_FALHAS
         checar "DifusoDe acha arquivo e W do Bitmaptexture" (d != undefined and d[1] == arq2 and abs(d[2] - 90.0) < 0.01)
         checar "DifusoDe sem mapa -> undefined" ((InLab_Mapear_DifusoDe (Standardmaterial())) == undefined)
 
+        -- 3a. fix round 1 (23/10/2026): bitmap dentro de mapa intermediario
+        local bmpN = Bitmaptexture filename:arq2
+        bmpN.coords.W_Angle = 90.0
+        local dOut = InLab_Mapear_DifusoDe (Standardmaterial diffuseMap:(Output map1:bmpN))
+        checar "DifusoDe: bitmap dentro de Output (W=90)" (dOut != undefined and dOut[1] == arq2 and abs(dOut[2] - 90.0) < 0.01)
+        local dCC = InLab_Mapear_DifusoDe (Standardmaterial diffuseMap:(Output map1:(Color_Correction map:(Bitmaptexture filename:arq2))))
+        checar "DifusoDe: bitmap dentro de Output > Color_Correction" (dCC != undefined and dCC[1] == arq2)
+        checar "DifusoDe: mapa intermediario sem bitmap -> undefined" ((InLab_Mapear_DifusoDe (Standardmaterial diffuseMap:(Output()))) == undefined)
+
         -- 3b. DIFUSO robusto
         local excD = false
         local dv = undefined
@@ -132,6 +141,14 @@ global INLAB_TESTE_SAIDA, INLAB_TESTE_FALHAS
             local mt = CoronaPhysicalMtl baseTexmap:tp
             local dt = InLab_Mapear_DifusoDe mt
             checar "Corona: CoronaTriplanar com CoronaBitmap dentro" (dt != undefined and dt[1] == arq2)
+            if CoronaColorCorrect != undefined do
+            (
+                local cc = CoronaColorCorrect()
+                local cb2 = CoronaBitmap filename:arq2
+                setSubTexmap cc 1 cb2
+                local dcc = InLab_Mapear_DifusoDe (CoronaLegacyMtl texmapDiffuse:cc)
+                checar "Corona: CoronaColorCorrect > CoronaBitmap (caso do Wenge)" (dcc != undefined and dcc[1] == arq2)
+            )
         )
         else
         (

@@ -569,7 +569,7 @@ rollout InLabSecUV "UV e Texturas" width:420
         local objs = InLab_SelecaoValida()
         if objs.count > 0 do
         (
-            local prod = InLabSecProduto.produtoEscolhido()
+            local prod = try (InLabSecProduto.produtoEscolhido()) catch undefined
             if prod == undefined then InLab_Log "Escolha o produto na seção Produto" tipo:#warn
             else
             (
