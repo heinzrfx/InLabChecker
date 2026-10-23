@@ -830,14 +830,21 @@ fn InLab_ReverterAutoUV =
 (
     -- 23/10/2026 (Mapear, Tarefa 6): o Mapear vem depois do Real World Fix, então
     -- sai primeiro (devolve os "InLab RWF*" e o canal 1) e o RWF desfaz normalmente.
+    local mapearDesfeito = false
     if InLab_UltimoMapear != undefined and InLab_UltimoMapear.count > 0 and InLab_ReverterMapear != undefined do
     (
         InLab_Log "Desfazer UV: desfazendo antes o Mapear." tipo:#info
-        try ( InLab_ReverterMapear() )
+        try ( InLab_ReverterMapear(); mapearDesfeito = true )
         catch ( InLab_Log ("Desfazer UV: o Mapear não foi desfeito (" + getCurrentException() + ").") tipo:#err )
     )
+    -- 23/10/2026 (revisão final do Mapear): só havia o Mapear -> #info, não o #warn
     if InLab_UltimoAutoUV.count == 0 and InLab_UltimoRWF.count == 0 then
-        InLab_Log "Nenhum Auto UV registrado nesta sessão para reverter." tipo:#warn
+    (
+        if mapearDesfeito then
+            InLab_Log "Desfazer UV: só o Mapear estava registrado; nenhum Auto UV nem Real World Fix para reverter." tipo:#info
+        else
+            InLab_Log "Nenhum Auto UV registrado nesta sessão para reverter." tipo:#warn
+    )
     else
     (
         local revertidos = 0

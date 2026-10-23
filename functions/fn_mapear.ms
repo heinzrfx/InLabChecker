@@ -73,6 +73,17 @@
      tiling (o #warn "a textura passa a X cm" é verdade).
    - Falha na remedição do passo 6 só avisa: a peça já refeita conta como refeita.
    - InLab_Mapear_ForcarFalha (só teste): rótulo do ID cujo gerador falha.
+
+ Revisão final (23/10/2026):
+   - Escala do nó: os geradores trabalham no espaço do objeto da base; a escala
+     pedida a eles é multiplicada pela escala do objectTransform (média, com #warn
+     "escala não uniforme"). No passo 6, densidade medida a mais de 10% do alvo
+     -> #warn.
+   - Bitmap usado por peça fora da rodada não é religado ao canal 1 (#warn com os
+     nomes); o canal do RWF dele continua, como no item C.
+   - Desfazer confere a topologia da base (nº de faces e grau) contra o registro;
+     se mudou, #warn "a malha mudou desde o Mapear; use o Ctrl+Z" e a peça fica.
+   - Log: uma linha "N tubo(s)" por ID e uma de progresso por peça.
 */
 
 global InLab_Log, InLab_EhGeometria, InLab_Instancias, InLab_DeduplicarInstancias
@@ -98,7 +109,8 @@ struct MapearRecord
     baseAntes,          -- classe da base antes (só para o log: a classe não volta)
     canal1Antes,        -- #(numMapVerts, #(point3...), #(#(face, #(idx...))...)) ou undefined (sem canal 1)
     modsTirados = #(),  -- #(#(modificador, índice)) em ordem crescente de índice
-    bitmapsAntes = #()  -- #(#(bitmap, canal, uTiling, vTiling))
+    bitmapsAntes = #(), -- #(#(bitmap, canal, uTiling, vTiling))
+    graus               -- grau de cada face da base no registro (confere a topologia no Desfazer)
 )
 
 -- Decisão de um ID de material (uso interno).
@@ -119,7 +131,7 @@ global InLab_Mapear_SetTiling, InLab_Mapear_SetCanal, InLab_Mapear_NomeRegra
 global InLab_Mapear_Decidir, InLab_Mapear_FacesDoID, InLab_Mapear_Juntar
 global InLab_Mapear_UVAvaliado, InLab_Mapear_UnwrapElemento, InLab_Mapear_GerarRegra
 global InLab_Mapear_LerCanal1, InLab_Mapear_Restaurar, InLab_Mapear_ConverterBase
-global InLab_Mapear_Peca, InLab_Mapear, InLab_ReverterMapear
+global InLab_Mapear_Peca, InLab_Mapear, InLab_ReverterMapear, InLab_Mapear_FatorNo
 -- SÓ TESTE: rótulo ("<nó>" ou "<nó> (ID n)") do ID cujo gerador deve falhar
 global InLab_Mapear_ForcarFalha = undefined
 
@@ -508,15 +520,30 @@ fn InLab_Mapear_UnwrapElemento o el escala =
 )
 
 -- gera o UV das faces de um ID pela regra; #(uvs, mapa)
-fn InLab_Mapear_GerarRegra o faces d unwrapGrande =
+-- #(fator, uniforme, escalas): cm de mundo por unidade do objeto pela escala do
+-- objectTransform; não uniforme (diferença > 1%) usa a média.
+fn InLab_Mapear_FatorNo o =
+(
+    local sp = o.objectTransform.scalepart
+    local a = #(abs sp.x, abs sp.y, abs sp.z)
+    local mx = amax a; local mn = amin a
+    local media = (a[1] + a[2] + a[3]) / 3.0
+    #(media, (mn > 1e-9 and mx / mn <= 1.01), sp)
+)
+
+-- fatorNo: cm de mundo por unidade do objeto (escala do nó); os geradores trabalham
+-- no espaço de objeto da base, então a escala pedida a eles é d.escala x fatorNo.
+fn InLab_Mapear_GerarRegra o faces d unwrapGrande fatorNo:1.0 =
 (
     local acc = #(#(), #())
+    local e = d.escala * fatorNo
     case d.regra of
     (
-        #madeira: InLab_Mapear_Juntar acc (InLab_Mapear_GerarMadeira o faces d.escala d.veio)
-        #pintada: InLab_Mapear_Juntar acc (InLab_Mapear_GerarGrande o faces d.escala)
+        #madeira: InLab_Mapear_Juntar acc (InLab_Mapear_GerarMadeira o faces e d.veio)
+        #pintada: InLab_Mapear_Juntar acc (InLab_Mapear_GerarGrande o faces e)
         #tecido:
         (
+            local nTubos = 0; local nGrandes = 0
             local po = InLab_Mapear_PolyDe o
             local resto = copy faces
             while not resto.isEmpty do
@@ -526,24 +553,28 @@ fn InLab_Mapear_GerarRegra o faces d unwrapGrande =
                 local el = (polyop.getElementsUsingFace po #{f1}) * faces
                 resto -= el
                 resto[f1] = false
-                local t = InLab_Mapear_GerarTubo o el d.escala
+                local t = InLab_Mapear_GerarTubo o el e silencioso:true
                 if t != undefined then
                 (
+                    nTubos += 1
                     InLab_Mapear_Juntar acc t
                     local cobertas = #{}
-                    for e in t[2] do cobertas[e[1]] = true
+                    for x in t[2] do cobertas[x[1]] = true
                     local tampas = el - cobertas
-                    if not tampas.isEmpty do InLab_Mapear_Juntar acc (InLab_Mapear_GerarBox o tampas d.escala)
+                    if not tampas.isEmpty do InLab_Mapear_Juntar acc (InLab_Mapear_GerarBox o tampas e)
                 )
                 else
                 (
-                    local u = if unwrapGrande then InLab_Mapear_UnwrapElemento o el d.escala else undefined
+                    nGrandes += 1
+                    local u = if unwrapGrande then InLab_Mapear_UnwrapElemento o el e else undefined
                     if u != undefined then InLab_Mapear_Juntar acc u
-                    else InLab_Mapear_Juntar acc (InLab_Mapear_GerarGrande o el d.escala)
+                    else InLab_Mapear_Juntar acc (InLab_Mapear_GerarGrande o el e)
                 )
             )
+            -- uma linha por ID (antes era uma por elemento)
+            InLab_Log (d.rotulo + ": " + nTubos as string + " tubo(s) reconhecido(s), " + nGrandes as string + " elemento(s) como peça grande.") tipo:#info
         )
-        default: InLab_Mapear_Juntar acc (InLab_Mapear_GerarBox o faces d.escala)
+        default: InLab_Mapear_Juntar acc (InLab_Mapear_GerarBox o faces e)
     )
     acc
 )
@@ -564,11 +595,25 @@ fn InLab_Mapear_LerCanal1 o =
     )
 )
 
--- Devolve a peça ao estado do registro. Quem chama abre o undo.
+-- Devolve a peça ao estado do registro. Quem chama abre o undo. false (sem
+-- tocar em nada) se a malha da base mudou desde o Mapear: o canal 1 é regravado
+-- por índice de face e numa topologia diferente sairia lixo.
 fn InLab_Mapear_Restaurar rec =
 (
     local o = rec.no
     local po = InLab_Mapear_PolyDe o
+    local mesma = (classof po) == Editable_Poly
+    if mesma and rec.graus != undefined do
+    (
+        local nf = polyop.getNumFaces po
+        if nf != rec.graus.count then mesma = false
+        else for f = 1 to nf while mesma do if (polyop.getFaceDeg po f) != rec.graus[f] do mesma = false
+    )
+    if not mesma do
+    (
+        InLab_Log (o.name + ": a malha mudou desde o Mapear; use o Ctrl+Z.") tipo:#warn
+        return false
+    )
     local c = rec.canal1Antes
     if c == undefined then polyop.setMapSupport po 1 false
     else
@@ -591,7 +636,7 @@ fn InLab_Mapear_Restaurar rec =
         InLab_Mapear_SetCanal b[1] b[2]
         InLab_Mapear_SetTiling b[1] (point2 b[3] b[4])
     )
-    ok
+    true
 )
 
 -- Base que não é Editable_Poly vira Editable_Poly, preservando o stack e a
@@ -622,8 +667,10 @@ fn InLab_Mapear_ConverterBase o =
 -- Uma peça (o primeiro nó de um grupo de instâncias): #refeita, #mantida,
 -- #pulada ou #nada (nenhuma face a medir em nenhum ID).
 --------------------------------------------------------------------------------
-fn InLab_Mapear_Peca o produto unwrapGrande =
+fn InLab_Mapear_Peca o produto unwrapGrande rodada:undefined =
 (
+    if rodada == undefined do rodada = InLab_Instancias o
+    InLab_Log (o.name + ": mapeando (" + ((getPolygonCount o)[1]) as string + " faces)...") tipo:#info
     -- 1. stack
     local rwfMods = #()       -- #(modificador, índice, canal)
     local bloqueio = undefined
@@ -660,11 +707,9 @@ fn InLab_Mapear_Peca o produto unwrapGrande =
         -- densidade (UV/cm) de cada canal do RWF fora do canal 1: U_Tile do Xform
         -- "InLab RWF" (UV em cm dividido) ou 1/length do UVW Map "InLab RWF*"
         local rwfCanais = #()
-        local temRWFCanal1 = false
         for r in rwfMods do
         (
-            if r[3] == undefined or r[3] == 1 then temRWFCanal1 = true
-            else
+            if r[3] != undefined and r[3] != 1 do
             (
                 local dens = undefined
                 if classof r[1] == UVW_Xform then
@@ -731,6 +776,11 @@ fn InLab_Mapear_Peca o produto unwrapGrande =
             )
             if baseOk do
             (
+                -- escala do nó (objectTransform): os geradores trabalham no espaço do objeto
+                local fatorNo = InLab_Mapear_FatorNo o
+                if not fatorNo[2] do
+                    InLab_Log (o.name + ": escala não uniforme no nó " + fatorNo[3] as string + "; o UV usa a média (" +
+                               (formattedPrint fatorNo[1] format:".3g") + "). Conferir a textura, ou Reset XForm.") tipo:#warn
                 -- 4. gera tudo antes de mexer no UV
                 local acc = #(#(), #())
                 local feitos = #()
@@ -741,7 +791,7 @@ fn InLab_Mapear_Peca o produto unwrapGrande =
                         -- SÓ TESTE: InLab_Mapear_ForcarFalha = rótulo do ID que deve falhar
                         if InLab_Mapear_ForcarFalha == d.rotulo do throw ("falha forçada para teste (" + d.rotulo + ")")
                         local fs = InLab_Mapear_FacesDoID o d.id
-                        local r = InLab_Mapear_GerarRegra o fs d unwrapGrande
+                        local r = InLab_Mapear_GerarRegra o fs d unwrapGrande fatorNo:fatorNo[1]
                         if r == undefined or r[2].count == 0 then
                             InLab_Log (d.rotulo + ": o gerador não devolveu UV (" + (InLab_Mapear_NomeRegra d.regra) + "); ID como estava.") tipo:#err
                         else ( InLab_Mapear_Juntar acc r; append feitos d )
@@ -758,6 +808,19 @@ fn InLab_Mapear_Peca o produto unwrapGrande =
                                 InLab_Log (o.name + ": o canal " + rc[1] as string + " do Real World Fix continua (" + d.rotulo +
                                            " não foi refeito e lê esse canal).") tipo:#warn
                             appendIfUnique canaisPresos rc[1]
+                        )
+                -- bitmap usado por peça fora desta rodada: religar ao canal 1 mudaria essa peça
+                for rc in rwfCanais where (findItem canaisPresos rc[1]) == 0 do
+                    for d in feitos do
+                        for b in d.rebind where (InLab_RWF_CanalBitmap b) == rc[1] and (findItem canaisPresos rc[1]) == 0 do
+                        (
+                            local fora = for n in (refs.dependentNodes b) where isValidNode n and (InLab_EhGeometria n) and (findItem rodada n) == 0 collect n.name
+                            if fora.count > 0 do
+                            (
+                                InLab_Log (o.name + ": " + b.name + " (canal " + rc[1] as string + ") também é usado fora desta rodada (" +
+                                           (InLab_ListaResumida fora) + "); o bitmap não é religado e o canal do Real World Fix continua.") tipo:#warn
+                                append canaisPresos rc[1]
+                            )
                         )
                 local tirar = for r in rwfMods where (findItem canaisPresos r[3]) == 0 collect r
                 local tiraCanal1 = (for r in tirar where r[3] == undefined or r[3] == 1 collect r).count > 0
@@ -783,6 +846,7 @@ fn InLab_Mapear_Peca o produto unwrapGrande =
                 (
                     -- 5. canal 1 de antes, RWF fora, bitmaps religados, gravação
                     rec.canal1Antes = InLab_Mapear_LerCanal1 o
+                    rec.graus = for f = 1 to (polyop.getNumFaces o.baseobject) collect (polyop.getFaceDeg o.baseobject f)
                     try
                     (
                         for k = tirar.count to 1 by -1 do
@@ -828,6 +892,9 @@ fn InLab_Mapear_Peca o produto unwrapGrande =
                                            (InLab_Mapear_Num d.alvo) + " cm).") tipo:#ok
                                 if d.regra == #semFamilia do
                                     InLab_Log (d.rotulo + ": parte sem matéria-prima no JSON (Box simples).") tipo:#warn
+                                if m2.amostra > 0 and m2.escala > 0 and (abs (m2.escala / d.escala - 1.0)) > 0.1 do
+                                    InLab_Log (d.rotulo + ": densidade medida de " + (InLab_Mapear_Num (d.alvo * d.escala / m2.escala)) +
+                                               " cm por tile, alvo " + (InLab_Mapear_Num d.alvo) + " cm (mais de 10% de diferença).") tipo:#warn
                                 if m2.emendaVistaQuebra > (InLab_Mapear_Limite #emendaVistaQuebra) do
                                     InLab_Log (d.rotulo + ": corte à vista (" + (InLab_Mapear_Num (m2.emendaVistaQuebra * 100.0)) +
                                                "% das arestas): considere o Unwrap.") tipo:#warn
@@ -865,6 +932,10 @@ fn InLab_Mapear objs produto unwrapGrande:false =
     )
     InLab_Mapear_ZerarCache()
     local selAntes = selection as array
+    -- nós desta rodada (com as instâncias): bitmap compartilhado só é religado se
+    -- todos os que o usam estão aqui
+    local rodada = #()
+    for o in alvos do for i in (InLab_Instancias o) do appendIfUnique rodada i
     undo "InLab Mapear" on
     (
         for g in (InLab_DeduplicarInstancias alvos) do
@@ -883,7 +954,7 @@ fn InLab_Mapear objs produto unwrapGrande:false =
                     InLab_Log (o.name + ": sem faces, nada a mapear.") tipo:#info
                     r = #nada
                 )
-                else r = InLab_Mapear_Peca o produto unwrapGrande
+                else r = InLab_Mapear_Peca o produto unwrapGrande rodada:rodada
             )
             catch ( InLab_Log (o.name + ": erro inesperado no Mapear (" + getCurrentException() + ").") tipo:#err; r = #pulada )
             with undo off ( InLab_FecharGrupos abertos )
@@ -921,11 +992,13 @@ fn InLab_ReverterMapear =
                 (
                     try
                     (
-                        InLab_Mapear_Restaurar rec
-                        n += 1
-                        local agora = classof rec.no.baseobject
-                        InLab_Log (rec.no.name + ": mapeamento desfeito" +
-                                   (if agora != rec.baseAntes then " (a base continua " + agora as string + "; era " + rec.baseAntes as string + ")." else ".")) tipo:#ok
+                        if InLab_Mapear_Restaurar rec do
+                        (
+                            n += 1
+                            local agora = classof rec.no.baseobject
+                            InLab_Log (rec.no.name + ": mapeamento desfeito" +
+                                       (if agora != rec.baseAntes then " (a base continua " + agora as string + "; era " + rec.baseAntes as string + ")." else ".")) tipo:#ok
+                        )
                     )
                     catch ( InLab_Log (rec.no.name + ": não desfiz o Mapear (" + getCurrentException() + ").") tipo:#err )
                 )

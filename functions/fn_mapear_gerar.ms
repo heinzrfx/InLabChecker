@@ -40,6 +40,10 @@
  23/10/2026 (Tarefa 5): tudo lê e grava no objeto BASE (InLab_Mapear_PolyDe), não no
  nó: polyop no nó falha com modificador acima da base (o Mapear tira os "InLab RWF*"
  depois de gerar e mantém o resto do stack). A volta para o mundo usa o objectTransform.
+ Revisão final (23/10/2026): o laço #esq do tubo ganhou teto (nº de quads ou
+ INLAB_MAPEAR_TUBO_MAX_PASSOS) com #warn; GerarTubo silencioso:true deixa o log de
+ tubos para o chamador (uma linha por ID); o Gravar compartilha os vértices de mapa
+ das faces mantidas (antes cada face ganhava cópias e as ilhas se partiam).
  Pegadinhas: "for e in array by N" não parseia (laço por índice); fn usado antes
  de definido precisa de global.
 */
@@ -52,6 +56,8 @@ global InLab_Mapear_GerarGrande
 global InLab_Mapear_PolyDe, InLab_Mapear_TMObjeto
 -- tubo só se comprimento >= isto x a volta (vivos reais: 40x a 500x)
 global INLAB_MAPEAR_TUBO_RAZAO = 4.0
+-- teto de passos dos laços do tubo (o #esq também usa o nº de quads do elemento)
+global INLAB_MAPEAR_TUBO_MAX_PASSOS = 100000
 
 -- Tarefa 5 (23/10/2026): polyop no NÓ avalia o topo do stack e dá "EPoly operation on
 -- non-Editable Poly" quando há modificador acima da base (UVW Map, TurboSmooth). Os
@@ -146,10 +152,18 @@ fn InLab_Mapear_TuboElemento o faces s base =
     if not fechadaI do
     (
         q = q0
+        local passosEsq = 0
+        local tetoEsq = amin quads.numberSet INLAB_MAPEAR_TUBO_MAX_PASSOS
         while true do
         (
             q = InLab_Mapear_Passo o q #esq quads
             if q == undefined then exit
+            passosEsq += 1
+            if passosEsq > tetoEsq do
+            (
+                InLab_Log (o.name + ": Mapear, tubo: caminho para a esquerda sem fim (malha helicoidal ou não-manifold), elemento ignorado") tipo:#warn
+                return undefined
+            )
             insertItem q faixa 1
         )
     )
@@ -289,7 +303,7 @@ fn InLab_Mapear_TuboElemento o faces s base =
 )
 
 -- tubo(s): um elemento de `faces` por vez; undefined se nenhum é tubo
-fn InLab_Mapear_GerarTubo o faces escala =
+fn InLab_Mapear_GerarTubo o faces escala silencioso:false =
 (
     local po = InLab_Mapear_PolyDe o
     local uvs = #(); local mapa = #()
@@ -310,7 +324,7 @@ fn InLab_Mapear_GerarTubo o faces escala =
     if tubos == 0 then undefined
     else
     (
-        InLab_Log (o.name + ": Mapear, " + tubos as string + " tubo(s) reconhecido(s), " + naoTubo as string + " elemento(s) fora da grade") tipo:#info
+        if not silencioso do InLab_Log (o.name + ": Mapear, " + tubos as string + " tubo(s) reconhecido(s), " + naoTubo as string + " elemento(s) fora da grade") tipo:#info
         #(uvs, mapa)
     )
 )
@@ -455,11 +469,17 @@ fn InLab_Mapear_Gravar o uvs mapa =
         local semMapa = (#{1..nf}) - temMapa
         if tinha then
         (
-            -- copia o UV atual das faces que o mapa não cobre
+            -- copia o UV atual das faces que o mapa não cobre, compartilhando os
+            -- vértices de mapa entre elas (índice antigo -> novo): as ilhas ficam inteiras
+            local novoDe = #(); novoDe.count = polyop.getNumMapVerts po 1
             for f in semMapa do
             (
                 local mf = polyop.getMapFace po 1 f
-                porFace[f] = for mv in mf collect ( append todos (polyop.getMapVert po 1 mv); todos.count )
+                porFace[f] = for mv in mf collect
+                (
+                    if novoDe[mv] == undefined do ( append todos (polyop.getMapVert po 1 mv); novoDe[mv] = todos.count )
+                    novoDe[mv]
+                )
             )
         )
         else

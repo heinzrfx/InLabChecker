@@ -4,6 +4,8 @@
  Resultado: <pasta temp do Max>\inlab_test_mapear.txt (PASS/FAIL por item).
  23/10/2026 (Tarefa 5). Seção 14 (Tarefa 6): casos de borda do stack, Multi/Sub e
  RWF + Mapear + Desfazer UV (InLab_ReverterAutoUV desfaz antes o Mapear).
+ Seção 15 (revisão final): escala do nó, bitmap compartilhado fora da rodada,
+ topologia no Desfazer, ilhas das faces mantidas, teto do tubo e logs.
 */
 global InLab_Log, InLab_ParseJSON, InLab_Produto_Lista, InLab_RWF_Feitos
 global InLab_Mapear, InLab_ReverterMapear, InLab_UltimoMapear, InLab_Mapear_LerCanal1
@@ -11,6 +13,7 @@ global InLab_Mapear_Medir, InLab_Mapear_GerarTubo, InLab_Mapear_Gravar
 global InLab_Instancias, InLab_RWF_Rodar, InLab_Mapear_ForcarFalha
 global InLab_ReverterAutoUV, InLab_UltimoRWF, InLab_UltimoAutoUV
 global INLAB_TESTE_MEDIR_ORIG, INLAB_TESTE_MEDIR_N
+global INLAB_MAPEAR_TUBO_MAX_PASSOS
 global INLAB_TESTE_SAIDA, INLAB_TESTE_FALHAS
 (
     local dirTeste = getFilenamePath (getSourceFileName())
@@ -551,6 +554,118 @@ global INLAB_TESTE_SAIDA, INLAB_TESTE_FALHAS
         logs.count = 0
         try ( InLab_ReverterAutoUV() ) catch ( linha ("      exceção: " + getCurrentException()) )
         checar "T6 stack colapsado pelo usuário: #warn \"não está mais no stack\"" (temLog logs #warn "TESTE_t6_colapsado" "não está mais no stack")
+
+        ------------------------------------------------------------------
+        -- 15. REVISÃO FINAL
+        ------------------------------------------------------------------
+        InLab_UltimoMapear = #()
+        -- I1: escala do nó
+        local s1 = Box length:400 width:400 height:400 mapcoords:false name:"TESTE_rf_escala" pos:[0,-900,0]
+        convertToPoly s1
+        polyop.setMapSupport s1 1 false
+        s1.scale = [0.1, 0.1, 0.1]
+        s1.material = mVaz; append criados s1
+        local s2 = Box length:40 width:40 height:40 mapcoords:false name:"TESTE_rf_nao_uniforme" pos:[100,-900,0]
+        convertToPoly s2
+        polyop.setMapSupport s2 1 false
+        s2.scale = [1, 1, 2]
+        s2.material = mVaz; append criados s2
+        -- I2: bitmap compartilhado com peça fora da seleção
+        local mCompart = criarMaterial "ART_Capa" arqImg canal:2
+        local bx1 = Box length:50 width:50 height:50 mapcoords:true name:"TESTE_rf_dentro" pos:[200,-900,0]
+        local bx2 = Box length:50 width:50 height:50 mapcoords:true name:"TESTE_rf_fora" pos:[300,-900,0]
+        for b in #(bx1, bx2) do
+        (
+            convertToPoly b
+            b.material = mCompart; append criados b
+            addModifier b (Uvwmap name:"InLab RWF Triplanar" maptype:4 length:50 width:50 height:50 mapChannel:2)
+            append InLab_RWF_Feitos b
+        )
+        local canalFora = InLab_Mapear_LerCanal1 bx2
+        local modFora = bx2.modifiers[1]
+        -- I4: Multi/Sub sem RWF, ID 1 mantido e ID 2 refeito
+        local i4 = Box length:50 width:50 height:150 lengthsegs:2 widthsegs:2 heightsegs:1 mapcoords:true name:"TESTE_rf_ilhas" pos:[400,-900,0]
+        convertToPoly i4
+        for f = 1 to (polyop.getNumFaces i4) do
+            polyop.setFaceMatID i4 f (if (abs (polyop.getFaceNormal i4 f).z) > 0.9 then 1 else 2)
+        local mm4 = Multimaterial numsubs:2
+        mm4.materialList[1] = mMet; mm4.materialList[2] = mPe
+        i4.material = mm4; append criados i4
+        fn vertsDoID o id =
+        (
+            local r = #{}
+            for f = 1 to (polyop.getNumFaces o) where (polyop.getFaceMatID o f) == id do
+                for mv in (polyop.getMapFace o 1 f) do r[mv] = true
+            r.numberSet
+        )
+        local nV4Antes = vertsDoID i4 1
+        -- minor a: três toros num objeto só, uma linha de tubos
+        local tt = Torus radius1:30 radius2:3 segments:48 sides:12 mapcoords:true name:"TESTE_rf_toros" pos:[0,-1100,0]
+        convertToPoly tt
+        for k = 1 to 2 do
+        (
+            local t2 = Torus radius1:30 radius2:3 segments:48 sides:12 mapcoords:true pos:[0,-1100,10 * k]
+            convertToPoly t2
+            polyop.attach tt t2
+        )
+        addModifier tt (Uvwmap maptype:4 length:60 width:60 height:60)
+        convertToPoly tt
+        tt.material = mTec; append criados tt
+
+        logs.count = 0
+        InLab_Mapear #(s1, s2, bx1, i4, tt) produto
+        local mS1 = InLab_Mapear_Medir s1
+        linha ("      escala 0,1: medido " + (1.0 / mS1.escala) as string + " cm por tile")
+        checar "I1: nó com scale 0,1 (sem Reset XForm): ~60 cm por tile (±10%)" (mS1.escala > 0 and (abs ((1.0 / mS1.escala) - 60.0)) < 6.0)
+        checar "I1: escala não uniforme -> #warn" (temLog logs #warn "TESTE_rf_nao_uniforme" "escala não uniforme")
+        checar "I2: bitmap compartilhado continua no canal 2" (mCompart.diffuseMap.coords.mapChannel == 2)
+        checar "I2: peça de fora intacta" (bx2.modifiers.count == 1 and bx2.modifiers[1] == modFora and igualCanal canalFora (InLab_Mapear_LerCanal1 bx2))
+        checar "I2: #warn com o nome da peça de fora" (temLog logs #warn "TESTE_rf_fora" "fora desta rodada")
+        checar "I2: RWF do canal 2 da peça selecionada continua" (bx1.modifiers.count == 1)
+        local nV4Depois = vertsDoID i4 1
+        linha ("      ilhas do ID mantido: " + nV4Antes as string + " -> " + nV4Depois as string + " vértices de mapa")
+        checar "I4: ID mantido com os mesmos vértices de mapa (ilhas preservadas)" ((temLog logs #ok "TESTE_rf_ilhas (ID 2)" "refeito") and \
+            (temLog logs #ok "TESTE_rf_ilhas (ID 1)" "mantido") and nV4Depois == nV4Antes)
+        checar "minor a: uma linha de tubos por ID (3 tubos)" ((contaLog logs "TESTE_rf_toros" "tubo(s) reconhecido(s)") == 1 and \
+            (temLog logs #info "TESTE_rf_toros" "3 tubo(s) reconhecido(s)"))
+        checar "minor b: linha de progresso por peça" (temLog logs #info "TESTE_rf_escala" "mapeando (")
+
+        -- minor d: Desfazer UV só com o Mapear registrado
+        InLab_UltimoRWF = #(); InLab_UltimoAutoUV = #()
+        logs.count = 0
+        InLab_ReverterAutoUV()
+        checar "minor d: Desfazer UV só com o Mapear: #info, sem o #warn 'Nenhum Auto UV'" ((not (temLog logs #warn "Nenhum Auto UV" "")) and \
+            (temLog logs #info "só o Mapear" "") and InLab_UltimoMapear.count == 0)
+
+        -- I3: topologia mudou entre o Mapear e o Desfazer
+        local t3 = Box length:40 width:40 height:40 mapcoords:false name:"TESTE_rf_topologia" pos:[500,-900,0]
+        convertToPoly t3
+        polyop.setMapSupport t3 1 false
+        t3.material = mVaz; append criados t3
+        InLab_Mapear #(t3) produto
+        polyop.deleteFaces t3 #{1}
+        logs.count = 0
+        local nRev3 = InLab_ReverterMapear()
+        checar "I3: topologia mudou: peça pulada com #warn" (nRev3 == 0 and (temLog logs #warn "TESTE_rf_topologia" "a malha mudou desde o Mapear"))
+        checar "I3: canal 1 válido (não regravado)" ((polyop.getMapSupport t3 1) and (polyop.getNumMapFaces t3 1) == (polyop.getNumFaces t3))
+
+        -- I5: teto do laço #esq do tubo (faixa aberta nos dois sentidos, as 4 orientações)
+        local faixas = #()
+        for v = 1 to 4 do
+        (
+            local pl = if v <= 2 then Plane length:5 width:100 lengthsegs:1 widthsegs:20 else Plane length:100 width:5 lengthsegs:20 widthsegs:1
+            pl.name = "TESTE_rf_faixa" + v as string
+            convertToPoly pl
+            if (mod v 2) == 0 do polyop.flipNormals pl #{1..(polyop.getNumFaces pl)}
+            append criados pl; append faixas pl
+        )
+        local todas = (for pl in faixas where (InLab_Mapear_GerarTubo pl #{1..(polyop.getNumFaces pl)} (1.0/60)) != undefined collect pl).count
+        checar "I5: as 4 faixas abertas são tubo com o teto normal" (todas == 4)
+        INLAB_MAPEAR_TUBO_MAX_PASSOS = 3
+        logs.count = 0
+        local presas = (for pl in faixas where (InLab_Mapear_GerarTubo pl #{1..(polyop.getNumFaces pl)} (1.0/60)) == undefined collect pl).count
+        INLAB_MAPEAR_TUBO_MAX_PASSOS = 100000
+        checar "I5: teto do #esq devolve undefined com #warn" (presas >= 1 and (temLog logs #warn "TESTE_rf_faixa" "esquerda sem fim"))
     )
     catch ( linha ("FAIL  exceção no teste: " + (getCurrentException())); INLAB_TESTE_FALHAS += 1 )
 
