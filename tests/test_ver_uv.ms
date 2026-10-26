@@ -7,6 +7,7 @@
 global InLab_Log, INLAB_ROOT
 global InLab_VerUV_Ligar, InLab_VerUV_Desligar, InLab_VerUV_Ligado
 global InLab_VerUV_MaterialDe, InLab_VerUV_Textura
+global InLab_Mapear_Mat, InLab_ExportGLTF, InLab_RodarVerificacoes
 global INLAB_TESTE_SAIDA, INLAB_TESTE_FALHAS
 (
     local dirTeste = getFilenamePath (getSourceFileName())
@@ -35,7 +36,10 @@ global INLAB_TESTE_SAIDA, INLAB_TESTE_FALHAS
     (
         if INLAB_ROOT == undefined do INLAB_ROOT = raiz
         resetMaxFile #noPrompt
+        fileIn (raiz + "functions\fn_mapear.ms")
         fileIn (raiz + "functions\fn_ver_uv.ms")
+        fileIn (raiz + "functions\fn_export_gltf.ms")
+        fileIn (raiz + "verifications\verif_orquestrador.ms")
 
         local mA = StandardMaterial name:"TESTE_matA"
         local mB = StandardMaterial name:"TESTE_matB"
@@ -83,6 +87,34 @@ global INLAB_TESTE_SAIDA, INLAB_TESTE_FALHAS
         InLab_VerUV_Ligar #(b5)
         resetMaxFile #noPrompt
         checar "Ver UV: resetMaxFile desliga" (not (InLab_VerUV_Ligado()) and objects.count == 0)
+        -- 8: callback #preExport
+        local ss = StringStream ""
+        callbacks.show id:#InLabVerUV to:ss
+        checar "Ver UV: callback #preExport registrado com o id #InLabVerUV" ((findString (ss as string) "preExport") != undefined)
+        -- 9: Ligar duas vezes
+        local c9 = Box name:"TESTE_vu9"
+        local m9 = StandardMaterial name:"TESTE_mat9"
+        c9.material = m9
+        InLab_VerUV_Ligar #(c9)
+        local n9 = InLab_VerUV_Ligar #(c9)
+        InLab_VerUV_Desligar()
+        checar "Ver UV: Ligar duas vezes não troca os originais pelas listras" (n9 == 0 and c9.material == m9)
+        -- 10: Mapear_Mat
+        InLab_VerUV_Ligar #(c9)
+        local mat10 = c9.material
+        local ok10 = (InLab_Mapear_Mat c9) == m9 and mat10.name == "InLab Ver UV"
+        InLab_VerUV_Desligar()
+        checar "Ver UV: InLab_Mapear_Mat devolve o original com o Ver UV ligado e o.material sem ele" (ok10 and (InLab_Mapear_Mat c9) == m9)
+        -- 11: ExportGLTF desliga antes de exportar
+        InLab_VerUV_Ligar #(c9)
+        select c9
+        try ( InLab_ExportGLTF ((getDir #temp) + "\inlab_test_ver_uv.glb") ) catch ()
+        checar "Ver UV: InLab_ExportGLTF desliga antes de exportar" (not (InLab_VerUV_Ligado()) and c9.material == m9)
+        -- 12: verificações desligam
+        InLab_VerUV_Ligar #(c9)
+        try ( InLab_RodarVerificacoes undefined ) catch ()
+        checar "Ver UV: verificações desligam o Ver UV" (not (InLab_VerUV_Ligado()) and c9.material == m9)
+        delete c9
         -- 7
         INLAB_ROOT = (getDir #temp) + "\inlab_sem_raiz\\"
         local arqGerado = (getDir #temp) + "\inlab_uv_listras.png"

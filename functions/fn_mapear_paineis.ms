@@ -1113,7 +1113,7 @@ fn InLab_Paineis_EhTecido o produto id:undefined =
     (
         local mats = #()
         if id != undefined then mats = #(InLab_Mapear_MaterialDoID (InLab_Mapear_Mat o) id)
-        else if classof o.material == Multimaterial then ( for m in o.material.materialList do append mats m )
+        else if classof (InLab_Mapear_Mat o) == Multimaterial then ( for m in (InLab_Mapear_Mat o).materialList do append mats m )
         else mats = #((InLab_Mapear_Mat o))
         for m in mats where m != undefined while not r do
         (

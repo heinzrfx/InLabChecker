@@ -16,7 +16,7 @@
    - InLab_VerUV_Textura() -> ui\img\uv_listras.png; se faltar, gera no temp
      (mesmo desenho do PNG do repo: 512x512, fundo (240,235,220), 8 listras de 18 px
      (180,60,30) a cada 64 px, "F" Arial Bold 150 (30,60,200) em (170,120)).
-   - Callbacks #InLabVerUV (filePreSave, systemPreReset, systemPreNew, filePreOpen)
+   - Callbacks #InLabVerUV (filePreSave, preExport, systemPreReset, systemPreNew, filePreOpen)
      desligam antes de salvar/limpar a cena: o .max nunca guarda o material do Ver UV.
      O export glTF tambem desliga antes (fn_export_gltf.ms).
  Decisoes:
@@ -72,7 +72,7 @@ fn InLab_VerUV_Textura =
     )
 )
 
-fn InLab_VerUV_Ligado = ( InLab_VerUV_Nos.count > 0 )
+fn InLab_VerUV_Ligado = ( (for o in InLab_VerUV_Nos where isValidNode o collect o).count > 0 )
 
 fn InLab_VerUV_MaterialDe o =
 (
@@ -95,6 +95,7 @@ fn InLab_VerUV_CriarMaterial =
 fn InLab_VerUV_Ligar objs =
 (
     local n = 0
+    local exportador = try ( GameExporterShown() ) catch ( false )
     local alvos = if objs == undefined then #() else (for o in objs where isValidNode o and superclassof o == GeometryClass collect o)
     if alvos.count == 0 then InLab_Log "Ver UV: nenhum objeto de geometria selecionado." tipo:#warn
     else
@@ -118,6 +119,8 @@ fn InLab_VerUV_Ligar objs =
 fn InLab_VerUV_Desligar =
 (
     local n = 0
+    local nosFicam = #(), origsFicam = #()
+    local tinha = InLab_VerUV_Nos.count
     with undo off
     (
         for k = 1 to InLab_VerUV_Nos.count do
@@ -126,14 +129,18 @@ fn InLab_VerUV_Desligar =
             if isValidNode o do
             (
                 try ( o.material = InLab_VerUV_Origs[k]; n += 1 )
-                catch ( InLab_Log ("Ver UV: não devolvi o material de um nó (" + getCurrentException() + ").") tipo:#err )
+                catch
+                (
+                    -- não perde o original: o nó fica registrado para uma nova tentativa
+                    append nosFicam o; append origsFicam InLab_VerUV_Origs[k]
+                    InLab_Log ("Ver UV: não devolvi o material de um nó (" + getCurrentException() + ").") tipo:#err
+                )
             )
         )
     )
-    local tinha = InLab_VerUV_Nos.count
-    InLab_VerUV_Nos = #()
-    InLab_VerUV_Origs = #()
-    InLab_VerUV_Mat = undefined
+    InLab_VerUV_Nos = nosFicam
+    InLab_VerUV_Origs = origsFicam
+    if nosFicam.count == 0 do InLab_VerUV_Mat = undefined
     if tinha > 0 do InLab_Log ("Ver UV: desligado, " + n as string + " peça(s) com o material original.") tipo:#ok
     n
 )
@@ -141,5 +148,5 @@ fn InLab_VerUV_Desligar =
 -- Antes de salvar, limpar a cena ou abrir outra: o material do Ver UV nao pode ir
 -- para o arquivo nem ficar orfao.
 callbacks.removeScripts id:#InLabVerUV
-for ev in #(#filePreSave, #systemPreReset, #systemPreNew, #filePreOpen) do
+for ev in #(#filePreSave, #preExport, #systemPreReset, #systemPreNew, #filePreOpen) do
     callbacks.addScript ev "try ( InLab_VerUV_Desligar() ) catch ( try ( InLab_Log (\"Ver UV: não desliguei antes de salvar/limpar (\" + getCurrentException() + \")\") tipo:#err ) catch () )" id:#InLabVerUV

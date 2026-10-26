@@ -57,6 +57,7 @@
 ================================================================================
 */
 
+global InLab_VerUV_Desligar   -- fn_ver_uv.ms
 -- Propriedade do PRODUTO (não da família): informada pelo checkbox da UI.
 -- Consumida pela V-38 (Grupo 7).
 global InLab_TampoAcessorioProduto = false
@@ -141,6 +142,8 @@ fn InLab_SalvarAntesDeVerificar produto:undefined resposta:unsupplied caminho:un
 
 fn InLab_RodarVerificacoes cfg tampoAcessorio:false codEst:"" nomeProduto:"" produto:undefined =
 (
+    -- Ver UV ligado: o relatório leria o material das listras
+    if InLab_VerUV_Desligar != undefined do InLab_VerUV_Desligar()
     InLab_TampoAcessorioProduto = tampoAcessorio
     InLab_ResetarResultados()
     local objetos = InLab_ObjetosVerificacao()

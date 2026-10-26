@@ -17,6 +17,7 @@ global InLab_ParseJSON, InLab_Produto_Lista, InLab_RWF_Feitos, InLab_Mapear, InL
 global InLab_UltimoMapear, InLab_Mapear_LerCanal1, InLab_ReverterAutoUV, InLab_UltimoRWF, InLab_UltimoAutoUV
 global InLab_Paineis, InLab_DesfazerPaineis, InLab_PilhaPaineis, InLab_Paineis_EsquecerPeca
 global InLab_Paineis_EhTecido, InLab_Paineis_Escala
+global InLab_VerUV_Ligar, InLab_VerUV_Desligar
 global INLAB_TESTE_SAIDA, INLAB_TESTE_FALHAS
 (
     local dirTeste = getFilenamePath (getSourceFileName())
@@ -62,6 +63,7 @@ global INLAB_TESTE_SAIDA, INLAB_TESTE_FALHAS
         fileIn (raiz + @"functions\fn_mapear_medir.ms")
         fileIn (raiz + @"functions\fn_mapear_gerar.ms")
         fileIn (raiz + @"functions\fn_mapear.ms")
+        fileIn (raiz + @"functions\fn_ver_uv.ms")
         fileIn (raiz + @"functions\fn_mapear_paineis.ms")
 
         -- almofada: Box 100x100x20 arredondado
@@ -494,6 +496,17 @@ global INLAB_TESTE_SAIDA, INLAB_TESTE_FALHAS
         local canalMadAntes = InLab_Mapear_LerCanal1 mad
         local modsMadAntes = mad.modifiers.count
         checar "EhTecido: tecido sim, madeira não" ((InLab_Paineis_EhTecido alm produto) and not (InLab_Paineis_EhTecido mad produto))
+        -- Ver UV ligado: a peça Multi/Sub de tecido ainda é reconhecida (o.material são as listras)
+        local multi = Multimaterial name:"TESTE_pn_multi" numsubs:2
+        multi.materialIDList[1] = 1; multi.materialList[1] = mTec
+        multi.materialIDList[2] = 2; multi.materialList[2] = mMad
+        local pMulti = mkPeca "TESTE_pn4_multi" [0,-2500,0]
+        pMulti.material = multi; append criados pMulti
+        local antesVU = InLab_Paineis_EhTecido pMulti produto
+        InLab_VerUV_Ligar #(pMulti)
+        local duranteVU = InLab_Paineis_EhTecido pMulti produto
+        InLab_VerUV_Desligar()
+        checar "Ver UV ligado: Painéis ainda reconhece uma peça Multi/Sub de tecido" (antesVU and duranteVU)
         logs.count = 0
         local n1 = InLab_Paineis #(alm, mad) produto
         local med1 = InLab_Mapear_Medir alm
