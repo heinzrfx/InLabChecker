@@ -6,6 +6,8 @@
  RWF + Mapear + Desfazer UV (InLab_ReverterAutoUV desfaz antes o Mapear).
  Seção 15 (revisão final): escala do nó, bitmap compartilhado fora da rodada,
  topologia no Desfazer, ilhas das faces mantidas, teto do tubo e logs.
+ Seção 16 (26/10/2026, Delray e Gap): tamanho do RWF no canal 1, material
+ compartilhado com o Triplanar no canal 2 e peça sem UV do mesmo bitmap.
 */
 global InLab_Log, InLab_ParseJSON, InLab_Produto_Lista, InLab_RWF_Feitos
 global InLab_Mapear, InLab_ReverterMapear, InLab_UltimoMapear, InLab_Mapear_LerCanal1
@@ -141,6 +143,9 @@ global INLAB_TESTE_SAIDA, INLAB_TESTE_FALHAS
             "{\"nome_parte\": \"CapaH\", \"materia_prima\": {\"familia\": \"Tecido\", \"materia\": \"\"}, \"material_id\": \"ART_CapaH\"}, " +
             "{\"nome_parte\": \"PeRW\", \"materia_prima\": {\"familia\": \"Madeira\", \"materia\": \"Cedro\"}, \"material_id\": \"ART_PeRW\"}, " +
             "{\"nome_parte\": \"PeRWB\", \"materia_prima\": {\"familia\": \"Madeira\", \"materia\": \"Cedro\"}, \"material_id\": \"ART_PeRWB\"}, " +
+            "{\"nome_parte\": \"PeRW3\", \"materia_prima\": {\"familia\": \"Madeira\", \"materia\": \"Cerejeira\"}, \"material_id\": \"ART_PeRW3\"}, " +
+            "{\"nome_parte\": \"TecRW\", \"materia_prima\": {\"familia\": \"Tecido\", \"materia\": \"\"}, \"material_id\": \"ART_TecRW\"}, " +
+            "{\"nome_parte\": \"TecVivo\", \"materia_prima\": {\"familia\": \"Tecido\", \"materia\": \"\"}, \"material_id\": \"ART_TecVivo\"}, " +
             "{\"nome_parte\": \"Acabamento\", \"materia_prima\": {\"familia\": \"\", \"materia\": \"\"}, \"material_id\": \"ART_Vazia\"}]}]}"
         local produto = (InLab_Produto_Lista (InLab_ParseJSON js))[1]
         arqImg = gerarImagem "inlab_test_mapear_listras.png"
@@ -666,6 +671,61 @@ global INLAB_TESTE_SAIDA, INLAB_TESTE_FALHAS
         local presas = (for pl in faixas where (InLab_Mapear_GerarTubo pl #{1..(polyop.getNumFaces pl)} (1.0/60)) == undefined collect pl).count
         INLAB_MAPEAR_TUBO_MAX_PASSOS = 100000
         checar "I5: teto do #esq devolve undefined com #warn" (presas >= 1 and (temLog logs #warn "TESTE_rf_faixa" "esquerda sem fim"))
+
+        ------------------------------------------------------------------
+        -- 16. TAMANHO REAL (26/10/2026, Delray e Gap)
+        ------------------------------------------------------------------
+        InLab_UltimoMapear = #()
+        -- D1: madeira em Real-World de 300 cm, RWF de verdade (UV em cm na malha +
+        -- Xform 1/300 no canal 1). O tamanho vem do Xform, não da medida.
+        local mP3 = criarMaterial "ART_PeRW3" arqImg
+        mP3.diffuseMap.coords.realWorldScale = true
+        mP3.diffuseMap.coords.realWorldWidth = 300; mP3.diffuseMap.coords.realWorldHeight = 300
+        local d1 = Cylinder radius:2.5 height:80 heightsegs:5 sides:16 mapcoords:true name:"TESTE_d1_cerejeira" pos:[0,-1400,0]
+        local uv1 = Uvwmap maptype:4 length:1 width:1 height:1
+        addModifier d1 uv1
+        uv1.realWorldMapSize = true
+        convertToPoly d1
+        d1.material = mP3; append criados d1
+        InLab_UltimoRWF = #(); InLab_UltimoAutoUV = #()
+        InLab_RWF_Rodar #(d1)
+        logs.count = 0
+        InLab_Mapear #(d1) produto
+        checar "D1: madeira de 300 cm refeita com o tamanho do RWF (300,0), não 60" (temLog logs #ok "TESTE_d1_cerejeira" "1 tile a cada 300,0 cm")
+        checar "D1: sem o aviso de faixa" (not (temLog logs #warn "TESTE_d1_cerejeira" "fora da faixa"))
+        -- D2: tecido de material compartilhado com o Triplanar do RWF no canal 2
+        -- (40 cm) em duas peças: as duas saem com 40, não só a 1ª.
+        local mT = criarMaterial "ART_TecRW" arqImg canal:2
+        local d2 = #()
+        for k = 1 to 2 do
+        (
+            local b = Box length:50 width:50 height:50 mapcoords:true name:("TESTE_d2_couro" + k as string) pos:[100 * k,-1400,0]
+            convertToPoly b
+            b.material = mT; append criados b; append d2 b
+            addModifier b (Uvwmap name:"InLab RWF Triplanar" maptype:4 length:40 width:40 height:40 mapChannel:2)
+            append InLab_RWF_Feitos b
+        )
+        logs.count = 0
+        InLab_Mapear d2 produto
+        checar "D2: 1ª peça com 40 cm" (temLog logs #ok "TESTE_d2_couro1" "1 tile a cada 40,0 cm")
+        checar "D2: 2ª peça também com 40 cm (bitmap já religado pela 1ª)" (temLog logs #ok "TESTE_d2_couro2" "1 tile a cada 40,0 cm")
+        checar "D2: bitmap lê o canal 1 no fim" (mT.diffuseMap.coords.mapChannel == 1)
+        -- D3: peça sem UV (vivo) do mesmo tecido de uma peça com Xform do RWF de
+        -- 200 cm: o vivo sai com 200, não com o padrão de 60.
+        local mV = criarMaterial "ART_TecVivo" arqImg
+        local corpo = Box length:50 width:50 height:50 mapcoords:true name:"TESTE_d3_corpo" pos:[0,-1600,0]
+        local uv3 = Uvwmap maptype:4 length:1 width:1 height:1
+        addModifier corpo uv3
+        uv3.realWorldMapSize = true
+        convertToPoly corpo
+        addModifier corpo (UVW_Xform name:"InLab RWF" U_Tile:(1.0 / 200) V_Tile:(1.0 / 200) Map_Channel:1)
+        local vivo = Torus radius1:30 radius2:3 segments:48 sides:12 mapcoords:false name:"TESTE_d3_vivo" pos:[150,-1600,0]
+        convertToPoly vivo
+        polyop.setMapSupport vivo 1 false
+        for o in #(corpo, vivo) do ( o.material = mV; append criados o; append InLab_RWF_Feitos o )
+        logs.count = 0
+        InLab_Mapear #(vivo, corpo) produto
+        checar "D3: vivo sem UV sai com o tamanho do corpo (200,0)" (temLog logs #ok "TESTE_d3_vivo" "1 tile a cada 200,0 cm")
     )
     catch ( linha ("FAIL  exceção no teste: " + (getCurrentException())); INLAB_TESTE_FALHAS += 1 )
 

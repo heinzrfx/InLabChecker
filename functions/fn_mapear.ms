@@ -84,6 +84,21 @@
    - Desfazer confere a topologia da base (nº de faces e grau) contra o registro;
      se mudou, #warn "a malha mudou desde o Mapear; use o Ctrl+Z" e a peça fica.
    - Log: uma linha "N tubo(s)" por ID e uma de progresso por peça.
+
+ 26/10/2026 (teste no Aparador Delray, cerejeira em Real-World de 300 cm):
+   - A densidade do canal 1 vinha só da medida da peça, que oscila com chanfro e
+     curva (207 a 308 cm), e 300,1 ou 308 caíam fora da faixa: a mesma madeira
+     saía com 60 cm em umas peças e 300 em outras. Agora o "InLab RWF*" do canal
+     1 (1/U_Tile do Xform, ou o length do UVW Map do Triplanar) dá o tamanho,
+     como já valia nos outros canais, e a faixa tem 1% de folga.
+   - Material compartilhado: a 1ª peça religava os bitmaps ao canal 1 e as
+     seguintes liam o canal novo, perdendo o tamanho do Triplanar do RWF (couro
+     de 40 cm saía com 60 ou 300). A decisão usa o canal do início da rodada
+     (InLab_Mapear_CanalOriginal) e bitmap que já lê o canal 1 não é religado.
+   - Peça sem UV (vivos da Gap) não tem modificador do RWF e caía no padrão de
+     60 cm, com o corpo do mesmo tecido em 200. Antes das peças, a rodada guarda
+     o tamanho que o RWF deu a cada bitmap do difuso (InLab_Mapear_TamIni); a
+     peça sem RWF próprio e sem medida plausível usa esse tamanho.
 */
 
 global InLab_Log, InLab_EhGeometria, InLab_Instancias, InLab_DeduplicarInstancias
@@ -123,11 +138,20 @@ struct MapearDecisao
 
 -- Acumulam entre rodadas; só o Desfazer zera.
 global InLab_UltimoMapear = #()
+-- 26/10/2026: #(bitmap, canal) lido no início da rodada. Religar o bitmap de um
+-- material compartilhado ao canal 1 na 1ª peça não pode mudar a decisão das
+-- seguintes (o couro do Delray perdia o Triplanar de 40 cm da 2ª peça em diante).
+global InLab_Mapear_CanaisIni = #()
+-- 26/10/2026: #(bitmap do difuso, densidade UV/cm) que o RWF deu em alguma peça
+-- da rodada. Peça do mesmo material sem UV (vivo, sem modificador do RWF) usa
+-- esse tamanho em vez do padrão da tabela (Gap: corpo 200 cm, vivos saíam 60).
+global InLab_Mapear_TamIni = #()
 
 global InLab_Mapear_CanalModUV, InLab_Mapear_EhRWF, InLab_Mapear_TemRealWorld
 global InLab_Mapear_SemRWF, InLab_Mapear_MaterialDoID, InLab_Mapear_Grupos
 global InLab_Mapear_BitmapDifuso, InLab_Mapear_Bitmaps, InLab_Mapear_Tiling
-global InLab_Mapear_SetTiling, InLab_Mapear_SetCanal, InLab_Mapear_NomeRegra
+global InLab_Mapear_SetTiling, InLab_Mapear_SetCanal, InLab_Mapear_NomeRegra, InLab_Mapear_CanalOriginal
+global InLab_Mapear_DensRWF, InLab_Mapear_TamDoBitmap
 global InLab_Mapear_Decidir, InLab_Mapear_FacesDoID, InLab_Mapear_Juntar
 global InLab_Mapear_UVAvaliado, InLab_Mapear_UnwrapElemento, InLab_Mapear_GerarRegra
 global InLab_Mapear_LerCanal1, InLab_Mapear_Restaurar, InLab_Mapear_ConverterBase
@@ -245,6 +269,32 @@ fn InLab_Mapear_SetCanal b c =
     if classof b == Bitmaptexture then b.coords.mapChannel = c else b.uvwChannel = c
 )
 
+-- Densidade (UV/cm) de um "InLab RWF*": U_Tile do Xform ou 1/length do UVW Map.
+fn InLab_Mapear_DensRWF o m =
+(
+    local dens = undefined
+    if classof m == UVW_Xform then
+        dens = try ( m.U_Tile ) catch ( InLab_Log (o.name + ": não li o U_Tile de " + m.name + " (" + getCurrentException() + ").") tipo:#warn; undefined )
+    else if classof m == Uvwmap and (InLab_Mapear_EhRWF m) and m.length > 1e-6 do dens = 1.0 / m.length
+    dens
+)
+
+-- Densidade do RWF registrada para o bitmap nesta rodada, ou undefined.
+fn InLab_Mapear_TamDoBitmap b =
+(
+    local d = undefined
+    for x in InLab_Mapear_TamIni where x[1] == b while d == undefined do d = x[2]
+    d
+)
+
+-- Canal que o bitmap lia no início da rodada (fora de rodada: o atual).
+fn InLab_Mapear_CanalOriginal b =
+(
+    local c = undefined
+    for x in InLab_Mapear_CanaisIni where x[1] == b while c == undefined do c = x[2]
+    if c == undefined then InLab_RWF_CanalBitmap b else c
+)
+
 fn InLab_Mapear_NomeRegra r =
 (
     case r of
@@ -259,9 +309,9 @@ fn InLab_Mapear_NomeRegra r =
 
 --------------------------------------------------------------------------------
 -- Decisão por ID. rwfCanais = #(#(canal, densidade UV/cm ou undefined)...) dos
--- "InLab RWF*" fora do canal 1.
+-- "InLab RWF*" fora do canal 1; rwfDens1 = densidade do "InLab RWF*" do canal 1.
 --------------------------------------------------------------------------------
-fn InLab_Mapear_Decidir o produto id mtl rwfCanais =
+fn InLab_Mapear_Decidir o produto id mtl rwfCanais rwfDens1:undefined =
 (
     local d = MapearDecisao id:id mtl:mtl rebind:#()
     d.rotulo = o.name + (if id != undefined then " (ID " + id as string + ")" else "")
@@ -285,16 +335,28 @@ fn InLab_Mapear_Decidir o produto id mtl rwfCanais =
         local bmpDif = InLab_Mapear_BitmapDifuso mtl
         local uTil = if bmpDif != undefined then abs (InLab_Mapear_Tiling bmpDif).x else 1.0
         if uTil < 1e-6 do uTil = 1.0
-        local canalDif = if bmpDif != undefined then InLab_RWF_CanalBitmap bmpDif else 1
+        local canalDif = if bmpDif != undefined then InLab_Mapear_CanalOriginal bmpDif else 1
         -- bitmaps que leem o canal do Triplanar do RWF (#169)
         local canaisRWF = for rc in rwfCanais collect rc[1]
-        for b in (InLab_Mapear_Bitmaps mtl) where (findItem canaisRWF (InLab_RWF_CanalBitmap b)) > 0 do append d.rebind b
+        for b in (InLab_Mapear_Bitmaps mtl) where (findItem canaisRWF (InLab_Mapear_CanalOriginal b)) > 0 do append d.rebind b
         -- densidade atual (UV/cm) do canal que o difuso lê
         local dens = if med.temCanal and med.amostra > 0 then med.escala else 0.0
+        -- 26/10/2026: no canal 1 também vale o tamanho do RWF (spec 6.1), não a
+        -- medida da peça, que oscila (cerejeira de 300 cm do Delray medida entre
+        -- 207 e 308 cm). A faixa tem 1% de folga: 1/(1/300) dá 300,0003.
         local k = findItem canaisRWF canalDif
-        if k > 0 and rwfCanais[k][2] != undefined do dens = rwfCanais[k][2]
+        if k > 0 and rwfCanais[k][2] != undefined then dens = rwfCanais[k][2]
+        else if canalDif == 1 and rwfDens1 != undefined then dens = rwfDens1
+        else if bmpDif != undefined and (InLab_Mapear_TamDoBitmap bmpDif) != undefined do
+        (
+            -- sem RWF nesta peça: vale o tamanho do mesmo bitmap em outra peça
+            -- da rodada quando a peça não tem UV ou a medida é implausível
+            local cmMedido = if dens > 1e-9 then 1.0 / (dens * uTil) else 0.0
+            if cmMedido < INLAB_MAPEAR_CM_MIN * 0.99 or cmMedido > INLAB_MAPEAR_CM_MAX * 1.01 do
+                dens = InLab_Mapear_TamDoBitmap bmpDif
+        )
         if dens > 1e-9 do d.cmAntes = 1.0 / (dens * uTil)
-        if d.cmAntes != undefined and d.cmAntes >= INLAB_MAPEAR_CM_MIN and d.cmAntes <= INLAB_MAPEAR_CM_MAX then
+        if d.cmAntes != undefined and d.cmAntes >= INLAB_MAPEAR_CM_MIN * 0.99 and d.cmAntes <= INLAB_MAPEAR_CM_MAX * 1.01 then
             d.alvo = d.cmAntes
         else
         (
@@ -321,7 +383,7 @@ fn InLab_Mapear_Decidir o produto id mtl rwfCanais =
         d.motivo = InLab_Mapear_Motivo med d.regra (d.alvo * uTil) veio:d.veio
         if d.motivo == "" and med.temCanal and med.amostra == 0 do d.motivo = "UV degenerado (sem área)"
         if d.motivo == "" and d.rebind.count > 0 do
-            d.motivo = "textura lida no canal " + (InLab_RWF_CanalBitmap d.rebind[1]) as string + " do Real World Fix"
+            d.motivo = "textura lida no canal " + (InLab_Mapear_CanalOriginal d.rebind[1]) as string + " do Real World Fix"
         if d.motivo == "" then
         (
             d.acao = #manter
@@ -707,14 +769,16 @@ fn InLab_Mapear_Peca o produto unwrapGrande rodada:undefined =
         -- densidade (UV/cm) de cada canal do RWF fora do canal 1: U_Tile do Xform
         -- "InLab RWF" (UV em cm dividido) ou 1/length do UVW Map "InLab RWF*"
         local rwfCanais = #()
-        for r in rwfMods do
+        local rwfDens1 = undefined   -- 26/10/2026: o mesmo no canal 1
+        for r in rwfMods where r[3] != undefined do
         (
-            if r[3] != undefined and r[3] != 1 do
+            local dens = InLab_Mapear_DensRWF o r[1]
+            if r[3] == 1 then
             (
-                local dens = undefined
-                if classof r[1] == UVW_Xform then
-                    dens = try ( r[1].U_Tile ) catch ( InLab_Log (o.name + ": não li o U_Tile de " + r[1].name + " (" + getCurrentException() + ").") tipo:#warn; undefined )
-                else if classof r[1] == Uvwmap and (InLab_Mapear_EhRWF r[1]) and r[1].length > 1e-6 do dens = 1.0 / r[1].length
+                if rwfDens1 == undefined do rwfDens1 = dens
+            )
+            else
+            (
                 local k = findItem (for rc in rwfCanais collect rc[1]) r[3]
                 if k == 0 then append rwfCanais #(r[3], dens)
                 else if rwfCanais[k][2] == undefined do rwfCanais[k][2] = dens
@@ -724,7 +788,7 @@ fn InLab_Mapear_Peca o produto unwrapGrande rodada:undefined =
             InLab_Log (o.name + ": canal " + rc[1] as string + " do Real World Fix sem tamanho conhecido; o tiling dos bitmaps religados não é ajustado.") tipo:#warn
 
         -- 2. decisão por ID
-        local decs = for g in (InLab_Mapear_Grupos o) collect (InLab_Mapear_Decidir o produto g[1] g[2] rwfCanais)
+        local decs = for g in (InLab_Mapear_Grupos o) collect (InLab_Mapear_Decidir o produto g[1] g[2] rwfCanais rwfDens1:rwfDens1)
         local refazer = for d in decs where d.acao == #refazer collect d
         if (for d in decs where d.acao != #nada collect d).count == 0 then
         (
@@ -855,7 +919,7 @@ fn InLab_Mapear_Peca o produto unwrapGrande rodada:undefined =
                             insertItem #(tirar[k][1], tirar[k][2]) rec.modsTirados 1
                         )
                         for d in feitos do
-                            for b in d.rebind where (findItem canaisPresos (InLab_RWF_CanalBitmap b)) == 0 and \
+                            for b in d.rebind where (InLab_RWF_CanalBitmap b) != 1 and (findItem canaisPresos (InLab_RWF_CanalBitmap b)) == 0 and \
                                 (for x in rec.bitmapsAntes where x[1] == b collect x).count == 0 do
                             (
                                 local c = InLab_RWF_CanalBitmap b
@@ -936,6 +1000,28 @@ fn InLab_Mapear objs produto unwrapGrande:false =
     -- todos os que o usam estão aqui
     local rodada = #()
     for o in alvos do for i in (InLab_Instancias o) do appendIfUnique rodada i
+    InLab_Mapear_CanaisIni = #()
+    for o in rodada where o.material != undefined do
+        for b in (InLab_Mapear_Bitmaps o.material) where (for x in InLab_Mapear_CanaisIni where x[1] == b collect x).count == 0 do
+            append InLab_Mapear_CanaisIni #(b, InLab_RWF_CanalBitmap b)
+    InLab_Mapear_TamIni = #()
+    for o in alvos do
+    (
+        local porCanal = #()   -- #(canal, densidade)
+        for m in o.modifiers where (InLab_Mapear_EhRWF m) do
+        (
+            local c = InLab_Mapear_CanalModUV m
+            local dn = InLab_Mapear_DensRWF o m
+            if c != undefined and dn != undefined and (for x in porCanal where x[1] == c collect x).count == 0 do append porCanal #(c, dn)
+        )
+        if porCanal.count > 0 do
+            for g in (InLab_Mapear_Grupos o) do
+            (
+                local b = InLab_Mapear_BitmapDifuso g[2]
+                if b != undefined and (InLab_Mapear_TamDoBitmap b) == undefined do
+                    for x in porCanal where x[1] == (InLab_RWF_CanalBitmap b) do append InLab_Mapear_TamIni #(b, x[2])
+            )
+    )
     undo "InLab Mapear" on
     (
         for g in (InLab_DeduplicarInstancias alvos) do
@@ -967,6 +1053,8 @@ fn InLab_Mapear objs produto unwrapGrande:false =
             )
         )
     )
+    InLab_Mapear_CanaisIni = #()
+    InLab_Mapear_TamIni = #()
     if unwrapGrande do
         with undo off ( try ( select (for s in selAntes where isValidNode s collect s) ) catch ( InLab_Log ("Mapear: não restaurei a seleção (" + getCurrentException() + ").") tipo:#warn ) )
     InLab_Log ("Mapear: " + refeitas as string + " refeita(s), " + mantidas as string + " mantida(s), " + puladas as string + " pulada(s).") \

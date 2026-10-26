@@ -307,6 +307,49 @@ global InLab_RWF_Rodar, InLab_RWF_Feitos
         checar "#169: bitmap compartilhado fora do Triplanar fica no canal 1, com aviso" (bmpK.uvwChannel == 1 and (logTem "também usado fora dele" #warn))
         InLab_RWF_Reverter rodK2
         mK.texmapBump = undefined
+
+        -- 9. FACES SELECIONADAS NA BASE EDITABLE POLY (26/10/2026, Delray)
+        -- A seleção sobe pelo stack e o Xform/UVW Map só agiam nessas faces.
+        -- S: UV em cm gravado na malha + bitmap Real-World 300 (Xform no topo).
+        local s = caixa "t_S" [0,900,0] maptype:4
+        append criados s
+        convertToPoly s
+        polyop.setFaceSelection s #{1, 2}
+        local difS = coronaRW "t_difS" [300,300] [0,0,0]
+        local mS = CoronaLegacyMtl()
+        mS.name = "t_mtlS"
+        mS.texmapDiffuse = difS
+        s.material = mS
+        local uvS = uvAtual s
+        INLAB_TESTE_LOG = #()
+        InLab_RealWorldFix #(s)
+        local rodS = InLab_RWF_UltimaRodada
+        checar "Seleção de faces: canal 1 ÷ 300 na peça inteira" ((erroUV uvS (uvAtual s) [300,300]) < 1e-4)
+        checar "Seleção de faces: seleção da base limpa, com aviso" ((polyop.getFaceSelection s).numberSet == 0 and (logTem "selecionada(s) no Editable Poly" #info))
+        InLab_RWF_Reverter rodS
+        checar "Seleção de faces: Desfazer devolve a seleção" ((polyop.getFaceSelection s) as string == #{1, 2} as string)
+        -- T: Triplanar 50 com faces selecionadas = mesmo UV de uma igual sem seleção
+        -- (o UVW Map já não dependia da seleção; fica de guarda)
+        local t1 = Box name:"t_T1" length:80 width:100 height:50 pos:[0,1200,0] mapcoords:true
+        local t2 = Box name:"t_T2" length:80 width:100 height:50 pos:[0,1200,0] mapcoords:true
+        append criados t1
+        append criados t2
+        convertToPoly t1
+        convertToPoly t2
+        polyop.setFaceSelection t1 #{1, 3}
+        for t in #(t1, t2) do
+        (
+            local tp = CoronaTriplanar()
+            tp.texmapX = CoronaBitmap()
+            tp.onlyTexmapX = true
+            tp.scale = 50.0
+            local mt = CoronaLegacyMtl()
+            mt.texmapDiffuse = tp
+            t.material = mt
+        )
+        InLab_RealWorldFix #(t1, t2)
+        checar "Seleção de faces: UVW Map do Triplanar não depende da seleção (guarda)" ((erroUV (uvAtual t2) (uvAtual t1) [1,1]) < 1e-4)
+        InLab_RWF_Reverter InLab_RWF_UltimaRodada
     )
     catch
     (
