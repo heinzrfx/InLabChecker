@@ -10,9 +10,16 @@
  resumo) do InLab_Mapear_Gravar) e trama torta (InLab_Paineis_Torta). Port de SPK_UVDisco,
  SPK_UVAnel (volta e perfil varrido, sem escalar U por r/rOut), SPK_Unfold, SPK_AngDir,
  SPK_Girar, SPK_FlipU, SPK_Espelho e SPK_DesalinhoRef, em MUNDO. Unfold3D num nó temporário
- (polyop.detachFaces asNode de uma CÓPIA do nó, ambos apagados no fim: o detach com
- delete:false acrescenta vértices de mapa no canal 1 da origem, achado em 26/10/2026;
- select/modPanel em with undo off; seleção devolvida), lido por canto de face. Nó espelhado: normal e espelho pelo sinal do transform.
+ (polyop.detachFaces asNode de uma CÓPIA da base em mundo, InLab_Paineis_CopiaBase, uma por
+ peça, apagada no fim: o detach com delete:false acrescenta vértices de mapa no canal 1 da
+ origem, achado em 26/10/2026; select/modPanel em with undo off, painel Modify uma vez por
+ chamada; seleção devolvida), lido por canto de face.
+ Fix 26/10/2026 (desempenho): tabelas da volta/perfil com acesso direto por faixa de 2 graus
+ e por grau (antes busca linear por vértice), raio de fora por faixa calculado uma vez,
+ ângulo/raio por vértice uma vez; Unfold3D do anel só se a melhor de volta/perfil passa de 0,02;
+ cópia da base com setVert em array (5 s -> 0); UV do Unfold3D lido no poly colapsado (2,9 s ->
+ 0,4 s em 7.400 faces). Peça de 19.744 faces: ~25 s -> ~11 s. Pegadinha: local aMin/aMax engole
+ as funções amin/amax (nomes sem maiúsculas). Nó espelhado: normal e espelho pelo sinal do transform.
  Spec/plano: docs\superpowers\specs e docs\superpowers\plans (Mapear por paineis);
  logica de referencia no spike docs\superpowers\specs\2026-10-26-spike-paineis.ms.
 
@@ -46,7 +53,7 @@ global InLab_Paineis_Sinal, InLab_Paineis_PosMundo, InLab_Paineis_NormalArea, In
 global InLab_Paineis_UVDisco, InLab_Paineis_AngP, InLab_Paineis_LDe, InLab_Paineis_RDe, InLab_Paineis_SPerfil
 global InLab_Paineis_UVAnel, InLab_Paineis_DirUV, InLab_Paineis_TortaP, InLab_Paineis_Torta
 global InLab_Paineis_AngDir, InLab_Paineis_Girar, InLab_Paineis_FlipU, InLab_Paineis_EspelhoUV
-global InLab_Paineis_Unfold, InLab_Paineis_UV
+global InLab_Paineis_Unfold, InLab_Paineis_UV, InLab_Paineis_Bin, InLab_Paineis_CopiaBase
 global INLAB_PAINEIS_DISTANCIAS = #(0.4, 0.6, 0.8, 1.0, 1.5, 2.0, 3.0)
 global INLAB_PAINEIS_LIMIAR_CAIXA = 0.97
 global INLAB_PAINEIS_VIVO_MAX_PONTOS = 8000
@@ -539,20 +546,34 @@ fn InLab_Paineis_AngP p e1 e2 c1 c2 corte =
     while s >= 360 do s -= 360.0
     s
 )
--- comprimento ao longo do contorno de fora no ângulo ang (tabela ângulo -> comprimento)
-fn InLab_Paineis_LDe ang tabA tabL =
+-- faixa de 2 graus (1..180) de um ângulo 0..360
+fn InLab_Paineis_Bin ang =
 (
-    if ang < tabA[1] do ang += 360.0
-    local i = 1
-    while i < tabA.count and tabA[i+1] < ang do i += 1
+    local b = (floor (ang / 2.0)) as integer + 1
+    if b < 1 do b = 1
+    if b > 180 do b = 180
+    b
+)
+-- comprimento ao longo do contorno de fora no ângulo ang (tabela ângulo -> comprimento).
+-- idxBin[b] = índice em tabA do último ponto de faixa <= b (0 = antes do primeiro): acesso
+-- direto, sem busca linear (fix de desempenho 26/10/2026)
+fn InLab_Paineis_LDe ang tabA tabL idxBin =
+(
+    local i = 0
+    if ang >= tabA[1] do
+    (
+        i = idxBin[InLab_Paineis_Bin ang]
+        -- o ponto da mesma faixa pode estar depois de ang
+        if i > 0 and tabA[i] > ang do i -= 1
+    )
+    if i == 0 do ( ang += 360.0; i = tabA.count - 1 )
     if i >= tabA.count then tabL[tabL.count]
     else tabL[i] + (ang - tabA[i]) / (amax 1e-6 (tabA[i+1] - tabA[i])) * (tabL[i+1] - tabL[i])
 )
--- raio de fora no ângulo ang (faixa de 2 graus mais perto que tem amostra)
-fn InLab_Paineis_RDe ang rOut =
+-- raio de fora na faixa b (a faixa de 2 graus mais perto que tem amostra); chamado uma vez
+-- por faixa, o resultado fica numa tabela de 180
+fn InLab_Paineis_RDe b rOut =
 (
-    local b = (floor (ang / 2.0)) as integer + 1
-    if b > 180 do b = 180
     local i = 0
     local r = undefined
     while r == undefined and i < 90 do
@@ -562,21 +583,30 @@ fn InLab_Paineis_RDe ang rOut =
     )
     if r == undefined then 0.0 else r
 )
--- comprimento ao longo do perfil da seção, no plano (dr, t)
-fn InLab_Paineis_SPerfil dr t drc tc perfTabA perfTabS =
+-- comprimento ao longo do perfil da seção, no plano (dr, t). idxGrau[g] = índice em perfTabA
+-- do último ponto de grau <= g (acesso direto)
+fn InLab_Paineis_SPerfil dr t drc tc perfTabA perfTabS idxGrau =
 (
     local ang = atan2 (t - tc) (dr - drc)
-    local i = 1
-    while i < perfTabA.count and perfTabA[i+1] < ang do i += 1
-    if i >= perfTabA.count then perfTabS[perfTabS.count]
-    else if ang <= perfTabA[1] then 0.0
-    else perfTabS[i] + (ang - perfTabA[i]) / (amax 1e-6 (perfTabA[i+1] - perfTabA[i])) * (perfTabS[i+1] - perfTabS[i])
+    if perfTabA.count == 0 or ang <= perfTabA[1] then 0.0
+    else
+    (
+        local g = (floor (ang + 90.0)) as integer + 1
+        if g < 1 do g = 1
+        if g > 181 do g = 181
+        local i = idxGrau[g]
+        if i > 0 and perfTabA[i] > ang do i -= 1
+        if i < 1 do i = 1
+        if i >= perfTabA.count then perfTabS[perfTabS.count]
+        else perfTabS[i] + (ang - perfTabA[i]) / (amax 1e-6 (perfTabA[i+1] - perfTabA[i])) * (perfTabS[i+1] - perfTabS[i])
+    )
 )
 
 -- anel em volta do eixo k (1=X 2=Y 3=Z). Volta pelo contorno de fora (maior raio a cada
 -- 2 graus); corte numa quina de trás (entre -X e +Y) se o eixo é Z, embaixo (-Z) se é
 -- horizontal. perfil:true troca a coordenada no eixo pelo comprimento ao longo do perfil
 -- da seção (plano raio x eixo). O U NÃO é escalado por r/rOut (abre a trama em leque).
+-- Ângulo e raio por vértice calculados uma vez; tabelas por faixa/grau com acesso direto.
 fn InLab_Paineis_UVAnel po posM fs k escala perfil:false =
 (
     local ax = #([1,0,0], [0,1,0], [0,0,1])[k]
@@ -587,20 +617,30 @@ fn InLab_Paineis_UVAnel po posM fs k escala perfil:false =
     for v in vs do ( local q = posM[v]; c1 += dot q e1; c2 += dot q e2 )
     c1 /= vs.count; c2 /= vs.count
     local corte = if k == 3 then 135.0 else -90.0
+    -- ângulo e raio de cada vértice (indexados pelo vértice da base)
+    local angV = #(), raioV = #()
+    for v in vs do
+    (
+        local q = posM[v]
+        angV[v] = InLab_Paineis_AngP q e1 e2 c1 c2 corte
+        raioV[v] = distance [(dot q e1), (dot q e2), 0] [c1, c2, 0]
+    )
     -- contorno de fora: maior raio a cada 2 graus
     local bins = #()
     bins.count = 180
     for v in vs do
     (
         local q = posM[v]
-        local ang = InLab_Paineis_AngP q e1 e2 c1 c2 corte
-        local r = distance [(dot q e1), (dot q e2), 0] [c1, c2, 0]
-        local b = (floor (ang / 2.0)) as integer + 1
-        if b > 180 do b = 180
-        if bins[b] == undefined or r > bins[b][1] do bins[b] = #(r, [(dot q e1), (dot q e2), 0], ang)
+        local b = InLab_Paineis_Bin angV[v]
+        if bins[b] == undefined or raioV[v] > bins[b][1] do bins[b] = #(raioV[v], [(dot q e1), (dot q e2), 0], angV[v])
     )
-    local pts = #()
-    for b in bins where b != undefined do append pts b
+    local pts = #(), idxBin = #()
+    idxBin.count = 180
+    for b = 1 to 180 do
+    (
+        if bins[b] != undefined do append pts bins[b]
+        idxBin[b] = pts.count
+    )
     local tabA = #(), tabL = #()
     local acc = 0.0
     for i = 1 to pts.count do
@@ -612,21 +652,26 @@ fn InLab_Paineis_UVAnel po posM fs k escala perfil:false =
     local perim = acc + (distance pts[1][2] pts[pts.count][2])
     append tabA (pts[1][3] + 360.0)
     append tabL perim
-    local rOut = #()
-    rOut.count = 180
-    for i = 1 to 180 where bins[i] != undefined do rOut[i] = bins[i][1]
-    local perfTabA = #(), perfTabS = #(), drc = 0.0, tc = 0.0
-    if perfil do
+    -- comprimento na volta por vértice (o "alto" soma perim depois)
+    local sV = #()
+    for v in vs do sV[v] = InLab_Paineis_LDe angV[v] tabA tabL idxBin
+    local perfTabA = #(), perfTabS = #(), idxGrau = #(), drc = 0.0, tc = 0.0
+    local tV = #()
+    if perfil then
     (
-        local amostras = #(), drMin = 0.0, tMin = 1e9, tMax = -1e9
+        local rOut = #()
+        rOut.count = 180
+        for b = 1 to 180 where bins[b] != undefined do rOut[b] = bins[b][1]
+        local rDeBin = #()
+        rDeBin.count = 180
+        for b = 1 to 180 do rDeBin[b] = InLab_Paineis_RDe b rOut
+        local drV = #()
+        local drMin = 0.0, tMin = 1e9, tMax = -1e9
         for v in vs do
         (
-            local q = posM[v]
-            local ang = InLab_Paineis_AngP q e1 e2 c1 c2 corte
-            local r = distance [(dot q e1), (dot q e2), 0] [c1, c2, 0]
-            local dr = r - (InLab_Paineis_RDe ang rOut)
-            local tq = dot q ax
-            append amostras [dr, tq, 0]
+            local dr = raioV[v] - rDeBin[InLab_Paineis_Bin angV[v]]
+            local tq = dot posM[v] ax
+            drV[v] = dr
             drMin = amin drMin dr; tMin = amin tMin tq; tMax = amax tMax tq
         )
         drc = drMin
@@ -634,8 +679,9 @@ fn InLab_Paineis_UVAnel po posM fs k escala perfil:false =
         -- por grau do ângulo em volta de (drc, tc), o ponto mais longe
         local pb = #()
         pb.count = 181
-        for am in amostras do
+        for v in vs do
         (
+            local am = [drV[v], dot posM[v] ax, 0]
             local ang = atan2 (am.y - tc) (am.x - drc)
             local i = (floor (ang + 90.0)) as integer + 1
             if i < 1 do i = 1
@@ -644,7 +690,12 @@ fn InLab_Paineis_UVAnel po posM fs k escala perfil:false =
             if pb[i] == undefined or d > pb[i][1] do pb[i] = #(d, am, ang)
         )
         local ps2 = #()
-        for b in pb where b != undefined do append ps2 b
+        idxGrau.count = 181
+        for g = 1 to 181 do
+        (
+            if pb[g] != undefined do append ps2 pb[g]
+            idxGrau[g] = ps2.count
+        )
         local acc2 = 0.0
         for i = 1 to ps2.count do
         (
@@ -652,31 +703,27 @@ fn InLab_Paineis_UVAnel po posM fs k escala perfil:false =
             append perfTabA ps2[i][3]
             append perfTabS acc2
         )
+        for v in vs do tV[v] = InLab_Paineis_SPerfil drV[v] (dot posM[v] ax) drc tc perfTabA perfTabS idxGrau
     )
+    else for v in vs do tV[v] = dot posM[v] ax
     local uvs = #(), mapa = #(), tabBaixo = #(), tabAlto = #()
     for f in fs do
     (
         local fv = polyop.getFaceVerts po f
-        local angs = #()
-        for v in fv do append angs (InLab_Paineis_AngP posM[v] e1 e2 c1 c2 corte)
-        local atravessa = ((amax angs) - (amin angs)) > 180.0
+        -- (não chamar de aMin/aMax: nomes sem maiúsculas engolem as funções amin/amax)
+        local angMin = 1e9, angMax = -1e9
+        for v in fv do ( angMin = amin angMin angV[v]; angMax = amax angMax angV[v] )
+        local atravessa = (angMax - angMin) > 180.0
         local ids = #()
         for j = 1 to fv.count do
         (
-            local alto = atravessa and angs[j] < 180.0
-            local tt = if alto then tabAlto else tabBaixo
             local v = fv[j]
+            local alto = atravessa and angV[v] < 180.0
+            local tt = if alto then tabAlto else tabBaixo
             if tt[v] == undefined do
             (
-                local q = posM[v]
-                local s = (InLab_Paineis_LDe angs[j] tabA tabL) + (if alto then perim else 0.0)
-                local tEixo = dot q ax
-                if perfil do
-                (
-                    local r = distance [(dot q e1), (dot q e2), 0] [c1, c2, 0]
-                    local ro = InLab_Paineis_RDe angs[j] rOut
-                    tEixo = InLab_Paineis_SPerfil (r - ro) (dot q ax) drc tc perfTabA perfTabS
-                )
+                local s = sV[v] + (if alto then perim else 0.0)
+                local tEixo = tV[v]
                 -- eixo vertical: U = volta, V = altura (ou perfil); horizontal: U = eixo (ou perfil), V = volta
                 append uvs (if k == 3 then [s * escala, tEixo * escala, 0] else [tEixo * escala, s * escala, 0])
                 tt[v] = uvs.count
@@ -790,27 +837,45 @@ fn InLab_Paineis_EspelhoUV po posM uvs mapa sinal =
     if tot > 0 then ruim / tot else 0.0
 )
 
--- Unfold3D a partir de uvs/mapa (o UV inicial, com os cortes) num nó temporário com as faces fs
--- (polyop.detachFaces asNode, apagado no fim). Escala pela área (3D em mundo / UV) e posição pelo
--- centro do UV inicial; o giro fica para quem chama. A face k do nó temporário é a k-ésima de fs;
--- o resultado é lido por canto de face (o solve renumera os vértices de UV). undefined se falhou.
-fn InLab_Paineis_Unfold o fs uvs mapa posM escala =
+-- cópia temporária da BASE de o num nó novo, com os vértices em MUNDO e transform identidade
+-- (mesmos índices de face; sem a pilha nem o grupo de o). Quem chama apaga. O detach do
+-- Unfold3D sai daqui: o detach (mesmo com delete:false) mexe no canal 1 da origem
+-- (acrescenta vértices de mapa), achado em 26/10/2026.
+fn InLab_Paineis_CopiaBase o =
 (
-    local po = InLab_Mapear_PolyDe o
+    local src = undefined
+    with undo off
+    (
+        src = Box name:(uniqueName "InLab_tmp_unfold_src")
+        src.baseobject = copy o.baseobject
+        local sp = src.baseobject
+        local tm = o.objectTransform
+        -- uma chamada com array (setVert vértice a vértice levou 5 s em 20 mil vértices)
+        local nv = polyop.getNumVerts sp
+        local pos = #()
+        pos.count = nv
+        for v = 1 to nv do pos[v] = (polyop.getVert sp v) * tm
+        if nv > 0 do polyop.setVert sp #{1..nv} pos
+    )
+    src
+)
+
+-- Unfold3D a partir de uvs/mapa (o UV inicial, com os cortes) num nó temporário com as faces fs
+-- destacadas de src (InLab_Paineis_CopiaBase; apagado no fim). Escala pela área (3D em mundo /
+-- UV) e posição pelo centro do UV inicial; o giro fica para quem chama. A face k do nó destacado
+-- é a k-ésima de fs; o resultado é lido por canto de face (o solve renumera os vértices de UV).
+-- Quem chama já pôs o painel Modify e devolve a seleção. undefined se falhou.
+fn InLab_Paineis_Unfold src fs uvs mapa posM escala nomePeca =
+(
     local lista = fs as array
     local idsDe = #()
     for e in mapa do idsDe[e[1]] = e[2]
     local nome = uniqueName "InLab_tmp_unfold"
-    local tmp = undefined, src = undefined, novos = undefined
-    local selAntes = selection as array
+    local tmp = undefined, novos = undefined
     try
     (
         with undo off
         (
-            -- o detach (mesmo com delete:false) mexe no canal 1 da origem (acrescenta vértices
-            -- de mapa): destaca de uma cópia do nó, nunca do nó real
-            src = copy o
-            src.name = uniqueName "InLab_tmp_unfold_src"
             polyop.detachFaces src.baseobject fs delete:false asNode:true name:nome node:src
             tmp = getNodeByName nome
             local tp = tmp.baseobject
@@ -821,7 +886,6 @@ fn InLab_Paineis_Unfold o fs uvs mapa posM escala =
             polyop.setNumMapVerts tp 1 uvs.count keep:false
             for i = 1 to uvs.count do polyop.setMapVert tp 1 i uvs[i]
             for k = 1 to lista.count do polyop.setMapFace tp 1 k idsDe[lista[k]]
-            max modify mode
             select tmp
             local uvw = Unwrap_UVW()
             addModifier tmp uvw
@@ -829,11 +893,16 @@ fn InLab_Paineis_Unfold o fs uvs mapa posM escala =
             uvw.setMapChannel 1
             uvw.selectFaces #{1..(uvw.numberPolygons())}
             uvw.Unfold3DSolve()
+            -- lê por canto de face no poly colapsado: getVertexIndexFromFace/getVertexPosition
+            -- do Unwrap levou 2,9 s em 7.400 faces, o colapso + polyop 0,4 s (mesmos valores)
+            maxOps.CollapseNodeTo tmp 1 true
+            local tc = tmp.baseobject
+            if (classof tc) != Editable_Poly or (polyop.getNumFaces tc) != lista.count do throw "colapso do Unwrap mudou a malha"
             novos = #()
             for k = 1 to lista.count do
             (
                 local q = #()
-                for j = 1 to (uvw.numberPointsInFace k) do append q (uvw.getVertexPosition 0 (uvw.getVertexIndexFromFace k j))
+                for i in (polyop.getMapFace tc 1 k) do append q (polyop.getMapVert tc 1 i)
                 if q.count != idsDe[lista[k]].count do throw "face com outro número de cantos depois do Unfold3D"
                 append novos q
             )
@@ -841,23 +910,17 @@ fn InLab_Paineis_Unfold o fs uvs mapa posM escala =
     )
     catch
     (
-        InLab_Log (o.name + ": painéis: Unfold3D falhou (" + (getCurrentException()) + ")") tipo:#warn
+        InLab_Log (nomePeca + ": painéis: Unfold3D falhou (" + (getCurrentException()) + ")") tipo:#warn
         novos = undefined
     )
-    with undo off
-    (
-        if isValidNode tmp do delete tmp
-        if isValidNode src do delete src
-        clearSelection()
-        for n in selAntes where isValidNode n do selectMore n
-    )
+    with undo off ( if isValidNode tmp do delete tmp )
     if novos == undefined then undefined
     else
     (
         local a3 = 0.0, auv = 0.0, cN = [0,0,0], cV = [0,0,0], nc = 0
         for k = 1 to lista.count do
         (
-            a3 += length (InLab_Paineis_NormalArea posM (polyop.getFaceVerts po lista[k]) 1.0)
+            a3 += length (InLab_Paineis_NormalArea posM (polyop.getFaceVerts src.baseobject lista[k]) 1.0)
             local q = novos[k]
             for j = 2 to q.count - 1 do auv += abs (((q[j] - q[1]).x * (q[j+1] - q[1]).y - (q[j] - q[1]).y * (q[j+1] - q[1]).x) / 2.0)
             local ids = idsDe[lista[k]]
@@ -888,9 +951,11 @@ fn InLab_Paineis_Unfold o fs uvs mapa posM escala =
 
 -- UV de cada painel, SEM gravar: #(uvs, mapa, resumo) no formato de InLab_Mapear_Gravar.
 -- Disco: plano + Unfold3D + giro travado. Anel: eixo da caixa (molde em caixa) ou o do mundo
--- pelas normais; volta, Unfold3D a partir da volta e perfil varrido; fica o de menor trama
--- torta (o Unfold3D só se ganhar por 0,02). escala = UV por cm. undefined (com #warn) se um
--- disco não abre no Unfold3D ou um painel não tem contorno.
+-- pelas normais; volta e perfil varrido, e o Unfold3D a partir da volta só se a melhor das duas
+-- passar de 0,02 de torta (senão não tem como ganhar por 0,02); fica o de menor trama torta.
+-- escala = UV por cm. undefined (com #warn) se um disco não abre no Unfold3D ou um painel não
+-- tem contorno. Uma cópia temporária da base por chamada (para os detach do Unfold3D), painel
+-- Modify uma vez por chamada; cópia apagada e seleção devolvida sempre no fim.
 fn InLab_Paineis_UV o paineis metodo eixoCaixa escala =
 (
     if not (InLab_Paineis_BaseOk o) do return undefined
@@ -904,68 +969,89 @@ fn InLab_Paineis_UV o paineis metodo eixoCaixa escala =
     local caixa = matchPattern metodo pattern:"molde em caixa*"
     local uvsT = #(), mapaT = #(), partes = #(), nDiscos = 0
     local falhou = ""
-    for pn in paineis while falhou == "" do
+    local src = undefined
+    local selAntes = selection as array
+    try
     (
-        local posM = InLab_Paineis_PosMundo o pn
-        local nCont = InLab_Paineis_Contornos po pn
-        local cand = undefined
-        if nCont >= 2 then
+        src = InLab_Paineis_CopiaBase o
+        with undo off ( max modify mode )
+        for pn in paineis while falhou == "" do
         (
-            -- no molde em caixa a faixa é vertical por construção
-            local k = if caixa then eixoCaixa else InLab_Paineis_EixoAnel po posM pn sinal
-            local dirA = #([1,0,0], [0,1,0], [0,0,1])[k]
-            local alvo = if k == 3 then 90.0 else 0.0
-            -- 1. volta
-            local cVolta = InLab_Paineis_UVAnel po posM pn k escala
-            if (InLab_Paineis_EspelhoUV po posM cVolta[1] cVolta[2] sinal) > 0.5 do InLab_Paineis_FlipU cVolta[1]
-            local desVolta = InLab_Paineis_TortaP po posM cVolta[1] cVolta[2] pn dirA alvo
-            -- 2. Unfold3D a partir da volta, giro travado pelo eixo
-            local desUnf = 2.0
-            local cUnf = InLab_Paineis_Unfold o pn cVolta[1] cVolta[2] posM escala
-            if cUnf != undefined do
+            local posM = InLab_Paineis_PosMundo o pn
+            local nCont = InLab_Paineis_Contornos po pn
+            local cand = undefined
+            if nCont >= 2 then
             (
-                InLab_Paineis_Girar cUnf[1] (alvo - (InLab_Paineis_AngDir po posM cUnf[1] cUnf[2] dirA))
-                if (InLab_Paineis_EspelhoUV po posM cUnf[1] cUnf[2] sinal) > 0.5 do InLab_Paineis_FlipU cUnf[1]
-                desUnf = InLab_Paineis_TortaP po posM cUnf[1] cUnf[2] pn dirA alvo
+                -- no molde em caixa a faixa é vertical por construção
+                local k = if caixa then eixoCaixa else InLab_Paineis_EixoAnel po posM pn sinal
+                local dirA = #([1,0,0], [0,1,0], [0,0,1])[k]
+                local alvo = if k == 3 then 90.0 else 0.0
+                -- 1. volta
+                local cVolta = InLab_Paineis_UVAnel po posM pn k escala
+                if (InLab_Paineis_EspelhoUV po posM cVolta[1] cVolta[2] sinal) > 0.5 do InLab_Paineis_FlipU cVolta[1]
+                local desVolta = InLab_Paineis_TortaP po posM cVolta[1] cVolta[2] pn dirA alvo
+                -- 2. perfil varrido
+                local cPerf = InLab_Paineis_UVAnel po posM pn k escala perfil:true
+                if (InLab_Paineis_EspelhoUV po posM cPerf[1] cPerf[2] sinal) > 0.5 do InLab_Paineis_FlipU cPerf[1]
+                local desPerf = InLab_Paineis_TortaP po posM cPerf[1] cPerf[2] pn dirA alvo
+                local usa = "pelo perfil", desF = desPerf
+                cand = cPerf
+                if desVolta <= desF do ( usa = "pela volta"; desF = desVolta; cand = cVolta )
+                -- 3. Unfold3D a partir da volta (giro travado pelo eixo), só se pode ganhar por 0,02
+                if desF > 0.02 do
+                (
+                    local cUnf = InLab_Paineis_Unfold src pn cVolta[1] cVolta[2] posM escala o.name
+                    if cUnf != undefined do
+                    (
+                        InLab_Paineis_Girar cUnf[1] (alvo - (InLab_Paineis_AngDir po posM cUnf[1] cUnf[2] dirA))
+                        if (InLab_Paineis_EspelhoUV po posM cUnf[1] cUnf[2] sinal) > 0.5 do InLab_Paineis_FlipU cUnf[1]
+                        local desUnf = InLab_Paineis_TortaP po posM cUnf[1] cUnf[2] pn dirA alvo
+                        if desUnf + 0.02 < desF do ( usa = "pelo Unfold3D"; desF = desUnf; cand = cUnf )
+                    )
+                )
+                append partes ("faixa " + usa + ", " + (if k == 3 then "corte na quina de trás" else "corte embaixo"))
             )
-            -- 3. perfil varrido
-            local cPerf = InLab_Paineis_UVAnel po posM pn k escala perfil:true
-            if (InLab_Paineis_EspelhoUV po posM cPerf[1] cPerf[2] sinal) > 0.5 do InLab_Paineis_FlipU cPerf[1]
-            local desPerf = InLab_Paineis_TortaP po posM cPerf[1] cPerf[2] pn dirA alvo
-            local usa = "pelo perfil", desF = desPerf
-            cand = cPerf
-            if desVolta <= desF do ( usa = "pela volta"; desF = desVolta; cand = cVolta )
-            if cUnf != undefined and desUnf + 0.02 < desF do ( usa = "pelo Unfold3D"; desF = desUnf; cand = cUnf )
-            append partes ("faixa " + usa + ", " + (if k == 3 then "corte na quina de trás" else "corte embaixo"))
-        )
-        else if nCont == 1 then
-        (
-            local cDisco = InLab_Paineis_UVDisco po posM pn escala sinal
-            local nD = cDisco[3]
-            cand = InLab_Paineis_Unfold o pn cDisco[1] cDisco[2] posM escala
-            if cand == undefined then falhou = "Unfold3D falhou num disco"
-            else
+            else if nCont == 1 then
             (
-                local vertical = abs nD.z > 0.9
-                local dirD = if vertical then [1,0,0] else [0,0,1]
-                local alvoD = if vertical then 0.0 else 90.0
-                InLab_Paineis_Girar cand[1] (alvoD - (InLab_Paineis_AngDir po posM cand[1] cand[2] dirD))
-                if (InLab_Paineis_EspelhoUV po posM cand[1] cand[2] sinal) > 0.5 do InLab_Paineis_FlipU cand[1]
-                nDiscos += 1
+                local cDisco = InLab_Paineis_UVDisco po posM pn escala sinal
+                local nD = cDisco[3]
+                cand = InLab_Paineis_Unfold src pn cDisco[1] cDisco[2] posM escala o.name
+                if cand == undefined then falhou = "Unfold3D falhou num disco"
+                else
+                (
+                    local vertical = abs nD.z > 0.9
+                    local dirD = if vertical then [1,0,0] else [0,0,1]
+                    local alvoD = if vertical then 0.0 else 90.0
+                    InLab_Paineis_Girar cand[1] (alvoD - (InLab_Paineis_AngDir po posM cand[1] cand[2] dirD))
+                    if (InLab_Paineis_EspelhoUV po posM cand[1] cand[2] sinal) > 0.5 do InLab_Paineis_FlipU cand[1]
+                    nDiscos += 1
+                )
             )
-        )
-        else falhou = "painel sem contorno"
-        if falhou == "" do
-        (
-            local base = uvsT.count
-            join uvsT cand[1]
-            for e in cand[2] do
+            else falhou = "painel sem contorno"
+            if falhou == "" do
             (
-                local ids = #()
-                for i in e[2] do append ids (i + base)
-                append mapaT #(e[1], ids)
+                local base = uvsT.count
+                join uvsT cand[1]
+                for e in cand[2] do
+                (
+                    local ids = #()
+                    for i in e[2] do append ids (i + base)
+                    append mapaT #(e[1], ids)
+                )
             )
         )
+    )
+    catch
+    (
+        InLab_Log (o.name + ": painéis: erro no UV dos painéis (" + (getCurrentException()) + ")") tipo:#err
+        falhou = "erro no UV dos painéis"
+    )
+    -- limpeza que sempre roda
+    with undo off
+    (
+        if isValidNode src do delete src
+        clearSelection()
+        for n in selAntes where isValidNode n do selectMore n
     )
     if falhou != "" then
     (

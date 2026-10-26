@@ -311,7 +311,44 @@ global INLAB_TESTE_SAIDA, INLAB_TESTE_FALHAS
             )
             linha ("      cm por tile: " + cmTile as string)
             checar "escala: 1/200 por cm dá 200 cm por tile" (cmTile >= 190.0 and cmTile <= 210.0)
+
+            -- espelho: rolo com scale [-1,1,1] (o espelho conta pelo sinal do transform, como EspelhoUV)
+            local rolo3 = mkRolo "TESTE_pn_rolo3"
+            append criados rolo3
+            rolo3.scale = [-1,1,1]
+            local t3m = rolo3.objectTransform
+            local sinal3 = if (dot (cross t3m.row1 t3m.row2) t3m.row3) < 0 then -1 else 1
+            local pRolo3 = paineisRolo rolo3
+            local rM = InLab_Paineis_UV rolo3 pRolo3 "vivo (1.0 cm)" 3 (1.0 / 60.0)
+            local okM = false
+            if rM != undefined do
+            (
+                local nEspM = 0
+                for e in rM[2] do
+                (
+                    local t0 = rM[1][e[2][1]], t1 = rM[1][e[2][2]], t2 = rM[1][e[2][3]]
+                    if ((t1 - t0).x * (t2 - t0).y - (t1 - t0).y * (t2 - t0).x) * sinal3 < 0 do nEspM += 1
+                )
+                local cR3 = centroFaces rolo3 pRolo3[1]
+                local costM = facesCostura rolo3 pRolo3[1] rM[2]
+                local zM = (centroFaces rolo3 costM).z
+                linha ("      rolo espelhado: sinal " + sinal3 as string + ", faces espelhadas " + nEspM as string + ", z da costura " + zM as string + " (centro " + cR3.z as string + ")")
+                okM = sinal3 < 0 and nEspM == 0 and costM.numberSet > 0 and zM < cR3.z - 0.8 * 15.0
+            )
+            checar "espelho: rolo com scale [-1,1,1] não sai espelhado e mantém corte embaixo" okM
         )
+
+        -- desempenho: almofada arredondada de ~20 mil faces (molde em caixa; a faixa passa pelo Unfold3D)
+        local grande = ChamferBox length:100 width:100 height:20 fillet:5 Fillet_Segments:4 Length_Segments:84 Width_Segments:84 Height_Segments:8 name:"TESTE_pn_grande"
+        convertToPoly grande
+        append criados grande
+        local nfG = polyop.getNumFaces grande.baseobject
+        local rG = InLab_Paineis_Separar grande #{1..nfG} #()
+        local tIni = timeStamp()
+        local uvG = InLab_Paineis_UV grande rG.paineis rG.metodo rG.eixoCaixa (1.0 / 60.0)
+        local seg = (timeStamp() - tIni) / 1000.0
+        linha ("      desempenho: " + nfG as string + " faces em " + seg as string + " s; " + (if uvG == undefined then "sem UV" else uvG[3]))
+        checar "desempenho: 20 mil faces abaixo de 20 s" (nfG >= 19000 and uvG != undefined and seg < 20.0)
     )
     catch ( linha ("FAIL  exceção no teste: " + (getCurrentException())); INLAB_TESTE_FALHAS += 1 )
 
