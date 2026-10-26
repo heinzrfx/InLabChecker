@@ -33,6 +33,10 @@ if InLab_VerUV_Nos == undefined do InLab_VerUV_Nos = #()
 if InLab_VerUV_Origs == undefined do InLab_VerUV_Origs = #()
 
 global InLab_VerUV_Desligar
+-- 26/10/2026: gancho da UI (definido em ui\rollout_main.ms, que carrega depois):
+-- Ligar e Desligar avisam o botao Ver UV para ele acompanhar o estado real, inclusive
+-- nos desligamentos automaticos (salvar, resetar, exportar, verificar).
+global InLab_VerUV_SincronizarUI
 
 -- Gera o PNG de listras (512x512). Retorna true se gravou.
 fn InLab_VerUV_GerarPNG caminho =
@@ -124,6 +128,7 @@ fn InLab_VerUV_Ligar objs =
             InLab_Log ("Ver UV: ligado em " + n as string + " peça(s).") tipo:#ok
         )
     )
+    if InLab_VerUV_SincronizarUI != undefined do try ( InLab_VerUV_SincronizarUI() ) catch ()
     n
 )
 
@@ -153,6 +158,7 @@ fn InLab_VerUV_Desligar =
     InLab_VerUV_Origs = origsFicam
     if nosFicam.count == 0 do InLab_VerUV_Mat = undefined
     if tinha > 0 do InLab_Log ("Ver UV: desligado, " + n as string + " peça(s) com o material original.") tipo:#ok
+    if InLab_VerUV_SincronizarUI != undefined do try ( InLab_VerUV_SincronizarUI() ) catch ()
     n
 )
 

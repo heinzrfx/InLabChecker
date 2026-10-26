@@ -9,6 +9,7 @@ global InLab_VerUV_Ligar, InLab_VerUV_Desligar, InLab_VerUV_Ligado
 global InLab_VerUV_MaterialDe, InLab_VerUV_Textura
 global InLab_VerUV_ExportadorAberto
 global InLab_Mapear_Mat, InLab_ExportGLTF, InLab_RodarVerificacoes
+global InLab_VerUV_SincronizarUI, InLab_VerUV_Chamadas
 global INLAB_TESTE_SAIDA, INLAB_TESTE_FALHAS
 (
     local dirTeste = getFilenamePath (getSourceFileName())
@@ -137,6 +138,21 @@ global INLAB_TESTE_SAIDA, INLAB_TESTE_FALHAS
         checar "Ver UV: sem o PNG no repo, gera a textura no temp" (tex == arqGerado and doesFileExist arqGerado)
         INLAB_ROOT = if rootOriginal != undefined then rootOriginal else raiz
         checar "Ver UV: com o PNG no repo, usa o do repo" (doesFileExist (InLab_VerUV_Textura()) and (findString (InLab_VerUV_Textura()) "ui\img") != undefined)
+        -- 8. gancho da UI (26/10/2026): o botao Ver UV acompanha os desligamentos automaticos
+        local ganchoOrig = InLab_VerUV_SincronizarUI
+        InLab_VerUV_Chamadas = 0
+        InLab_VerUV_SincronizarUI = fn _ganchoFalso = ( InLab_VerUV_Chamadas += 1 )
+        local c14 = Box name:"TESTE_vuv_c14"
+        try
+        (
+            InLab_VerUV_Ligar #(c14)
+            local aposLigar = InLab_VerUV_Chamadas
+            InLab_VerUV_Desligar()
+            checar "Ver UV: Desligar chama o gancho da UI" (InLab_VerUV_Chamadas == aposLigar + 1 and aposLigar >= 1)
+        )
+        catch ( checar ("Ver UV: Desligar chama o gancho da UI (excecao: " + getCurrentException() + ")") false )
+        InLab_VerUV_SincronizarUI = ganchoOrig
+        delete c14
     )
     catch ( linha ("FAIL  exceção no teste: " + (getCurrentException())); INLAB_TESTE_FALHAS += 1 )
 

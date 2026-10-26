@@ -603,14 +603,17 @@ rollout InLabSecUV "UV e Texturas" width:420
         )
     )
     on btnPaineisRev pressed do InLab_DesfazerPaineis()
+    -- 26/10/2026: o botão acompanha o estado real do Ver UV (que também desliga
+    -- sozinho ao salvar, resetar, exportar e verificar): reconcilia depois da chamada.
     on btnVerUV changed estado do
     (
-        if estado then
+        try
         (
-            local n = InLab_VerUV_Ligar (InLab_SelecaoValida())
-            if n == 0 do btnVerUV.checked = false
+            if estado then InLab_VerUV_Ligar (InLab_SelecaoValida())
+            else InLab_VerUV_Desligar()
         )
-        else InLab_VerUV_Desligar()
+        catch ( InLab_Log ("Ver UV: " + getCurrentException()) tipo:#err )
+        try ( btnVerUV.checked = InLab_VerUV_Ligado() ) catch ()
     )
     on btnF2 pressed do
     (
@@ -755,6 +758,22 @@ rollout InLabSecLog "Log de Sessão" width:420
             else InLab_Log "Falha ao salvar o log em ambos os caminhos — reportar." tipo:#err
         )
     )
+)
+
+----------------------------------------------------------------------
+-- Gancho do Ver UV (26/10/2026): functions\fn_ver_uv.ms chama no fim de Ligar e
+-- Desligar, inclusive nos desligamentos automaticos (salvar, resetar, exportar,
+-- verificar), para o botao acompanhar o estado real. Nunca lanca erro.
+----------------------------------------------------------------------
+global InLabSecUV
+InLab_VerUV_SincronizarUI = fn _sincronizarVerUV =
+(
+    try
+    (
+        if InLabSecUV != undefined and InLabSecUV.isDisplayed do
+            InLabSecUV.btnVerUV.checked = (InLab_VerUV_Ligado())
+    )
+    catch ( try ( InLab_Log ("Ver UV: não sincronizei o botão (" + getCurrentException() + ")") tipo:#warn ) catch () )
 )
 
 ----------------------------------------------------------------------
