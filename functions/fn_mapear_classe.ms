@@ -28,10 +28,12 @@
    - 26/10/2026: família e matéria vêm de parte.materia_prima (formato do
      export desde a v6). Antes eram lidas soltas na parte, como no JSON de
      teste, e no export real toda peça caía em #semFamilia (Box simples).
+   - 26/10/2026 (delta CAPA): parte fora do 3D (InLab_Produto_EntraNo3D) não
+     casa com material da cena.
 */
 
 global InLab_Log, InLab_JSON_Obter, InLab_Produto_Texto, InLab_Produto_Booleano
-global InLab_Produto_Normalizar, InLab_CaminhoTextura
+global InLab_Produto_Normalizar, InLab_CaminhoTextura, InLab_Produto_EntraNo3D
 global INLAB_RWF_SLOTS_DIFUSO
 
 global INLAB_MAPEAR_VEIO_RAZAO = 1.15
@@ -64,7 +66,7 @@ fn InLab_Mapear_ParteDoMaterial produto nomeMaterial =
     local partes = InLab_JSON_Obter produto "partes"
     if isKindOf partes Array and nomeMaterial != undefined and nomeMaterial != "" do
         for p in partes while achada == undefined do
-            if (InLab_Produto_Texto p "material_id") == nomeMaterial do achada = p
+            if (InLab_Produto_Texto p "material_id") == nomeMaterial and (InLab_Produto_EntraNo3D p) do achada = p
     achada
 )
 

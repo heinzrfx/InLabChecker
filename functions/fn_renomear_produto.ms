@@ -117,6 +117,15 @@
  Exportar GLB para master/cópia de bloco_3d (o mesmo produto interno e
  externo, com cod_est diferentes): um export por código. O "Usar outro .json"
  saiu da UI; a mensagem de lista não encontrada não cita mais ele.
+
+ 26/10/2026 (delta "Acessórios CAPA nunca entram no 3D", export de 26/10):
+ InLab_Produto_EntraNo3D é false para parte com entra_3d:false ou acessório
+ cujas opções vêm todas com entra_3d:false. No export de 26/10 o sinal só
+ está nas opções (a parte Capa ainda traz material_id "ART_ACS_Capa"), então
+ vale um ou outro (decisão do usuário). Sem caso especial pelo nome "Capa".
+ A parte fora do 3D sai da lista de materiais (PartesDeMaterial, que alimenta
+ a seção Produto, a renomeação e as V-20/V-25/V-38), dos nomes de objeto
+ (MeshesDoProduto), do aviso de matéria-prima e dos materiais especiais.
 ================================================================================
 */
 
@@ -198,11 +207,30 @@ fn InLab_Produto_Liberado3D produto =
 -- 02/10/2026 (v3): partes que recebem material na seção Produto — todas menos
 -- as subpartes só de 3D (so3d), cujo objeto usa o material da parte-mãe.
 -- `ligacoes` (Aplicar, SugerirMeshes, UI) é paralelo a ESTA lista.
+-- 26/10/2026 (delta CAPA): a parte existe no 3D? false com entra_3d:false na
+-- parte, ou acessório com opções e todas elas com entra_3d:false (o export de
+-- 26/10 só marca as opções). Campo ausente conta como true.
+global InLab_Produto_EntraNo3D
+fn InLab_Produto_EntraNo3D parte =
+(
+    local fora = (toLower (InLab_Produto_Texto parte "entra_3d")) == "false"
+    if not fora and (InLab_Produto_Booleano parte "acessorio") do
+    (
+        local opcoes = InLab_JSON_Obter parte "acessorio_opcoes"
+        if isKindOf opcoes Array and opcoes.count > 0 do
+        (
+            fora = true
+            for o in opcoes while fora do fora = (toLower (InLab_Produto_Texto o "entra_3d")) == "false"
+        )
+    )
+    not fora
+)
+
 global InLab_Produto_PartesDeMaterial
 fn InLab_Produto_PartesDeMaterial produto =
 (
     local partes = if produto == undefined then undefined else InLab_JSON_Obter produto "partes"
-    if isKindOf partes Array then (for p in partes where not (InLab_Produto_Booleano p "so3d") collect p) else #()
+    if isKindOf partes Array then (for p in partes where not (InLab_Produto_Booleano p "so3d") and (InLab_Produto_EntraNo3D p) collect p) else #()
 )
 
 -- 09/10/2026 (issue #136): texto do produto no dropdown da seção Produto.
@@ -249,7 +277,7 @@ fn InLab_Produto_EspeciaisDoProduto produto =
     local tabela = #()
     local partes = if produto == undefined then undefined else InLab_JSON_Obter produto "partes"
     if isKindOf partes Array do
-        for p in partes do
+        for p in partes where (InLab_Produto_EntraNo3D p) do
         (
             local id = InLab_Produto_Texto p "material_id"
             local e = InLab_Produto_EspecialDaMateria p
@@ -471,7 +499,7 @@ fn InLab_Produto_PartesSemMateriaPrima produto =
 (
     local partes = if produto == undefined then undefined else InLab_JSON_Obter produto "partes"
     if not (isKindOf partes Array) then #()
-    else for p in partes where not (InLab_Produto_Booleano p "tecido") and
+    else for p in partes where not (InLab_Produto_Booleano p "tecido") and (InLab_Produto_EntraNo3D p) and
         (local mp = InLab_JSON_Obter p "materia_prima"; isKindOf mp Array and (InLab_Produto_Texto mp "familia") == "" and (InLab_Produto_Texto mp "materia") == "") collect p
 )
 
@@ -781,7 +809,7 @@ fn InLab_Produto_MeshesDoProduto produto avisar:false =
     local partes = if produto == undefined then undefined else InLab_JSON_Obter produto "partes"
     local meshes = #()
     if isKindOf partes Array do
-        for p in partes do
+        for p in partes where (InLab_Produto_EntraNo3D p) do
         (
             local daParte = InLab_Produto_MeshesDaParte p
             if daParte.count > 0 then

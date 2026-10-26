@@ -18,7 +18,7 @@ global InLab_Produto_PartesDeMaterial, InLab_Produto_Filtrar, InLab_Produto_Rotu
 global InLab_Produto_Variantes, InLab_Produto_IndicePorArquivo
 global InLab_Produto_BaseDaCopia, InLab_Produto_CopiasDe, InLab_Produto_MotivoBloqueio, InLab_Produto_AvisosDeBloco
 global InLab_Produto_AvisoExportCopias
-global InLab_Produto_PartesSemMateriaPrima, InLab_Produto_AvisosMateriaPrima
+global InLab_Produto_PartesSemMateriaPrima, InLab_Produto_AvisosMateriaPrima, InLab_Produto_EntraNo3D
 global InLab_JSON_LerArquivoUTF8, InLab_Produto_CarregarEmbutido, InLab_Produto_ResumoLista
 global INLAB_TESTE_SAIDA, INLAB_TESTE_FALHAS
 (
@@ -494,6 +494,35 @@ global INLAB_TESTE_SAIDA, INLAB_TESTE_FALHAS
             checar ("#183: resumo da lista ('" + InLab_Produto_ResumoLista emb + "')") (matchPattern (InLab_Produto_ResumoLista emb) pattern:(nEmb as string + " produtos · exportada em ??/??/????"))
         )
         checar "#183: pasta sem dados\\produtos.json devolve undefined" ((InLab_Produto_CarregarEmbutido raiz:((getDir #temp) + "\\inlab_sem_lista\\")) == undefined)
+
+        -- 26/10/2026 (delta CAPA): parte com entra_3d:false, ou acessório com
+        -- todas as opções entra_3d:false, não existe no 3D.
+        local jsCapa = "{\"produtos\": [{\"cod_est\": \"0009\", \"partes\": [" +
+            "{\"nome_parte\": \"Estrutura\", \"material_id\": \"ART_P_Estrutura\", \"mesh_final\": \"0009\", \"acessorio\": false, \"materia_prima\": {\"familia\": \"Madeira\", \"materia\": \"Cedro\"}, \"acessorio_opcoes\": []}, " +
+            "{\"nome_parte\": \"Capa\", \"material_id\": \"ART_ACS_Capa\", \"mesh_final\": \"\", \"acessorio\": true, \"materia_prima\": {\"familia\": \"\", \"materia\": \"\"}, \"acessorio_opcoes\": [{\"rotulo\": \"CAPA AVULSA\", \"entra_3d\": false, \"material_id\": \"\"}, {\"rotulo\": \"CAPA AVULSA 2\", \"entra_3d\": false}]}, " +
+            "{\"nome_parte\": \"Tampo\", \"material_id\": \"ART_ACS_Tampo\", \"mesh_final\": \"0009_Tampo\", \"acessorio\": true, \"materia_prima\": {\"familia\": \"Vidro\", \"materia\": \"\"}, \"acessorio_opcoes\": [{\"rotulo\": \"TAMPO VIDRO\", \"material_id\": \"ART_ACS_Tampo\"}]}, " +
+            "{\"nome_parte\": \"Misto\", \"material_id\": \"ART_ACS_Misto\", \"mesh_final\": \"0009_Misto\", \"acessorio\": true, \"materia_prima\": {\"familia\": \"Metal\", \"materia\": \"\"}, \"acessorio_opcoes\": [{\"rotulo\": \"A\", \"entra_3d\": false}, {\"rotulo\": \"B\", \"entra_3d\": true}]}, " +
+            "{\"nome_parte\": \"Sem3D\", \"entra_3d\": false, \"material_id\": \"\", \"mesh_final\": \"\", \"acessorio\": false, \"materia_prima\": {\"familia\": \"\", \"materia\": \"\"}}]}]}"
+        local prodCapa = (InLab_Produto_Lista (InLab_ParseJSON jsCapa))[1]
+        local ptsCapa = InLab_JSON_Obter prodCapa "partes"
+        checar "CAPA: parte comum entra no 3D" (InLab_Produto_EntraNo3D ptsCapa[1])
+        checar "CAPA: acessório com todas as opções entra_3d:false fica fora" (not (InLab_Produto_EntraNo3D ptsCapa[2]))
+        checar "CAPA: acessório sem entra_3d nas opções (Tampo) entra" (InLab_Produto_EntraNo3D ptsCapa[3])
+        checar "CAPA: acessório com uma opção dentro do 3D entra" (InLab_Produto_EntraNo3D ptsCapa[4])
+        checar "CAPA: parte com entra_3d:false fica fora" (not (InLab_Produto_EntraNo3D ptsCapa[5]))
+        local nomesMat = for p in (InLab_Produto_PartesDeMaterial prodCapa) collect (InLab_Produto_Texto p "nome_parte")
+        checar ("CAPA: PartesDeMaterial sem Capa e Sem3D " + nomesMat as string) (nomesMat as string == #("Estrutura", "Tampo", "Misto") as string)
+        local meshesCapa = InLab_Produto_MeshesDoProduto prodCapa avisar:true
+        checar ("CAPA: MeshesDoProduto " + meshesCapa as string) (meshesCapa as string == #("0009", "0009_Tampo", "0009_Misto") as string)
+        checar "CAPA: Capa e Sem3D não entram no aviso de matéria-prima" ((InLab_Produto_PartesSemMateriaPrima prodCapa).count == 0)
+        if emb != undefined do
+        (
+            local capasNo3D = #()
+            for pr in InLab_Produto_Lista emb do
+                for p in (InLab_Produto_PartesDeMaterial pr) where (InLab_Produto_Normalizar (InLab_Produto_Texto p "nome_parte")) == "capa" do
+                    append capasNo3D (InLab_Produto_Texto pr "cod_est")
+            checar ("CAPA: lista embutida sem Capa na lista de materiais " + capasNo3D as string) (capasNo3D.count == 0)
+        )
 
         -- Ctrl+Z nativo NÃO é testável daqui: rodado de dentro do script,
         -- `max undo` desfaz o script inteiro (inclusive a criação das caixas),
