@@ -1,136 +1,7 @@
 {
   "versao_export": "nomenclatura-3D-v2",
-  "exportado_em": "2026-10-08T19:19:26.341Z",
+  "exportado_em": "2026-10-23T16:41:29.515Z",
   "produtos": [
-    {
-      "linha": "Artefacto & Beach",
-      "cod_est": "00111091",
-      "id": "",
-      "nome": "APARADOR ZUCCHI - 147 X 042 X 072.5 H",
-      "familia": "ZUCCHI",
-      "classe": "APARADOR",
-      "marca": "ARTEFACTO",
-      "natureza": "corpo_unico",
-      "ref": true,
-      "ok_fd": true,
-      "ok_3d": true,
-      "animacao": false,
-      "qt_meshes": 1,
-      "qt_materiais_art": 1,
-      "qt_botoes_sem": 1,
-      "qt_botoes_com": 1,
-      "tecido_desmembravel": false,
-      "acabamento_resumo": "Principal: Estrutura | Pré-definido: Deslizador",
-      "obs_cotas": "",
-      "obs_restr_tecido": "",
-      "obs_confeccao": "",
-      "obs_nao_acompanha": "",
-      "obs_outras": "",
-      "obs_custom": "",
-      "obs_original": "",
-      "meshes": [
-        {
-          "nome": "00111091",
-          "partes": [
-            "Estrutura",
-            "Deslizador"
-          ]
-        }
-      ],
-      "botoes_sem_desm": [
-        {
-          "apelido": "Estrutura",
-          "partes": [
-            "Estrutura"
-          ]
-        }
-      ],
-      "botoes_com_desm": [
-        {
-          "apelido": "Estrutura",
-          "metragem": "",
-          "partes": [
-            "Estrutura"
-          ]
-        }
-      ],
-      "bloco_3d": {
-        "papel": "master",
-        "base_codest": "00111091",
-        "duplicar_renomear": false,
-        "obs": ""
-      },
-      "glb_multiplos": {
-        "qtd": 1,
-        "variantes": []
-      },
-      "partes": [
-        {
-          "ordem": 1,
-          "nome_parte": "Estrutura",
-          "termo": "Estrutura",
-          "qualificador": "",
-          "qualificadores": [],
-          "numero": "sing",
-          "apelido_cliente": "Estrutura",
-          "apelido_override": "Estrutura",
-          "termo_novo": false,
-          "so3d": false,
-          "subparte_de": "",
-          "tipo": "P",
-          "materia_prima": {
-            "familia": "Madeira",
-            "materia": "Cedro"
-          },
-          "material_id": "ART_P_Estrutura",
-          "configuravel": true,
-          "mesh_final": "00111091",
-          "tecido": false,
-          "botao_sem_desm": "Estrutura",
-          "botao_com_desm": "Estrutura",
-          "metragem_desm": "",
-          "acessorio": false,
-          "acessorio_obrigatorio": null,
-          "acessorio_acabamentos": [],
-          "acessorio_fixo": false,
-          "acessorio_botao_pai": "",
-          "acessorio_opcoes": [],
-          "par_segue": null
-        },
-        {
-          "ordem": 2,
-          "nome_parte": "Deslizador",
-          "termo": "Deslizador",
-          "qualificador": "",
-          "qualificadores": [],
-          "numero": "plur",
-          "apelido_cliente": "Deslizadores",
-          "apelido_override": "",
-          "termo_novo": false,
-          "so3d": false,
-          "subparte_de": "",
-          "tipo": "PD",
-          "materia_prima": {
-            "familia": "Metal",
-            "materia": "Aço Inox"
-          },
-          "material_id": "PD_Deslizador",
-          "configuravel": false,
-          "mesh_final": "00111091",
-          "tecido": false,
-          "botao_sem_desm": "",
-          "botao_com_desm": "",
-          "metragem_desm": "",
-          "acessorio": false,
-          "acessorio_obrigatorio": null,
-          "acessorio_acabamentos": [],
-          "acessorio_fixo": false,
-          "acessorio_botao_pai": "",
-          "acessorio_opcoes": [],
-          "par_segue": null
-        }
-      ]
-    },
     {
       "linha": "Artefacto & Beach",
       "cod_est": "00150099",
@@ -149,7 +20,7 @@
       "qt_botoes_sem": 1,
       "qt_botoes_com": 1,
       "tecido_desmembravel": false,
-      "acabamento_resumo": "Principal: Estrutura | Pré-definido: Deslizador",
+      "acabamento_resumo": "Principal: Estrutura",
       "obs_cotas": "",
       "obs_restr_tecido": "",
       "obs_confeccao": "",
@@ -224,38 +95,6 @@
           "acessorio_botao_pai": "",
           "acessorio_opcoes": [],
           "par_segue": null
-        },
-        {
-          "ordem": 2,
-          "nome_parte": "Deslizador",
-          "termo": "Deslizador",
-          "qualificador": "",
-          "qualificadores": [],
-          "numero": "plur",
-          "apelido_cliente": "Deslizadores",
-          "apelido_override": "",
-          "termo_novo": false,
-          "so3d": false,
-          "subparte_de": "",
-          "tipo": "PD",
-          "materia_prima": {
-            "familia": "Metal",
-            "materia": "Aço Inox"
-          },
-          "material_id": "PD_Deslizador",
-          "configuravel": false,
-          "mesh_final": "",
-          "tecido": false,
-          "botao_sem_desm": "",
-          "botao_com_desm": "",
-          "metragem_desm": "",
-          "acessorio": false,
-          "acessorio_obrigatorio": null,
-          "acessorio_acabamentos": [],
-          "acessorio_fixo": false,
-          "acessorio_botao_pai": "",
-          "acessorio_opcoes": [],
-          "par_segue": null
         }
       ]
     },
@@ -277,7 +116,7 @@
       "qt_botoes_sem": 1,
       "qt_botoes_com": 1,
       "tecido_desmembravel": false,
-      "acabamento_resumo": "Principal: Estrutura | Pré-definido: Deslizador",
+      "acabamento_resumo": "Principal: Estrutura",
       "obs_cotas": "",
       "obs_restr_tecido": "",
       "obs_confeccao": "",
@@ -345,38 +184,6 @@
           "tecido": false,
           "botao_sem_desm": "Estrutura",
           "botao_com_desm": "Estrutura",
-          "metragem_desm": "",
-          "acessorio": false,
-          "acessorio_obrigatorio": null,
-          "acessorio_acabamentos": [],
-          "acessorio_fixo": false,
-          "acessorio_botao_pai": "",
-          "acessorio_opcoes": [],
-          "par_segue": null
-        },
-        {
-          "ordem": 2,
-          "nome_parte": "Deslizador",
-          "termo": "Deslizador",
-          "qualificador": "",
-          "qualificadores": [],
-          "numero": "plur",
-          "apelido_cliente": "Deslizadores",
-          "apelido_override": "",
-          "termo_novo": false,
-          "so3d": false,
-          "subparte_de": "",
-          "tipo": "PD",
-          "materia_prima": {
-            "familia": "Metal",
-            "materia": "Aço Inox"
-          },
-          "material_id": "PD_Deslizador",
-          "configuravel": false,
-          "mesh_final": "06150000",
-          "tecido": false,
-          "botao_sem_desm": "",
-          "botao_com_desm": "",
           "metragem_desm": "",
           "acessorio": false,
           "acessorio_obrigatorio": null,
@@ -1021,17 +828,17 @@
       "familia": "LUANG",
       "classe": "BANQUETA",
       "marca": "BEACH",
-      "natureza": "corpo_unico",
+      "natureza": "estrutura_estofado",
       "ref": true,
       "ok_fd": true,
       "ok_3d": true,
       "animacao": false,
       "qt_meshes": 1,
-      "qt_materiais_art": 4,
+      "qt_materiais_art": 5,
       "qt_botoes_sem": 2,
       "qt_botoes_com": 4,
       "tecido_desmembravel": true,
-      "acabamento_resumo": "Complementar: Base | Tecido: Assento, Encosto Externo, Encosto Interno | Pré-definido: Deslizador",
+      "acabamento_resumo": "Complementar: Base | Tecido: Assento, Encosto Externo, Encosto Interno | Pré-definido: Apoio de Pés, Deslizador | Específico: Ponteira",
       "obs_cotas": "",
       "obs_restr_tecido": "",
       "obs_confeccao": "",
@@ -1047,6 +854,8 @@
             "Assento",
             "Encosto Externo",
             "Encosto Interno",
+            "Ponteira",
+            "Apoio de Pés",
             "Deslizador"
           ]
         }
@@ -1242,6 +1051,70 @@
         },
         {
           "ordem": 5,
+          "nome_parte": "Ponteira",
+          "termo": "Ponteira",
+          "qualificador": "",
+          "qualificadores": [],
+          "numero": "sing",
+          "apelido_cliente": "Ponteira",
+          "apelido_override": "",
+          "termo_novo": false,
+          "so3d": false,
+          "subparte_de": "",
+          "tipo": "E",
+          "materia_prima": {
+            "familia": "Metal",
+            "materia": "Aço Inox"
+          },
+          "material_id": "ART_E_Ponteira",
+          "configuravel": true,
+          "mesh_final": "07112079",
+          "tecido": false,
+          "botao_sem_desm": "",
+          "botao_com_desm": "",
+          "metragem_desm": "",
+          "acessorio": false,
+          "acessorio_obrigatorio": null,
+          "acessorio_acabamentos": [],
+          "acessorio_fixo": false,
+          "acessorio_botao_pai": "",
+          "acessorio_opcoes": [],
+          "par_segue": null
+        },
+        {
+          "ordem": 6,
+          "nome_parte": "Apoio de Pés",
+          "termo": "Apoio de Pés",
+          "qualificador": "",
+          "qualificadores": [],
+          "numero": "sing",
+          "apelido_cliente": "Apoio de Pés",
+          "apelido_override": "",
+          "termo_novo": false,
+          "so3d": false,
+          "subparte_de": "",
+          "tipo": "PD",
+          "materia_prima": {
+            "familia": "Metal",
+            "materia": "Aço Inox"
+          },
+          "material_id": "PD_Apoio_de_Pes",
+          "configuravel": false,
+          "mesh_final": "07112079",
+          "tecido": false,
+          "botao_sem_desm": "",
+          "botao_com_desm": "",
+          "metragem_desm": "",
+          "acessorio": false,
+          "acessorio_obrigatorio": null,
+          "acessorio_acabamentos": [],
+          "acessorio_fixo": false,
+          "acessorio_botao_pai": "",
+          "acessorio_opcoes": [],
+          "par_segue": null
+        },
+        {
+          "ordem": 7,
           "nome_parte": "Deslizador",
           "termo": "Deslizador",
           "qualificador": "",
@@ -1282,17 +1155,17 @@
       "familia": "LUANG",
       "classe": "BANQUETA",
       "marca": "BEACH",
-      "natureza": "corpo_unico",
+      "natureza": "estrutura_estofado",
       "ref": false,
       "ok_fd": true,
       "ok_3d": true,
       "animacao": false,
       "qt_meshes": 1,
-      "qt_materiais_art": 4,
+      "qt_materiais_art": 5,
       "qt_botoes_sem": 2,
       "qt_botoes_com": 4,
       "tecido_desmembravel": true,
-      "acabamento_resumo": "Complementar: Base | Tecido: Assento, Encosto Externo, Encosto Interno | Pré-definido: Deslizador",
+      "acabamento_resumo": "Complementar: Base | Tecido: Assento, Encosto Externo, Encosto Interno | Pré-definido: Apoio de Pés, Deslizador | Específico: Ponteira",
       "obs_cotas": "",
       "obs_restr_tecido": "",
       "obs_confeccao": "",
@@ -1308,6 +1181,8 @@
             "Assento",
             "Encosto Externo",
             "Encosto Interno",
+            "Ponteira",
+            "Apoio de Pés",
             "Deslizador"
           ]
         }
@@ -1503,23 +1378,23 @@
         },
         {
           "ordem": 5,
-          "nome_parte": "Deslizador",
-          "termo": "Deslizador",
+          "nome_parte": "Ponteira",
+          "termo": "Ponteira",
           "qualificador": "",
           "qualificadores": [],
-          "numero": "plur",
-          "apelido_cliente": "Deslizadores",
+          "numero": "sing",
+          "apelido_cliente": "Ponteira",
           "apelido_override": "",
           "termo_novo": false,
           "so3d": false,
           "subparte_de": "",
-          "tipo": "PD",
+          "tipo": "E",
           "materia_prima": {
             "familia": "Metal",
             "materia": "Aço Inox"
           },
-          "material_id": "PD_Deslizador",
-          "configuravel": false,
+          "material_id": "ART_E_Ponteira",
+          "configuravel": true,
           "mesh_final": "07112080",
           "tecido": false,
           "botao_sem_desm": "",
@@ -1532,212 +1407,15 @@
           "acessorio_botao_pai": "",
           "acessorio_opcoes": [],
           "par_segue": null
-        }
-      ]
-    },
-    {
-      "linha": "Artefacto & Beach",
-      "cod_est": "00115189",
-      "id": "",
-      "nome": "BUFFET SANUR - LOURO - 226 X 058.5 X 082 H",
-      "familia": "SANUR",
-      "classe": "BUFFET",
-      "marca": "BEACH",
-      "natureza": "rotacao",
-      "ref": true,
-      "ok_fd": true,
-      "ok_3d": true,
-      "animacao": true,
-      "qt_meshes": 3,
-      "qt_materiais_art": 3,
-      "qt_botoes_sem": 2,
-      "qt_botoes_com": 3,
-      "tecido_desmembravel": false,
-      "acabamento_resumo": "Principal: Estrutura, Porta | Complementar: Pé | Pré-definido: Deslizador",
-      "obs_cotas": "",
-      "obs_restr_tecido": "",
-      "obs_confeccao": "",
-      "obs_nao_acompanha": "",
-      "obs_outras": "",
-      "obs_custom": "",
-      "obs_original": "",
-      "meshes": [
-        {
-          "nome": "00115189",
-          "partes": [
-            "Estrutura",
-            "Pé",
-            "Deslizador"
-          ]
         },
         {
-          "nome": "00115189_Porta_1",
-          "partes": [
-            "Porta_1"
-          ]
-        },
-        {
-          "nome": "00115189_Porta_2",
-          "partes": [
-            "Porta_2"
-          ]
-        }
-      ],
-      "botoes_sem_desm": [
-        {
-          "apelido": "Estrutura",
-          "partes": [
-            "Estrutura",
-            "Porta",
-            "Porta_1",
-            "Porta_2"
-          ]
-        },
-        {
-          "apelido": "Pés",
-          "partes": [
-            "Pé"
-          ]
-        }
-      ],
-      "botoes_com_desm": [
-        {
-          "apelido": "Estrutura",
-          "metragem": "",
-          "partes": [
-            "Estrutura"
-          ]
-        },
-        {
-          "apelido": "Portas",
-          "metragem": "",
-          "partes": [
-            "Porta_1"
-          ]
-        },
-        {
-          "apelido": "Pés",
-          "metragem": "",
-          "partes": [
-            "Pé"
-          ]
-        }
-      ],
-      "bloco_3d": {
-        "papel": "master",
-        "base_codest": "00115189",
-        "duplicar_renomear": false,
-        "obs": ""
-      },
-      "glb_multiplos": {
-        "qtd": 1,
-        "variantes": []
-      },
-      "partes": [
-        {
-          "ordem": 1,
-          "nome_parte": "Estrutura",
-          "termo": "Estrutura",
+          "ordem": 6,
+          "nome_parte": "Apoio de Pés",
+          "termo": "Apoio de Pés",
           "qualificador": "",
           "qualificadores": [],
           "numero": "sing",
-          "apelido_cliente": "Estrutura",
-          "apelido_override": "Estrutura",
-          "termo_novo": false,
-          "so3d": false,
-          "subparte_de": "",
-          "tipo": "P",
-          "materia_prima": {
-            "familia": "Madeira",
-            "materia": "Louro"
-          },
-          "material_id": "ART_P_Estrutura",
-          "configuravel": true,
-          "mesh_final": "00115189",
-          "tecido": false,
-          "botao_sem_desm": "Estrutura",
-          "botao_com_desm": "Estrutura",
-          "metragem_desm": "",
-          "acessorio": false,
-          "acessorio_obrigatorio": null,
-          "acessorio_acabamentos": [],
-          "acessorio_fixo": false,
-          "acessorio_botao_pai": "",
-          "acessorio_opcoes": [],
-          "par_segue": null
-        },
-        {
-          "ordem": 2,
-          "nome_parte": "Porta",
-          "termo": "Porta",
-          "qualificador": "",
-          "qualificadores": [],
-          "numero": "plur",
-          "apelido_cliente": "Portas",
-          "apelido_override": "",
-          "termo_novo": false,
-          "so3d": false,
-          "subparte_de": "",
-          "tipo": "P",
-          "materia_prima": {
-            "familia": "Madeira",
-            "materia": "Louro"
-          },
-          "material_id": "ART_P_Porta",
-          "configuravel": true,
-          "mesh_final": "",
-          "tecido": false,
-          "botao_sem_desm": "Estrutura",
-          "botao_com_desm": "",
-          "metragem_desm": "",
-          "acessorio": false,
-          "acessorio_obrigatorio": null,
-          "acessorio_acabamentos": [],
-          "acessorio_fixo": false,
-          "acessorio_botao_pai": "",
-          "acessorio_opcoes": [],
-          "par_segue": null
-        },
-        {
-          "ordem": 3,
-          "nome_parte": "Pé",
-          "termo": "Pé",
-          "qualificador": "",
-          "qualificadores": [],
-          "numero": "plur",
-          "apelido_cliente": "Pés",
-          "apelido_override": "Pés",
-          "termo_novo": false,
-          "so3d": false,
-          "subparte_de": "",
-          "tipo": "C",
-          "materia_prima": {
-            "familia": "Madeira",
-            "materia": "Microtextura"
-          },
-          "material_id": "ART_C_Pe",
-          "configuravel": true,
-          "mesh_final": "00115189",
-          "tecido": false,
-          "botao_sem_desm": "Pés",
-          "botao_com_desm": "Pés",
-          "metragem_desm": "",
-          "acessorio": false,
-          "acessorio_obrigatorio": null,
-          "acessorio_acabamentos": [],
-          "acessorio_fixo": false,
-          "acessorio_botao_pai": "",
-          "acessorio_opcoes": [],
-          "par_segue": null
-        },
-        {
-          "ordem": 4,
-          "nome_parte": "Deslizador",
-          "termo": "Deslizador",
-          "qualificador": "",
-          "qualificadores": [],
-          "numero": "plur",
-          "apelido_cliente": "Deslizadores",
+          "apelido_cliente": "Apoio de Pés",
           "apelido_override": "",
           "termo_novo": false,
           "so3d": false,
@@ -1747,386 +1425,9 @@
             "familia": "Metal",
             "materia": "Aço Inox"
           },
-          "material_id": "PD_Deslizador",
+          "material_id": "PD_Apoio_de_Pes",
           "configuravel": false,
-          "mesh_final": "00115189",
-          "tecido": false,
-          "botao_sem_desm": "",
-          "botao_com_desm": "",
-          "metragem_desm": "",
-          "acessorio": false,
-          "acessorio_obrigatorio": null,
-          "acessorio_acabamentos": [],
-          "acessorio_fixo": false,
-          "acessorio_botao_pai": "",
-          "acessorio_opcoes": [],
-          "par_segue": null
-        },
-        {
-          "ordem": 5,
-          "nome_parte": "Porta_1",
-          "termo": "Porta_1",
-          "qualificador": "",
-          "qualificadores": [],
-          "numero": "sing",
-          "apelido_cliente": "",
-          "apelido_override": "",
-          "termo_novo": false,
-          "so3d": true,
-          "subparte_de": "Porta",
-          "tipo": "",
-          "materia_prima": {
-            "familia": "",
-            "materia": ""
-          },
-          "material_id": "ART_Porta_1",
-          "configuravel": false,
-          "mesh_final": "00115189_Porta_1",
-          "tecido": false,
-          "botao_sem_desm": "Estrutura",
-          "botao_com_desm": "Portas",
-          "metragem_desm": "",
-          "acessorio": false,
-          "acessorio_obrigatorio": null,
-          "acessorio_acabamentos": [],
-          "acessorio_fixo": false,
-          "acessorio_botao_pai": "",
-          "acessorio_opcoes": [],
-          "par_segue": null
-        },
-        {
-          "ordem": 6,
-          "nome_parte": "Porta_2",
-          "termo": "Porta_2",
-          "qualificador": "",
-          "qualificadores": [],
-          "numero": "sing",
-          "apelido_cliente": "",
-          "apelido_override": "",
-          "termo_novo": false,
-          "so3d": true,
-          "subparte_de": "Porta",
-          "tipo": "",
-          "materia_prima": {
-            "familia": "",
-            "materia": ""
-          },
-          "material_id": "ART_Porta_2",
-          "configuravel": false,
-          "mesh_final": "00115189_Porta_2",
-          "tecido": false,
-          "botao_sem_desm": "Estrutura",
-          "botao_com_desm": "",
-          "metragem_desm": "",
-          "acessorio": false,
-          "acessorio_obrigatorio": null,
-          "acessorio_acabamentos": [],
-          "acessorio_fixo": false,
-          "acessorio_botao_pai": "",
-          "acessorio_opcoes": [],
-          "par_segue": null
-        }
-      ]
-    },
-    {
-      "linha": "Artefacto & Beach",
-      "cod_est": "00115190",
-      "id": "",
-      "nome": "BUFFET SANUR - LOURO - GAVETA REFRIGERADA - 226 X 058.5 X 082 H",
-      "familia": "SANUR",
-      "classe": "BUFFET",
-      "marca": "BEACH",
-      "natureza": "rotacao",
-      "ref": false,
-      "ok_fd": true,
-      "ok_3d": true,
-      "animacao": true,
-      "qt_meshes": 4,
-      "qt_materiais_art": 5,
-      "qt_botoes_sem": 3,
-      "qt_botoes_com": 3,
-      "tecido_desmembravel": false,
-      "acabamento_resumo": "Principal: Estrutura, Porta | Complementar: Pé, Gaveta Refrigerada Grade | Adicional: Gaveta Refrigerada Frente | Pré-definido: Gaveta Refrigerada, Deslizador",
-      "obs_cotas": "",
-      "obs_restr_tecido": "",
-      "obs_confeccao": "",
-      "obs_nao_acompanha": "",
-      "obs_outras": "",
-      "obs_custom": "",
-      "obs_original": "",
-      "meshes": [
-        {
-          "nome": "00115190",
-          "partes": [
-            "Estrutura",
-            "Pé",
-            "Gaveta Refrigerada Grade",
-            "Deslizador"
-          ]
-        },
-        {
-          "nome": "00115190_GavetaFrente_Gaveta",
-          "partes": [
-            "Gaveta Refrigerada Frente",
-            "Gaveta Refrigerada"
-          ]
-        },
-        {
-          "nome": "00115190_Porta_1",
-          "partes": [
-            "Porta_1"
-          ]
-        },
-        {
-          "nome": "00115190_Porta_2",
-          "partes": [
-            "Porta_2"
-          ]
-        }
-      ],
-      "botoes_sem_desm": [
-        {
-          "apelido": "Estrutura",
-          "partes": [
-            "Estrutura",
-            "Porta",
-            "Porta_1",
-            "Porta_2"
-          ]
-        },
-        {
-          "apelido": "Pés",
-          "partes": [
-            "Gaveta Refrigerada Grade",
-            "Pé"
-          ]
-        },
-        {
-          "apelido": "Frente da Gaveta Refrigerada",
-          "partes": [
-            "Gaveta Refrigerada Frente"
-          ]
-        }
-      ],
-      "botoes_com_desm": [
-        {
-          "apelido": "Estrutura",
-          "metragem": "",
-          "partes": [
-            "Estrutura"
-          ]
-        },
-        {
-          "apelido": "Pés e Grade da Gaveta Refrigerada",
-          "metragem": "",
-          "partes": [
-            "Pé",
-            "Gaveta Refrigerada Grade"
-          ]
-        },
-        {
-          "apelido": "Frente da Gaveta Refrigerada",
-          "metragem": "",
-          "partes": [
-            "Gaveta Refrigerada Frente"
-          ]
-        }
-      ],
-      "bloco_3d": {
-        "papel": "master",
-        "base_codest": "00115190",
-        "duplicar_renomear": false,
-        "obs": ""
-      },
-      "glb_multiplos": {
-        "qtd": 1,
-        "variantes": []
-      },
-      "partes": [
-        {
-          "ordem": 1,
-          "nome_parte": "Estrutura",
-          "termo": "Estrutura",
-          "qualificador": "",
-          "qualificadores": [],
-          "numero": "sing",
-          "apelido_cliente": "Estrutura",
-          "apelido_override": "Estrutura",
-          "termo_novo": false,
-          "so3d": false,
-          "subparte_de": "",
-          "tipo": "P",
-          "materia_prima": {
-            "familia": "Madeira",
-            "materia": "Louro"
-          },
-          "material_id": "ART_P_Estrutura",
-          "configuravel": true,
-          "mesh_final": "00115190",
-          "tecido": false,
-          "botao_sem_desm": "Estrutura",
-          "botao_com_desm": "Estrutura",
-          "metragem_desm": "",
-          "acessorio": false,
-          "acessorio_obrigatorio": null,
-          "acessorio_acabamentos": [],
-          "acessorio_fixo": false,
-          "acessorio_botao_pai": "",
-          "acessorio_opcoes": [],
-          "par_segue": null
-        },
-        {
-          "ordem": 2,
-          "nome_parte": "Porta",
-          "termo": "Porta",
-          "qualificador": "",
-          "qualificadores": [],
-          "numero": "plur",
-          "apelido_cliente": "Portas",
-          "apelido_override": "",
-          "termo_novo": false,
-          "so3d": false,
-          "subparte_de": "",
-          "tipo": "P",
-          "materia_prima": {
-            "familia": "Madeira",
-            "materia": "Louro"
-          },
-          "material_id": "ART_P_Porta",
-          "configuravel": true,
-          "mesh_final": "",
-          "tecido": false,
-          "botao_sem_desm": "Estrutura",
-          "botao_com_desm": "",
-          "metragem_desm": "",
-          "acessorio": false,
-          "acessorio_obrigatorio": null,
-          "acessorio_acabamentos": [],
-          "acessorio_fixo": false,
-          "acessorio_botao_pai": "",
-          "acessorio_opcoes": [],
-          "par_segue": null
-        },
-        {
-          "ordem": 3,
-          "nome_parte": "Pé",
-          "termo": "Pé",
-          "qualificador": "",
-          "qualificadores": [],
-          "numero": "plur",
-          "apelido_cliente": "Pés",
-          "apelido_override": "Pés",
-          "termo_novo": false,
-          "so3d": false,
-          "subparte_de": "",
-          "tipo": "C",
-          "materia_prima": {
-            "familia": "Madeira",
-            "materia": "Microtextura"
-          },
-          "material_id": "ART_C_Pe",
-          "configuravel": true,
-          "mesh_final": "00115190",
-          "tecido": false,
-          "botao_sem_desm": "Pés",
-          "botao_com_desm": "Pés e Grade da Gaveta Refrigerada",
-          "metragem_desm": "",
-          "acessorio": false,
-          "acessorio_obrigatorio": null,
-          "acessorio_acabamentos": [],
-          "acessorio_fixo": false,
-          "acessorio_botao_pai": "",
-          "acessorio_opcoes": [],
-          "par_segue": null
-        },
-        {
-          "ordem": 4,
-          "nome_parte": "Gaveta Refrigerada",
-          "termo": "Gaveta Refrigerada",
-          "qualificador": "Grade",
-          "qualificadores": [
-            "Grade"
-          ],
-          "numero": "sing",
-          "apelido_cliente": "Grade da Gaveta Refrigerada",
-          "apelido_override": "Grade da Gaveta Refrigerada",
-          "termo_novo": false,
-          "so3d": false,
-          "subparte_de": "",
-          "tipo": "C",
-          "materia_prima": {
-            "familia": "",
-            "materia": ""
-          },
-          "material_id": "ART_C_Gaveta_Refrigerada_Grade",
-          "configuravel": true,
-          "mesh_final": "00115190",
-          "tecido": false,
-          "botao_sem_desm": "Pés",
-          "botao_com_desm": "Pés e Grade da Gaveta Refrigerada",
-          "metragem_desm": "",
-          "acessorio": false,
-          "acessorio_obrigatorio": null,
-          "acessorio_acabamentos": [],
-          "acessorio_fixo": false,
-          "acessorio_botao_pai": "",
-          "acessorio_opcoes": [],
-          "par_segue": "Pé"
-        },
-        {
-          "ordem": 5,
-          "nome_parte": "Gaveta Refrigerada",
-          "termo": "Gaveta Refrigerada",
-          "qualificador": "Frente",
-          "qualificadores": [
-            "Frente"
-          ],
-          "numero": "sing",
-          "apelido_cliente": "Frente da Gaveta Refrigerada",
-          "apelido_override": "Frente da Gaveta Refrigerada",
-          "termo_novo": false,
-          "so3d": false,
-          "subparte_de": "",
-          "tipo": "A",
-          "materia_prima": {
-            "familia": "",
-            "materia": ""
-          },
-          "material_id": "ART_A_Gaveta_Refrigerada_Frente",
-          "configuravel": true,
-          "mesh_final": "00115190_GavetaFrente_Gaveta",
-          "tecido": false,
-          "botao_sem_desm": "Frente da Gaveta Refrigerada",
-          "botao_com_desm": "Frente da Gaveta Refrigerada",
-          "metragem_desm": "",
-          "acessorio": false,
-          "acessorio_obrigatorio": null,
-          "acessorio_acabamentos": [],
-          "acessorio_fixo": false,
-          "acessorio_botao_pai": "",
-          "acessorio_opcoes": [],
-          "par_segue": null
-        },
-        {
-          "ordem": 6,
-          "nome_parte": "Gaveta Refrigerada",
-          "termo": "Gaveta Refrigerada",
-          "qualificador": "",
-          "qualificadores": [],
-          "numero": "sing",
-          "apelido_cliente": "Gaveta Refrigerada",
-          "apelido_override": "",
-          "termo_novo": false,
-          "so3d": false,
-          "subparte_de": "",
-          "tipo": "PD",
-          "materia_prima": {
-            "familia": "",
-            "materia": ""
-          },
-          "material_id": "PD_Gaveta_Refrigerada",
-          "configuravel": false,
-          "mesh_final": "00115190_GavetaFrente_Gaveta",
+          "mesh_final": "07112080",
           "tecido": false,
           "botao_sem_desm": "",
           "botao_com_desm": "",
@@ -2158,73 +1459,9 @@
           },
           "material_id": "PD_Deslizador",
           "configuravel": false,
-          "mesh_final": "00115190",
+          "mesh_final": "07112080",
           "tecido": false,
           "botao_sem_desm": "",
-          "botao_com_desm": "",
-          "metragem_desm": "",
-          "acessorio": false,
-          "acessorio_obrigatorio": null,
-          "acessorio_acabamentos": [],
-          "acessorio_fixo": false,
-          "acessorio_botao_pai": "",
-          "acessorio_opcoes": [],
-          "par_segue": null
-        },
-        {
-          "ordem": 8,
-          "nome_parte": "Porta_1",
-          "termo": "Porta_1",
-          "qualificador": "",
-          "qualificadores": [],
-          "numero": "sing",
-          "apelido_cliente": "",
-          "apelido_override": "",
-          "termo_novo": false,
-          "so3d": true,
-          "subparte_de": "Porta",
-          "tipo": "",
-          "materia_prima": {
-            "familia": "",
-            "materia": ""
-          },
-          "material_id": "ART_Porta_1",
-          "configuravel": false,
-          "mesh_final": "00115190_Porta_1",
-          "tecido": false,
-          "botao_sem_desm": "Estrutura",
-          "botao_com_desm": "",
-          "metragem_desm": "",
-          "acessorio": false,
-          "acessorio_obrigatorio": null,
-          "acessorio_acabamentos": [],
-          "acessorio_fixo": false,
-          "acessorio_botao_pai": "",
-          "acessorio_opcoes": [],
-          "par_segue": null
-        },
-        {
-          "ordem": 9,
-          "nome_parte": "Porta_2",
-          "termo": "Porta_2",
-          "qualificador": "",
-          "qualificadores": [],
-          "numero": "sing",
-          "apelido_cliente": "",
-          "apelido_override": "",
-          "termo_novo": false,
-          "so3d": true,
-          "subparte_de": "Porta",
-          "tipo": "",
-          "materia_prima": {
-            "familia": "",
-            "materia": ""
-          },
-          "material_id": "ART_Porta_2",
-          "configuravel": false,
-          "mesh_final": "00115190_Porta_2",
-          "tecido": false,
-          "botao_sem_desm": "Estrutura",
           "botao_com_desm": "",
           "metragem_desm": "",
           "acessorio": false,
@@ -2878,7 +2115,14 @@
       "meshes": [
         {
           "nome": "07119245",
-          "partes": []
+          "partes": [
+            "Base",
+            "Encosto Externo",
+            "Encosto Interno",
+            "Assento",
+            "Base Ponteira",
+            "Deslizador"
+          ]
         }
       ],
       "botoes_sem_desm": [
@@ -2970,7 +2214,7 @@
           },
           "material_id": "ART_C_Base",
           "configuravel": true,
-          "mesh_final": "",
+          "mesh_final": "07119245",
           "tecido": false,
           "botao_sem_desm": "Base",
           "botao_com_desm": "Base",
@@ -3004,7 +2248,7 @@
           },
           "material_id": "ART_T_Encosto_Externo",
           "configuravel": true,
-          "mesh_final": "",
+          "mesh_final": "07119245",
           "tecido": true,
           "botao_sem_desm": "Assento e Encosto",
           "botao_com_desm": "Encosto Externo",
@@ -3038,7 +2282,7 @@
           },
           "material_id": "ART_T_Encosto_Interno",
           "configuravel": true,
-          "mesh_final": "",
+          "mesh_final": "07119245",
           "tecido": true,
           "botao_sem_desm": "Assento e Encosto",
           "botao_com_desm": "Encosto Interno",
@@ -3070,7 +2314,7 @@
           },
           "material_id": "ART_T_Assento",
           "configuravel": true,
-          "mesh_final": "",
+          "mesh_final": "07119245",
           "tecido": true,
           "botao_sem_desm": "Assento e Encosto",
           "botao_com_desm": "Assento",
@@ -3104,7 +2348,7 @@
           },
           "material_id": "ART_E_Base_Ponteira",
           "configuravel": true,
-          "mesh_final": "",
+          "mesh_final": "07119245",
           "tecido": false,
           "botao_sem_desm": "Ponteira da Base",
           "botao_com_desm": "Ponteira da Base",
@@ -3136,7 +2380,7 @@
           },
           "material_id": "PD_Deslizador",
           "configuravel": false,
-          "mesh_final": "",
+          "mesh_final": "07119245",
           "tecido": false,
           "botao_sem_desm": "",
           "botao_com_desm": "",
@@ -3472,7 +2716,7 @@
       "qt_botoes_sem": 4,
       "qt_botoes_com": 5,
       "tecido_desmembravel": true,
-      "acabamento_resumo": "Principal: Estrutura | Complementar: Pino | Adicional: Encosto Externo | Tecido: Encosto Almofada, Assento | Pré-definido: Deslizador",
+      "acabamento_resumo": "Principal: Estrutura | Complementar: Pino | Adicional: Encosto Externo | Tecido: Encosto Almofada, Assento | Pré-definido: Assento Fechamento Inferior, Deslizador",
       "obs_cotas": "",
       "obs_restr_tecido": "",
       "obs_confeccao": "",
@@ -3489,6 +2733,7 @@
             "Encosto Externo",
             "Encosto Almofada",
             "Assento",
+            "Assento Fechamento Inferior",
             "Deslizador"
           ]
         }
@@ -3516,7 +2761,7 @@
           "apelido": "Assento e Encosto",
           "partes": [
             "Encosto Almofada",
-            "Assento"
+            "Assento Fechamento Inferior"
           ]
         }
       ],
@@ -3553,7 +2798,7 @@
           "apelido": "Assento",
           "metragem": "0,85",
           "partes": [
-            "Assento"
+            "Assento Fechamento Inferior"
           ]
         }
       ],
@@ -3648,8 +2893,8 @@
           "subparte_de": "",
           "tipo": "A",
           "materia_prima": {
-            "familia": "",
-            "materia": ""
+            "familia": "Couro",
+            "materia": "Couro"
           },
           "material_id": "ART_A_Encosto_Externo",
           "configuravel": true,
@@ -3721,6 +2966,41 @@
           "configuravel": true,
           "mesh_final": "00119324",
           "tecido": true,
+          "botao_sem_desm": "",
+          "botao_com_desm": "",
+          "metragem_desm": "",
+          "acessorio": false,
+          "acessorio_obrigatorio": null,
+          "acessorio_acabamentos": [],
+          "acessorio_fixo": false,
+          "acessorio_botao_pai": "",
+          "acessorio_opcoes": [],
+          "par_segue": null
+        },
+        {
+          "ordem": 6,
+          "nome_parte": "Assento",
+          "termo": "Assento",
+          "qualificador": "Fechamento Inferior",
+          "qualificadores": [
+            "Fechamento",
+            "Inferior"
+          ],
+          "numero": "sing",
+          "apelido_cliente": "Fechamento Inferior do Assento",
+          "apelido_override": "",
+          "termo_novo": false,
+          "so3d": false,
+          "subparte_de": "",
+          "tipo": "PD",
+          "materia_prima": {
+            "familia": "Tecido",
+            "materia": ""
+          },
+          "material_id": "PD_Assento_Fechamento_Inferior",
+          "configuravel": false,
+          "mesh_final": "00119324",
+          "tecido": false,
           "botao_sem_desm": "Assento e Encosto",
           "botao_com_desm": "Assento",
           "metragem_desm": "0,85",
@@ -3733,7 +3013,7 @@
           "par_segue": null
         },
         {
-          "ordem": 6,
+          "ordem": 7,
           "nome_parte": "Deslizador",
           "termo": "Deslizador",
           "qualificador": "",
@@ -3755,746 +3035,6 @@
           "tecido": false,
           "botao_sem_desm": "",
           "botao_com_desm": "",
-          "metragem_desm": "",
-          "acessorio": false,
-          "acessorio_obrigatorio": null,
-          "acessorio_acabamentos": [],
-          "acessorio_fixo": false,
-          "acessorio_botao_pai": "",
-          "acessorio_opcoes": [],
-          "par_segue": null
-        }
-      ]
-    },
-    {
-      "linha": "Artefacto & Beach",
-      "cod_est": "06122003",
-      "id": "",
-      "nome": "ESCRIVANINHA REGIA - EBANO - 170 X 078 X 076 H",
-      "familia": "REGIA",
-      "classe": "ESCRIVANINHA",
-      "marca": "ARTEFACTO",
-      "natureza": "rotacao",
-      "ref": true,
-      "ok_fd": true,
-      "ok_3d": true,
-      "animacao": false,
-      "qt_meshes": 2,
-      "qt_materiais_art": 5,
-      "qt_botoes_sem": 3,
-      "qt_botoes_com": 3,
-      "tecido_desmembravel": false,
-      "acabamento_resumo": "Principal: Base, Tampo Giratória | Complementar: Tampo | Adicional: Tampo Revestimento, Outlet Tomada",
-      "obs_cotas": "",
-      "obs_restr_tecido": "",
-      "obs_confeccao": "",
-      "obs_nao_acompanha": "",
-      "obs_outras": "",
-      "obs_custom": "",
-      "obs_original": "",
-      "meshes": [
-        {
-          "nome": "06122003",
-          "partes": [
-            "Base",
-            "Tampo",
-            "Tampo Revestimento",
-            "Outlet Tomada"
-          ]
-        },
-        {
-          "nome": "06122003_Tampo_Giratoria",
-          "partes": [
-            "Tampo Giratória"
-          ]
-        }
-      ],
-      "botoes_sem_desm": [
-        {
-          "apelido": "Pés e Tampo Giratória",
-          "partes": [
-            "Base",
-            "Tampo Giratória"
-          ]
-        },
-        {
-          "apelido": "Tampo",
-          "partes": [
-            "Tampo"
-          ]
-        },
-        {
-          "apelido": "Revestimento do Tampo e Outlet de Tomadas",
-          "partes": [
-            "Tampo Revestimento",
-            "Outlet Tomada"
-          ]
-        }
-      ],
-      "botoes_com_desm": [
-        {
-          "apelido": "Pés e Tampo Giratória",
-          "metragem": "",
-          "partes": [
-            "Base",
-            "Tampo Giratória"
-          ]
-        },
-        {
-          "apelido": "Tampo",
-          "metragem": "",
-          "partes": [
-            "Tampo"
-          ]
-        },
-        {
-          "apelido": "Revestimento do Tampo e Outlet de Tomadas",
-          "metragem": "",
-          "partes": [
-            "Tampo Revestimento",
-            "Outlet Tomada"
-          ]
-        }
-      ],
-      "bloco_3d": {
-        "papel": "master",
-        "base_codest": "06122003",
-        "duplicar_renomear": false,
-        "obs": ""
-      },
-      "glb_multiplos": {
-        "qtd": 1,
-        "variantes": []
-      },
-      "partes": [
-        {
-          "ordem": 1,
-          "nome_parte": "Base",
-          "termo": "Base",
-          "qualificador": "",
-          "qualificadores": [],
-          "numero": "sing",
-          "apelido_cliente": "Base",
-          "apelido_override": "",
-          "termo_novo": false,
-          "so3d": false,
-          "subparte_de": "",
-          "tipo": "P",
-          "materia_prima": {
-            "familia": "Fibra de Vidro",
-            "materia": "Microtextura"
-          },
-          "material_id": "ART_P_Base",
-          "configuravel": true,
-          "mesh_final": "06122003",
-          "tecido": false,
-          "botao_sem_desm": "Pés e Tampo Giratória",
-          "botao_com_desm": "Pés e Tampo Giratória",
-          "metragem_desm": "",
-          "acessorio": false,
-          "acessorio_obrigatorio": null,
-          "acessorio_acabamentos": [],
-          "acessorio_fixo": false,
-          "acessorio_botao_pai": "",
-          "acessorio_opcoes": [],
-          "par_segue": null
-        },
-        {
-          "ordem": 2,
-          "nome_parte": "Tampo",
-          "termo": "Tampo",
-          "qualificador": "Giratória",
-          "qualificadores": [
-            "Giratória"
-          ],
-          "numero": "sing",
-          "apelido_cliente": "Tampo Giratória",
-          "apelido_override": "",
-          "termo_novo": false,
-          "so3d": false,
-          "subparte_de": "",
-          "tipo": "P",
-          "materia_prima": {
-            "familia": "Fibra de Vidro",
-            "materia": "Microtextura"
-          },
-          "material_id": "ART_P_Tampo_Giratoria",
-          "configuravel": true,
-          "mesh_final": "06122003_Tampo_Giratoria",
-          "tecido": false,
-          "botao_sem_desm": "Pés e Tampo Giratória",
-          "botao_com_desm": "Pés e Tampo Giratória",
-          "metragem_desm": "",
-          "acessorio": false,
-          "acessorio_obrigatorio": null,
-          "acessorio_acabamentos": [],
-          "acessorio_fixo": false,
-          "acessorio_botao_pai": "",
-          "acessorio_opcoes": [],
-          "par_segue": "Base"
-        },
-        {
-          "ordem": 3,
-          "nome_parte": "Tampo",
-          "termo": "Tampo",
-          "qualificador": "",
-          "qualificadores": [],
-          "numero": "sing",
-          "apelido_cliente": "Tampo",
-          "apelido_override": "",
-          "termo_novo": false,
-          "so3d": false,
-          "subparte_de": "",
-          "tipo": "C",
-          "materia_prima": {
-            "familia": "Madeira",
-            "materia": "Ébano"
-          },
-          "material_id": "ART_C_Tampo",
-          "configuravel": true,
-          "mesh_final": "06122003",
-          "tecido": false,
-          "botao_sem_desm": "Tampo",
-          "botao_com_desm": "Tampo",
-          "metragem_desm": "",
-          "acessorio": false,
-          "acessorio_obrigatorio": null,
-          "acessorio_acabamentos": [],
-          "acessorio_fixo": false,
-          "acessorio_botao_pai": "",
-          "acessorio_opcoes": [],
-          "par_segue": null
-        },
-        {
-          "ordem": 4,
-          "nome_parte": "Tampo",
-          "termo": "Tampo",
-          "qualificador": "Revestimento",
-          "qualificadores": [
-            "Revestimento"
-          ],
-          "numero": "sing",
-          "apelido_cliente": "Revestimento do Tampo",
-          "apelido_override": "",
-          "termo_novo": false,
-          "so3d": false,
-          "subparte_de": "",
-          "tipo": "A",
-          "materia_prima": {
-            "familia": "",
-            "materia": ""
-          },
-          "material_id": "ART_A_Tampo_Revestimento",
-          "configuravel": true,
-          "mesh_final": "06122003",
-          "tecido": false,
-          "botao_sem_desm": "Revestimento do Tampo e Outlet de Tomadas",
-          "botao_com_desm": "Revestimento do Tampo e Outlet de Tomadas",
-          "metragem_desm": "",
-          "acessorio": false,
-          "acessorio_obrigatorio": null,
-          "acessorio_acabamentos": [],
-          "acessorio_fixo": false,
-          "acessorio_botao_pai": "",
-          "acessorio_opcoes": [],
-          "par_segue": null
-        },
-        {
-          "ordem": 5,
-          "nome_parte": "Outlet",
-          "termo": "Outlet",
-          "qualificador": "Tomada",
-          "qualificadores": [
-            "Tomada"
-          ],
-          "numero": "sing",
-          "apelido_cliente": "Outlet de Tomadas",
-          "apelido_override": "Outlet de Tomadas",
-          "termo_novo": true,
-          "so3d": false,
-          "subparte_de": "",
-          "tipo": "A",
-          "materia_prima": {
-            "familia": "Metal",
-            "materia": "Aço Inox"
-          },
-          "material_id": "ART_A_Outlet_Tomada",
-          "configuravel": true,
-          "mesh_final": "06122003",
-          "tecido": false,
-          "botao_sem_desm": "Revestimento do Tampo e Outlet de Tomadas",
-          "botao_com_desm": "Revestimento do Tampo e Outlet de Tomadas",
-          "metragem_desm": "",
-          "acessorio": false,
-          "acessorio_obrigatorio": null,
-          "acessorio_acabamentos": [],
-          "acessorio_fixo": false,
-          "acessorio_botao_pai": "",
-          "acessorio_opcoes": [],
-          "par_segue": "Tampo | Revestimento"
-        }
-      ]
-    },
-    {
-      "linha": "Artefacto & Beach",
-      "cod_est": "00122093",
-      "id": "",
-      "nome": "ESCRIVANINHA VAUGHAN - LOURO - 182 X 075 X 075 H",
-      "familia": "VAUGHAN",
-      "classe": "ESCRIVANINHA",
-      "marca": "BEACH",
-      "natureza": "translacao",
-      "ref": true,
-      "ok_fd": false,
-      "ok_3d": false,
-      "animacao": true,
-      "qt_meshes": 3,
-      "qt_materiais_art": 6,
-      "qt_botoes_sem": 3,
-      "qt_botoes_com": 3,
-      "tecido_desmembravel": false,
-      "acabamento_resumo": "Principal: Estrutura, Tampo | Complementar: Nicho Revestimento, Prateleira Revestimento | Adicional: Puxador, Friso | Pré-definido: Deslizador",
-      "obs_cotas": "",
-      "obs_restr_tecido": "",
-      "obs_confeccao": "",
-      "obs_nao_acompanha": "",
-      "obs_outras": "",
-      "obs_custom": "",
-      "obs_original": "",
-      "meshes": [
-        {
-          "nome": "00122093",
-          "partes": [
-            "Estrutura",
-            "Tampo",
-            "Nicho Revestimento",
-            "Prateleira Revestimento",
-            "Friso",
-            "Deslizador"
-          ]
-        },
-        {
-          "nome": "00122093_Tampa1_Puxador1",
-          "partes": [
-            "Tampa_1",
-            "Puxador_1"
-          ]
-        },
-        {
-          "nome": "00122093_Tampa2_Puxador2",
-          "partes": [
-            "Tampa_2",
-            "Puxador_2"
-          ]
-        }
-      ],
-      "botoes_sem_desm": [
-        {
-          "apelido": "Tampo e Estrutura",
-          "partes": [
-            "Tampo",
-            "Estrutura"
-          ]
-        },
-        {
-          "apelido": "Revestimento da Prateleira e Revestimento do Nicho",
-          "partes": [
-            "Prateleira Revestimento",
-            "Nicho Revestimento"
-          ]
-        },
-        {
-          "apelido": "Puxadores e Frisos",
-          "partes": [
-            "Puxador_2",
-            "Friso"
-          ]
-        }
-      ],
-      "botoes_com_desm": [
-        {
-          "apelido": "Tampo e Estrutura",
-          "metragem": "",
-          "partes": [
-            "Tampo",
-            "Estrutura"
-          ]
-        },
-        {
-          "apelido": "Revestimento da Prateleira e Revestimento do Nicho",
-          "metragem": "",
-          "partes": [
-            "Prateleira Revestimento",
-            "Nicho Revestimento"
-          ]
-        },
-        {
-          "apelido": "Puxadores e Frisos",
-          "metragem": "",
-          "partes": [
-            "Puxador_2",
-            "Friso"
-          ]
-        }
-      ],
-      "bloco_3d": {
-        "papel": "master",
-        "base_codest": "00122093",
-        "duplicar_renomear": false,
-        "obs": ""
-      },
-      "glb_multiplos": {
-        "qtd": 1,
-        "variantes": []
-      },
-      "partes": [
-        {
-          "ordem": 1,
-          "nome_parte": "Estrutura",
-          "termo": "Estrutura",
-          "qualificador": "",
-          "qualificadores": [],
-          "numero": "sing",
-          "apelido_cliente": "Estrutura",
-          "apelido_override": "",
-          "termo_novo": false,
-          "so3d": false,
-          "subparte_de": "",
-          "tipo": "P",
-          "materia_prima": {
-            "familia": "Madeira",
-            "materia": "Cedro"
-          },
-          "material_id": "ART_P_Estrutura",
-          "configuravel": true,
-          "mesh_final": "00122093",
-          "tecido": false,
-          "botao_sem_desm": "Tampo e Estrutura",
-          "botao_com_desm": "Tampo e Estrutura",
-          "metragem_desm": "",
-          "acessorio": false,
-          "acessorio_obrigatorio": null,
-          "acessorio_acabamentos": [],
-          "acessorio_fixo": false,
-          "acessorio_botao_pai": "",
-          "acessorio_opcoes": [],
-          "par_segue": "Tampo"
-        },
-        {
-          "ordem": 2,
-          "nome_parte": "Tampo",
-          "termo": "Tampo",
-          "qualificador": "",
-          "qualificadores": [],
-          "numero": "sing",
-          "apelido_cliente": "Tampo",
-          "apelido_override": "",
-          "termo_novo": false,
-          "so3d": false,
-          "subparte_de": "",
-          "tipo": "P",
-          "materia_prima": {
-            "familia": "Madeira",
-            "materia": "Louro"
-          },
-          "material_id": "ART_P_Tampo",
-          "configuravel": true,
-          "mesh_final": "00122093",
-          "tecido": false,
-          "botao_sem_desm": "Tampo e Estrutura",
-          "botao_com_desm": "Tampo e Estrutura",
-          "metragem_desm": "",
-          "acessorio": false,
-          "acessorio_obrigatorio": null,
-          "acessorio_acabamentos": [],
-          "acessorio_fixo": false,
-          "acessorio_botao_pai": "",
-          "acessorio_opcoes": [],
-          "par_segue": null
-        },
-        {
-          "ordem": 3,
-          "nome_parte": "Nicho",
-          "termo": "Nicho",
-          "qualificador": "Revestimento",
-          "qualificadores": [
-            "Revestimento"
-          ],
-          "numero": "sing",
-          "apelido_cliente": "Revestimento do Nicho",
-          "apelido_override": "",
-          "termo_novo": true,
-          "so3d": false,
-          "subparte_de": "",
-          "tipo": "C",
-          "materia_prima": {
-            "familia": "",
-            "materia": ""
-          },
-          "material_id": "ART_C_Nicho_Revestimento",
-          "configuravel": true,
-          "mesh_final": "00122093",
-          "tecido": false,
-          "botao_sem_desm": "Revestimento da Prateleira e Revestimento do Nicho",
-          "botao_com_desm": "Revestimento da Prateleira e Revestimento do Nicho",
-          "metragem_desm": "",
-          "acessorio": false,
-          "acessorio_obrigatorio": null,
-          "acessorio_acabamentos": [],
-          "acessorio_fixo": false,
-          "acessorio_botao_pai": "",
-          "acessorio_opcoes": [],
-          "par_segue": "Prateleira | Revestimento"
-        },
-        {
-          "ordem": 4,
-          "nome_parte": "Prateleira",
-          "termo": "Prateleira",
-          "qualificador": "Revestimento",
-          "qualificadores": [
-            "Revestimento"
-          ],
-          "numero": "sing",
-          "apelido_cliente": "Revestimento da Prateleira",
-          "apelido_override": "",
-          "termo_novo": false,
-          "so3d": false,
-          "subparte_de": "",
-          "tipo": "C",
-          "materia_prima": {
-            "familia": "",
-            "materia": ""
-          },
-          "material_id": "ART_C_Prateleira_Revestimento",
-          "configuravel": true,
-          "mesh_final": "00122093",
-          "tecido": false,
-          "botao_sem_desm": "Revestimento da Prateleira e Revestimento do Nicho",
-          "botao_com_desm": "Revestimento da Prateleira e Revestimento do Nicho",
-          "metragem_desm": "",
-          "acessorio": false,
-          "acessorio_obrigatorio": null,
-          "acessorio_acabamentos": [],
-          "acessorio_fixo": false,
-          "acessorio_botao_pai": "",
-          "acessorio_opcoes": [],
-          "par_segue": null
-        },
-        {
-          "ordem": 5,
-          "nome_parte": "Puxador",
-          "termo": "Puxador",
-          "qualificador": "",
-          "qualificadores": [],
-          "numero": "plur",
-          "apelido_cliente": "Puxadores",
-          "apelido_override": "",
-          "termo_novo": false,
-          "so3d": false,
-          "subparte_de": "",
-          "tipo": "A",
-          "materia_prima": {
-            "familia": "Metal",
-            "materia": "Aço Carbono"
-          },
-          "material_id": "ART_A_Puxador",
-          "configuravel": true,
-          "mesh_final": "",
-          "tecido": false,
-          "botao_sem_desm": "",
-          "botao_com_desm": "",
-          "metragem_desm": "",
-          "acessorio": false,
-          "acessorio_obrigatorio": null,
-          "acessorio_acabamentos": [],
-          "acessorio_fixo": false,
-          "acessorio_botao_pai": "",
-          "acessorio_opcoes": [],
-          "par_segue": null
-        },
-        {
-          "ordem": 6,
-          "nome_parte": "Friso",
-          "termo": "Friso",
-          "qualificador": "",
-          "qualificadores": [],
-          "numero": "plur",
-          "apelido_cliente": "Frisos",
-          "apelido_override": "",
-          "termo_novo": false,
-          "so3d": false,
-          "subparte_de": "",
-          "tipo": "A",
-          "materia_prima": {
-            "familia": "Metal",
-            "materia": "Aço Carbono"
-          },
-          "material_id": "ART_A_Friso",
-          "configuravel": true,
-          "mesh_final": "00122093",
-          "tecido": false,
-          "botao_sem_desm": "Puxadores e Frisos",
-          "botao_com_desm": "Puxadores e Frisos",
-          "metragem_desm": "",
-          "acessorio": false,
-          "acessorio_obrigatorio": null,
-          "acessorio_acabamentos": [],
-          "acessorio_fixo": false,
-          "acessorio_botao_pai": "",
-          "acessorio_opcoes": [],
-          "par_segue": "Puxador_2"
-        },
-        {
-          "ordem": 7,
-          "nome_parte": "Deslizador",
-          "termo": "Deslizador",
-          "qualificador": "",
-          "qualificadores": [],
-          "numero": "plur",
-          "apelido_cliente": "Deslizadores",
-          "apelido_override": "",
-          "termo_novo": false,
-          "so3d": false,
-          "subparte_de": "",
-          "tipo": "PD",
-          "materia_prima": {
-            "familia": "Metal",
-            "materia": "Aço Inox"
-          },
-          "material_id": "PD_Deslizador",
-          "configuravel": false,
-          "mesh_final": "00122093",
-          "tecido": false,
-          "botao_sem_desm": "",
-          "botao_com_desm": "",
-          "metragem_desm": "",
-          "acessorio": false,
-          "acessorio_obrigatorio": null,
-          "acessorio_acabamentos": [],
-          "acessorio_fixo": false,
-          "acessorio_botao_pai": "",
-          "acessorio_opcoes": [],
-          "par_segue": null
-        },
-        {
-          "ordem": 8,
-          "nome_parte": "Tampa_1",
-          "termo": "Tampa_1",
-          "qualificador": "",
-          "qualificadores": [],
-          "numero": "sing",
-          "apelido_cliente": "",
-          "apelido_override": "",
-          "termo_novo": false,
-          "so3d": true,
-          "subparte_de": "Tampo",
-          "tipo": "",
-          "materia_prima": {
-            "familia": "",
-            "materia": ""
-          },
-          "material_id": "ART_Tampa_1",
-          "configuravel": false,
-          "mesh_final": "00122093_Tampa1_Puxador1",
-          "tecido": false,
-          "botao_sem_desm": "",
-          "botao_com_desm": "",
-          "metragem_desm": "",
-          "acessorio": false,
-          "acessorio_obrigatorio": null,
-          "acessorio_acabamentos": [],
-          "acessorio_fixo": false,
-          "acessorio_botao_pai": "",
-          "acessorio_opcoes": [],
-          "par_segue": null
-        },
-        {
-          "ordem": 9,
-          "nome_parte": "Tampa_2",
-          "termo": "Tampa_2",
-          "qualificador": "",
-          "qualificadores": [],
-          "numero": "sing",
-          "apelido_cliente": "",
-          "apelido_override": "",
-          "termo_novo": false,
-          "so3d": true,
-          "subparte_de": "Tampo",
-          "tipo": "",
-          "materia_prima": {
-            "familia": "",
-            "materia": ""
-          },
-          "material_id": "ART_Tampa_2",
-          "configuravel": false,
-          "mesh_final": "00122093_Tampa2_Puxador2",
-          "tecido": false,
-          "botao_sem_desm": "",
-          "botao_com_desm": "",
-          "metragem_desm": "",
-          "acessorio": false,
-          "acessorio_obrigatorio": null,
-          "acessorio_acabamentos": [],
-          "acessorio_fixo": false,
-          "acessorio_botao_pai": "",
-          "acessorio_opcoes": [],
-          "par_segue": null
-        },
-        {
-          "ordem": 10,
-          "nome_parte": "Puxador_1",
-          "termo": "Puxador_1",
-          "qualificador": "",
-          "qualificadores": [],
-          "numero": "sing",
-          "apelido_cliente": "",
-          "apelido_override": "",
-          "termo_novo": false,
-          "so3d": true,
-          "subparte_de": "Puxador",
-          "tipo": "",
-          "materia_prima": {
-            "familia": "",
-            "materia": ""
-          },
-          "material_id": "ART_Puxador_1",
-          "configuravel": false,
-          "mesh_final": "00122093_Tampa1_Puxador1",
-          "tecido": false,
-          "botao_sem_desm": "",
-          "botao_com_desm": "",
-          "metragem_desm": "",
-          "acessorio": false,
-          "acessorio_obrigatorio": null,
-          "acessorio_acabamentos": [],
-          "acessorio_fixo": false,
-          "acessorio_botao_pai": "",
-          "acessorio_opcoes": [],
-          "par_segue": null
-        },
-        {
-          "ordem": 11,
-          "nome_parte": "Puxador_2",
-          "termo": "Puxador_2",
-          "qualificador": "",
-          "qualificadores": [],
-          "numero": "sing",
-          "apelido_cliente": "",
-          "apelido_override": "",
-          "termo_novo": false,
-          "so3d": true,
-          "subparte_de": "Puxador",
-          "tipo": "",
-          "materia_prima": {
-            "familia": "",
-            "materia": ""
-          },
-          "material_id": "ART_Puxador_2",
-          "configuravel": false,
-          "mesh_final": "00122093_Tampa2_Puxador2",
-          "tecido": false,
-          "botao_sem_desm": "Puxadores e Frisos",
-          "botao_com_desm": "Puxadores e Frisos",
           "metragem_desm": "",
           "acessorio": false,
           "acessorio_obrigatorio": null,
@@ -4631,7 +3171,7 @@
           "subparte_de": "",
           "tipo": "C",
           "materia_prima": {
-            "familia": "",
+            "familia": "Soleta",
             "materia": ""
           },
           "material_id": "ART_C_Estrutura_Detalhe",
@@ -4808,7 +3348,7 @@
           "subparte_de": "",
           "tipo": "C",
           "materia_prima": {
-            "familia": "",
+            "familia": "Soleta",
             "materia": ""
           },
           "material_id": "ART_C_Estrutura_Detalhe",
@@ -5015,8 +3555,8 @@
           "subparte_de": "",
           "tipo": "PD",
           "materia_prima": {
-            "familia": "",
-            "materia": ""
+            "familia": "Metal",
+            "materia": "Aço Inox"
           },
           "material_id": "PD_Deslizador",
           "configuravel": false,
@@ -5043,7 +3583,7 @@
       "familia": "BERRIZ",
       "classe": "MESA DE JANTAR",
       "marca": "BEACH",
-      "natureza": "rotacao",
+      "natureza": "corpo_unico",
       "ref": false,
       "ok_fd": true,
       "ok_3d": true,
@@ -5553,7 +4093,7 @@
           "subparte_de": "",
           "tipo": "C",
           "materia_prima": {
-            "familia": "",
+            "familia": "Soleta",
             "materia": ""
           },
           "material_id": "ART_C_Estrutura_Detalhe",
@@ -5824,8 +4364,8 @@
           "subparte_de": "",
           "tipo": "E",
           "materia_prima": {
-            "familia": "Vidro",
-            "materia": ""
+            "familia": "Louise",
+            "materia": "Transparente"
           },
           "material_id": "ART_E_Estrutura",
           "configuravel": true,
@@ -5892,11 +4432,11 @@
       "ok_3d": true,
       "animacao": false,
       "qt_meshes": 1,
-      "qt_materiais_art": 2,
+      "qt_materiais_art": 3,
       "qt_botoes_sem": 2,
       "qt_botoes_com": 2,
       "tecido_desmembravel": false,
-      "acabamento_resumo": "Específico: Estrutura, Estrutura Detalhe",
+      "acabamento_resumo": "Específico: Estrutura Superior, Estrutura Inferior, Estrutura Detalhe",
       "obs_cotas": "",
       "obs_restr_tecido": "",
       "obs_confeccao": "",
@@ -5908,7 +4448,8 @@
         {
           "nome": "09125005",
           "partes": [
-            "Estrutura",
+            "Estrutura Superior",
+            "Estrutura Inferior",
             "Estrutura Detalhe"
           ]
         }
@@ -5917,7 +4458,7 @@
         {
           "apelido": "Estrutura",
           "partes": [
-            "Estrutura"
+            "Estrutura Superior"
           ]
         },
         {
@@ -5932,7 +4473,7 @@
           "apelido": "Estrutura",
           "metragem": "",
           "partes": [
-            "Estrutura"
+            "Estrutura Superior"
           ]
         },
         {
@@ -5958,20 +4499,22 @@
           "ordem": 1,
           "nome_parte": "Estrutura",
           "termo": "Estrutura",
-          "qualificador": "",
-          "qualificadores": [],
+          "qualificador": "Superior",
+          "qualificadores": [
+            "Superior"
+          ],
           "numero": "sing",
-          "apelido_cliente": "Estrutura",
+          "apelido_cliente": "Estrutura Superior",
           "apelido_override": "",
           "termo_novo": false,
           "so3d": false,
           "subparte_de": "",
           "tipo": "E",
           "materia_prima": {
-            "familia": "Vidro",
-            "materia": ""
+            "familia": "Louise",
+            "materia": "Transparente"
           },
-          "material_id": "ART_E_Estrutura",
+          "material_id": "ART_E_Estrutura_Superior",
           "configuravel": true,
           "mesh_final": "09125005",
           "tecido": false,
@@ -5988,6 +4531,40 @@
         },
         {
           "ordem": 2,
+          "nome_parte": "Estrutura",
+          "termo": "Estrutura",
+          "qualificador": "Inferior",
+          "qualificadores": [
+            "Inferior"
+          ],
+          "numero": "sing",
+          "apelido_cliente": "Estrutura Inferior",
+          "apelido_override": "",
+          "termo_novo": false,
+          "so3d": false,
+          "subparte_de": "",
+          "tipo": "E",
+          "materia_prima": {
+            "familia": "Louise",
+            "materia": "Jateado"
+          },
+          "material_id": "ART_E_Estrutura_Inferior",
+          "configuravel": true,
+          "mesh_final": "09125005",
+          "tecido": false,
+          "botao_sem_desm": "",
+          "botao_com_desm": "",
+          "metragem_desm": "",
+          "acessorio": false,
+          "acessorio_obrigatorio": null,
+          "acessorio_acabamentos": [],
+          "acessorio_fixo": false,
+          "acessorio_botao_pai": "",
+          "acessorio_opcoes": [],
+          "par_segue": null
+        },
+        {
+          "ordem": 3,
           "nome_parte": "Estrutura",
           "termo": "Estrutura",
           "qualificador": "Detalhe",
@@ -6036,11 +4613,11 @@
       "ok_3d": true,
       "animacao": false,
       "qt_meshes": 1,
-      "qt_materiais_art": 2,
+      "qt_materiais_art": 3,
       "qt_botoes_sem": 2,
       "qt_botoes_com": 2,
       "tecido_desmembravel": false,
-      "acabamento_resumo": "Específico: Estrutura, Estrutura Detalhe",
+      "acabamento_resumo": "Específico: Estrutura Superior, Estrutura Inferior, Estrutura Detalhe",
       "obs_cotas": "",
       "obs_restr_tecido": "",
       "obs_confeccao": "",
@@ -6052,7 +4629,8 @@
         {
           "nome": "09125006",
           "partes": [
-            "Estrutura",
+            "Estrutura Superior",
+            "Estrutura Inferior",
             "Estrutura Detalhe"
           ]
         }
@@ -6061,7 +4639,7 @@
         {
           "apelido": "Estrutura",
           "partes": [
-            "Estrutura"
+            "Estrutura Superior"
           ]
         },
         {
@@ -6076,7 +4654,7 @@
           "apelido": "Estrutura",
           "metragem": "",
           "partes": [
-            "Estrutura"
+            "Estrutura Superior"
           ]
         },
         {
@@ -6102,20 +4680,22 @@
           "ordem": 1,
           "nome_parte": "Estrutura",
           "termo": "Estrutura",
-          "qualificador": "",
-          "qualificadores": [],
+          "qualificador": "Superior",
+          "qualificadores": [
+            "Superior"
+          ],
           "numero": "sing",
-          "apelido_cliente": "Estrutura",
+          "apelido_cliente": "Estrutura Superior",
           "apelido_override": "",
           "termo_novo": false,
           "so3d": false,
           "subparte_de": "",
           "tipo": "E",
           "materia_prima": {
-            "familia": "Vidro",
-            "materia": ""
+            "familia": "Louise",
+            "materia": "Transparente"
           },
-          "material_id": "ART_E_Estrutura",
+          "material_id": "ART_E_Estrutura_Superior",
           "configuravel": true,
           "mesh_final": "09125006",
           "tecido": false,
@@ -6132,6 +4712,40 @@
         },
         {
           "ordem": 2,
+          "nome_parte": "Estrutura",
+          "termo": "Estrutura",
+          "qualificador": "Inferior",
+          "qualificadores": [
+            "Inferior"
+          ],
+          "numero": "sing",
+          "apelido_cliente": "Estrutura Inferior",
+          "apelido_override": "",
+          "termo_novo": false,
+          "so3d": false,
+          "subparte_de": "",
+          "tipo": "E",
+          "materia_prima": {
+            "familia": "Louise",
+            "materia": "Preto"
+          },
+          "material_id": "ART_E_Estrutura_Inferior",
+          "configuravel": true,
+          "mesh_final": "09125006",
+          "tecido": false,
+          "botao_sem_desm": "",
+          "botao_com_desm": "",
+          "metragem_desm": "",
+          "acessorio": false,
+          "acessorio_obrigatorio": null,
+          "acessorio_acabamentos": [],
+          "acessorio_fixo": false,
+          "acessorio_botao_pai": "",
+          "acessorio_opcoes": [],
+          "par_segue": null
+        },
+        {
+          "ordem": 3,
           "nome_parte": "Estrutura",
           "termo": "Estrutura",
           "qualificador": "Detalhe",
@@ -6256,8 +4870,8 @@
           "subparte_de": "",
           "tipo": "E",
           "materia_prima": {
-            "familia": "Vidro",
-            "materia": ""
+            "familia": "Louise",
+            "materia": "Transparente"
           },
           "material_id": "ART_E_Estrutura",
           "configuravel": true,
@@ -6324,11 +4938,11 @@
       "ok_3d": true,
       "animacao": false,
       "qt_meshes": 1,
-      "qt_materiais_art": 2,
+      "qt_materiais_art": 3,
       "qt_botoes_sem": 2,
       "qt_botoes_com": 2,
       "tecido_desmembravel": false,
-      "acabamento_resumo": "Específico: Estrutura, Estrutura Detalhe",
+      "acabamento_resumo": "Específico: Estrutura Superior, Estrutura Inferior, Estrutura Detalhe",
       "obs_cotas": "",
       "obs_restr_tecido": "",
       "obs_confeccao": "",
@@ -6340,7 +4954,8 @@
         {
           "nome": "09125015",
           "partes": [
-            "Estrutura",
+            "Estrutura Superior",
+            "Estrutura Inferior",
             "Estrutura Detalhe"
           ]
         }
@@ -6349,7 +4964,7 @@
         {
           "apelido": "Estrutura",
           "partes": [
-            "Estrutura"
+            "Estrutura Superior"
           ]
         },
         {
@@ -6364,7 +4979,7 @@
           "apelido": "Estrutura",
           "metragem": "",
           "partes": [
-            "Estrutura"
+            "Estrutura Superior"
           ]
         },
         {
@@ -6390,20 +5005,22 @@
           "ordem": 1,
           "nome_parte": "Estrutura",
           "termo": "Estrutura",
-          "qualificador": "",
-          "qualificadores": [],
+          "qualificador": "Superior",
+          "qualificadores": [
+            "Superior"
+          ],
           "numero": "sing",
-          "apelido_cliente": "Estrutura",
+          "apelido_cliente": "Estrutura Superior",
           "apelido_override": "",
           "termo_novo": false,
           "so3d": false,
           "subparte_de": "",
           "tipo": "E",
           "materia_prima": {
-            "familia": "Vidro",
-            "materia": ""
+            "familia": "Louise",
+            "materia": "Transparente"
           },
-          "material_id": "ART_E_Estrutura",
+          "material_id": "ART_E_Estrutura_Superior",
           "configuravel": true,
           "mesh_final": "09125015",
           "tecido": false,
@@ -6420,6 +5037,40 @@
         },
         {
           "ordem": 2,
+          "nome_parte": "Estrutura",
+          "termo": "Estrutura",
+          "qualificador": "Inferior",
+          "qualificadores": [
+            "Inferior"
+          ],
+          "numero": "sing",
+          "apelido_cliente": "Estrutura Inferior",
+          "apelido_override": "",
+          "termo_novo": false,
+          "so3d": false,
+          "subparte_de": "",
+          "tipo": "E",
+          "materia_prima": {
+            "familia": "Louise",
+            "materia": "Jateado"
+          },
+          "material_id": "ART_E_Estrutura_Inferior",
+          "configuravel": true,
+          "mesh_final": "09125015",
+          "tecido": false,
+          "botao_sem_desm": "",
+          "botao_com_desm": "",
+          "metragem_desm": "",
+          "acessorio": false,
+          "acessorio_obrigatorio": null,
+          "acessorio_acabamentos": [],
+          "acessorio_fixo": false,
+          "acessorio_botao_pai": "",
+          "acessorio_opcoes": [],
+          "par_segue": null
+        },
+        {
+          "ordem": 3,
           "nome_parte": "Estrutura",
           "termo": "Estrutura",
           "qualificador": "Detalhe",
@@ -6468,11 +5119,11 @@
       "ok_3d": true,
       "animacao": false,
       "qt_meshes": 1,
-      "qt_materiais_art": 2,
+      "qt_materiais_art": 3,
       "qt_botoes_sem": 2,
       "qt_botoes_com": 2,
       "tecido_desmembravel": false,
-      "acabamento_resumo": "Específico: Estrutura, Estrutura Detalhe",
+      "acabamento_resumo": "Específico: Estrutura Superior, Estrutura Inferior, Estrutura Detalhe",
       "obs_cotas": "",
       "obs_restr_tecido": "",
       "obs_confeccao": "",
@@ -6484,7 +5135,8 @@
         {
           "nome": "09125016",
           "partes": [
-            "Estrutura",
+            "Estrutura Superior",
+            "Estrutura Inferior",
             "Estrutura Detalhe"
           ]
         }
@@ -6493,7 +5145,7 @@
         {
           "apelido": "Estrutura",
           "partes": [
-            "Estrutura"
+            "Estrutura Superior"
           ]
         },
         {
@@ -6508,7 +5160,7 @@
           "apelido": "Estrutura",
           "metragem": "",
           "partes": [
-            "Estrutura"
+            "Estrutura Superior"
           ]
         },
         {
@@ -6534,20 +5186,22 @@
           "ordem": 1,
           "nome_parte": "Estrutura",
           "termo": "Estrutura",
-          "qualificador": "",
-          "qualificadores": [],
+          "qualificador": "Superior",
+          "qualificadores": [
+            "Superior"
+          ],
           "numero": "sing",
-          "apelido_cliente": "Estrutura",
+          "apelido_cliente": "Estrutura Superior",
           "apelido_override": "",
           "termo_novo": false,
           "so3d": false,
           "subparte_de": "",
           "tipo": "E",
           "materia_prima": {
-            "familia": "Vidro",
-            "materia": ""
+            "familia": "Louise",
+            "materia": "Transparente"
           },
-          "material_id": "ART_E_Estrutura",
+          "material_id": "ART_E_Estrutura_Superior",
           "configuravel": true,
           "mesh_final": "09125016",
           "tecido": false,
@@ -6564,6 +5218,40 @@
         },
         {
           "ordem": 2,
+          "nome_parte": "Estrutura",
+          "termo": "Estrutura",
+          "qualificador": "Inferior",
+          "qualificadores": [
+            "Inferior"
+          ],
+          "numero": "sing",
+          "apelido_cliente": "Estrutura Inferior",
+          "apelido_override": "",
+          "termo_novo": false,
+          "so3d": false,
+          "subparte_de": "",
+          "tipo": "E",
+          "materia_prima": {
+            "familia": "Louise",
+            "materia": "Preto"
+          },
+          "material_id": "ART_E_Estrutura_Inferior",
+          "configuravel": true,
+          "mesh_final": "09125016",
+          "tecido": false,
+          "botao_sem_desm": "",
+          "botao_com_desm": "",
+          "metragem_desm": "",
+          "acessorio": false,
+          "acessorio_obrigatorio": null,
+          "acessorio_acabamentos": [],
+          "acessorio_fixo": false,
+          "acessorio_botao_pai": "",
+          "acessorio_opcoes": [],
+          "par_segue": null
+        },
+        {
+          "ordem": 3,
           "nome_parte": "Estrutura",
           "termo": "Estrutura",
           "qualificador": "Detalhe",
@@ -6688,8 +5376,8 @@
           "subparte_de": "",
           "tipo": "E",
           "materia_prima": {
-            "familia": "Vidro",
-            "materia": ""
+            "familia": "Louise",
+            "materia": "Transparente"
           },
           "material_id": "ART_E_Estrutura",
           "configuravel": true,
@@ -6832,8 +5520,8 @@
           "subparte_de": "",
           "tipo": "E",
           "materia_prima": {
-            "familia": "Vidro",
-            "materia": ""
+            "familia": "Louise",
+            "materia": "Transparente"
           },
           "material_id": "ART_E_Estrutura",
           "configuravel": true,
@@ -6976,8 +5664,8 @@
           "subparte_de": "",
           "tipo": "E",
           "materia_prima": {
-            "familia": "Vidro",
-            "materia": ""
+            "familia": "Louise",
+            "materia": "Transparente"
           },
           "material_id": "ART_E_Estrutura",
           "configuravel": true,
@@ -7471,11 +6159,11 @@
       "ok_3d": true,
       "animacao": false,
       "qt_meshes": 1,
-      "qt_materiais_art": 3,
+      "qt_materiais_art": 4,
       "qt_botoes_sem": 2,
       "qt_botoes_com": 3,
       "tecido_desmembravel": true,
-      "acabamento_resumo": "Complementar: Pé | Tecido: Assento, Encosto | Pré-definido: Deslizador",
+      "acabamento_resumo": "Complementar: Pé | Tecido: Assento, Encosto | Acessório: Capa | Pré-definido: Deslizador",
       "obs_cotas": "",
       "obs_restr_tecido": "",
       "obs_confeccao": "",
@@ -7669,6 +6357,60 @@
           "acessorio_fixo": false,
           "acessorio_botao_pai": "",
           "acessorio_opcoes": [],
+          "par_segue": null
+        },
+        {
+          "ordem": 5,
+          "nome_parte": "Capa",
+          "termo": "Capa",
+          "qualificador": "",
+          "qualificadores": [],
+          "numero": "sing",
+          "apelido_cliente": "Capa",
+          "apelido_override": "Capa",
+          "termo_novo": false,
+          "so3d": false,
+          "subparte_de": "",
+          "tipo": "ACS",
+          "materia_prima": {
+            "familia": "",
+            "materia": ""
+          },
+          "material_id": "ART_ACS_Capa",
+          "configuravel": true,
+          "mesh_final": "",
+          "tecido": false,
+          "botao_sem_desm": "",
+          "botao_com_desm": "",
+          "metragem_desm": "",
+          "acessorio": true,
+          "acessorio_obrigatorio": null,
+          "acessorio_acabamentos": [],
+          "acessorio_fixo": false,
+          "acessorio_botao_pai": "Capa",
+          "acessorio_opcoes": [
+            {
+              "rotulo": "CAPA AVULSA",
+              "cod_est": "07146393",
+              "medida": "114 X 093.5 X 072",
+              "familia": "Capa",
+              "entra_3d": false,
+              "acabamentos": [
+                {
+                  "materia": "CAPA AVULSA",
+                  "tipo": "fixo",
+                  "configuravel": false
+                }
+              ],
+              "acabamento": "fixo",
+              "material_id": "",
+              "mesh": "",
+              "textura_fixa": "",
+              "botao": "CAPA AVULSA",
+              "padrao": true,
+              "id": ""
+            }
+          ],
           "par_segue": null
         }
       ]
@@ -8276,7 +7018,7 @@
           "subparte_de": "",
           "tipo": "P",
           "materia_prima": {
-            "familia": "",
+            "familia": "Tecido",
             "materia": ""
           },
           "material_id": "ART_P_Assento",
@@ -9615,11 +8357,11 @@
       "ok_3d": true,
       "animacao": false,
       "qt_meshes": 1,
-      "qt_materiais_art": 2,
+      "qt_materiais_art": 3,
       "qt_botoes_sem": 2,
       "qt_botoes_com": 2,
       "tecido_desmembravel": false,
-      "acabamento_resumo": "Principal: Estrutura | Complementar: Pé | Pré-definido: Deslizador",
+      "acabamento_resumo": "Principal: Estrutura Revestimento | Complementar: Pé | Tecido: Assento | Pré-definido: Deslizador",
       "obs_cotas": "",
       "obs_restr_tecido": "",
       "obs_confeccao": "",
@@ -9631,7 +8373,8 @@
         {
           "nome": "07132106",
           "partes": [
-            "Estrutura",
+            "Assento",
+            "Estrutura Revestimento",
             "Pé",
             "Deslizador"
           ]
@@ -9641,7 +8384,7 @@
         {
           "apelido": "Estrutura",
           "partes": [
-            "Estrutura"
+            "Estrutura Revestimento"
           ]
         },
         {
@@ -9656,7 +8399,7 @@
           "apelido": "Estrutura",
           "metragem": "",
           "partes": [
-            "Estrutura"
+            "Estrutura Revestimento"
           ]
         },
         {
@@ -9680,22 +8423,56 @@
       "partes": [
         {
           "ordem": 1,
-          "nome_parte": "Estrutura",
-          "termo": "Estrutura",
+          "nome_parte": "Assento",
+          "termo": "Assento",
           "qualificador": "",
           "qualificadores": [],
           "numero": "sing",
-          "apelido_cliente": "Estrutura",
+          "apelido_cliente": "Assento",
+          "apelido_override": "",
+          "termo_novo": false,
+          "so3d": false,
+          "subparte_de": "",
+          "tipo": "T",
+          "materia_prima": {
+            "familia": "Tecido",
+            "materia": ""
+          },
+          "material_id": "ART_T_Assento",
+          "configuravel": true,
+          "mesh_final": "07132106",
+          "tecido": true,
+          "botao_sem_desm": "",
+          "botao_com_desm": "",
+          "metragem_desm": "",
+          "acessorio": false,
+          "acessorio_obrigatorio": null,
+          "acessorio_acabamentos": [],
+          "acessorio_fixo": false,
+          "acessorio_botao_pai": "",
+          "acessorio_opcoes": [],
+          "par_segue": null
+        },
+        {
+          "ordem": 2,
+          "nome_parte": "Estrutura",
+          "termo": "Estrutura",
+          "qualificador": "Revestimento",
+          "qualificadores": [
+            "Revestimento"
+          ],
+          "numero": "sing",
+          "apelido_cliente": "Revestimento da Estrutura",
           "apelido_override": "",
           "termo_novo": false,
           "so3d": false,
           "subparte_de": "",
           "tipo": "P",
           "materia_prima": {
-            "familia": "",
-            "materia": ""
+            "familia": "Soleta",
+            "materia": "Acabamento"
           },
-          "material_id": "ART_P_Estrutura",
+          "material_id": "ART_P_Estrutura_Revestimento",
           "configuravel": true,
           "mesh_final": "07132106",
           "tecido": false,
@@ -9711,7 +8488,7 @@
           "par_segue": null
         },
         {
-          "ordem": 2,
+          "ordem": 3,
           "nome_parte": "Pé",
           "termo": "Pé",
           "qualificador": "",
@@ -9743,7 +8520,7 @@
           "par_segue": null
         },
         {
-          "ordem": 3,
+          "ordem": 4,
           "nome_parte": "Deslizador",
           "termo": "Deslizador",
           "qualificador": "",
@@ -9790,11 +8567,11 @@
       "ok_3d": true,
       "animacao": false,
       "qt_meshes": 1,
-      "qt_materiais_art": 2,
+      "qt_materiais_art": 3,
       "qt_botoes_sem": 2,
       "qt_botoes_com": 2,
       "tecido_desmembravel": false,
-      "acabamento_resumo": "Complementar: Base | Tecido: Assento | Pré-definido: Deslizador",
+      "acabamento_resumo": "Complementar: Base | Tecido: Assento | Acessório: Capa | Pré-definido: Deslizador",
       "obs_cotas": "",
       "obs_restr_tecido": "",
       "obs_confeccao": "",
@@ -9948,6 +8725,60 @@
           "acessorio_botao_pai": "",
           "acessorio_opcoes": [],
           "par_segue": null
+        },
+        {
+          "ordem": 4,
+          "nome_parte": "Capa",
+          "termo": "Capa",
+          "qualificador": "",
+          "qualificadores": [],
+          "numero": "sing",
+          "apelido_cliente": "Capa",
+          "apelido_override": "Capa",
+          "termo_novo": false,
+          "so3d": false,
+          "subparte_de": "",
+          "tipo": "ACS",
+          "materia_prima": {
+            "familia": "",
+            "materia": ""
+          },
+          "material_id": "ART_ACS_Capa",
+          "configuravel": true,
+          "mesh_final": "",
+          "tecido": false,
+          "botao_sem_desm": "",
+          "botao_com_desm": "",
+          "metragem_desm": "",
+          "acessorio": true,
+          "acessorio_obrigatorio": null,
+          "acessorio_acabamentos": [],
+          "acessorio_fixo": false,
+          "acessorio_botao_pai": "Capa",
+          "acessorio_opcoes": [
+            {
+              "rotulo": "CAPA AVULSA",
+              "cod_est": "07146227",
+              "medida": "087 X 087 X 042.5",
+              "familia": "Capa",
+              "entra_3d": false,
+              "acabamentos": [
+                {
+                  "materia": "CAPA AVULSA",
+                  "tipo": "fixo",
+                  "configuravel": false
+                }
+              ],
+              "acabamento": "fixo",
+              "material_id": "",
+              "mesh": "",
+              "textura_fixa": "",
+              "botao": "CAPA AVULSA",
+              "padrao": true,
+              "id": ""
+            }
+          ],
+          "par_segue": null
         }
       ]
     },
@@ -9965,11 +8796,11 @@
       "ok_3d": true,
       "animacao": false,
       "qt_meshes": 1,
-      "qt_materiais_art": 2,
+      "qt_materiais_art": 3,
       "qt_botoes_sem": 2,
       "qt_botoes_com": 2,
       "tecido_desmembravel": false,
-      "acabamento_resumo": "Complementar: Base | Tecido: Assento | Pré-definido: Deslizador",
+      "acabamento_resumo": "Complementar: Base | Tecido: Assento | Acessório: Capa | Pré-definido: Deslizador",
       "obs_cotas": "",
       "obs_restr_tecido": "",
       "obs_confeccao": "",
@@ -10123,6 +8954,60 @@
           "acessorio_botao_pai": "",
           "acessorio_opcoes": [],
           "par_segue": null
+        },
+        {
+          "ordem": 4,
+          "nome_parte": "Capa",
+          "termo": "Capa",
+          "qualificador": "",
+          "qualificadores": [],
+          "numero": "sing",
+          "apelido_cliente": "Capa",
+          "apelido_override": "Capa",
+          "termo_novo": false,
+          "so3d": false,
+          "subparte_de": "",
+          "tipo": "ACS",
+          "materia_prima": {
+            "familia": "",
+            "materia": ""
+          },
+          "material_id": "ART_ACS_Capa",
+          "configuravel": true,
+          "mesh_final": "",
+          "tecido": false,
+          "botao_sem_desm": "",
+          "botao_com_desm": "",
+          "metragem_desm": "",
+          "acessorio": true,
+          "acessorio_obrigatorio": null,
+          "acessorio_acabamentos": [],
+          "acessorio_fixo": false,
+          "acessorio_botao_pai": "Capa",
+          "acessorio_opcoes": [
+            {
+              "rotulo": "CAPA AVULSA",
+              "cod_est": "07146227",
+              "medida": "087 X 087 X 042.5",
+              "familia": "Capa",
+              "entra_3d": false,
+              "acabamentos": [
+                {
+                  "materia": "CAPA AVULSA",
+                  "tipo": "fixo",
+                  "configuravel": false
+                }
+              ],
+              "acabamento": "fixo",
+              "material_id": "",
+              "mesh": "",
+              "textura_fixa": "",
+              "botao": "CAPA AVULSA",
+              "padrao": true,
+              "id": ""
+            }
+          ],
+          "par_segue": null
         }
       ]
     },
@@ -10140,11 +9025,11 @@
       "ok_3d": true,
       "animacao": false,
       "qt_meshes": 1,
-      "qt_materiais_art": 4,
+      "qt_materiais_art": 5,
       "qt_botoes_sem": 3,
       "qt_botoes_com": 3,
       "tecido_desmembravel": false,
-      "acabamento_resumo": "Principal: Base | Complementar: Assento Detalhe | Adicional: Posição | Tecido: Assento | Pré-definido: Deslizador",
+      "acabamento_resumo": "Principal: Base | Complementar: Pino Detalhe, Faixa Detalhe | Adicional: Posição | Tecido: Assento | Pré-definido: Deslizador",
       "obs_cotas": "",
       "obs_restr_tecido": "",
       "obs_confeccao": "",
@@ -10158,7 +9043,8 @@
           "partes": [
             "Base",
             "Assento",
-            "Assento Detalhe",
+            "Pino Detalhe",
+            "Faixa Detalhe",
             "Posição",
             "Deslizador"
           ]
@@ -10172,15 +9058,16 @@
           ]
         },
         {
-          "apelido": "Detalhe do Assento",
-          "partes": [
-            "Assento Detalhe"
-          ]
-        },
-        {
           "apelido": "Posição do Detalhe",
           "partes": [
             "Posição"
+          ]
+        },
+        {
+          "apelido": "Detalhe do Assento",
+          "partes": [
+            "Pino Detalhe",
+            "Faixa Detalhe"
           ]
         }
       ],
@@ -10305,29 +9192,29 @@
         },
         {
           "ordem": 3,
-          "nome_parte": "Assento",
-          "termo": "Assento",
+          "nome_parte": "Pino",
+          "termo": "Pino",
           "qualificador": "Detalhe",
           "qualificadores": [
             "Detalhe"
           ],
           "numero": "sing",
-          "apelido_cliente": "Detalhe do Assento",
+          "apelido_cliente": "Detalhe do Pino",
           "apelido_override": "",
           "termo_novo": false,
           "so3d": false,
           "subparte_de": "",
           "tipo": "C",
           "materia_prima": {
-            "familia": "",
-            "materia": ""
+            "familia": "Metal",
+            "materia": "Aço Carbono"
           },
-          "material_id": "ART_C_Assento_Detalhe",
+          "material_id": "ART_C_Pino_Detalhe",
           "configuravel": true,
           "mesh_final": "07132220",
           "tecido": false,
           "botao_sem_desm": "Detalhe do Assento",
-          "botao_com_desm": "Detalhe do Assento",
+          "botao_com_desm": "",
           "metragem_desm": "",
           "acessorio": false,
           "acessorio_obrigatorio": null,
@@ -10339,6 +9226,40 @@
         },
         {
           "ordem": 4,
+          "nome_parte": "Faixa",
+          "termo": "Faixa",
+          "qualificador": "Detalhe",
+          "qualificadores": [
+            "Detalhe"
+          ],
+          "numero": "sing",
+          "apelido_cliente": "Detalhe do Faixa",
+          "apelido_override": "",
+          "termo_novo": true,
+          "so3d": false,
+          "subparte_de": "",
+          "tipo": "C",
+          "materia_prima": {
+            "familia": "Soleta",
+            "materia": "Acabamento"
+          },
+          "material_id": "ART_C_Faixa_Detalhe",
+          "configuravel": true,
+          "mesh_final": "07132220",
+          "tecido": false,
+          "botao_sem_desm": "Detalhe do Assento",
+          "botao_com_desm": "",
+          "metragem_desm": "",
+          "acessorio": false,
+          "acessorio_obrigatorio": null,
+          "acessorio_acabamentos": [],
+          "acessorio_fixo": false,
+          "acessorio_botao_pai": "",
+          "acessorio_opcoes": [],
+          "par_segue": "Pino | Detalhe"
+        },
+        {
+          "ordem": 5,
           "nome_parte": "Posição",
           "termo": "Posição",
           "qualificador": "",
@@ -10370,7 +9291,7 @@
           "par_segue": null
         },
         {
-          "ordem": 5,
+          "ordem": 6,
           "nome_parte": "Deslizador",
           "termo": "Deslizador",
           "qualificador": "",
@@ -10417,11 +9338,11 @@
       "ok_3d": true,
       "animacao": false,
       "qt_meshes": 1,
-      "qt_materiais_art": 2,
+      "qt_materiais_art": 3,
       "qt_botoes_sem": 2,
       "qt_botoes_com": 2,
       "tecido_desmembravel": false,
-      "acabamento_resumo": "Complementar: Base | Tecido: Assento | Pré-definido: Deslizador",
+      "acabamento_resumo": "Complementar: Base | Tecido: Assento | Acessório: Capa | Pré-definido: Deslizador",
       "obs_cotas": "",
       "obs_restr_tecido": "",
       "obs_confeccao": "",
@@ -10575,6 +9496,60 @@
           "acessorio_botao_pai": "",
           "acessorio_opcoes": [],
           "par_segue": null
+        },
+        {
+          "ordem": 4,
+          "nome_parte": "Capa",
+          "termo": "Capa",
+          "qualificador": "",
+          "qualificadores": [],
+          "numero": "sing",
+          "apelido_cliente": "Capa",
+          "apelido_override": "Capa",
+          "termo_novo": false,
+          "so3d": false,
+          "subparte_de": "",
+          "tipo": "ACS",
+          "materia_prima": {
+            "familia": "",
+            "materia": ""
+          },
+          "material_id": "ART_ACS_Capa",
+          "configuravel": true,
+          "mesh_final": "",
+          "tecido": false,
+          "botao_sem_desm": "",
+          "botao_com_desm": "",
+          "metragem_desm": "",
+          "acessorio": true,
+          "acessorio_obrigatorio": null,
+          "acessorio_acabamentos": [],
+          "acessorio_fixo": false,
+          "acessorio_botao_pai": "Capa",
+          "acessorio_opcoes": [
+            {
+              "rotulo": "CAPA AVULSA",
+              "cod_est": "07146226",
+              "medida": "DIAM 077 X 042.5",
+              "familia": "Capa",
+              "entra_3d": false,
+              "acabamentos": [
+                {
+                  "materia": "CAPA AVULSA",
+                  "tipo": "fixo",
+                  "configuravel": false
+                }
+              ],
+              "acabamento": "fixo",
+              "material_id": "",
+              "mesh": "",
+              "textura_fixa": "",
+              "botao": "CAPA AVULSA",
+              "padrao": true,
+              "id": ""
+            }
+          ],
+          "par_segue": null
         }
       ]
     },
@@ -10592,11 +9567,11 @@
       "ok_3d": true,
       "animacao": false,
       "qt_meshes": 1,
-      "qt_materiais_art": 2,
+      "qt_materiais_art": 3,
       "qt_botoes_sem": 2,
       "qt_botoes_com": 2,
       "tecido_desmembravel": false,
-      "acabamento_resumo": "Complementar: Base | Tecido: Assento | Pré-definido: Deslizador",
+      "acabamento_resumo": "Complementar: Base | Tecido: Assento | Acessório: Capa | Pré-definido: Deslizador",
       "obs_cotas": "",
       "obs_restr_tecido": "",
       "obs_confeccao": "",
@@ -10749,6 +9724,60 @@
           "acessorio_fixo": false,
           "acessorio_botao_pai": "",
           "acessorio_opcoes": [],
+          "par_segue": null
+        },
+        {
+          "ordem": 4,
+          "nome_parte": "Capa",
+          "termo": "Capa",
+          "qualificador": "",
+          "qualificadores": [],
+          "numero": "sing",
+          "apelido_cliente": "Capa",
+          "apelido_override": "Capa",
+          "termo_novo": false,
+          "so3d": false,
+          "subparte_de": "",
+          "tipo": "ACS",
+          "materia_prima": {
+            "familia": "",
+            "materia": ""
+          },
+          "material_id": "ART_ACS_Capa",
+          "configuravel": true,
+          "mesh_final": "",
+          "tecido": false,
+          "botao_sem_desm": "",
+          "botao_com_desm": "",
+          "metragem_desm": "",
+          "acessorio": true,
+          "acessorio_obrigatorio": null,
+          "acessorio_acabamentos": [],
+          "acessorio_fixo": false,
+          "acessorio_botao_pai": "Capa",
+          "acessorio_opcoes": [
+            {
+              "rotulo": "CAPA AVULSA",
+              "cod_est": "07146226",
+              "medida": "DIAM 077 X 042.5",
+              "familia": "Capa",
+              "entra_3d": false,
+              "acabamentos": [
+                {
+                  "materia": "CAPA AVULSA",
+                  "tipo": "fixo",
+                  "configuravel": false
+                }
+              ],
+              "acabamento": "fixo",
+              "material_id": "",
+              "mesh": "",
+              "textura_fixa": "",
+              "botao": "CAPA AVULSA",
+              "padrao": true,
+              "id": ""
+            }
+          ],
           "par_segue": null
         }
       ]
@@ -11292,11 +10321,11 @@
       "ok_3d": true,
       "animacao": false,
       "qt_meshes": 1,
-      "qt_materiais_art": 4,
+      "qt_materiais_art": 5,
       "qt_botoes_sem": 4,
       "qt_botoes_com": 4,
       "tecido_desmembravel": false,
-      "acabamento_resumo": "Principal: Base | Complementar: Assento Detalhe | Adicional: Posição Detalhe | Tecido: Assento | Pré-definido: Deslizador",
+      "acabamento_resumo": "Principal: Base | Complementar: Pino Detalhe, Faixa Detalhe | Adicional: Posição Detalhe | Tecido: Assento | Pré-definido: Deslizador",
       "obs_cotas": "",
       "obs_restr_tecido": "",
       "obs_confeccao": "",
@@ -11310,7 +10339,8 @@
           "partes": [
             "Base",
             "Assento",
-            "Assento Detalhe",
+            "Pino Detalhe",
+            "Faixa Detalhe",
             "Posição Detalhe",
             "Deslizador"
           ]
@@ -11330,15 +10360,16 @@
           ]
         },
         {
-          "apelido": "Detalhe do Assento",
-          "partes": [
-            "Assento Detalhe"
-          ]
-        },
-        {
           "apelido": "Posição do Detalhe",
           "partes": [
             "Posição Detalhe"
+          ]
+        },
+        {
+          "apelido": "Detalhe do Assento",
+          "partes": [
+            "Pino Detalhe",
+            "Faixa Detalhe"
           ]
         }
       ],
@@ -11470,29 +10501,29 @@
         },
         {
           "ordem": 3,
-          "nome_parte": "Assento",
-          "termo": "Assento",
+          "nome_parte": "Pino",
+          "termo": "Pino",
           "qualificador": "Detalhe",
           "qualificadores": [
             "Detalhe"
           ],
           "numero": "sing",
-          "apelido_cliente": "Detalhe do Assento",
+          "apelido_cliente": "Detalhe do Pino",
           "apelido_override": "",
           "termo_novo": false,
           "so3d": false,
           "subparte_de": "",
           "tipo": "C",
           "materia_prima": {
-            "familia": "",
-            "materia": ""
+            "familia": "Metal",
+            "materia": "Eletrostática"
           },
-          "material_id": "ART_C_Assento_Detalhe",
+          "material_id": "ART_C_Pino_Detalhe",
           "configuravel": true,
           "mesh_final": "07132222",
           "tecido": false,
           "botao_sem_desm": "Detalhe do Assento",
-          "botao_com_desm": "Detalhe do Assento",
+          "botao_com_desm": "",
           "metragem_desm": "",
           "acessorio": false,
           "acessorio_obrigatorio": null,
@@ -11504,6 +10535,40 @@
         },
         {
           "ordem": 4,
+          "nome_parte": "Faixa",
+          "termo": "Faixa",
+          "qualificador": "Detalhe",
+          "qualificadores": [
+            "Detalhe"
+          ],
+          "numero": "sing",
+          "apelido_cliente": "Detalhe do Faixa",
+          "apelido_override": "",
+          "termo_novo": true,
+          "so3d": false,
+          "subparte_de": "",
+          "tipo": "C",
+          "materia_prima": {
+            "familia": "Soleta",
+            "materia": "Acabamento"
+          },
+          "material_id": "ART_C_Faixa_Detalhe",
+          "configuravel": true,
+          "mesh_final": "07132222",
+          "tecido": false,
+          "botao_sem_desm": "Detalhe do Assento",
+          "botao_com_desm": "",
+          "metragem_desm": "",
+          "acessorio": false,
+          "acessorio_obrigatorio": null,
+          "acessorio_acabamentos": [],
+          "acessorio_fixo": false,
+          "acessorio_botao_pai": "",
+          "acessorio_opcoes": [],
+          "par_segue": "Pino | Detalhe"
+        },
+        {
+          "ordem": 5,
           "nome_parte": "Posição",
           "termo": "Posição",
           "qualificador": "Detalhe",
@@ -11537,7 +10602,7 @@
           "par_segue": null
         },
         {
-          "ordem": 5,
+          "ordem": 6,
           "nome_parte": "Deslizador",
           "termo": "Deslizador",
           "qualificador": "",
@@ -11584,11 +10649,11 @@
       "ok_3d": true,
       "animacao": false,
       "qt_meshes": 1,
-      "qt_materiais_art": 3,
+      "qt_materiais_art": 4,
       "qt_botoes_sem": 2,
       "qt_botoes_com": 3,
       "tecido_desmembravel": false,
-      "acabamento_resumo": "Complementar: Pé | Tecido: Assento, Encosto | Pré-definido: Deslizador",
+      "acabamento_resumo": "Complementar: Pé | Tecido: Assento, Encosto | Acessório: Capa | Pré-definido: Deslizador",
       "obs_cotas": "",
       "obs_restr_tecido": "",
       "obs_confeccao": "",
@@ -11783,6 +10848,60 @@
           "acessorio_botao_pai": "",
           "acessorio_opcoes": [],
           "par_segue": null
+        },
+        {
+          "ordem": 5,
+          "nome_parte": "Capa",
+          "termo": "Capa",
+          "qualificador": "",
+          "qualificadores": [],
+          "numero": "sing",
+          "apelido_cliente": "Capa",
+          "apelido_override": "Capa",
+          "termo_novo": false,
+          "so3d": false,
+          "subparte_de": "",
+          "tipo": "ACS",
+          "materia_prima": {
+            "familia": "",
+            "materia": ""
+          },
+          "material_id": "ART_ACS_Capa",
+          "configuravel": true,
+          "mesh_final": "",
+          "tecido": false,
+          "botao_sem_desm": "",
+          "botao_com_desm": "",
+          "metragem_desm": "",
+          "acessorio": true,
+          "acessorio_obrigatorio": null,
+          "acessorio_acabamentos": [],
+          "acessorio_fixo": false,
+          "acessorio_botao_pai": "Capa",
+          "acessorio_opcoes": [
+            {
+              "rotulo": "CAPA AVULSA",
+              "cod_est": "07146323",
+              "medida": "268 X 119 X 072",
+              "familia": "Capa",
+              "entra_3d": false,
+              "acabamentos": [
+                {
+                  "materia": "CAPA AVULSA",
+                  "tipo": "fixo",
+                  "configuravel": false
+                }
+              ],
+              "acabamento": "fixo",
+              "material_id": "",
+              "mesh": "",
+              "textura_fixa": "",
+              "botao": "CAPA AVULSA",
+              "padrao": true,
+              "id": ""
+            }
+          ],
+          "par_segue": null
         }
       ]
     },
@@ -11800,11 +10919,11 @@
       "ok_3d": true,
       "animacao": false,
       "qt_meshes": 1,
-      "qt_materiais_art": 3,
+      "qt_materiais_art": 4,
       "qt_botoes_sem": 2,
       "qt_botoes_com": 3,
       "tecido_desmembravel": false,
-      "acabamento_resumo": "Complementar: Pé | Tecido: Assento, Encosto | Pré-definido: Deslizador",
+      "acabamento_resumo": "Complementar: Pé | Tecido: Assento, Encosto | Acessório: Capa | Pré-definido: Deslizador",
       "obs_cotas": "",
       "obs_restr_tecido": "",
       "obs_confeccao": "",
@@ -11999,6 +11118,60 @@
           "acessorio_botao_pai": "",
           "acessorio_opcoes": [],
           "par_segue": null
+        },
+        {
+          "ordem": 5,
+          "nome_parte": "Capa",
+          "termo": "Capa",
+          "qualificador": "",
+          "qualificadores": [],
+          "numero": "sing",
+          "apelido_cliente": "Capa",
+          "apelido_override": "Capa",
+          "termo_novo": false,
+          "so3d": false,
+          "subparte_de": "",
+          "tipo": "ACS",
+          "materia_prima": {
+            "familia": "",
+            "materia": ""
+          },
+          "material_id": "ART_ACS_Capa",
+          "configuravel": true,
+          "mesh_final": "",
+          "tecido": false,
+          "botao_sem_desm": "",
+          "botao_com_desm": "",
+          "metragem_desm": "",
+          "acessorio": true,
+          "acessorio_obrigatorio": null,
+          "acessorio_acabamentos": [],
+          "acessorio_fixo": false,
+          "acessorio_botao_pai": "Capa",
+          "acessorio_opcoes": [
+            {
+              "rotulo": "CAPA AVULSA",
+              "cod_est": "07146324",
+              "medida": "268 X 119 X 072",
+              "familia": "Capa",
+              "entra_3d": false,
+              "acabamentos": [
+                {
+                  "materia": "CAPA AVULSA",
+                  "tipo": "fixo",
+                  "configuravel": false
+                }
+              ],
+              "acabamento": "fixo",
+              "material_id": "",
+              "mesh": "",
+              "textura_fixa": "",
+              "botao": "CAPA AVULSA",
+              "padrao": true,
+              "id": ""
+            }
+          ],
+          "par_segue": null
         }
       ]
     },
@@ -12016,11 +11189,11 @@
       "ok_3d": true,
       "animacao": false,
       "qt_meshes": 1,
-      "qt_materiais_art": 3,
+      "qt_materiais_art": 4,
       "qt_botoes_sem": 2,
       "qt_botoes_com": 3,
       "tecido_desmembravel": false,
-      "acabamento_resumo": "Complementar: Pé | Tecido: Assento, Encosto | Pré-definido: Deslizador",
+      "acabamento_resumo": "Complementar: Pé | Tecido: Assento, Encosto | Acessório: Capa | Pré-definido: Deslizador",
       "obs_cotas": "",
       "obs_restr_tecido": "",
       "obs_confeccao": "",
@@ -12215,6 +11388,60 @@
           "acessorio_botao_pai": "",
           "acessorio_opcoes": [],
           "par_segue": null
+        },
+        {
+          "ordem": 5,
+          "nome_parte": "Capa",
+          "termo": "Capa",
+          "qualificador": "",
+          "qualificadores": [],
+          "numero": "sing",
+          "apelido_cliente": "Capa",
+          "apelido_override": "Capa",
+          "termo_novo": false,
+          "so3d": false,
+          "subparte_de": "",
+          "tipo": "ACS",
+          "materia_prima": {
+            "familia": "",
+            "materia": ""
+          },
+          "material_id": "ART_ACS_Capa",
+          "configuravel": true,
+          "mesh_final": "",
+          "tecido": false,
+          "botao_sem_desm": "",
+          "botao_com_desm": "",
+          "metragem_desm": "",
+          "acessorio": true,
+          "acessorio_obrigatorio": null,
+          "acessorio_acabamentos": [],
+          "acessorio_fixo": false,
+          "acessorio_botao_pai": "Capa",
+          "acessorio_opcoes": [
+            {
+              "rotulo": "CAPA AVULSA",
+              "cod_est": "07146229",
+              "medida": "122.5 X 089 X 072",
+              "familia": "Capa",
+              "entra_3d": false,
+              "acabamentos": [
+                {
+                  "materia": "CAPA AVULSA",
+                  "tipo": "fixo",
+                  "configuravel": false
+                }
+              ],
+              "acabamento": "fixo",
+              "material_id": "",
+              "mesh": "",
+              "textura_fixa": "",
+              "botao": "CAPA AVULSA",
+              "padrao": true,
+              "id": ""
+            }
+          ],
+          "par_segue": null
         }
       ]
     },
@@ -12232,11 +11459,11 @@
       "ok_3d": true,
       "animacao": false,
       "qt_meshes": 1,
-      "qt_materiais_art": 3,
+      "qt_materiais_art": 4,
       "qt_botoes_sem": 2,
       "qt_botoes_com": 3,
       "tecido_desmembravel": false,
-      "acabamento_resumo": "Complementar: Pé | Tecido: Assento, Encosto | Pré-definido: Deslizador",
+      "acabamento_resumo": "Complementar: Pé | Tecido: Assento, Encosto | Acessório: Capa | Pré-definido: Deslizador",
       "obs_cotas": "",
       "obs_restr_tecido": "",
       "obs_confeccao": "",
@@ -12430,6 +11657,60 @@
           "acessorio_fixo": false,
           "acessorio_botao_pai": "",
           "acessorio_opcoes": [],
+          "par_segue": null
+        },
+        {
+          "ordem": 5,
+          "nome_parte": "Capa",
+          "termo": "Capa",
+          "qualificador": "",
+          "qualificadores": [],
+          "numero": "sing",
+          "apelido_cliente": "Capa",
+          "apelido_override": "Capa",
+          "termo_novo": false,
+          "so3d": false,
+          "subparte_de": "",
+          "tipo": "ACS",
+          "materia_prima": {
+            "familia": "",
+            "materia": ""
+          },
+          "material_id": "ART_ACS_Capa",
+          "configuravel": true,
+          "mesh_final": "",
+          "tecido": false,
+          "botao_sem_desm": "",
+          "botao_com_desm": "",
+          "metragem_desm": "",
+          "acessorio": true,
+          "acessorio_obrigatorio": null,
+          "acessorio_acabamentos": [],
+          "acessorio_fixo": false,
+          "acessorio_botao_pai": "Capa",
+          "acessorio_opcoes": [
+            {
+              "rotulo": "CAPA AVULSA",
+              "cod_est": "07146358",
+              "medida": "268 X 119 X 072",
+              "familia": "Capa",
+              "entra_3d": false,
+              "acabamentos": [
+                {
+                  "materia": "CAPA AVULSA",
+                  "tipo": "fixo",
+                  "configuravel": false
+                }
+              ],
+              "acabamento": "fixo",
+              "material_id": "",
+              "mesh": "",
+              "textura_fixa": "",
+              "botao": "CAPA AVULSA",
+              "padrao": true,
+              "id": ""
+            }
+          ],
           "par_segue": null
         }
       ]
@@ -13307,482 +12588,6 @@
           "tecido": false,
           "botao_sem_desm": "",
           "botao_com_desm": "",
-          "metragem_desm": "",
-          "acessorio": false,
-          "acessorio_obrigatorio": null,
-          "acessorio_acabamentos": [],
-          "acessorio_fixo": false,
-          "acessorio_botao_pai": "",
-          "acessorio_opcoes": [],
-          "par_segue": null
-        }
-      ]
-    },
-    {
-      "linha": "Artefacto & Beach",
-      "cod_est": "00261002",
-      "id": "",
-      "nome": "VANITY DESK SARAH - LOURO - 182 X 075 X 075 H",
-      "familia": "SARAH",
-      "classe": "VANITY DESK",
-      "marca": "BEACH",
-      "natureza": "translacao",
-      "ref": true,
-      "ok_fd": false,
-      "ok_3d": true,
-      "animacao": true,
-      "qt_meshes": 4,
-      "qt_materiais_art": 6,
-      "qt_botoes_sem": 3,
-      "qt_botoes_com": 3,
-      "tecido_desmembravel": false,
-      "acabamento_resumo": "Principal: Tampo, Base | Complementar: Nicho Revestimento, Pistão Revestimento | Adicional: Puxador, Friso | Pré-definido: Deslizador",
-      "obs_cotas": "",
-      "obs_restr_tecido": "",
-      "obs_confeccao": "",
-      "obs_nao_acompanha": "",
-      "obs_outras": "",
-      "obs_custom": "",
-      "obs_original": "",
-      "meshes": [
-        {
-          "nome": "00261002",
-          "partes": [
-            "Base",
-            "Tampo",
-            "Nicho Revestimento",
-            "Friso",
-            "Deslizador"
-          ]
-        },
-        {
-          "nome": "00261002_Pistao_Revestimento",
-          "partes": [
-            "Pistão Revestimento"
-          ]
-        },
-        {
-          "nome": "00261002_Tampa_1 _Puxador_1",
-          "partes": [
-            "Tampa_1",
-            "Puxador_1"
-          ]
-        },
-        {
-          "nome": "00261002_Tampa_2 _ Puxador_2",
-          "partes": [
-            "Tampa_2",
-            "Puxador_2"
-          ]
-        }
-      ],
-      "botoes_sem_desm": [
-        {
-          "apelido": "Tampo e Base",
-          "partes": [
-            "Tampo",
-            "Base"
-          ]
-        },
-        {
-          "apelido": "Revestimento do Nicho e Revestimento do Pistão",
-          "partes": [
-            "Nicho Revestimento",
-            "Pistão Revestimento"
-          ]
-        },
-        {
-          "apelido": "Puxadores e Frisos",
-          "partes": [
-            "Puxador_2",
-            "Friso"
-          ]
-        }
-      ],
-      "botoes_com_desm": [
-        {
-          "apelido": "Tampo e Base",
-          "metragem": "",
-          "partes": [
-            "Tampo",
-            "Base"
-          ]
-        },
-        {
-          "apelido": "Revestimento do Nicho e Revestimento do Pistão",
-          "metragem": "",
-          "partes": [
-            "Nicho Revestimento",
-            "Pistão Revestimento"
-          ]
-        },
-        {
-          "apelido": "Puxadores e Frisos",
-          "metragem": "",
-          "partes": [
-            "Puxador_2",
-            "Friso"
-          ]
-        }
-      ],
-      "bloco_3d": {
-        "papel": "master",
-        "base_codest": "00261002",
-        "duplicar_renomear": false,
-        "obs": ""
-      },
-      "glb_multiplos": {
-        "qtd": 1,
-        "variantes": []
-      },
-      "partes": [
-        {
-          "ordem": 1,
-          "nome_parte": "Tampo",
-          "termo": "Tampo",
-          "qualificador": "",
-          "qualificadores": [],
-          "numero": "sing",
-          "apelido_cliente": "Tampo",
-          "apelido_override": "",
-          "termo_novo": false,
-          "so3d": false,
-          "subparte_de": "",
-          "tipo": "P",
-          "materia_prima": {
-            "familia": "Madeira",
-            "materia": "Louro"
-          },
-          "material_id": "ART_P_Tampo",
-          "configuravel": true,
-          "mesh_final": "00261002",
-          "tecido": false,
-          "botao_sem_desm": "Tampo e Base",
-          "botao_com_desm": "Tampo e Base",
-          "metragem_desm": "",
-          "acessorio": false,
-          "acessorio_obrigatorio": null,
-          "acessorio_acabamentos": [],
-          "acessorio_fixo": false,
-          "acessorio_botao_pai": "",
-          "acessorio_opcoes": [],
-          "par_segue": null
-        },
-        {
-          "ordem": 2,
-          "nome_parte": "Base",
-          "termo": "Base",
-          "qualificador": "",
-          "qualificadores": [],
-          "numero": "sing",
-          "apelido_cliente": "Base",
-          "apelido_override": "",
-          "termo_novo": false,
-          "so3d": false,
-          "subparte_de": "",
-          "tipo": "P",
-          "materia_prima": {
-            "familia": "Madeira",
-            "materia": "Cedro"
-          },
-          "material_id": "ART_P_Base",
-          "configuravel": true,
-          "mesh_final": "00261002",
-          "tecido": false,
-          "botao_sem_desm": "Tampo e Base",
-          "botao_com_desm": "Tampo e Base",
-          "metragem_desm": "",
-          "acessorio": false,
-          "acessorio_obrigatorio": null,
-          "acessorio_acabamentos": [],
-          "acessorio_fixo": false,
-          "acessorio_botao_pai": "",
-          "acessorio_opcoes": [],
-          "par_segue": "Tampo"
-        },
-        {
-          "ordem": 3,
-          "nome_parte": "Nicho",
-          "termo": "Nicho",
-          "qualificador": "Revestimento",
-          "qualificadores": [
-            "Revestimento"
-          ],
-          "numero": "sing",
-          "apelido_cliente": "Revestimento do Nicho",
-          "apelido_override": "",
-          "termo_novo": false,
-          "so3d": false,
-          "subparte_de": "",
-          "tipo": "C",
-          "materia_prima": {
-            "familia": "",
-            "materia": ""
-          },
-          "material_id": "ART_C_Nicho_Revestimento",
-          "configuravel": true,
-          "mesh_final": "00261002",
-          "tecido": false,
-          "botao_sem_desm": "Revestimento do Nicho e Revestimento do Pistão",
-          "botao_com_desm": "Revestimento do Nicho e Revestimento do Pistão",
-          "metragem_desm": "",
-          "acessorio": false,
-          "acessorio_obrigatorio": null,
-          "acessorio_acabamentos": [],
-          "acessorio_fixo": false,
-          "acessorio_botao_pai": "",
-          "acessorio_opcoes": [],
-          "par_segue": null
-        },
-        {
-          "ordem": 4,
-          "nome_parte": "Pistão",
-          "termo": "Pistão",
-          "qualificador": "Revestimento",
-          "qualificadores": [
-            "Revestimento"
-          ],
-          "numero": "sing",
-          "apelido_cliente": "Revestimento do Pistão",
-          "apelido_override": "",
-          "termo_novo": false,
-          "so3d": false,
-          "subparte_de": "",
-          "tipo": "C",
-          "materia_prima": {
-            "familia": "",
-            "materia": ""
-          },
-          "material_id": "ART_C_Pistao_Revestimento",
-          "configuravel": true,
-          "mesh_final": "00261002_Pistao_Revestimento",
-          "tecido": false,
-          "botao_sem_desm": "Revestimento do Nicho e Revestimento do Pistão",
-          "botao_com_desm": "Revestimento do Nicho e Revestimento do Pistão",
-          "metragem_desm": "",
-          "acessorio": false,
-          "acessorio_obrigatorio": null,
-          "acessorio_acabamentos": [],
-          "acessorio_fixo": false,
-          "acessorio_botao_pai": "",
-          "acessorio_opcoes": [],
-          "par_segue": "Nicho | Revestimento"
-        },
-        {
-          "ordem": 5,
-          "nome_parte": "Puxador",
-          "termo": "Puxador",
-          "qualificador": "",
-          "qualificadores": [],
-          "numero": "plur",
-          "apelido_cliente": "Puxadores",
-          "apelido_override": "",
-          "termo_novo": false,
-          "so3d": false,
-          "subparte_de": "",
-          "tipo": "A",
-          "materia_prima": {
-            "familia": "Metal",
-            "materia": "Aço Carbono"
-          },
-          "material_id": "ART_A_Puxador",
-          "configuravel": true,
-          "mesh_final": "",
-          "tecido": false,
-          "botao_sem_desm": "",
-          "botao_com_desm": "",
-          "metragem_desm": "",
-          "acessorio": false,
-          "acessorio_obrigatorio": null,
-          "acessorio_acabamentos": [],
-          "acessorio_fixo": false,
-          "acessorio_botao_pai": "",
-          "acessorio_opcoes": [],
-          "par_segue": null
-        },
-        {
-          "ordem": 6,
-          "nome_parte": "Friso",
-          "termo": "Friso",
-          "qualificador": "",
-          "qualificadores": [],
-          "numero": "plur",
-          "apelido_cliente": "Frisos",
-          "apelido_override": "",
-          "termo_novo": false,
-          "so3d": false,
-          "subparte_de": "",
-          "tipo": "A",
-          "materia_prima": {
-            "familia": "Metal",
-            "materia": "Aço Carbono"
-          },
-          "material_id": "ART_A_Friso",
-          "configuravel": true,
-          "mesh_final": "00261002",
-          "tecido": false,
-          "botao_sem_desm": "Puxadores e Frisos",
-          "botao_com_desm": "Puxadores e Frisos",
-          "metragem_desm": "",
-          "acessorio": false,
-          "acessorio_obrigatorio": null,
-          "acessorio_acabamentos": [],
-          "acessorio_fixo": false,
-          "acessorio_botao_pai": "",
-          "acessorio_opcoes": [],
-          "par_segue": "Puxador_2"
-        },
-        {
-          "ordem": 7,
-          "nome_parte": "Deslizador",
-          "termo": "Deslizador",
-          "qualificador": "",
-          "qualificadores": [],
-          "numero": "plur",
-          "apelido_cliente": "Deslizadores",
-          "apelido_override": "",
-          "termo_novo": false,
-          "so3d": false,
-          "subparte_de": "",
-          "tipo": "PD",
-          "materia_prima": {
-            "familia": "Metal",
-            "materia": "Aço Inox"
-          },
-          "material_id": "PD_Deslizador",
-          "configuravel": false,
-          "mesh_final": "00261002",
-          "tecido": false,
-          "botao_sem_desm": "",
-          "botao_com_desm": "",
-          "metragem_desm": "",
-          "acessorio": false,
-          "acessorio_obrigatorio": null,
-          "acessorio_acabamentos": [],
-          "acessorio_fixo": false,
-          "acessorio_botao_pai": "",
-          "acessorio_opcoes": [],
-          "par_segue": null
-        },
-        {
-          "ordem": 8,
-          "nome_parte": "Tampa_1",
-          "termo": "Tampa_1",
-          "qualificador": "",
-          "qualificadores": [],
-          "numero": "sing",
-          "apelido_cliente": "",
-          "apelido_override": "",
-          "termo_novo": false,
-          "so3d": true,
-          "subparte_de": "Tampo",
-          "tipo": "",
-          "materia_prima": {
-            "familia": "",
-            "materia": ""
-          },
-          "material_id": "ART_Tampa_1",
-          "configuravel": false,
-          "mesh_final": "00261002_Tampa_1 _Puxador_1",
-          "tecido": false,
-          "botao_sem_desm": "",
-          "botao_com_desm": "",
-          "metragem_desm": "",
-          "acessorio": false,
-          "acessorio_obrigatorio": null,
-          "acessorio_acabamentos": [],
-          "acessorio_fixo": false,
-          "acessorio_botao_pai": "",
-          "acessorio_opcoes": [],
-          "par_segue": null
-        },
-        {
-          "ordem": 9,
-          "nome_parte": "Tampa_2",
-          "termo": "Tampa_2",
-          "qualificador": "",
-          "qualificadores": [],
-          "numero": "sing",
-          "apelido_cliente": "",
-          "apelido_override": "",
-          "termo_novo": false,
-          "so3d": true,
-          "subparte_de": "Tampo",
-          "tipo": "",
-          "materia_prima": {
-            "familia": "",
-            "materia": ""
-          },
-          "material_id": "ART_Tampa_2",
-          "configuravel": false,
-          "mesh_final": "00261002_Tampa_2 _ Puxador_2",
-          "tecido": false,
-          "botao_sem_desm": "",
-          "botao_com_desm": "",
-          "metragem_desm": "",
-          "acessorio": false,
-          "acessorio_obrigatorio": null,
-          "acessorio_acabamentos": [],
-          "acessorio_fixo": false,
-          "acessorio_botao_pai": "",
-          "acessorio_opcoes": [],
-          "par_segue": null
-        },
-        {
-          "ordem": 10,
-          "nome_parte": "Puxador_1",
-          "termo": "Puxador_1",
-          "qualificador": "",
-          "qualificadores": [],
-          "numero": "sing",
-          "apelido_cliente": "",
-          "apelido_override": "",
-          "termo_novo": false,
-          "so3d": true,
-          "subparte_de": "Puxador",
-          "tipo": "",
-          "materia_prima": {
-            "familia": "",
-            "materia": ""
-          },
-          "material_id": "ART_Puxador_1",
-          "configuravel": false,
-          "mesh_final": "00261002_Tampa_1 _Puxador_1",
-          "tecido": false,
-          "botao_sem_desm": "",
-          "botao_com_desm": "",
-          "metragem_desm": "",
-          "acessorio": false,
-          "acessorio_obrigatorio": null,
-          "acessorio_acabamentos": [],
-          "acessorio_fixo": false,
-          "acessorio_botao_pai": "",
-          "acessorio_opcoes": [],
-          "par_segue": null
-        },
-        {
-          "ordem": 11,
-          "nome_parte": "Puxador_2",
-          "termo": "Puxador_2",
-          "qualificador": "",
-          "qualificadores": [],
-          "numero": "sing",
-          "apelido_cliente": "",
-          "apelido_override": "",
-          "termo_novo": false,
-          "so3d": true,
-          "subparte_de": "Puxador",
-          "tipo": "",
-          "materia_prima": {
-            "familia": "",
-            "materia": ""
-          },
-          "material_id": "ART_Puxador_2",
-          "configuravel": false,
-          "mesh_final": "00261002_Tampa_2 _ Puxador_2",
-          "tecido": false,
-          "botao_sem_desm": "Puxadores e Frisos",
-          "botao_com_desm": "Puxadores e Frisos",
           "metragem_desm": "",
           "acessorio": false,
           "acessorio_obrigatorio": null,
