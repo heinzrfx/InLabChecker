@@ -120,9 +120,10 @@
 
  26/10/2026 (delta "Acessórios CAPA nunca entram no 3D", export de 26/10):
  InLab_Produto_EntraNo3D é false para parte com entra_3d:false ou acessório
- cujas opções vêm todas com entra_3d:false. No export de 26/10 o sinal só
- está nas opções (a parte Capa ainda traz material_id "ART_ACS_Capa"), então
- vale um ou outro (decisão do usuário). Sem caso especial pelo nome "Capa".
+ cujas opções vêm todas com entra_3d:false. O 1º export de 26/10 só marcava
+ as opções (a parte Capa ainda trazia material_id "ART_ACS_Capa"); o das
+ 13:00 já marca a parte, com material_id "". Valem os dois sinais (decisão
+ do usuário). Sem caso especial pelo nome "Capa".
  A parte fora do 3D sai da lista de materiais (PartesDeMaterial, que alimenta
  a seção Produto, a renomeação e as V-20/V-25/V-38), dos nomes de objeto
  (MeshesDoProduto), do aviso de matéria-prima e dos materiais especiais.
@@ -208,8 +209,8 @@ fn InLab_Produto_Liberado3D produto =
 -- as subpartes só de 3D (so3d), cujo objeto usa o material da parte-mãe.
 -- `ligacoes` (Aplicar, SugerirMeshes, UI) é paralelo a ESTA lista.
 -- 26/10/2026 (delta CAPA): a parte existe no 3D? false com entra_3d:false na
--- parte, ou acessório com opções e todas elas com entra_3d:false (o export de
--- 26/10 só marca as opções). Campo ausente conta como true.
+-- parte, ou acessório com opções e todas elas com entra_3d:false (o 1º export
+-- de 26/10 só marcava as opções). Campo ausente conta como true.
 global InLab_Produto_EntraNo3D
 fn InLab_Produto_EntraNo3D parte =
 (
