@@ -1,6 +1,6 @@
 {
   "versao_export": "nomenclatura-3D-v2",
-  "exportado_em": "2026-10-23T16:41:29.515Z",
+  "exportado_em": "2026-10-26T13:00:28.646Z",
   "produtos": [
     {
       "linha": "Artefacto & Beach",
@@ -81,8 +81,16 @@
             "familia": "Madeira",
             "materia": "Freijó"
           },
+          "materias_primas": [
+            {
+              "familia": "Madeira",
+              "materia": "Freijó"
+            }
+          ],
+          "materia_prima_herdada": false,
           "material_id": "ART_P_Estrutura",
           "configuravel": true,
+          "entra_3d": true,
           "mesh_final": "00150099",
           "tecido": false,
           "botao_sem_desm": "Estrutura",
@@ -175,11 +183,19 @@
           "subparte_de": "",
           "tipo": "P",
           "materia_prima": {
-            "familia": "Fibra de Vidro",
-            "materia": "Microtextura"
+            "familia": "Metal",
+            "materia": "Aço Carbono"
           },
+          "materias_primas": [
+            {
+              "familia": "Metal",
+              "materia": "Aço Carbono"
+            }
+          ],
+          "materia_prima_herdada": false,
           "material_id": "ART_P_Estrutura",
           "configuravel": true,
+          "entra_3d": true,
           "mesh_final": "06150000",
           "tecido": false,
           "botao_sem_desm": "Estrutura",
@@ -274,8 +290,16 @@
             "familia": "Madeira",
             "materia": "Freijó"
           },
+          "materias_primas": [
+            {
+              "familia": "Madeira",
+              "materia": "Freijó"
+            }
+          ],
+          "materia_prima_herdada": false,
           "material_id": "ART_P_Estrutura",
           "configuravel": true,
+          "entra_3d": true,
           "mesh_final": "00150100",
           "tecido": false,
           "botao_sem_desm": "Estrutura",
@@ -367,11 +391,19 @@
           "subparte_de": "",
           "tipo": "P",
           "materia_prima": {
-            "familia": "Fibra de Vidro",
-            "materia": "Microtextura"
+            "familia": "Metal",
+            "materia": "Aço Carbono"
           },
+          "materias_primas": [
+            {
+              "familia": "Metal",
+              "materia": "Aço Carbono"
+            }
+          ],
+          "materia_prima_herdada": false,
           "material_id": "ART_P_Estrutura",
           "configuravel": true,
+          "entra_3d": true,
           "mesh_final": "06150003",
           "tecido": false,
           "botao_sem_desm": "Estrutura",
@@ -481,8 +513,16 @@
             "familia": "Metal",
             "materia": "Aço Carbono"
           },
+          "materias_primas": [
+            {
+              "familia": "Metal",
+              "materia": "Aço Carbono"
+            }
+          ],
+          "materia_prima_herdada": false,
           "material_id": "ART_P_Pe",
           "configuravel": true,
+          "entra_3d": true,
           "mesh_final": "05150049",
           "tecido": false,
           "botao_sem_desm": "Pés",
@@ -513,8 +553,16 @@
             "familia": "Tecido",
             "materia": ""
           },
+          "materias_primas": [
+            {
+              "familia": "Tecido",
+              "materia": ""
+            }
+          ],
+          "materia_prima_herdada": false,
           "material_id": "ART_T_Assento",
           "configuravel": true,
+          "entra_3d": true,
           "mesh_final": "05150049",
           "tecido": true,
           "botao_sem_desm": "Assento",
@@ -545,8 +593,16 @@
             "familia": "Metal",
             "materia": "Aço Inox"
           },
+          "materias_primas": [
+            {
+              "familia": "Metal",
+              "materia": "Aço Inox"
+            }
+          ],
+          "materia_prima_herdada": false,
           "material_id": "PD_Deslizador",
           "configuravel": false,
+          "entra_3d": true,
           "mesh_final": "05150049",
           "tecido": false,
           "botao_sem_desm": "",
@@ -642,8 +698,16 @@
             "familia": "Madeira",
             "materia": "Freijó Outdoor"
           },
+          "materias_primas": [
+            {
+              "familia": "Madeira",
+              "materia": "Freijó Outdoor"
+            }
+          ],
+          "materia_prima_herdada": false,
           "material_id": "ART_P_Estrutura",
           "configuravel": true,
+          "entra_3d": true,
           "mesh_final": "00150141",
           "tecido": false,
           "botao_sem_desm": "Estrutura",
@@ -674,8 +738,16 @@
             "familia": "Metal",
             "materia": "Aço Inox"
           },
+          "materias_primas": [
+            {
+              "familia": "Metal",
+              "materia": "Aço Inox"
+            }
+          ],
+          "materia_prima_herdada": false,
           "material_id": "PD_Deslizador",
           "configuravel": false,
+          "entra_3d": true,
           "mesh_final": "00150141",
           "tecido": false,
           "botao_sem_desm": "",
@@ -771,8 +843,16 @@
             "familia": "Madeira",
             "materia": "Freijó"
           },
+          "materias_primas": [
+            {
+              "familia": "Madeira",
+              "materia": "Freijó"
+            }
+          ],
+          "materia_prima_herdada": false,
           "material_id": "ART_P_Estrutura",
           "configuravel": true,
+          "entra_3d": true,
           "mesh_final": "00150143",
           "tecido": false,
           "botao_sem_desm": "Estrutura",
@@ -803,8 +883,16 @@
             "familia": "Metal",
             "materia": "Aço Inox"
           },
+          "materias_primas": [
+            {
+              "familia": "Metal",
+              "materia": "Aço Inox"
+            }
+          ],
+          "materia_prima_herdada": false,
           "material_id": "PD_Deslizador",
           "configuravel": false,
+          "entra_3d": true,
           "mesh_final": "00150143",
           "tecido": false,
           "botao_sem_desm": "",
@@ -934,8 +1022,16 @@
             "familia": "Madeira",
             "materia": "Cedro"
           },
+          "materias_primas": [
+            {
+              "familia": "Madeira",
+              "materia": "Cedro"
+            }
+          ],
+          "materia_prima_herdada": false,
           "material_id": "ART_C_Base",
           "configuravel": true,
+          "entra_3d": true,
           "mesh_final": "07112079",
           "tecido": false,
           "botao_sem_desm": "Base",
@@ -966,8 +1062,16 @@
             "familia": "Tecido",
             "materia": ""
           },
+          "materias_primas": [
+            {
+              "familia": "Tecido",
+              "materia": ""
+            }
+          ],
+          "materia_prima_herdada": false,
           "material_id": "ART_T_Assento",
           "configuravel": true,
+          "entra_3d": true,
           "mesh_final": "07112079",
           "tecido": true,
           "botao_sem_desm": "Assento e Encosto",
@@ -1000,8 +1104,16 @@
             "familia": "Tecido",
             "materia": ""
           },
+          "materias_primas": [
+            {
+              "familia": "Tecido",
+              "materia": ""
+            }
+          ],
+          "materia_prima_herdada": false,
           "material_id": "ART_T_Encosto_Externo",
           "configuravel": true,
+          "entra_3d": true,
           "mesh_final": "07112079",
           "tecido": true,
           "botao_sem_desm": "Assento e Encosto",
@@ -1034,8 +1146,16 @@
             "familia": "Tecido",
             "materia": ""
           },
+          "materias_primas": [
+            {
+              "familia": "Tecido",
+              "materia": ""
+            }
+          ],
+          "materia_prima_herdada": false,
           "material_id": "ART_T_Encosto_Interno",
           "configuravel": true,
+          "entra_3d": true,
           "mesh_final": "07112079",
           "tecido": true,
           "botao_sem_desm": "Assento e Encosto",
@@ -1066,8 +1186,16 @@
             "familia": "Metal",
             "materia": "Aço Inox"
           },
+          "materias_primas": [
+            {
+              "familia": "Metal",
+              "materia": "Aço Inox"
+            }
+          ],
+          "materia_prima_herdada": false,
           "material_id": "ART_E_Ponteira",
           "configuravel": true,
+          "entra_3d": true,
           "mesh_final": "07112079",
           "tecido": false,
           "botao_sem_desm": "",
@@ -1098,8 +1226,16 @@
             "familia": "Metal",
             "materia": "Aço Inox"
           },
+          "materias_primas": [
+            {
+              "familia": "Metal",
+              "materia": "Aço Inox"
+            }
+          ],
+          "materia_prima_herdada": false,
           "material_id": "PD_Apoio_de_Pes",
           "configuravel": false,
+          "entra_3d": true,
           "mesh_final": "07112079",
           "tecido": false,
           "botao_sem_desm": "",
@@ -1130,8 +1266,16 @@
             "familia": "Metal",
             "materia": "Aço Inox"
           },
+          "materias_primas": [
+            {
+              "familia": "Metal",
+              "materia": "Aço Inox"
+            }
+          ],
+          "materia_prima_herdada": false,
           "material_id": "PD_Deslizador",
           "configuravel": false,
+          "entra_3d": true,
           "mesh_final": "07112079",
           "tecido": false,
           "botao_sem_desm": "",
@@ -1261,8 +1405,16 @@
             "familia": "Madeira",
             "materia": "Cedro"
           },
+          "materias_primas": [
+            {
+              "familia": "Madeira",
+              "materia": "Cedro"
+            }
+          ],
+          "materia_prima_herdada": false,
           "material_id": "ART_C_Base",
           "configuravel": true,
+          "entra_3d": true,
           "mesh_final": "07112080",
           "tecido": false,
           "botao_sem_desm": "Base",
@@ -1293,8 +1445,16 @@
             "familia": "Tecido",
             "materia": ""
           },
+          "materias_primas": [
+            {
+              "familia": "Tecido",
+              "materia": ""
+            }
+          ],
+          "materia_prima_herdada": false,
           "material_id": "ART_T_Assento",
           "configuravel": true,
+          "entra_3d": true,
           "mesh_final": "07112080",
           "tecido": true,
           "botao_sem_desm": "Assento e Encosto",
@@ -1327,8 +1487,16 @@
             "familia": "Tecido",
             "materia": ""
           },
+          "materias_primas": [
+            {
+              "familia": "Tecido",
+              "materia": ""
+            }
+          ],
+          "materia_prima_herdada": false,
           "material_id": "ART_T_Encosto_Externo",
           "configuravel": true,
+          "entra_3d": true,
           "mesh_final": "07112080",
           "tecido": true,
           "botao_sem_desm": "Assento e Encosto",
@@ -1361,8 +1529,16 @@
             "familia": "Tecido",
             "materia": ""
           },
+          "materias_primas": [
+            {
+              "familia": "Tecido",
+              "materia": ""
+            }
+          ],
+          "materia_prima_herdada": false,
           "material_id": "ART_T_Encosto_Interno",
           "configuravel": true,
+          "entra_3d": true,
           "mesh_final": "07112080",
           "tecido": true,
           "botao_sem_desm": "Assento e Encosto",
@@ -1393,8 +1569,16 @@
             "familia": "Metal",
             "materia": "Aço Inox"
           },
+          "materias_primas": [
+            {
+              "familia": "Metal",
+              "materia": "Aço Inox"
+            }
+          ],
+          "materia_prima_herdada": false,
           "material_id": "ART_E_Ponteira",
           "configuravel": true,
+          "entra_3d": true,
           "mesh_final": "07112080",
           "tecido": false,
           "botao_sem_desm": "",
@@ -1425,8 +1609,16 @@
             "familia": "Metal",
             "materia": "Aço Inox"
           },
+          "materias_primas": [
+            {
+              "familia": "Metal",
+              "materia": "Aço Inox"
+            }
+          ],
+          "materia_prima_herdada": false,
           "material_id": "PD_Apoio_de_Pes",
           "configuravel": false,
+          "entra_3d": true,
           "mesh_final": "07112080",
           "tecido": false,
           "botao_sem_desm": "",
@@ -1457,8 +1649,16 @@
             "familia": "Metal",
             "materia": "Aço Inox"
           },
+          "materias_primas": [
+            {
+              "familia": "Metal",
+              "materia": "Aço Inox"
+            }
+          ],
+          "materia_prima_herdada": false,
           "material_id": "PD_Deslizador",
           "configuravel": false,
+          "entra_3d": true,
           "mesh_final": "07112080",
           "tecido": false,
           "botao_sem_desm": "",
@@ -1600,8 +1800,16 @@
             "familia": "Madeira",
             "materia": "Cedro"
           },
+          "materias_primas": [
+            {
+              "familia": "Madeira",
+              "materia": "Cedro"
+            }
+          ],
+          "materia_prima_herdada": false,
           "material_id": "ART_C_Base",
           "configuravel": true,
+          "entra_3d": true,
           "mesh_final": "07119322",
           "tecido": false,
           "botao_sem_desm": "",
@@ -1634,8 +1842,16 @@
             "familia": "Tecido",
             "materia": ""
           },
+          "materias_primas": [
+            {
+              "familia": "Tecido",
+              "materia": ""
+            }
+          ],
+          "materia_prima_herdada": false,
           "material_id": "ART_T_Encosto_Externo",
           "configuravel": true,
+          "entra_3d": true,
           "mesh_final": "07119322",
           "tecido": true,
           "botao_sem_desm": "Assento e Encosto",
@@ -1668,8 +1884,16 @@
             "familia": "Tecido",
             "materia": ""
           },
+          "materias_primas": [
+            {
+              "familia": "Tecido",
+              "materia": ""
+            }
+          ],
+          "materia_prima_herdada": false,
           "material_id": "ART_T_Encosto_Interno",
           "configuravel": true,
+          "entra_3d": true,
           "mesh_final": "07119322",
           "tecido": true,
           "botao_sem_desm": "Assento e Encosto",
@@ -1700,8 +1924,16 @@
             "familia": "Tecido",
             "materia": ""
           },
+          "materias_primas": [
+            {
+              "familia": "Tecido",
+              "materia": ""
+            }
+          ],
+          "materia_prima_herdada": false,
           "material_id": "ART_T_Assento",
           "configuravel": true,
+          "entra_3d": true,
           "mesh_final": "07119322",
           "tecido": true,
           "botao_sem_desm": "Assento e Encosto",
@@ -1734,8 +1966,16 @@
             "familia": "Metal",
             "materia": "Aço Inox"
           },
+          "materias_primas": [
+            {
+              "familia": "Metal",
+              "materia": "Aço Inox"
+            }
+          ],
+          "materia_prima_herdada": false,
           "material_id": "ART_E_Base_Ponteira",
           "configuravel": true,
+          "entra_3d": true,
           "mesh_final": "07119322",
           "tecido": false,
           "botao_sem_desm": "Ponteiras da Base",
@@ -1766,8 +2006,16 @@
             "familia": "Metal",
             "materia": "Aço Inox"
           },
+          "materias_primas": [
+            {
+              "familia": "Metal",
+              "materia": "Aço Inox"
+            }
+          ],
+          "materia_prima_herdada": false,
           "material_id": "PD_Deslizador",
           "configuravel": false,
+          "entra_3d": true,
           "mesh_final": "07119322",
           "tecido": false,
           "botao_sem_desm": "",
@@ -1903,8 +2151,16 @@
             "familia": "Madeira",
             "materia": "Cedro"
           },
+          "materias_primas": [
+            {
+              "familia": "Madeira",
+              "materia": "Cedro"
+            }
+          ],
+          "materia_prima_herdada": false,
           "material_id": "ART_C_Base",
           "configuravel": true,
+          "entra_3d": true,
           "mesh_final": "07119332",
           "tecido": false,
           "botao_sem_desm": "",
@@ -1937,8 +2193,16 @@
             "familia": "Madeira",
             "materia": "Louro"
           },
+          "materias_primas": [
+            {
+              "familia": "Madeira",
+              "materia": "Louro"
+            }
+          ],
+          "materia_prima_herdada": false,
           "material_id": "ART_C_Encosto_Externo",
           "configuravel": true,
+          "entra_3d": true,
           "mesh_final": "07119332",
           "tecido": false,
           "botao_sem_desm": "Assento e Encosto",
@@ -1971,8 +2235,16 @@
             "familia": "Tecido",
             "materia": ""
           },
+          "materias_primas": [
+            {
+              "familia": "Tecido",
+              "materia": ""
+            }
+          ],
+          "materia_prima_herdada": false,
           "material_id": "ART_T_Encosto_Interno",
           "configuravel": true,
+          "entra_3d": true,
           "mesh_final": "07119332",
           "tecido": true,
           "botao_sem_desm": "Assento e Encosto",
@@ -2003,8 +2275,16 @@
             "familia": "Tecido",
             "materia": ""
           },
+          "materias_primas": [
+            {
+              "familia": "Tecido",
+              "materia": ""
+            }
+          ],
+          "materia_prima_herdada": false,
           "material_id": "ART_T_Assento",
           "configuravel": true,
+          "entra_3d": true,
           "mesh_final": "07119332",
           "tecido": true,
           "botao_sem_desm": "Assento e Encosto",
@@ -2037,8 +2317,16 @@
             "familia": "Metal",
             "materia": "Aço Inox"
           },
+          "materias_primas": [
+            {
+              "familia": "Metal",
+              "materia": "Aço Inox"
+            }
+          ],
+          "materia_prima_herdada": false,
           "material_id": "ART_E_Base_Ponteira",
           "configuravel": true,
+          "entra_3d": true,
           "mesh_final": "07119332",
           "tecido": false,
           "botao_sem_desm": "Ponteiras da Base",
@@ -2069,8 +2357,16 @@
             "familia": "Metal",
             "materia": "Aço Inox"
           },
+          "materias_primas": [
+            {
+              "familia": "Metal",
+              "materia": "Aço Inox"
+            }
+          ],
+          "materia_prima_herdada": false,
           "material_id": "PD_Deslizador",
           "configuravel": false,
+          "entra_3d": true,
           "mesh_final": "07119332",
           "tecido": false,
           "botao_sem_desm": "",
@@ -2212,8 +2508,16 @@
             "familia": "Madeira",
             "materia": "Cedro"
           },
+          "materias_primas": [
+            {
+              "familia": "Madeira",
+              "materia": "Cedro"
+            }
+          ],
+          "materia_prima_herdada": false,
           "material_id": "ART_C_Base",
           "configuravel": true,
+          "entra_3d": true,
           "mesh_final": "07119245",
           "tecido": false,
           "botao_sem_desm": "Base",
@@ -2246,8 +2550,16 @@
             "familia": "Tecido",
             "materia": ""
           },
+          "materias_primas": [
+            {
+              "familia": "Tecido",
+              "materia": ""
+            }
+          ],
+          "materia_prima_herdada": false,
           "material_id": "ART_T_Encosto_Externo",
           "configuravel": true,
+          "entra_3d": true,
           "mesh_final": "07119245",
           "tecido": true,
           "botao_sem_desm": "Assento e Encosto",
@@ -2280,8 +2592,16 @@
             "familia": "Tecido",
             "materia": ""
           },
+          "materias_primas": [
+            {
+              "familia": "Tecido",
+              "materia": ""
+            }
+          ],
+          "materia_prima_herdada": false,
           "material_id": "ART_T_Encosto_Interno",
           "configuravel": true,
+          "entra_3d": true,
           "mesh_final": "07119245",
           "tecido": true,
           "botao_sem_desm": "Assento e Encosto",
@@ -2312,8 +2632,16 @@
             "familia": "Tecido",
             "materia": ""
           },
+          "materias_primas": [
+            {
+              "familia": "Tecido",
+              "materia": ""
+            }
+          ],
+          "materia_prima_herdada": false,
           "material_id": "ART_T_Assento",
           "configuravel": true,
+          "entra_3d": true,
           "mesh_final": "07119245",
           "tecido": true,
           "botao_sem_desm": "Assento e Encosto",
@@ -2346,8 +2674,16 @@
             "familia": "Metal",
             "materia": "Aço Inox"
           },
+          "materias_primas": [
+            {
+              "familia": "Metal",
+              "materia": "Aço Inox"
+            }
+          ],
+          "materia_prima_herdada": false,
           "material_id": "ART_E_Base_Ponteira",
           "configuravel": true,
+          "entra_3d": true,
           "mesh_final": "07119245",
           "tecido": false,
           "botao_sem_desm": "Ponteira da Base",
@@ -2378,8 +2714,16 @@
             "familia": "Metal",
             "materia": "Aço Inox"
           },
+          "materias_primas": [
+            {
+              "familia": "Metal",
+              "materia": "Aço Inox"
+            }
+          ],
+          "materia_prima_herdada": false,
           "material_id": "PD_Deslizador",
           "configuravel": false,
+          "entra_3d": true,
           "mesh_final": "07119245",
           "tecido": false,
           "botao_sem_desm": "",
@@ -2515,8 +2859,16 @@
             "familia": "Madeira",
             "materia": "Cedro"
           },
+          "materias_primas": [
+            {
+              "familia": "Madeira",
+              "materia": "Cedro"
+            }
+          ],
+          "materia_prima_herdada": false,
           "material_id": "ART_C_Base",
           "configuravel": true,
+          "entra_3d": true,
           "mesh_final": "07119330",
           "tecido": false,
           "botao_sem_desm": "Encosto Externo e Base",
@@ -2549,8 +2901,16 @@
             "familia": "Madeira",
             "materia": "Louro"
           },
+          "materias_primas": [
+            {
+              "familia": "Madeira",
+              "materia": "Louro"
+            }
+          ],
+          "materia_prima_herdada": false,
           "material_id": "ART_C_Encosto_Externo",
           "configuravel": true,
+          "entra_3d": true,
           "mesh_final": "07119330",
           "tecido": false,
           "botao_sem_desm": "Encosto Externo e Base",
@@ -2581,8 +2941,16 @@
             "familia": "Tecido",
             "materia": ""
           },
+          "materias_primas": [
+            {
+              "familia": "Tecido",
+              "materia": ""
+            }
+          ],
+          "materia_prima_herdada": false,
           "material_id": "ART_T_Assento",
           "configuravel": true,
+          "entra_3d": true,
           "mesh_final": "07119330",
           "tecido": true,
           "botao_sem_desm": "Assento e Encosto",
@@ -2615,8 +2983,16 @@
             "familia": "Tecido",
             "materia": ""
           },
+          "materias_primas": [
+            {
+              "familia": "Tecido",
+              "materia": ""
+            }
+          ],
+          "materia_prima_herdada": false,
           "material_id": "ART_T_Encosto_Interno",
           "configuravel": true,
+          "entra_3d": true,
           "mesh_final": "07119330",
           "tecido": true,
           "botao_sem_desm": "Assento e Encosto",
@@ -2649,8 +3025,16 @@
             "familia": "Metal",
             "materia": "Aço Inox"
           },
+          "materias_primas": [
+            {
+              "familia": "Metal",
+              "materia": "Aço Inox"
+            }
+          ],
+          "materia_prima_herdada": false,
           "material_id": "ART_E_Base_Ponteira",
           "configuravel": true,
+          "entra_3d": true,
           "mesh_final": "07119330",
           "tecido": false,
           "botao_sem_desm": "Ponteira da Base",
@@ -2681,8 +3065,16 @@
             "familia": "Metal",
             "materia": "Aço Inox"
           },
+          "materias_primas": [
+            {
+              "familia": "Metal",
+              "materia": "Aço Inox"
+            }
+          ],
+          "materia_prima_herdada": false,
           "material_id": "PD_Deslizador",
           "configuravel": false,
+          "entra_3d": true,
           "mesh_final": "07119330",
           "tecido": false,
           "botao_sem_desm": "",
@@ -2830,8 +3222,16 @@
             "familia": "Madeira",
             "materia": "Cedro"
           },
+          "materias_primas": [
+            {
+              "familia": "Madeira",
+              "materia": "Cedro"
+            }
+          ],
+          "materia_prima_herdada": false,
           "material_id": "ART_P_Estrutura",
           "configuravel": true,
+          "entra_3d": true,
           "mesh_final": "00119324",
           "tecido": false,
           "botao_sem_desm": "Estrutura",
@@ -2862,8 +3262,16 @@
             "familia": "Metal",
             "materia": "Aço Inox"
           },
+          "materias_primas": [
+            {
+              "familia": "Metal",
+              "materia": "Aço Inox"
+            }
+          ],
+          "materia_prima_herdada": false,
           "material_id": "ART_C_Pino",
           "configuravel": true,
+          "entra_3d": true,
           "mesh_final": "00119324",
           "tecido": false,
           "botao_sem_desm": "Pinos",
@@ -2896,8 +3304,16 @@
             "familia": "Couro",
             "materia": "Couro"
           },
+          "materias_primas": [
+            {
+              "familia": "Couro",
+              "materia": "Couro"
+            }
+          ],
+          "materia_prima_herdada": false,
           "material_id": "ART_A_Encosto_Externo",
           "configuravel": true,
+          "entra_3d": true,
           "mesh_final": "00119324",
           "tecido": false,
           "botao_sem_desm": "Encosto Externo",
@@ -2930,8 +3346,16 @@
             "familia": "Tecido",
             "materia": ""
           },
+          "materias_primas": [
+            {
+              "familia": "Tecido",
+              "materia": ""
+            }
+          ],
+          "materia_prima_herdada": false,
           "material_id": "ART_T_Encosto_Almofada",
           "configuravel": true,
+          "entra_3d": true,
           "mesh_final": "00119324",
           "tecido": true,
           "botao_sem_desm": "Assento e Encosto",
@@ -2962,8 +3386,16 @@
             "familia": "Tecido",
             "materia": ""
           },
+          "materias_primas": [
+            {
+              "familia": "Tecido",
+              "materia": ""
+            }
+          ],
+          "materia_prima_herdada": false,
           "material_id": "ART_T_Assento",
           "configuravel": true,
+          "entra_3d": true,
           "mesh_final": "00119324",
           "tecido": true,
           "botao_sem_desm": "",
@@ -2997,8 +3429,16 @@
             "familia": "Tecido",
             "materia": ""
           },
+          "materias_primas": [
+            {
+              "familia": "Tecido",
+              "materia": ""
+            }
+          ],
+          "materia_prima_herdada": false,
           "material_id": "PD_Assento_Fechamento_Inferior",
           "configuravel": false,
+          "entra_3d": true,
           "mesh_final": "00119324",
           "tecido": false,
           "botao_sem_desm": "Assento e Encosto",
@@ -3029,8 +3469,16 @@
             "familia": "Metal",
             "materia": "Aço Inox"
           },
+          "materias_primas": [
+            {
+              "familia": "Metal",
+              "materia": "Aço Inox"
+            }
+          ],
+          "materia_prima_herdada": false,
           "material_id": "PD_Deslizador",
           "configuravel": false,
+          "entra_3d": true,
           "mesh_final": "00119324",
           "tecido": false,
           "botao_sem_desm": "",
@@ -3140,8 +3588,16 @@
             "familia": "Madeira",
             "materia": "Microtextura"
           },
+          "materias_primas": [
+            {
+              "familia": "Madeira",
+              "materia": "Microtextura"
+            }
+          ],
+          "materia_prima_herdada": false,
           "material_id": "ART_P_Estrutura",
           "configuravel": true,
+          "entra_3d": true,
           "mesh_final": "00145019",
           "tecido": false,
           "botao_sem_desm": "Estrutura",
@@ -3174,8 +3630,16 @@
             "familia": "Soleta",
             "materia": ""
           },
+          "materias_primas": [
+            {
+              "familia": "Soleta",
+              "materia": ""
+            }
+          ],
+          "materia_prima_herdada": false,
           "material_id": "ART_C_Estrutura_Detalhe",
           "configuravel": true,
+          "entra_3d": true,
           "mesh_final": "00145019",
           "tecido": false,
           "botao_sem_desm": "Detalhe da Estrutura",
@@ -3206,8 +3670,16 @@
             "familia": "Metal",
             "materia": "Aço Inox"
           },
+          "materias_primas": [
+            {
+              "familia": "Metal",
+              "materia": "Aço Inox"
+            }
+          ],
+          "materia_prima_herdada": false,
           "material_id": "PD_Deslizador",
           "configuravel": false,
+          "entra_3d": true,
           "mesh_final": "00145019",
           "tecido": false,
           "botao_sem_desm": "",
@@ -3317,8 +3789,16 @@
             "familia": "Madeira",
             "materia": "Louro"
           },
+          "materias_primas": [
+            {
+              "familia": "Madeira",
+              "materia": "Louro"
+            }
+          ],
+          "materia_prima_herdada": false,
           "material_id": "ART_P_Estrutura",
           "configuravel": true,
+          "entra_3d": true,
           "mesh_final": "00145043",
           "tecido": false,
           "botao_sem_desm": "Estrutura",
@@ -3351,8 +3831,16 @@
             "familia": "Soleta",
             "materia": ""
           },
+          "materias_primas": [
+            {
+              "familia": "Soleta",
+              "materia": ""
+            }
+          ],
+          "materia_prima_herdada": false,
           "material_id": "ART_C_Estrutura_Detalhe",
           "configuravel": true,
+          "entra_3d": true,
           "mesh_final": "00145043",
           "tecido": false,
           "botao_sem_desm": "Detalhe da Estrutura",
@@ -3383,8 +3871,16 @@
             "familia": "Metal",
             "materia": "Aço Inox"
           },
+          "materias_primas": [
+            {
+              "familia": "Metal",
+              "materia": "Aço Inox"
+            }
+          ],
+          "materia_prima_herdada": false,
           "material_id": "PD_Deslizador",
           "configuravel": false,
+          "entra_3d": true,
           "mesh_final": "00145043",
           "tecido": false,
           "botao_sem_desm": "",
@@ -3494,8 +3990,16 @@
             "familia": "Madeira",
             "materia": "Teca"
           },
+          "materias_primas": [
+            {
+              "familia": "Madeira",
+              "materia": "Teca"
+            }
+          ],
+          "materia_prima_herdada": false,
           "material_id": "ART_P_Tampo",
           "configuravel": true,
+          "entra_3d": true,
           "mesh_final": "00124145",
           "tecido": false,
           "botao_sem_desm": "Tampo",
@@ -3526,8 +4030,16 @@
             "familia": "Metal",
             "materia": "Alumínio"
           },
+          "materias_primas": [
+            {
+              "familia": "Metal",
+              "materia": "Alumínio"
+            }
+          ],
+          "materia_prima_herdada": false,
           "material_id": "ART_C_Base",
           "configuravel": true,
+          "entra_3d": true,
           "mesh_final": "00124145",
           "tecido": false,
           "botao_sem_desm": "Base",
@@ -3558,8 +4070,16 @@
             "familia": "Metal",
             "materia": "Aço Inox"
           },
+          "materias_primas": [
+            {
+              "familia": "Metal",
+              "materia": "Aço Inox"
+            }
+          ],
+          "materia_prima_herdada": false,
           "material_id": "PD_Deslizador",
           "configuravel": false,
+          "entra_3d": true,
           "mesh_final": "00124145",
           "tecido": false,
           "botao_sem_desm": "",
@@ -3678,8 +4198,16 @@
             "familia": "Madeira",
             "materia": "Teca"
           },
+          "materias_primas": [
+            {
+              "familia": "Madeira",
+              "materia": "Teca"
+            }
+          ],
+          "materia_prima_herdada": false,
           "material_id": "ART_P_Tampo",
           "configuravel": true,
+          "entra_3d": true,
           "mesh_final": "00124600",
           "tecido": false,
           "botao_sem_desm": "Tampo e Prato Giratório",
@@ -3712,8 +4240,16 @@
             "familia": "Madeira",
             "materia": "Teca"
           },
+          "materias_primas": [
+            {
+              "familia": "Madeira",
+              "materia": "Teca"
+            }
+          ],
+          "materia_prima_herdada": false,
           "material_id": "ART_P_Prato_Giratoria",
           "configuravel": true,
+          "entra_3d": true,
           "mesh_final": "00124600|00124600_Prato_Giratoria",
           "tecido": false,
           "botao_sem_desm": "Tampo e Prato Giratório",
@@ -3744,8 +4280,16 @@
             "familia": "Metal",
             "materia": "Alumínio"
           },
+          "materias_primas": [
+            {
+              "familia": "Metal",
+              "materia": "Alumínio"
+            }
+          ],
+          "materia_prima_herdada": false,
           "material_id": "ART_C_Base",
           "configuravel": true,
+          "entra_3d": true,
           "mesh_final": "00124600",
           "tecido": false,
           "botao_sem_desm": "Base",
@@ -3776,8 +4320,16 @@
             "familia": "Metal",
             "materia": "Aço Inox"
           },
+          "materias_primas": [
+            {
+              "familia": "Metal",
+              "materia": "Aço Inox"
+            }
+          ],
+          "materia_prima_herdada": false,
           "material_id": "PD_Deslizador",
           "configuravel": false,
+          "entra_3d": true,
           "mesh_final": "00124600",
           "tecido": false,
           "botao_sem_desm": "",
@@ -3887,8 +4439,16 @@
             "familia": "Madeira",
             "materia": "Teca"
           },
+          "materias_primas": [
+            {
+              "familia": "Madeira",
+              "materia": "Teca"
+            }
+          ],
+          "materia_prima_herdada": false,
           "material_id": "ART_P_Tampo",
           "configuravel": true,
+          "entra_3d": true,
           "mesh_final": "00124602",
           "tecido": false,
           "botao_sem_desm": "Tampo",
@@ -3919,8 +4479,16 @@
             "familia": "Metal",
             "materia": "Alumínio"
           },
+          "materias_primas": [
+            {
+              "familia": "Metal",
+              "materia": "Alumínio"
+            }
+          ],
+          "materia_prima_herdada": false,
           "material_id": "ART_C_Base",
           "configuravel": true,
+          "entra_3d": true,
           "mesh_final": "00124602",
           "tecido": false,
           "botao_sem_desm": "Base",
@@ -3951,8 +4519,16 @@
             "familia": "Metal",
             "materia": "Aço Inox"
           },
+          "materias_primas": [
+            {
+              "familia": "Metal",
+              "materia": "Aço Inox"
+            }
+          ],
+          "materia_prima_herdada": false,
           "material_id": "PD_Deslizador",
           "configuravel": false,
+          "entra_3d": true,
           "mesh_final": "00124602",
           "tecido": false,
           "botao_sem_desm": "",
@@ -4062,8 +4638,16 @@
             "familia": "Madeira",
             "materia": "Louro"
           },
+          "materias_primas": [
+            {
+              "familia": "Madeira",
+              "materia": "Louro"
+            }
+          ],
+          "materia_prima_herdada": false,
           "material_id": "ART_P_Estrutura",
           "configuravel": true,
+          "entra_3d": true,
           "mesh_final": "00137000",
           "tecido": false,
           "botao_sem_desm": "Estrutura",
@@ -4096,8 +4680,16 @@
             "familia": "Soleta",
             "materia": ""
           },
+          "materias_primas": [
+            {
+              "familia": "Soleta",
+              "materia": ""
+            }
+          ],
+          "materia_prima_herdada": false,
           "material_id": "ART_C_Estrutura_Detalhe",
           "configuravel": true,
+          "entra_3d": true,
           "mesh_final": "00137000",
           "tecido": false,
           "botao_sem_desm": "Detalhe da Estrutura",
@@ -4128,8 +4720,16 @@
             "familia": "Metal",
             "materia": "Aço Inox"
           },
+          "materias_primas": [
+            {
+              "familia": "Metal",
+              "materia": "Aço Inox"
+            }
+          ],
+          "materia_prima_herdada": false,
           "material_id": "PD_Deslizador",
           "configuravel": false,
+          "entra_3d": true,
           "mesh_final": "00137000",
           "tecido": false,
           "botao_sem_desm": "",
@@ -4225,8 +4825,16 @@
             "familia": "Metal",
             "materia": "Aço Inox"
           },
+          "materias_primas": [
+            {
+              "familia": "Metal",
+              "materia": "Aço Inox"
+            }
+          ],
+          "materia_prima_herdada": false,
           "material_id": "ART_P_Estrutura",
           "configuravel": true,
+          "entra_3d": true,
           "mesh_final": "05125111",
           "tecido": false,
           "botao_sem_desm": "Estrutura",
@@ -4257,8 +4865,16 @@
             "familia": "Metal",
             "materia": "Aço Inox"
           },
+          "materias_primas": [
+            {
+              "familia": "Metal",
+              "materia": "Aço Inox"
+            }
+          ],
+          "materia_prima_herdada": false,
           "material_id": "PD_Deslizador",
           "configuravel": false,
+          "entra_3d": true,
           "mesh_final": "05125111",
           "tecido": false,
           "botao_sem_desm": "",
@@ -4367,8 +4983,16 @@
             "familia": "Louise",
             "materia": "Transparente"
           },
+          "materias_primas": [
+            {
+              "familia": "Louise",
+              "materia": "Transparente"
+            }
+          ],
+          "materia_prima_herdada": false,
           "material_id": "ART_E_Estrutura",
           "configuravel": true,
+          "entra_3d": true,
           "mesh_final": "09125004",
           "tecido": false,
           "botao_sem_desm": "Estrutura",
@@ -4401,8 +5025,16 @@
             "familia": "Metal",
             "materia": "Aço Inox"
           },
+          "materias_primas": [
+            {
+              "familia": "Metal",
+              "materia": "Aço Inox"
+            }
+          ],
+          "materia_prima_herdada": false,
           "material_id": "ART_E_Estrutura_Detalhe",
           "configuravel": true,
+          "entra_3d": true,
           "mesh_final": "09125004",
           "tecido": false,
           "botao_sem_desm": "Detalhe da Estrutura",
@@ -4514,8 +5146,16 @@
             "familia": "Louise",
             "materia": "Transparente"
           },
+          "materias_primas": [
+            {
+              "familia": "Louise",
+              "materia": "Transparente"
+            }
+          ],
+          "materia_prima_herdada": false,
           "material_id": "ART_E_Estrutura_Superior",
           "configuravel": true,
+          "entra_3d": true,
           "mesh_final": "09125005",
           "tecido": false,
           "botao_sem_desm": "Estrutura",
@@ -4548,8 +5188,16 @@
             "familia": "Louise",
             "materia": "Jateado"
           },
+          "materias_primas": [
+            {
+              "familia": "Louise",
+              "materia": "Jateado"
+            }
+          ],
+          "materia_prima_herdada": false,
           "material_id": "ART_E_Estrutura_Inferior",
           "configuravel": true,
+          "entra_3d": true,
           "mesh_final": "09125005",
           "tecido": false,
           "botao_sem_desm": "",
@@ -4582,8 +5230,16 @@
             "familia": "Metal",
             "materia": "Aço Inox"
           },
+          "materias_primas": [
+            {
+              "familia": "Metal",
+              "materia": "Aço Inox"
+            }
+          ],
+          "materia_prima_herdada": false,
           "material_id": "ART_E_Estrutura_Detalhe",
           "configuravel": true,
+          "entra_3d": true,
           "mesh_final": "09125005",
           "tecido": false,
           "botao_sem_desm": "Detalhe da Estrutura",
@@ -4695,8 +5351,16 @@
             "familia": "Louise",
             "materia": "Transparente"
           },
+          "materias_primas": [
+            {
+              "familia": "Louise",
+              "materia": "Transparente"
+            }
+          ],
+          "materia_prima_herdada": false,
           "material_id": "ART_E_Estrutura_Superior",
           "configuravel": true,
+          "entra_3d": true,
           "mesh_final": "09125006",
           "tecido": false,
           "botao_sem_desm": "Estrutura",
@@ -4729,8 +5393,16 @@
             "familia": "Louise",
             "materia": "Preto"
           },
+          "materias_primas": [
+            {
+              "familia": "Louise",
+              "materia": "Preto"
+            }
+          ],
+          "materia_prima_herdada": false,
           "material_id": "ART_E_Estrutura_Inferior",
           "configuravel": true,
+          "entra_3d": true,
           "mesh_final": "09125006",
           "tecido": false,
           "botao_sem_desm": "",
@@ -4763,8 +5435,16 @@
             "familia": "Metal",
             "materia": "Aço Inox"
           },
+          "materias_primas": [
+            {
+              "familia": "Metal",
+              "materia": "Aço Inox"
+            }
+          ],
+          "materia_prima_herdada": false,
           "material_id": "ART_E_Estrutura_Detalhe",
           "configuravel": true,
+          "entra_3d": true,
           "mesh_final": "09125006",
           "tecido": false,
           "botao_sem_desm": "Detalhe da Estrutura",
@@ -4873,8 +5553,16 @@
             "familia": "Louise",
             "materia": "Transparente"
           },
+          "materias_primas": [
+            {
+              "familia": "Louise",
+              "materia": "Transparente"
+            }
+          ],
+          "materia_prima_herdada": false,
           "material_id": "ART_E_Estrutura",
           "configuravel": true,
+          "entra_3d": true,
           "mesh_final": "09125010",
           "tecido": false,
           "botao_sem_desm": "Estrutura",
@@ -4907,8 +5595,16 @@
             "familia": "Metal",
             "materia": "Aço Inox"
           },
+          "materias_primas": [
+            {
+              "familia": "Metal",
+              "materia": "Aço Inox"
+            }
+          ],
+          "materia_prima_herdada": false,
           "material_id": "ART_E_Estrutura_Detalhe",
           "configuravel": true,
+          "entra_3d": true,
           "mesh_final": "09125010",
           "tecido": false,
           "botao_sem_desm": "Detalhe da Estrutura",
@@ -5020,8 +5716,16 @@
             "familia": "Louise",
             "materia": "Transparente"
           },
+          "materias_primas": [
+            {
+              "familia": "Louise",
+              "materia": "Transparente"
+            }
+          ],
+          "materia_prima_herdada": false,
           "material_id": "ART_E_Estrutura_Superior",
           "configuravel": true,
+          "entra_3d": true,
           "mesh_final": "09125015",
           "tecido": false,
           "botao_sem_desm": "Estrutura",
@@ -5054,8 +5758,16 @@
             "familia": "Louise",
             "materia": "Jateado"
           },
+          "materias_primas": [
+            {
+              "familia": "Louise",
+              "materia": "Jateado"
+            }
+          ],
+          "materia_prima_herdada": false,
           "material_id": "ART_E_Estrutura_Inferior",
           "configuravel": true,
+          "entra_3d": true,
           "mesh_final": "09125015",
           "tecido": false,
           "botao_sem_desm": "",
@@ -5088,8 +5800,16 @@
             "familia": "Metal",
             "materia": "Aço Inox"
           },
+          "materias_primas": [
+            {
+              "familia": "Metal",
+              "materia": "Aço Inox"
+            }
+          ],
+          "materia_prima_herdada": false,
           "material_id": "ART_E_Estrutura_Detalhe",
           "configuravel": true,
+          "entra_3d": true,
           "mesh_final": "09125015",
           "tecido": false,
           "botao_sem_desm": "Detalhe da Estrutura",
@@ -5201,8 +5921,16 @@
             "familia": "Louise",
             "materia": "Transparente"
           },
+          "materias_primas": [
+            {
+              "familia": "Louise",
+              "materia": "Transparente"
+            }
+          ],
+          "materia_prima_herdada": false,
           "material_id": "ART_E_Estrutura_Superior",
           "configuravel": true,
+          "entra_3d": true,
           "mesh_final": "09125016",
           "tecido": false,
           "botao_sem_desm": "Estrutura",
@@ -5235,8 +5963,16 @@
             "familia": "Louise",
             "materia": "Preto"
           },
+          "materias_primas": [
+            {
+              "familia": "Louise",
+              "materia": "Preto"
+            }
+          ],
+          "materia_prima_herdada": false,
           "material_id": "ART_E_Estrutura_Inferior",
           "configuravel": true,
+          "entra_3d": true,
           "mesh_final": "09125016",
           "tecido": false,
           "botao_sem_desm": "",
@@ -5269,8 +6005,16 @@
             "familia": "Metal",
             "materia": "Aço Inox"
           },
+          "materias_primas": [
+            {
+              "familia": "Metal",
+              "materia": "Aço Inox"
+            }
+          ],
+          "materia_prima_herdada": false,
           "material_id": "ART_E_Estrutura_Detalhe",
           "configuravel": true,
+          "entra_3d": true,
           "mesh_final": "09125016",
           "tecido": false,
           "botao_sem_desm": "Detalhe da Estrutura",
@@ -5379,8 +6123,16 @@
             "familia": "Louise",
             "materia": "Transparente"
           },
+          "materias_primas": [
+            {
+              "familia": "Louise",
+              "materia": "Transparente"
+            }
+          ],
+          "materia_prima_herdada": false,
           "material_id": "ART_E_Estrutura",
           "configuravel": true,
+          "entra_3d": true,
           "mesh_final": "09125018",
           "tecido": false,
           "botao_sem_desm": "Estrutura",
@@ -5413,8 +6165,16 @@
             "familia": "Metal",
             "materia": "Aço Inox"
           },
+          "materias_primas": [
+            {
+              "familia": "Metal",
+              "materia": "Aço Inox"
+            }
+          ],
+          "materia_prima_herdada": false,
           "material_id": "ART_E_Estrutura_Detalhe",
           "configuravel": true,
+          "entra_3d": true,
           "mesh_final": "09125018",
           "tecido": false,
           "botao_sem_desm": "Detalhe da Estrutura",
@@ -5523,8 +6283,16 @@
             "familia": "Louise",
             "materia": "Transparente"
           },
+          "materias_primas": [
+            {
+              "familia": "Louise",
+              "materia": "Transparente"
+            }
+          ],
+          "materia_prima_herdada": false,
           "material_id": "ART_E_Estrutura",
           "configuravel": true,
+          "entra_3d": true,
           "mesh_final": "09125019",
           "tecido": false,
           "botao_sem_desm": "Estrutura",
@@ -5557,8 +6325,16 @@
             "familia": "Metal",
             "materia": "Aço Inox"
           },
+          "materias_primas": [
+            {
+              "familia": "Metal",
+              "materia": "Aço Inox"
+            }
+          ],
+          "materia_prima_herdada": false,
           "material_id": "ART_E_Estrutura_Detalhe",
           "configuravel": true,
+          "entra_3d": true,
           "mesh_final": "09125019",
           "tecido": false,
           "botao_sem_desm": "Detalhe da Estrutura",
@@ -5667,8 +6443,16 @@
             "familia": "Louise",
             "materia": "Transparente"
           },
+          "materias_primas": [
+            {
+              "familia": "Louise",
+              "materia": "Transparente"
+            }
+          ],
+          "materia_prima_herdada": false,
           "material_id": "ART_E_Estrutura",
           "configuravel": true,
+          "entra_3d": true,
           "mesh_final": "09125020",
           "tecido": false,
           "botao_sem_desm": "Estrutura",
@@ -5701,8 +6485,16 @@
             "familia": "Metal",
             "materia": "Aço Inox"
           },
+          "materias_primas": [
+            {
+              "familia": "Metal",
+              "materia": "Aço Inox"
+            }
+          ],
+          "materia_prima_herdada": false,
           "material_id": "ART_E_Estrutura_Detalhe",
           "configuravel": true,
+          "entra_3d": true,
           "mesh_final": "09125020",
           "tecido": false,
           "botao_sem_desm": "Detalhe da Estrutura",
@@ -5837,8 +6629,16 @@
             "familia": "Madeira",
             "materia": "Cedro"
           },
+          "materias_primas": [
+            {
+              "familia": "Madeira",
+              "materia": "Cedro"
+            }
+          ],
+          "materia_prima_herdada": false,
           "material_id": "ART_P_Estrutura",
           "configuravel": true,
+          "entra_3d": true,
           "mesh_final": "00125400",
           "tecido": false,
           "botao_sem_desm": "Estrutura e Tampo",
@@ -5869,8 +6669,16 @@
             "familia": "Madeira",
             "materia": "Cedro"
           },
+          "materias_primas": [
+            {
+              "familia": "Madeira",
+              "materia": "Cedro"
+            }
+          ],
+          "materia_prima_herdada": false,
           "material_id": "ART_P_Tampo",
           "configuravel": true,
+          "entra_3d": true,
           "mesh_final": "00125400_Tampo_e_Detalhe_Estrutura",
           "tecido": false,
           "botao_sem_desm": "Estrutura e Tampo",
@@ -5903,8 +6711,16 @@
             "familia": "Metal",
             "materia": "Aço Inox"
           },
+          "materias_primas": [
+            {
+              "familia": "Metal",
+              "materia": "Aço Inox"
+            }
+          ],
+          "materia_prima_herdada": false,
           "material_id": "ART_C_Estrutura_Detalhe",
           "configuravel": true,
+          "entra_3d": true,
           "mesh_final": "00125400_Tampo_e_Detalhe_Estrutura",
           "tecido": false,
           "botao_sem_desm": "Base e Detalhe da Estrutura",
@@ -5935,8 +6751,16 @@
             "familia": "Metal",
             "materia": "Aço Inox"
           },
+          "materias_primas": [
+            {
+              "familia": "Metal",
+              "materia": "Aço Inox"
+            }
+          ],
+          "materia_prima_herdada": false,
           "material_id": "ART_C_Base",
           "configuravel": true,
+          "entra_3d": true,
           "mesh_final": "00125400",
           "tecido": false,
           "botao_sem_desm": "Base e Detalhe da Estrutura",
@@ -5967,8 +6791,16 @@
             "familia": "Metal",
             "materia": "Aço Inox"
           },
+          "materias_primas": [
+            {
+              "familia": "Metal",
+              "materia": "Aço Inox"
+            }
+          ],
+          "materia_prima_herdada": false,
           "material_id": "ART_E_Regulagem",
           "configuravel": true,
+          "entra_3d": true,
           "mesh_final": "00125400",
           "tecido": false,
           "botao_sem_desm": "Regulagem",
@@ -5999,8 +6831,16 @@
             "familia": "Metal",
             "materia": "Aço Inox"
           },
+          "materias_primas": [
+            {
+              "familia": "Metal",
+              "materia": "Aço Inox"
+            }
+          ],
+          "materia_prima_herdada": false,
           "material_id": "PD_Deslizador",
           "configuravel": false,
+          "entra_3d": true,
           "mesh_final": "00125400",
           "tecido": false,
           "botao_sem_desm": "",
@@ -6096,8 +6936,16 @@
             "familia": "Metal",
             "materia": "Aço Carbono"
           },
+          "materias_primas": [
+            {
+              "familia": "Metal",
+              "materia": "Aço Carbono"
+            }
+          ],
+          "materia_prima_herdada": false,
           "material_id": "ART_P_Estrutura",
           "configuravel": true,
+          "entra_3d": true,
           "mesh_final": "05125299",
           "tecido": false,
           "botao_sem_desm": "Estrutura",
@@ -6128,8 +6976,16 @@
             "familia": "Metal",
             "materia": "Aço Inox"
           },
+          "materias_primas": [
+            {
+              "familia": "Metal",
+              "materia": "Aço Inox"
+            }
+          ],
+          "materia_prima_herdada": false,
           "material_id": "PD_Deslizador",
           "configuravel": false,
+          "entra_3d": true,
           "mesh_final": "05125299",
           "tecido": false,
           "botao_sem_desm": "",
@@ -6248,8 +7104,16 @@
             "familia": "Madeira",
             "materia": "Muiracatiara"
           },
+          "materias_primas": [
+            {
+              "familia": "Madeira",
+              "materia": "Muiracatiara"
+            }
+          ],
+          "materia_prima_herdada": false,
           "material_id": "ART_C_Pe",
           "configuravel": true,
+          "entra_3d": true,
           "mesh_final": "07129418",
           "tecido": false,
           "botao_sem_desm": "Pés",
@@ -6280,8 +7144,16 @@
             "familia": "Tecido",
             "materia": ""
           },
+          "materias_primas": [
+            {
+              "familia": "Tecido",
+              "materia": ""
+            }
+          ],
+          "materia_prima_herdada": false,
           "material_id": "ART_T_Assento",
           "configuravel": true,
+          "entra_3d": true,
           "mesh_final": "07129418",
           "tecido": true,
           "botao_sem_desm": "Assento e Encosto",
@@ -6312,8 +7184,16 @@
             "familia": "Tecido",
             "materia": ""
           },
+          "materias_primas": [
+            {
+              "familia": "Tecido",
+              "materia": ""
+            }
+          ],
+          "materia_prima_herdada": false,
           "material_id": "ART_T_Encosto",
           "configuravel": true,
+          "entra_3d": true,
           "mesh_final": "07129418",
           "tecido": true,
           "botao_sem_desm": "Assento e Encosto",
@@ -6344,8 +7224,16 @@
             "familia": "Metal",
             "materia": "Aço Inox"
           },
+          "materias_primas": [
+            {
+              "familia": "Metal",
+              "materia": "Aço Inox"
+            }
+          ],
+          "materia_prima_herdada": false,
           "material_id": "PD_Deslizador",
           "configuravel": false,
+          "entra_3d": true,
           "mesh_final": "07129418",
           "tecido": false,
           "botao_sem_desm": "",
@@ -6376,8 +7264,11 @@
             "familia": "",
             "materia": ""
           },
-          "material_id": "ART_ACS_Capa",
-          "configuravel": true,
+          "materias_primas": [],
+          "materia_prima_herdada": false,
+          "material_id": "",
+          "configuravel": false,
+          "entra_3d": false,
           "mesh_final": "",
           "tecido": false,
           "botao_sem_desm": "",
@@ -6518,8 +7409,16 @@
             "familia": "Madeira",
             "materia": "Microtextura"
           },
+          "materias_primas": [
+            {
+              "familia": "Madeira",
+              "materia": "Microtextura"
+            }
+          ],
+          "materia_prima_herdada": false,
           "material_id": "ART_C_Base",
           "configuravel": true,
+          "entra_3d": true,
           "mesh_final": "07129404",
           "tecido": false,
           "botao_sem_desm": "Base",
@@ -6550,8 +7449,16 @@
             "familia": "Tecido",
             "materia": ""
           },
+          "materias_primas": [
+            {
+              "familia": "Tecido",
+              "materia": ""
+            }
+          ],
+          "materia_prima_herdada": false,
           "material_id": "ART_T_Assento",
           "configuravel": true,
+          "entra_3d": true,
           "mesh_final": "07129404",
           "tecido": true,
           "botao_sem_desm": "Assento e Encosto",
@@ -6582,8 +7489,16 @@
             "familia": "Tecido",
             "materia": ""
           },
+          "materias_primas": [
+            {
+              "familia": "Tecido",
+              "materia": ""
+            }
+          ],
+          "materia_prima_herdada": false,
           "material_id": "ART_T_Encosto",
           "configuravel": true,
+          "entra_3d": true,
           "mesh_final": "07129404",
           "tecido": true,
           "botao_sem_desm": "Assento e Encosto",
@@ -6614,8 +7529,16 @@
             "familia": "Metal",
             "materia": "Aço Inox"
           },
+          "materias_primas": [
+            {
+              "familia": "Metal",
+              "materia": "Aço Inox"
+            }
+          ],
+          "materia_prima_herdada": false,
           "material_id": "PD_Deslizador",
           "configuravel": false,
+          "entra_3d": true,
           "mesh_final": "07129404",
           "tecido": false,
           "botao_sem_desm": "",
@@ -6748,8 +7671,16 @@
             "familia": "Madeira",
             "materia": "Ébano"
           },
+          "materias_primas": [
+            {
+              "familia": "Madeira",
+              "materia": "Ébano"
+            }
+          ],
+          "materia_prima_herdada": false,
           "material_id": "ART_C_Estrutura",
           "configuravel": true,
+          "entra_3d": true,
           "mesh_final": "07129419",
           "tecido": false,
           "botao_sem_desm": "Estrutura",
@@ -6780,8 +7711,16 @@
             "familia": "Tecido",
             "materia": ""
           },
+          "materias_primas": [
+            {
+              "familia": "Tecido",
+              "materia": ""
+            }
+          ],
+          "materia_prima_herdada": false,
           "material_id": "ART_T_Assento",
           "configuravel": true,
+          "entra_3d": true,
           "mesh_final": "07129419",
           "tecido": true,
           "botao_sem_desm": "Assento e Encosto",
@@ -6812,8 +7751,16 @@
             "familia": "Tecido",
             "materia": ""
           },
+          "materias_primas": [
+            {
+              "familia": "Tecido",
+              "materia": ""
+            }
+          ],
+          "materia_prima_herdada": false,
           "material_id": "ART_T_Encosto",
           "configuravel": true,
+          "entra_3d": true,
           "mesh_final": "07129419",
           "tecido": true,
           "botao_sem_desm": "Assento e Encosto",
@@ -6846,8 +7793,16 @@
             "familia": "Tecido",
             "materia": ""
           },
+          "materias_primas": [
+            {
+              "familia": "Tecido",
+              "materia": ""
+            }
+          ],
+          "materia_prima_herdada": false,
           "material_id": "ART_T_Almofada_Decorativa",
           "configuravel": true,
+          "entra_3d": true,
           "mesh_final": "07129419",
           "tecido": true,
           "botao_sem_desm": "Almofada Decorativa",
@@ -6878,8 +7833,16 @@
             "familia": "Metal",
             "materia": "Aço Inox"
           },
+          "materias_primas": [
+            {
+              "familia": "Metal",
+              "materia": "Aço Inox"
+            }
+          ],
+          "materia_prima_herdada": false,
           "material_id": "PD_Deslizador",
           "configuravel": false,
+          "entra_3d": true,
           "mesh_final": "07129419",
           "tecido": false,
           "botao_sem_desm": "",
@@ -6989,8 +7952,16 @@
             "familia": "Madeira",
             "materia": "Microtextura"
           },
+          "materias_primas": [
+            {
+              "familia": "Madeira",
+              "materia": "Microtextura"
+            }
+          ],
+          "materia_prima_herdada": false,
           "material_id": "ART_C_Base",
           "configuravel": true,
+          "entra_3d": true,
           "mesh_final": "07132603",
           "tecido": false,
           "botao_sem_desm": "Base",
@@ -7021,8 +7992,16 @@
             "familia": "Tecido",
             "materia": ""
           },
+          "materias_primas": [
+            {
+              "familia": "Tecido",
+              "materia": ""
+            }
+          ],
+          "materia_prima_herdada": false,
           "material_id": "ART_P_Assento",
           "configuravel": true,
+          "entra_3d": true,
           "mesh_final": "07132603",
           "tecido": false,
           "botao_sem_desm": "Assento",
@@ -7053,8 +8032,16 @@
             "familia": "Metal",
             "materia": "Aço Inox"
           },
+          "materias_primas": [
+            {
+              "familia": "Metal",
+              "materia": "Aço Inox"
+            }
+          ],
+          "materia_prima_herdada": false,
           "material_id": "PD_Deslizador",
           "configuravel": false,
+          "entra_3d": true,
           "mesh_final": "07132603",
           "tecido": false,
           "botao_sem_desm": "",
@@ -7167,8 +8154,16 @@
             "familia": "Metal",
             "materia": "Aço Inox"
           },
+          "materias_primas": [
+            {
+              "familia": "Metal",
+              "materia": "Aço Inox"
+            }
+          ],
+          "materia_prima_herdada": false,
           "material_id": "ART_C_Base",
           "configuravel": true,
+          "entra_3d": true,
           "mesh_final": "07132200",
           "tecido": false,
           "botao_sem_desm": "Base e Friso",
@@ -7199,8 +8194,16 @@
             "familia": "Metal",
             "materia": "Aço Inox"
           },
+          "materias_primas": [
+            {
+              "familia": "Metal",
+              "materia": "Aço Inox"
+            }
+          ],
+          "materia_prima_herdada": false,
           "material_id": "ART_C_Friso",
           "configuravel": true,
+          "entra_3d": true,
           "mesh_final": "07132200",
           "tecido": false,
           "botao_sem_desm": "Base e Friso",
@@ -7231,8 +8234,16 @@
             "familia": "Tecido",
             "materia": ""
           },
+          "materias_primas": [
+            {
+              "familia": "Tecido",
+              "materia": ""
+            }
+          ],
+          "materia_prima_herdada": false,
           "material_id": "ART_T_Assento",
           "configuravel": true,
+          "entra_3d": true,
           "mesh_final": "07132200",
           "tecido": true,
           "botao_sem_desm": "Assento",
@@ -7263,8 +8274,16 @@
             "familia": "Metal",
             "materia": "Aço Inox"
           },
+          "materias_primas": [
+            {
+              "familia": "Metal",
+              "materia": "Aço Inox"
+            }
+          ],
+          "materia_prima_herdada": false,
           "material_id": "PD_Deslizador",
           "configuravel": false,
+          "entra_3d": true,
           "mesh_final": "07132200",
           "tecido": false,
           "botao_sem_desm": "",
@@ -7377,8 +8396,16 @@
             "familia": "Metal",
             "materia": "Aço Inox"
           },
+          "materias_primas": [
+            {
+              "familia": "Metal",
+              "materia": "Aço Inox"
+            }
+          ],
+          "materia_prima_herdada": false,
           "material_id": "ART_C_Base",
           "configuravel": true,
+          "entra_3d": true,
           "mesh_final": "07132631",
           "tecido": false,
           "botao_sem_desm": "Base e Friso",
@@ -7409,8 +8436,16 @@
             "familia": "Metal",
             "materia": "Aço Inox"
           },
+          "materias_primas": [
+            {
+              "familia": "Metal",
+              "materia": "Aço Inox"
+            }
+          ],
+          "materia_prima_herdada": false,
           "material_id": "ART_C_Friso",
           "configuravel": true,
+          "entra_3d": true,
           "mesh_final": "07132631",
           "tecido": false,
           "botao_sem_desm": "Base e Friso",
@@ -7441,8 +8476,16 @@
             "familia": "Tecido",
             "materia": ""
           },
+          "materias_primas": [
+            {
+              "familia": "Tecido",
+              "materia": ""
+            }
+          ],
+          "materia_prima_herdada": false,
           "material_id": "ART_T_Assento",
           "configuravel": true,
+          "entra_3d": true,
           "mesh_final": "07132631",
           "tecido": true,
           "botao_sem_desm": "Assento",
@@ -7473,8 +8516,16 @@
             "familia": "Metal",
             "materia": "Aço Inox"
           },
+          "materias_primas": [
+            {
+              "familia": "Metal",
+              "materia": "Aço Inox"
+            }
+          ],
+          "materia_prima_herdada": false,
           "material_id": "PD_Deslizador",
           "configuravel": false,
+          "entra_3d": true,
           "mesh_final": "07132631",
           "tecido": false,
           "botao_sem_desm": "",
@@ -7584,8 +8635,16 @@
             "familia": "Madeira",
             "materia": "Microtextura"
           },
+          "materias_primas": [
+            {
+              "familia": "Madeira",
+              "materia": "Microtextura"
+            }
+          ],
+          "materia_prima_herdada": false,
           "material_id": "ART_C_Base",
           "configuravel": true,
+          "entra_3d": true,
           "mesh_final": "07132236",
           "tecido": false,
           "botao_sem_desm": "Base",
@@ -7616,8 +8675,16 @@
             "familia": "Tecido",
             "materia": ""
           },
+          "materias_primas": [
+            {
+              "familia": "Tecido",
+              "materia": ""
+            }
+          ],
+          "materia_prima_herdada": false,
           "material_id": "ART_T_Assento",
           "configuravel": true,
+          "entra_3d": true,
           "mesh_final": "07132236",
           "tecido": true,
           "botao_sem_desm": "Assento",
@@ -7648,8 +8715,16 @@
             "familia": "Metal",
             "materia": "Aço Inox"
           },
+          "materias_primas": [
+            {
+              "familia": "Metal",
+              "materia": "Aço Inox"
+            }
+          ],
+          "materia_prima_herdada": false,
           "material_id": "PD_Deslizador",
           "configuravel": false,
+          "entra_3d": true,
           "mesh_final": "07132236",
           "tecido": false,
           "botao_sem_desm": "",
@@ -7748,8 +8823,16 @@
             "familia": "Tecido",
             "materia": ""
           },
+          "materias_primas": [
+            {
+              "familia": "Tecido",
+              "materia": ""
+            }
+          ],
+          "materia_prima_herdada": false,
           "material_id": "ART_T_Assento",
           "configuravel": true,
+          "entra_3d": true,
           "mesh_final": "07132169",
           "tecido": true,
           "botao_sem_desm": "Assento e Pés",
@@ -7780,8 +8863,16 @@
             "familia": "Tecido",
             "materia": ""
           },
+          "materias_primas": [
+            {
+              "familia": "Tecido",
+              "materia": ""
+            }
+          ],
+          "materia_prima_herdada": false,
           "material_id": "ART_T_Pe",
           "configuravel": true,
+          "entra_3d": true,
           "mesh_final": "07132169",
           "tecido": true,
           "botao_sem_desm": "Assento e Pés",
@@ -7812,8 +8903,16 @@
             "familia": "Metal",
             "materia": "Aço Inox"
           },
+          "materias_primas": [
+            {
+              "familia": "Metal",
+              "materia": "Aço Inox"
+            }
+          ],
+          "materia_prima_herdada": false,
           "material_id": "PD_Deslizador",
           "configuravel": false,
+          "entra_3d": true,
           "mesh_final": "07132169",
           "tecido": false,
           "botao_sem_desm": "",
@@ -7926,8 +9025,16 @@
             "familia": "Madeira",
             "materia": "Louro"
           },
+          "materias_primas": [
+            {
+              "familia": "Madeira",
+              "materia": "Louro"
+            }
+          ],
+          "materia_prima_herdada": false,
           "material_id": "ART_C_Pe",
           "configuravel": true,
+          "entra_3d": true,
           "mesh_final": "07132229",
           "tecido": false,
           "botao_sem_desm": "Pé",
@@ -7958,8 +9065,16 @@
             "familia": "Madeira",
             "materia": "Louro"
           },
+          "materias_primas": [
+            {
+              "familia": "Madeira",
+              "materia": "Louro"
+            }
+          ],
+          "materia_prima_herdada": false,
           "material_id": "ART_C_Bandeja",
           "configuravel": true,
+          "entra_3d": true,
           "mesh_final": "07132229",
           "tecido": false,
           "botao_sem_desm": "Estrutura e Bandeja",
@@ -7990,8 +9105,16 @@
             "familia": "Tecido",
             "materia": ""
           },
+          "materias_primas": [
+            {
+              "familia": "Tecido",
+              "materia": ""
+            }
+          ],
+          "materia_prima_herdada": false,
           "material_id": "ART_T_Estrutura",
           "configuravel": true,
+          "entra_3d": true,
           "mesh_final": "07132229",
           "tecido": true,
           "botao_sem_desm": "Estrutura e Bandeja",
@@ -8022,8 +9145,16 @@
             "familia": "Metal",
             "materia": "Aço Inox"
           },
+          "materias_primas": [
+            {
+              "familia": "Metal",
+              "materia": "Aço Inox"
+            }
+          ],
+          "materia_prima_herdada": false,
           "material_id": "PD_Deslizador",
           "configuravel": false,
+          "entra_3d": true,
           "mesh_final": "07132229",
           "tecido": false,
           "botao_sem_desm": "",
@@ -8119,8 +9250,16 @@
             "familia": "Tecido",
             "materia": ""
           },
+          "materias_primas": [
+            {
+              "familia": "Tecido",
+              "materia": ""
+            }
+          ],
+          "materia_prima_herdada": false,
           "material_id": "ART_T_Estrutura",
           "configuravel": true,
+          "entra_3d": true,
           "mesh_final": "07132230",
           "tecido": true,
           "botao_sem_desm": "Estrutura",
@@ -8151,8 +9290,16 @@
             "familia": "Metal",
             "materia": "Aço Inox"
           },
+          "materias_primas": [
+            {
+              "familia": "Metal",
+              "materia": "Aço Inox"
+            }
+          ],
+          "materia_prima_herdada": false,
           "material_id": "PD_Deslizador",
           "configuravel": false,
+          "entra_3d": true,
           "mesh_final": "07132230",
           "tecido": false,
           "botao_sem_desm": "",
@@ -8262,8 +9409,16 @@
             "familia": "Madeira",
             "materia": "Louro"
           },
+          "materias_primas": [
+            {
+              "familia": "Madeira",
+              "materia": "Louro"
+            }
+          ],
+          "materia_prima_herdada": false,
           "material_id": "ART_C_Pe",
           "configuravel": true,
+          "entra_3d": true,
           "mesh_final": "07132231",
           "tecido": false,
           "botao_sem_desm": "Pés",
@@ -8294,8 +9449,16 @@
             "familia": "Tecido",
             "materia": ""
           },
+          "materias_primas": [
+            {
+              "familia": "Tecido",
+              "materia": ""
+            }
+          ],
+          "materia_prima_herdada": false,
           "material_id": "ART_T_Estrutura",
           "configuravel": true,
+          "entra_3d": true,
           "mesh_final": "07132231",
           "tecido": true,
           "botao_sem_desm": "Estrutura",
@@ -8326,8 +9489,16 @@
             "familia": "Metal",
             "materia": "Aço Inox"
           },
+          "materias_primas": [
+            {
+              "familia": "Metal",
+              "materia": "Aço Inox"
+            }
+          ],
+          "materia_prima_herdada": false,
           "material_id": "PD_Deslizador",
           "configuravel": false,
+          "entra_3d": true,
           "mesh_final": "07132231",
           "tecido": false,
           "botao_sem_desm": "",
@@ -8438,8 +9609,16 @@
             "familia": "Tecido",
             "materia": ""
           },
+          "materias_primas": [
+            {
+              "familia": "Tecido",
+              "materia": ""
+            }
+          ],
+          "materia_prima_herdada": false,
           "material_id": "ART_T_Assento",
           "configuravel": true,
+          "entra_3d": true,
           "mesh_final": "07132106",
           "tecido": true,
           "botao_sem_desm": "",
@@ -8472,8 +9651,16 @@
             "familia": "Soleta",
             "materia": "Acabamento"
           },
+          "materias_primas": [
+            {
+              "familia": "Soleta",
+              "materia": "Acabamento"
+            }
+          ],
+          "materia_prima_herdada": false,
           "material_id": "ART_P_Estrutura_Revestimento",
           "configuravel": true,
+          "entra_3d": true,
           "mesh_final": "07132106",
           "tecido": false,
           "botao_sem_desm": "Estrutura",
@@ -8504,8 +9691,16 @@
             "familia": "Madeira",
             "materia": "Microtextura"
           },
+          "materias_primas": [
+            {
+              "familia": "Madeira",
+              "materia": "Microtextura"
+            }
+          ],
+          "materia_prima_herdada": false,
           "material_id": "ART_C_Pe",
           "configuravel": true,
+          "entra_3d": true,
           "mesh_final": "07132106",
           "tecido": false,
           "botao_sem_desm": "Pés",
@@ -8536,8 +9731,16 @@
             "familia": "Metal",
             "materia": "Aço Inox"
           },
+          "materias_primas": [
+            {
+              "familia": "Metal",
+              "materia": "Aço Inox"
+            }
+          ],
+          "materia_prima_herdada": false,
           "material_id": "PD_Deslizador",
           "configuravel": false,
+          "entra_3d": true,
           "mesh_final": "07132106",
           "tecido": false,
           "botao_sem_desm": "",
@@ -8647,8 +9850,16 @@
             "familia": "Madeira",
             "materia": "Microtextura"
           },
+          "materias_primas": [
+            {
+              "familia": "Madeira",
+              "materia": "Microtextura"
+            }
+          ],
+          "materia_prima_herdada": false,
           "material_id": "ART_C_Base",
           "configuravel": true,
+          "entra_3d": true,
           "mesh_final": "01132054",
           "tecido": false,
           "botao_sem_desm": "Base",
@@ -8679,8 +9890,16 @@
             "familia": "Tecido",
             "materia": ""
           },
+          "materias_primas": [
+            {
+              "familia": "Tecido",
+              "materia": ""
+            }
+          ],
+          "materia_prima_herdada": false,
           "material_id": "ART_T_Assento",
           "configuravel": true,
+          "entra_3d": true,
           "mesh_final": "01132054",
           "tecido": true,
           "botao_sem_desm": "Assento",
@@ -8711,8 +9930,16 @@
             "familia": "Metal",
             "materia": "Aço Inox"
           },
+          "materias_primas": [
+            {
+              "familia": "Metal",
+              "materia": "Aço Inox"
+            }
+          ],
+          "materia_prima_herdada": false,
           "material_id": "PD_Deslizador",
           "configuravel": false,
+          "entra_3d": true,
           "mesh_final": "01132054",
           "tecido": false,
           "botao_sem_desm": "",
@@ -8743,8 +9970,11 @@
             "familia": "",
             "materia": ""
           },
-          "material_id": "ART_ACS_Capa",
-          "configuravel": true,
+          "materias_primas": [],
+          "materia_prima_herdada": false,
+          "material_id": "",
+          "configuravel": false,
+          "entra_3d": false,
           "mesh_final": "",
           "tecido": false,
           "botao_sem_desm": "",
@@ -8876,8 +10106,16 @@
             "familia": "Madeira",
             "materia": "Catuaba"
           },
+          "materias_primas": [
+            {
+              "familia": "Madeira",
+              "materia": "Catuaba"
+            }
+          ],
+          "materia_prima_herdada": false,
           "material_id": "ART_C_Base",
           "configuravel": true,
+          "entra_3d": true,
           "mesh_final": "07132219",
           "tecido": false,
           "botao_sem_desm": "Base",
@@ -8908,8 +10146,16 @@
             "familia": "Tecido",
             "materia": ""
           },
+          "materias_primas": [
+            {
+              "familia": "Tecido",
+              "materia": ""
+            }
+          ],
+          "materia_prima_herdada": false,
           "material_id": "ART_T_Assento",
           "configuravel": true,
+          "entra_3d": true,
           "mesh_final": "07132219",
           "tecido": true,
           "botao_sem_desm": "Assento",
@@ -8940,8 +10186,16 @@
             "familia": "Metal",
             "materia": "Aço Inox"
           },
+          "materias_primas": [
+            {
+              "familia": "Metal",
+              "materia": "Aço Inox"
+            }
+          ],
+          "materia_prima_herdada": false,
           "material_id": "PD_Deslizador",
           "configuravel": false,
+          "entra_3d": true,
           "mesh_final": "07132219",
           "tecido": false,
           "botao_sem_desm": "",
@@ -8972,8 +10226,11 @@
             "familia": "",
             "materia": ""
           },
-          "material_id": "ART_ACS_Capa",
-          "configuravel": true,
+          "materias_primas": [],
+          "materia_prima_herdada": false,
+          "material_id": "",
+          "configuravel": false,
+          "entra_3d": false,
           "mesh_final": "",
           "tecido": false,
           "botao_sem_desm": "",
@@ -9143,8 +10400,16 @@
             "familia": "Madeira",
             "materia": "Catuaba"
           },
+          "materias_primas": [
+            {
+              "familia": "Madeira",
+              "materia": "Catuaba"
+            }
+          ],
+          "materia_prima_herdada": false,
           "material_id": "ART_P_Base",
           "configuravel": true,
+          "entra_3d": true,
           "mesh_final": "07132220",
           "tecido": false,
           "botao_sem_desm": "Base",
@@ -9175,8 +10440,16 @@
             "familia": "Tecido",
             "materia": ""
           },
+          "materias_primas": [
+            {
+              "familia": "Tecido",
+              "materia": ""
+            }
+          ],
+          "materia_prima_herdada": false,
           "material_id": "ART_T_Assento",
           "configuravel": true,
+          "entra_3d": true,
           "mesh_final": "07132220",
           "tecido": true,
           "botao_sem_desm": "",
@@ -9209,8 +10482,16 @@
             "familia": "Metal",
             "materia": "Aço Carbono"
           },
+          "materias_primas": [
+            {
+              "familia": "Metal",
+              "materia": "Aço Carbono"
+            }
+          ],
+          "materia_prima_herdada": false,
           "material_id": "ART_C_Pino_Detalhe",
           "configuravel": true,
+          "entra_3d": true,
           "mesh_final": "07132220",
           "tecido": false,
           "botao_sem_desm": "Detalhe do Assento",
@@ -9243,8 +10524,16 @@
             "familia": "Soleta",
             "materia": "Acabamento"
           },
+          "materias_primas": [
+            {
+              "familia": "Soleta",
+              "materia": "Acabamento"
+            }
+          ],
+          "materia_prima_herdada": false,
           "material_id": "ART_C_Faixa_Detalhe",
           "configuravel": true,
+          "entra_3d": true,
           "mesh_final": "07132220",
           "tecido": false,
           "botao_sem_desm": "Detalhe do Assento",
@@ -9275,8 +10564,11 @@
             "familia": "",
             "materia": ""
           },
+          "materias_primas": [],
+          "materia_prima_herdada": false,
           "material_id": "ART_A_Posicao",
           "configuravel": true,
+          "entra_3d": true,
           "mesh_final": "07132220",
           "tecido": false,
           "botao_sem_desm": "Posição do Detalhe",
@@ -9307,8 +10599,16 @@
             "familia": "Metal",
             "materia": "Aço Inox"
           },
+          "materias_primas": [
+            {
+              "familia": "Metal",
+              "materia": "Aço Inox"
+            }
+          ],
+          "materia_prima_herdada": false,
           "material_id": "PD_Deslizador",
           "configuravel": false,
+          "entra_3d": true,
           "mesh_final": "07132220",
           "tecido": false,
           "botao_sem_desm": "",
@@ -9418,8 +10718,16 @@
             "familia": "Madeira",
             "materia": "Microtextura"
           },
+          "materias_primas": [
+            {
+              "familia": "Madeira",
+              "materia": "Microtextura"
+            }
+          ],
+          "materia_prima_herdada": false,
           "material_id": "ART_C_Base",
           "configuravel": true,
+          "entra_3d": true,
           "mesh_final": "01132055",
           "tecido": false,
           "botao_sem_desm": "Base",
@@ -9450,8 +10758,16 @@
             "familia": "Tecido",
             "materia": ""
           },
+          "materias_primas": [
+            {
+              "familia": "Tecido",
+              "materia": ""
+            }
+          ],
+          "materia_prima_herdada": false,
           "material_id": "ART_T_Assento",
           "configuravel": true,
+          "entra_3d": true,
           "mesh_final": "01132055",
           "tecido": true,
           "botao_sem_desm": "Assento",
@@ -9482,8 +10798,16 @@
             "familia": "Metal",
             "materia": "Aço Inox"
           },
+          "materias_primas": [
+            {
+              "familia": "Metal",
+              "materia": "Aço Inox"
+            }
+          ],
+          "materia_prima_herdada": false,
           "material_id": "PD_Deslizador",
           "configuravel": false,
+          "entra_3d": true,
           "mesh_final": "01132055",
           "tecido": false,
           "botao_sem_desm": "",
@@ -9514,8 +10838,11 @@
             "familia": "",
             "materia": ""
           },
-          "material_id": "ART_ACS_Capa",
-          "configuravel": true,
+          "materias_primas": [],
+          "materia_prima_herdada": false,
+          "material_id": "",
+          "configuravel": false,
+          "entra_3d": false,
           "mesh_final": "",
           "tecido": false,
           "botao_sem_desm": "",
@@ -9647,8 +10974,16 @@
             "familia": "Madeira",
             "materia": "Catuaba"
           },
+          "materias_primas": [
+            {
+              "familia": "Madeira",
+              "materia": "Catuaba"
+            }
+          ],
+          "materia_prima_herdada": false,
           "material_id": "ART_C_Base",
           "configuravel": true,
+          "entra_3d": true,
           "mesh_final": "07132215",
           "tecido": false,
           "botao_sem_desm": "Base",
@@ -9679,8 +11014,16 @@
             "familia": "Tecido",
             "materia": ""
           },
+          "materias_primas": [
+            {
+              "familia": "Tecido",
+              "materia": ""
+            }
+          ],
+          "materia_prima_herdada": false,
           "material_id": "ART_T_Assento",
           "configuravel": true,
+          "entra_3d": true,
           "mesh_final": "07132215",
           "tecido": true,
           "botao_sem_desm": "Assento",
@@ -9711,8 +11054,16 @@
             "familia": "Metal",
             "materia": "Aço Inox"
           },
+          "materias_primas": [
+            {
+              "familia": "Metal",
+              "materia": "Aço Inox"
+            }
+          ],
+          "materia_prima_herdada": false,
           "material_id": "PD_Deslizador",
           "configuravel": false,
+          "entra_3d": true,
           "mesh_final": "07132215",
           "tecido": false,
           "botao_sem_desm": "",
@@ -9743,8 +11094,11 @@
             "familia": "",
             "materia": ""
           },
-          "material_id": "ART_ACS_Capa",
-          "configuravel": true,
+          "materias_primas": [],
+          "materia_prima_herdada": false,
+          "material_id": "",
+          "configuravel": false,
+          "entra_3d": false,
           "mesh_final": "",
           "tecido": false,
           "botao_sem_desm": "",
@@ -9876,8 +11230,16 @@
             "familia": "Madeira",
             "materia": "Catuaba"
           },
+          "materias_primas": [
+            {
+              "familia": "Madeira",
+              "materia": "Catuaba"
+            }
+          ],
+          "materia_prima_herdada": false,
           "material_id": "ART_C_Base",
           "configuravel": true,
+          "entra_3d": true,
           "mesh_final": "07132216",
           "tecido": false,
           "botao_sem_desm": "Base",
@@ -9908,8 +11270,16 @@
             "familia": "Tecido",
             "materia": ""
           },
+          "materias_primas": [
+            {
+              "familia": "Tecido",
+              "materia": ""
+            }
+          ],
+          "materia_prima_herdada": false,
           "material_id": "ART_T_Assento",
           "configuravel": true,
+          "entra_3d": true,
           "mesh_final": "07132216",
           "tecido": true,
           "botao_sem_desm": "Assento",
@@ -9940,8 +11310,16 @@
             "familia": "Metal",
             "materia": "Aço Inox"
           },
+          "materias_primas": [
+            {
+              "familia": "Metal",
+              "materia": "Aço Inox"
+            }
+          ],
+          "materia_prima_herdada": false,
           "material_id": "PD_Deslizador",
           "configuravel": false,
+          "entra_3d": true,
           "mesh_final": "07132216",
           "tecido": false,
           "botao_sem_desm": "",
@@ -10051,8 +11429,16 @@
             "familia": "Madeira",
             "materia": "Microtextura"
           },
+          "materias_primas": [
+            {
+              "familia": "Madeira",
+              "materia": "Microtextura"
+            }
+          ],
+          "materia_prima_herdada": false,
           "material_id": "ART_C_Base",
           "configuravel": true,
+          "entra_3d": true,
           "mesh_final": "01132056",
           "tecido": false,
           "botao_sem_desm": "Base",
@@ -10083,8 +11469,16 @@
             "familia": "Tecido",
             "materia": ""
           },
+          "materias_primas": [
+            {
+              "familia": "Tecido",
+              "materia": ""
+            }
+          ],
+          "materia_prima_herdada": false,
           "material_id": "ART_T_Assento",
           "configuravel": true,
+          "entra_3d": true,
           "mesh_final": "01132056",
           "tecido": true,
           "botao_sem_desm": "Assento",
@@ -10115,8 +11509,16 @@
             "familia": "Metal",
             "materia": "Aço Inox"
           },
+          "materias_primas": [
+            {
+              "familia": "Metal",
+              "materia": "Aço Inox"
+            }
+          ],
+          "materia_prima_herdada": false,
           "material_id": "PD_Deslizador",
           "configuravel": false,
+          "entra_3d": true,
           "mesh_final": "01132056",
           "tecido": false,
           "botao_sem_desm": "",
@@ -10226,8 +11628,16 @@
             "familia": "Madeira",
             "materia": "Catuaba"
           },
+          "materias_primas": [
+            {
+              "familia": "Madeira",
+              "materia": "Catuaba"
+            }
+          ],
+          "materia_prima_herdada": false,
           "material_id": "ART_C_Base",
           "configuravel": true,
+          "entra_3d": true,
           "mesh_final": "07132221",
           "tecido": false,
           "botao_sem_desm": "Base",
@@ -10258,8 +11668,16 @@
             "familia": "Tecido",
             "materia": ""
           },
+          "materias_primas": [
+            {
+              "familia": "Tecido",
+              "materia": ""
+            }
+          ],
+          "materia_prima_herdada": false,
           "material_id": "ART_T_Assento",
           "configuravel": true,
+          "entra_3d": true,
           "mesh_final": "07132221",
           "tecido": true,
           "botao_sem_desm": "Assento",
@@ -10290,8 +11708,16 @@
             "familia": "Metal",
             "materia": "Aço Inox"
           },
+          "materias_primas": [
+            {
+              "familia": "Metal",
+              "materia": "Aço Inox"
+            }
+          ],
+          "materia_prima_herdada": false,
           "material_id": "PD_Deslizador",
           "configuravel": false,
+          "entra_3d": true,
           "mesh_final": "07132221",
           "tecido": false,
           "botao_sem_desm": "",
@@ -10452,8 +11878,16 @@
             "familia": "Madeira",
             "materia": "Catuaba"
           },
+          "materias_primas": [
+            {
+              "familia": "Madeira",
+              "materia": "Catuaba"
+            }
+          ],
+          "materia_prima_herdada": false,
           "material_id": "ART_P_Base",
           "configuravel": true,
+          "entra_3d": true,
           "mesh_final": "07132222",
           "tecido": false,
           "botao_sem_desm": "Base",
@@ -10484,8 +11918,16 @@
             "familia": "Tecido",
             "materia": ""
           },
+          "materias_primas": [
+            {
+              "familia": "Tecido",
+              "materia": ""
+            }
+          ],
+          "materia_prima_herdada": false,
           "material_id": "ART_T_Assento",
           "configuravel": true,
+          "entra_3d": true,
           "mesh_final": "07132222",
           "tecido": true,
           "botao_sem_desm": "Assento",
@@ -10518,8 +11960,16 @@
             "familia": "Metal",
             "materia": "Eletrostática"
           },
+          "materias_primas": [
+            {
+              "familia": "Metal",
+              "materia": "Eletrostática"
+            }
+          ],
+          "materia_prima_herdada": false,
           "material_id": "ART_C_Pino_Detalhe",
           "configuravel": true,
+          "entra_3d": true,
           "mesh_final": "07132222",
           "tecido": false,
           "botao_sem_desm": "Detalhe do Assento",
@@ -10552,8 +12002,16 @@
             "familia": "Soleta",
             "materia": "Acabamento"
           },
+          "materias_primas": [
+            {
+              "familia": "Soleta",
+              "materia": "Acabamento"
+            }
+          ],
+          "materia_prima_herdada": false,
           "material_id": "ART_C_Faixa_Detalhe",
           "configuravel": true,
+          "entra_3d": true,
           "mesh_final": "07132222",
           "tecido": false,
           "botao_sem_desm": "Detalhe do Assento",
@@ -10586,8 +12044,11 @@
             "familia": "",
             "materia": ""
           },
+          "materias_primas": [],
+          "materia_prima_herdada": false,
           "material_id": "ART_A_Posicao_Detalhe",
           "configuravel": true,
+          "entra_3d": true,
           "mesh_final": "07132222",
           "tecido": false,
           "botao_sem_desm": "Posição do Detalhe",
@@ -10618,8 +12079,16 @@
             "familia": "Metal",
             "materia": "Aço Inox"
           },
+          "materias_primas": [
+            {
+              "familia": "Metal",
+              "materia": "Aço Inox"
+            }
+          ],
+          "materia_prima_herdada": false,
           "material_id": "PD_Deslizador",
           "configuravel": false,
+          "entra_3d": true,
           "mesh_final": "07132222",
           "tecido": false,
           "botao_sem_desm": "",
@@ -10738,8 +12207,16 @@
             "familia": "Madeira",
             "materia": "Teca"
           },
+          "materias_primas": [
+            {
+              "familia": "Madeira",
+              "materia": "Teca"
+            }
+          ],
+          "materia_prima_herdada": false,
           "material_id": "ART_C_Pe",
           "configuravel": true,
+          "entra_3d": true,
           "mesh_final": "07131248",
           "tecido": false,
           "botao_sem_desm": "Pés",
@@ -10770,8 +12247,16 @@
             "familia": "Tecido",
             "materia": ""
           },
+          "materias_primas": [
+            {
+              "familia": "Tecido",
+              "materia": ""
+            }
+          ],
+          "materia_prima_herdada": false,
           "material_id": "ART_T_Assento",
           "configuravel": true,
+          "entra_3d": true,
           "mesh_final": "07131248",
           "tecido": true,
           "botao_sem_desm": "Assento e Encosto",
@@ -10802,8 +12287,16 @@
             "familia": "Tecido",
             "materia": ""
           },
+          "materias_primas": [
+            {
+              "familia": "Tecido",
+              "materia": ""
+            }
+          ],
+          "materia_prima_herdada": false,
           "material_id": "ART_T_Encosto",
           "configuravel": true,
+          "entra_3d": true,
           "mesh_final": "07131248",
           "tecido": true,
           "botao_sem_desm": "Assento e Encosto",
@@ -10834,8 +12327,16 @@
             "familia": "Metal",
             "materia": "Aço Inox"
           },
+          "materias_primas": [
+            {
+              "familia": "Metal",
+              "materia": "Aço Inox"
+            }
+          ],
+          "materia_prima_herdada": false,
           "material_id": "PD_Deslizador",
           "configuravel": false,
+          "entra_3d": true,
           "mesh_final": "07131248",
           "tecido": false,
           "botao_sem_desm": "",
@@ -10866,8 +12367,11 @@
             "familia": "",
             "materia": ""
           },
-          "material_id": "ART_ACS_Capa",
-          "configuravel": true,
+          "materias_primas": [],
+          "materia_prima_herdada": false,
+          "material_id": "",
+          "configuravel": false,
+          "entra_3d": false,
           "mesh_final": "",
           "tecido": false,
           "botao_sem_desm": "",
@@ -11008,8 +12512,16 @@
             "familia": "Madeira",
             "materia": "Teca"
           },
+          "materias_primas": [
+            {
+              "familia": "Madeira",
+              "materia": "Teca"
+            }
+          ],
+          "materia_prima_herdada": false,
           "material_id": "ART_C_Pe",
           "configuravel": true,
+          "entra_3d": true,
           "mesh_final": "07131254",
           "tecido": false,
           "botao_sem_desm": "Pés",
@@ -11040,8 +12552,16 @@
             "familia": "Tecido",
             "materia": ""
           },
+          "materias_primas": [
+            {
+              "familia": "Tecido",
+              "materia": ""
+            }
+          ],
+          "materia_prima_herdada": false,
           "material_id": "ART_T_Assento",
           "configuravel": true,
+          "entra_3d": true,
           "mesh_final": "07131254",
           "tecido": true,
           "botao_sem_desm": "Assento e Encosto",
@@ -11072,8 +12592,16 @@
             "familia": "Tecido",
             "materia": ""
           },
+          "materias_primas": [
+            {
+              "familia": "Tecido",
+              "materia": ""
+            }
+          ],
+          "materia_prima_herdada": false,
           "material_id": "ART_T_Encosto",
           "configuravel": true,
+          "entra_3d": true,
           "mesh_final": "07131254",
           "tecido": true,
           "botao_sem_desm": "Assento e Encosto",
@@ -11104,8 +12632,16 @@
             "familia": "Metal",
             "materia": "Aço Inox"
           },
+          "materias_primas": [
+            {
+              "familia": "Metal",
+              "materia": "Aço Inox"
+            }
+          ],
+          "materia_prima_herdada": false,
           "material_id": "PD_Deslizador",
           "configuravel": false,
+          "entra_3d": true,
           "mesh_final": "07131254",
           "tecido": false,
           "botao_sem_desm": "",
@@ -11136,8 +12672,11 @@
             "familia": "",
             "materia": ""
           },
-          "material_id": "ART_ACS_Capa",
-          "configuravel": true,
+          "materias_primas": [],
+          "materia_prima_herdada": false,
+          "material_id": "",
+          "configuravel": false,
+          "entra_3d": false,
           "mesh_final": "",
           "tecido": false,
           "botao_sem_desm": "",
@@ -11278,8 +12817,16 @@
             "familia": "Madeira",
             "materia": "Teca"
           },
+          "materias_primas": [
+            {
+              "familia": "Madeira",
+              "materia": "Teca"
+            }
+          ],
+          "materia_prima_herdada": false,
           "material_id": "ART_C_Pe",
           "configuravel": true,
+          "entra_3d": true,
           "mesh_final": "07131A11",
           "tecido": false,
           "botao_sem_desm": "Pés",
@@ -11310,8 +12857,16 @@
             "familia": "Tecido",
             "materia": ""
           },
+          "materias_primas": [
+            {
+              "familia": "Tecido",
+              "materia": ""
+            }
+          ],
+          "materia_prima_herdada": false,
           "material_id": "ART_T_Assento",
           "configuravel": true,
+          "entra_3d": true,
           "mesh_final": "07131A11",
           "tecido": true,
           "botao_sem_desm": "Assento e Encosto",
@@ -11342,8 +12897,16 @@
             "familia": "Tecido",
             "materia": ""
           },
+          "materias_primas": [
+            {
+              "familia": "Tecido",
+              "materia": ""
+            }
+          ],
+          "materia_prima_herdada": false,
           "material_id": "ART_T_Encosto",
           "configuravel": true,
+          "entra_3d": true,
           "mesh_final": "07131A11",
           "tecido": true,
           "botao_sem_desm": "Assento e Encosto",
@@ -11374,8 +12937,16 @@
             "familia": "Metal",
             "materia": "Aço Inox"
           },
+          "materias_primas": [
+            {
+              "familia": "Metal",
+              "materia": "Aço Inox"
+            }
+          ],
+          "materia_prima_herdada": false,
           "material_id": "PD_Deslizador",
           "configuravel": false,
+          "entra_3d": true,
           "mesh_final": "07131A11",
           "tecido": false,
           "botao_sem_desm": "",
@@ -11406,8 +12977,11 @@
             "familia": "",
             "materia": ""
           },
-          "material_id": "ART_ACS_Capa",
-          "configuravel": true,
+          "materias_primas": [],
+          "materia_prima_herdada": false,
+          "material_id": "",
+          "configuravel": false,
+          "entra_3d": false,
           "mesh_final": "",
           "tecido": false,
           "botao_sem_desm": "",
@@ -11548,8 +13122,16 @@
             "familia": "Madeira",
             "materia": "Teca"
           },
+          "materias_primas": [
+            {
+              "familia": "Madeira",
+              "materia": "Teca"
+            }
+          ],
+          "materia_prima_herdada": false,
           "material_id": "ART_C_Pe",
           "configuravel": true,
+          "entra_3d": true,
           "mesh_final": "07131A34",
           "tecido": false,
           "botao_sem_desm": "Pés",
@@ -11580,8 +13162,16 @@
             "familia": "Tecido",
             "materia": ""
           },
+          "materias_primas": [
+            {
+              "familia": "Tecido",
+              "materia": ""
+            }
+          ],
+          "materia_prima_herdada": false,
           "material_id": "ART_T_Assento",
           "configuravel": true,
+          "entra_3d": true,
           "mesh_final": "07131A34",
           "tecido": true,
           "botao_sem_desm": "Assento e Encosto",
@@ -11612,8 +13202,16 @@
             "familia": "Tecido",
             "materia": ""
           },
+          "materias_primas": [
+            {
+              "familia": "Tecido",
+              "materia": ""
+            }
+          ],
+          "materia_prima_herdada": false,
           "material_id": "ART_T_Encosto",
           "configuravel": true,
+          "entra_3d": true,
           "mesh_final": "07131A34",
           "tecido": true,
           "botao_sem_desm": "Assento e Encosto",
@@ -11644,8 +13242,16 @@
             "familia": "Metal",
             "materia": "Aço Inox"
           },
+          "materias_primas": [
+            {
+              "familia": "Metal",
+              "materia": "Aço Inox"
+            }
+          ],
+          "materia_prima_herdada": false,
           "material_id": "PD_Deslizador",
           "configuravel": false,
+          "entra_3d": true,
           "mesh_final": "07131A34",
           "tecido": false,
           "botao_sem_desm": "",
@@ -11676,8 +13282,11 @@
             "familia": "",
             "materia": ""
           },
-          "material_id": "ART_ACS_Capa",
-          "configuravel": true,
+          "materias_primas": [],
+          "materia_prima_herdada": false,
+          "material_id": "",
+          "configuravel": false,
+          "entra_3d": false,
           "mesh_final": "",
           "tecido": false,
           "botao_sem_desm": "",
@@ -11841,8 +13450,16 @@
             "familia": "Madeira",
             "materia": "Cedro"
           },
+          "materias_primas": [
+            {
+              "familia": "Madeira",
+              "materia": "Cedro"
+            }
+          ],
+          "materia_prima_herdada": false,
           "material_id": "ART_C_Pe",
           "configuravel": true,
+          "entra_3d": true,
           "mesh_final": "07131A30",
           "tecido": false,
           "botao_sem_desm": "Pés",
@@ -11873,8 +13490,16 @@
             "familia": "Tecido",
             "materia": ""
           },
+          "materias_primas": [
+            {
+              "familia": "Tecido",
+              "materia": ""
+            }
+          ],
+          "materia_prima_herdada": false,
           "material_id": "ART_T_Estrutura",
           "configuravel": true,
+          "entra_3d": true,
           "mesh_final": "07131A30",
           "tecido": true,
           "botao_sem_desm": "Assento e Encosto",
@@ -11907,8 +13532,16 @@
             "familia": "Tecido",
             "materia": ""
           },
+          "materias_primas": [
+            {
+              "familia": "Tecido",
+              "materia": ""
+            }
+          ],
+          "materia_prima_herdada": false,
           "material_id": "ART_T_Encosto_Almofada",
           "configuravel": true,
+          "entra_3d": true,
           "mesh_final": "07131A30",
           "tecido": true,
           "botao_sem_desm": "Assento e Encosto",
@@ -11941,8 +13574,16 @@
             "familia": "Tecido",
             "materia": ""
           },
+          "materias_primas": [
+            {
+              "familia": "Tecido",
+              "materia": ""
+            }
+          ],
+          "materia_prima_herdada": false,
           "material_id": "ART_T_Almofada_Decorativa",
           "configuravel": true,
+          "entra_3d": true,
           "mesh_final": "07131A30",
           "tecido": true,
           "botao_sem_desm": "Almofada Decorativa",
@@ -11975,8 +13616,16 @@
             "familia": "Tecido",
             "materia": ""
           },
+          "materias_primas": [
+            {
+              "familia": "Tecido",
+              "materia": ""
+            }
+          ],
+          "materia_prima_herdada": false,
           "material_id": "ART_T_Braco_Almofada",
           "configuravel": true,
+          "entra_3d": true,
           "mesh_final": "07131A30",
           "tecido": true,
           "botao_sem_desm": "Assento e Encosto",
@@ -12007,8 +13656,16 @@
             "familia": "Metal",
             "materia": "Aço Inox"
           },
+          "materias_primas": [
+            {
+              "familia": "Metal",
+              "materia": "Aço Inox"
+            }
+          ],
+          "materia_prima_herdada": false,
           "material_id": "PD_Deslizador",
           "configuravel": false,
+          "entra_3d": true,
           "mesh_final": "07131A30",
           "tecido": false,
           "botao_sem_desm": "",
@@ -12150,8 +13807,16 @@
             "familia": "Madeira",
             "materia": "Cedro"
           },
+          "materias_primas": [
+            {
+              "familia": "Madeira",
+              "materia": "Cedro"
+            }
+          ],
+          "materia_prima_herdada": false,
           "material_id": "ART_C_Pe",
           "configuravel": true,
+          "entra_3d": true,
           "mesh_final": "07131A31",
           "tecido": false,
           "botao_sem_desm": "Pés",
@@ -12182,8 +13847,16 @@
             "familia": "Tecido",
             "materia": ""
           },
+          "materias_primas": [
+            {
+              "familia": "Tecido",
+              "materia": ""
+            }
+          ],
+          "materia_prima_herdada": false,
           "material_id": "ART_T_Estrutura",
           "configuravel": true,
+          "entra_3d": true,
           "mesh_final": "07131A31",
           "tecido": true,
           "botao_sem_desm": "Assento e Encosto",
@@ -12216,8 +13889,16 @@
             "familia": "Tecido",
             "materia": ""
           },
+          "materias_primas": [
+            {
+              "familia": "Tecido",
+              "materia": ""
+            }
+          ],
+          "materia_prima_herdada": false,
           "material_id": "ART_T_Encosto_Almofada",
           "configuravel": true,
+          "entra_3d": true,
           "mesh_final": "07131A31",
           "tecido": true,
           "botao_sem_desm": "Assento e Encosto",
@@ -12250,8 +13931,16 @@
             "familia": "Tecido",
             "materia": ""
           },
+          "materias_primas": [
+            {
+              "familia": "Tecido",
+              "materia": ""
+            }
+          ],
+          "materia_prima_herdada": false,
           "material_id": "ART_T_Almofada_Decorativa",
           "configuravel": true,
+          "entra_3d": true,
           "mesh_final": "07131A31",
           "tecido": true,
           "botao_sem_desm": "Almofada Decorativa",
@@ -12284,8 +13973,16 @@
             "familia": "Tecido",
             "materia": ""
           },
+          "materias_primas": [
+            {
+              "familia": "Tecido",
+              "materia": ""
+            }
+          ],
+          "materia_prima_herdada": false,
           "material_id": "ART_T_Braco_Almofada",
           "configuravel": true,
+          "entra_3d": true,
           "mesh_final": "07131A31",
           "tecido": true,
           "botao_sem_desm": "Assento e Encosto",
@@ -12316,8 +14013,16 @@
             "familia": "Metal",
             "materia": "Aço Inox"
           },
+          "materias_primas": [
+            {
+              "familia": "Metal",
+              "materia": "Aço Inox"
+            }
+          ],
+          "materia_prima_herdada": false,
           "material_id": "PD_Deslizador",
           "configuravel": false,
+          "entra_3d": true,
           "mesh_final": "07131A31",
           "tecido": false,
           "botao_sem_desm": "",
@@ -12450,8 +14155,16 @@
             "familia": "Madeira",
             "materia": "Cedro"
           },
+          "materias_primas": [
+            {
+              "familia": "Madeira",
+              "materia": "Cedro"
+            }
+          ],
+          "materia_prima_herdada": false,
           "material_id": "ART_C_Pe",
           "configuravel": true,
+          "entra_3d": true,
           "mesh_final": "07131A32",
           "tecido": false,
           "botao_sem_desm": "Pés",
@@ -12482,8 +14195,16 @@
             "familia": "Tecido",
             "materia": ""
           },
+          "materias_primas": [
+            {
+              "familia": "Tecido",
+              "materia": ""
+            }
+          ],
+          "materia_prima_herdada": false,
           "material_id": "ART_T_Estrutura",
           "configuravel": true,
+          "entra_3d": true,
           "mesh_final": "07131A32",
           "tecido": true,
           "botao_sem_desm": "Assento e Encosto",
@@ -12516,8 +14237,16 @@
             "familia": "Tecido",
             "materia": ""
           },
+          "materias_primas": [
+            {
+              "familia": "Tecido",
+              "materia": ""
+            }
+          ],
+          "materia_prima_herdada": false,
           "material_id": "ART_T_Encosto_Almofada",
           "configuravel": true,
+          "entra_3d": true,
           "mesh_final": "07131A32",
           "tecido": true,
           "botao_sem_desm": "Assento e Encosto",
@@ -12550,8 +14279,16 @@
             "familia": "Tecido",
             "materia": ""
           },
+          "materias_primas": [
+            {
+              "familia": "Tecido",
+              "materia": ""
+            }
+          ],
+          "materia_prima_herdada": false,
           "material_id": "ART_T_Almofada_Decorativa",
           "configuravel": true,
+          "entra_3d": true,
           "mesh_final": "07131A32",
           "tecido": true,
           "botao_sem_desm": "Almofada Decorativa",
@@ -12582,8 +14319,16 @@
             "familia": "Metal",
             "materia": "Aço Inox"
           },
+          "materias_primas": [
+            {
+              "familia": "Metal",
+              "materia": "Aço Inox"
+            }
+          ],
+          "materia_prima_herdada": false,
           "material_id": "PD_Deslizador",
           "configuravel": false,
+          "entra_3d": true,
           "mesh_final": "07131A32",
           "tecido": false,
           "botao_sem_desm": "",
