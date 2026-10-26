@@ -131,9 +131,14 @@
  exportador (e no export sem janela): se não consegue criar e gravar em
  TempMaterialX, troca a pasta de export da sessão (setDir #export) para
  Documentos\InLab_export (ou a temp do Max) e avisa no log.
+ 26/10/2026 (Mapear por painéis, revisão final): InLab_ExportGLTF e
+ InLab_AbrirExportadorRealTime chamam InLab_VerUV_Garantir() (no lugar do Desligar)
+ e recusam (#err, false) se ainda sobrar nó com o material de listras do Ver UV
+ (clone sem original conhecido).
 ================================================================================
 */
 
+global InLab_VerUV_Garantir   -- fn_ver_uv.ms
 global InLab_ClasseExportGLTF = undefined   -- cache do exportador resolvido
 
 --------------------------------------------------------------------------------
@@ -223,8 +228,16 @@ fn InLab_ResolverExportadorGLTF =
 --------------------------------------------------------------------------------
 fn InLab_ExportGLTF caminho somenteSelecao:true =
 (
-    local cls = InLab_ResolverExportadorGLTF()
-    if cls == undefined then false
+    -- Ver UV ligado: o GLB sairia com o material das listras. 26/10/2026: o Garantir
+    -- também acha clone com as listras; se sobrar algum, não exporta.
+    local listras = if InLab_VerUV_Garantir != undefined then InLab_VerUV_Garantir() else 0
+    local cls = if listras > 0 then undefined else InLab_ResolverExportadorGLTF()
+    if listras > 0 then
+    (
+        InLab_Log ("Exportação bloqueada: " + listras as string + " peça(s) com o material de listras do Ver UV. Aplique o material e exporte de novo.") tipo:#err
+        false
+    )
+    else if cls == undefined then false
     else
     (
         local ok = false
@@ -378,10 +391,18 @@ fn InLab_TrazerExportadorAoFocoComLog jaAberta =
 --------------------------------------------------------------------------------
 fn InLab_AbrirExportadorRealTime objs somenteSelecao:true =
 (
+    -- Ver UV ligado: o GLB sairia com o material das listras (26/10/2026: Garantir;
+    -- clone com as listras sobrando bloqueia, como peça sem material)
+    local listras = if InLab_VerUV_Garantir != undefined then InLab_VerUV_Garantir() else 0
     -- 14/10/2026 (ajustes do Rafa, item 1): peça sem material ou com o
     -- fallback sai preta e sem material_id no GLB. Não abre o exportador.
-    local r = InLab_Mat_SemMaterial (if somenteSelecao and objs != undefined then objs else (objects as array))
-    if r[1].count + r[2].count > 0 then
+    local r = if listras > 0 then #(#(), #()) else InLab_Mat_SemMaterial (if somenteSelecao and objs != undefined then objs else (objects as array))
+    if listras > 0 then
+    (
+        InLab_Log ("Exportação bloqueada: " + listras as string + " peça(s) com o material de listras do Ver UV. Aplique o material e exporte de novo.") tipo:#err
+        false
+    )
+    else if r[1].count + r[2].count > 0 then
     (
         for n in r[1] do InLab_Log (n + ": sem material — sairia preto e sem material_id no GLB.") tipo:#err
         for n in r[2] do InLab_Log (n + ": material fallback (preto, metálico 1, rugosidade 1).") tipo:#err

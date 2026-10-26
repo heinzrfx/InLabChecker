@@ -113,6 +113,9 @@
  zera a seleção de faces da base antes dos modificadores, avisa no log e
  guarda a seleção na rodada (o Desfazer UV devolve). Só Editable Poly: na
  base Editable Mesh o get/setFaceSelection por script não existe.
+ 26/10/2026 (Mapear por painéis, revisão final): InLab_RealWorldFix chama
+ InLab_VerUV_Garantir() antes (fn_ver_uv.ms): com o Ver UV ligado o RWF lia o
+ material das listras.
 ================================================================================
 */
 
@@ -120,6 +123,9 @@
 global InLab_RWF_BitmapsRWFora
 -- Definida em fn_material_convert.ms, carregado depois deste.
 global InLab_UltimaConversao
+-- 26/10/2026 (Mapear por painéis, revisão final): fn_ver_uv.ms, carregado depois. Com o
+-- Ver UV ligado o RWF leria (e converteria) o material das listras.
+global InLab_VerUV_Garantir
 
 -- Slots de difuso/base color, em ordem de tentativa (Corona Physical,
 -- Corona Legacy, Physical Material, Standard).
@@ -539,6 +545,7 @@ fn InLab_RWF_TriplanarSuportado t =
 -- A rodada fica em InLab_RWF_UltimaRodada para o Desfazer UV.
 fn InLab_RealWorldFix objs silencioso:false =
 (
+    if InLab_VerUV_Garantir != undefined do InLab_VerUV_Garantir()
     InLab_RWF_UltimaRodada = RWFRodada()
     ----------------------------------------------------------------------
     -- 1. Candidatos: geometria com UVW em Real-World, bitmap em

@@ -99,6 +99,30 @@
      60 cm, com o corpo do mesmo tecido em 200. Antes das peças, a rodada guarda
      o tamanho que o RWF deu a cada bitmap do difuso (InLab_Mapear_TamIni); a
      peça sem RWF próprio e sem medida plausível usa esse tamanho.
+
+ 26/10/2026 (Mapear por painéis, Tarefa 4):
+   - MapearRecord.cmPorID = #(#(id, cm por tile)...) de cada ID refeito: o
+     Painéis usa esse tamanho, porque o Mapear tira os "InLab RWF*" do canal 1.
+   - O registro serve também ao Painéis (InLab_PilhaPaineis). InLab_Mapear_Restaurar
+     ganha desde: (texto do #warn de topologia, padrão "o Mapear").
+   - InLab_ReverterMapear: as rodadas de Painéis da peça saem da pilha (o estado de
+     antes delas não existe mais); no fix 1, elas são desfeitas antes (abaixo).
+   - Fix 1 (revisão): a peça refeita pelo Mapear tira da pilha as rodadas de Painéis
+     dela (mais velhas que o Mapear; o Desfazer Painéis apagava o Mapear). O Desfazer
+     Mapear volta antes as rodadas de Painéis da peça que ainda estão na pilha (mais
+     novas), com InLab_Paineis_RestaurarPeca. ID de tecido mantido guarda cmAntes no
+     cmPorID. Varredura do stack em InLab_Mapear_VarrerStack (Mapear e Painéis).
+   - Revisão final (26/10/2026): o Mapear NÃO refaz peça com rodada de Painéis na
+     pilha (InLab_Paineis_TemPeca, fn_mapear_paineis.ms): pula com #info "use
+     Desfazer Painéis antes" e conta como mantida. O Mapear refazendo a peça com Box
+     perdia o caminho de volta ao UV de antes dos Painéis (os "InLab RWF*" e
+     bitmapsAntes da rodada de Painéis). Com isso a chamada a
+     InLab_Paineis_EsquecerPeca motivo:"o Mapear refez a peça" saiu daqui.
+   - Revisão final: a guarda "bitmap usado fora desta rodada" soma os nós do Ver UV
+     cujo material original usa o bitmap (InLab_VerUV_NosQueUsam): com o Ver UV
+     ligado, refs.dependentNodes não vê os nós com as listras.
+   - InLab_Mapear_UVAvaliado ganha canal: (padrão 1; o Painéis lê o canal do RWF
+     para as faces de vivo cujo bitmap é religado ao canal 1).
 */
 
 global InLab_Log, InLab_EhGeometria, InLab_Instancias, InLab_DeduplicarInstancias
@@ -125,7 +149,8 @@ struct MapearRecord
     canal1Antes,        -- #(numMapVerts, #(point3...), #(#(face, #(idx...))...)) ou undefined (sem canal 1)
     modsTirados = #(),  -- #(#(modificador, índice)) em ordem crescente de índice
     bitmapsAntes = #(), -- #(#(bitmap, canal, uTiling, vTiling))
-    graus               -- grau de cada face da base no registro (confere a topologia no Desfazer)
+    graus,              -- grau de cada face da base no registro (confere a topologia no Desfazer)
+    cmPorID = #()       -- 26/10/2026: #(#(id, cm por tile)) de cada ID refeito (o Painéis usa)
 )
 
 -- Decisão de um ID de material (uso interno).
@@ -158,6 +183,10 @@ global InLab_Mapear_LerCanal1, InLab_Mapear_Restaurar, InLab_Mapear_ConverterBas
 global InLab_Mapear_Peca, InLab_Mapear, InLab_ReverterMapear, InLab_Mapear_FatorNo
 -- SÓ TESTE: rótulo ("<nó>" ou "<nó> (ID n)") do ID cujo gerador deve falhar
 global InLab_Mapear_ForcarFalha = undefined
+-- 26/10/2026: fn_mapear_paineis.ms (carregado depois)
+global InLab_Paineis_EsquecerPeca, InLab_Paineis_RestaurarPeca, InLab_Mapear_VarrerStack
+global InLab_Paineis_TemPeca   -- fn_mapear_paineis.ms (revisão final)
+global InLab_VerUV_NosQueUsam  -- fn_ver_uv.ms (carregado depois)
 
 --------------------------------------------------------------------------------
 -- Stack
@@ -188,13 +217,21 @@ fn InLab_Mapear_CanalModUV m =
     else undefined
 )
 
+-- Material da peça como o desenhista montou: com o Ver UV ligado, o material do nó
+-- é o das listras (fn_ver_uv.ms carrega depois deste arquivo).
+global InLab_VerUV_MaterialDe
+fn InLab_Mapear_Mat o =
+(
+    if InLab_VerUV_MaterialDe != undefined then InLab_VerUV_MaterialDe o else o.material
+)
+
 --------------------------------------------------------------------------------
 -- Pré-requisito do Real World Fix (spec 12.6)
 --------------------------------------------------------------------------------
 fn InLab_Mapear_TemRealWorld o =
 (
-    (InLab_RWF_UVWsRW o).count > 0 or (InLab_RWF_BitmapsRW o.material).count > 0 or \
-        (InLab_RWF_Triplanares o.material).count > 0
+    (InLab_RWF_UVWsRW o).count > 0 or (InLab_RWF_BitmapsRW (InLab_Mapear_Mat o)).count > 0 or \
+        (InLab_RWF_Triplanares (InLab_Mapear_Mat o)).count > 0
 )
 
 fn InLab_Mapear_SemRWF o =
@@ -220,7 +257,7 @@ fn InLab_Mapear_MaterialDoID mtl id =
 -- #(#(id, material)...): um por ID presente (Multi/Sub) ou #(#(undefined, material)).
 fn InLab_Mapear_Grupos o =
 (
-    if classof o.material != Multimaterial then #(#(undefined, o.material))
+    if classof (InLab_Mapear_Mat o) != Multimaterial then #(#(undefined, (InLab_Mapear_Mat o)))
     else
     (
         local ids = #()
@@ -228,7 +265,7 @@ fn InLab_Mapear_Grupos o =
         for f = 1 to m.numfaces do appendIfUnique ids (getFaceMatID m f)
         delete m
         sort ids
-        for id in ids collect #(id, InLab_Mapear_MaterialDoID o.material id)
+        for id in ids collect #(id, InLab_Mapear_MaterialDoID (InLab_Mapear_Mat o) id)
     )
 )
 
@@ -421,8 +458,9 @@ fn InLab_Mapear_Juntar acc r =
 
 -- UV avaliado (com o stack) das faces da base, para preservar o que não é
 -- refeito quando um "InLab RWF*" do canal 1 sai. undefined se a topologia do
--- snapshot não bate com a base.
-fn InLab_Mapear_UVAvaliado o faces =
+-- snapshot não bate com a base. canal: o canal lido (padrão 1; o Painéis lê o
+-- canal do RWF que o bitmap lia, revisão final de 26/10/2026).
+fn InLab_Mapear_UVAvaliado o faces canal:1 =
 (
     local po = InLab_Mapear_PolyDe o
     local m = snapshotAsMesh o
@@ -433,11 +471,11 @@ fn InLab_Mapear_UVAvaliado o faces =
         local nTri = 0
         for f = 1 to nf do nTri += (polyop.getFaceDeg po f) - 2
         local ok = m.numverts == (polyop.getNumVerts po) and m.numfaces == nTri and \
-            (meshop.getNumMaps m) > 1 and (meshop.getMapSupport m 1)
+            (meshop.getNumMaps m) > canal and (meshop.getMapSupport m canal)
         if ok do
         (
             local uvs = #(); local mapa = #()
-            local dic = #(); dic.count = meshop.getNumMapVerts m 1
+            local dic = #(); dic.count = meshop.getNumMapVerts m canal
             local tri = 0
             for f = 1 to nf while ok do
             (
@@ -449,7 +487,7 @@ fn InLab_Mapear_UVAvaliado o faces =
                     for t = tri + 1 to tri + deg - 2 do
                     (
                         local fv = getFace m t
-                        local tv = meshop.getMapFace m 1 t
+                        local tv = meshop.getMapFace m canal t
                         for k = 1 to 3 do
                         (
                             local p = findItem vs (fv[k] as integer)
@@ -461,7 +499,7 @@ fn InLab_Mapear_UVAvaliado o faces =
                     (
                         local idx = for mv in cantos collect
                         (
-                            if dic[mv] == undefined do ( append uvs (meshop.getMapVert m 1 mv); dic[mv] = uvs.count )
+                            if dic[mv] == undefined do ( append uvs (meshop.getMapVert m canal mv); dic[mv] = uvs.count )
                             dic[mv]
                         )
                         append mapa #(f, idx)
@@ -660,7 +698,7 @@ fn InLab_Mapear_LerCanal1 o =
 -- Devolve a peça ao estado do registro. Quem chama abre o undo. false (sem
 -- tocar em nada) se a malha da base mudou desde o Mapear: o canal 1 é regravado
 -- por índice de face e numa topologia diferente sairia lixo.
-fn InLab_Mapear_Restaurar rec =
+fn InLab_Mapear_Restaurar rec desde:"o Mapear" =
 (
     local o = rec.no
     local po = InLab_Mapear_PolyDe o
@@ -673,7 +711,7 @@ fn InLab_Mapear_Restaurar rec =
     )
     if not mesma do
     (
-        InLab_Log (o.name + ": a malha mudou desde o Mapear; use o Ctrl+Z.") tipo:#warn
+        InLab_Log (o.name + ": a malha mudou desde " + desde + "; use o Ctrl+Z.") tipo:#warn
         return false
     )
     local c = rec.canal1Antes
@@ -726,15 +764,16 @@ fn InLab_Mapear_ConverterBase o =
 )
 
 --------------------------------------------------------------------------------
--- Uma peça (o primeiro nó de um grupo de instâncias): #refeita, #mantida,
--- #pulada ou #nada (nenhuma face a medir em nenhum ID).
+-- 26/10/2026 (Tarefa 4 dos painéis, fix 1): varredura do stack, só leitura, usada
+-- pelo Mapear e pelo Painéis: #(rwfMods, bloqueio, temUnwrap, avisos).
+--   rwfMods  = #(#(modificador, índice, canal)...) do Real World Fix ("InLab RWF*", e o
+--              UVW Map com o Xform "InLab RWF" logo acima: caso A, spec 12.1)
+--   bloqueio = nome do 1º modificador de UV do usuário no canal 1 (peça não é tocada)
+--   temUnwrap = há Unwrap_UVW no stack; avisos = textos de #warn (Symmetry, UV na base)
 --------------------------------------------------------------------------------
-fn InLab_Mapear_Peca o produto unwrapGrande rodada:undefined =
+fn InLab_Mapear_VarrerStack o =
 (
-    if rodada == undefined do rodada = InLab_Instancias o
-    InLab_Log (o.name + ": mapeando (" + ((getPolygonCount o)[1]) as string + " faces)...") tipo:#info
-    -- 1. stack
-    local rwfMods = #()       -- #(modificador, índice, canal)
+    local rwfMods = #()
     local bloqueio = undefined
     local temUnwrap = false
     local avisos = #()
@@ -759,6 +798,29 @@ fn InLab_Mapear_Peca o produto unwrapGrande rodada:undefined =
         else if not (matchPattern ((classof m) as string) pattern:"*UVW*") do
             append avisos ("UV calculado na base, abaixo de " + m.name)
     )
+    #(rwfMods, bloqueio, temUnwrap, avisos)
+)
+
+--------------------------------------------------------------------------------
+-- Uma peça (o primeiro nó de um grupo de instâncias): #refeita, #mantida,
+-- #pulada ou #nada (nenhuma face a medir em nenhum ID).
+--------------------------------------------------------------------------------
+fn InLab_Mapear_Peca o produto unwrapGrande rodada:undefined =
+(
+    -- revisão final (26/10/2026): peça com rodada de Painéis na pilha não é refeita
+    if InLab_Paineis_TemPeca != undefined and (InLab_Paineis_TemPeca o) do
+    (
+        InLab_Log (o.name + ": tem painéis; o Mapear não mexe (use Desfazer Painéis antes).") tipo:#info
+        return #mantida
+    )
+    if rodada == undefined do rodada = InLab_Instancias o
+    InLab_Log (o.name + ": mapeando (" + ((getPolygonCount o)[1]) as string + " faces)...") tipo:#info
+    -- 1. stack (InLab_Mapear_VarrerStack, a mesma do Painéis)
+    local st = InLab_Mapear_VarrerStack o
+    local rwfMods = st[1]       -- #(modificador, índice, canal)
+    local bloqueio = st[2]
+    local temUnwrap = st[3]
+    local avisos = st[4]
     if bloqueio != undefined then
     (
         InLab_Log (o.name + ": modificador de mapeamento \"" + bloqueio + "\" no canal 1 acima da base; peça não tocada.") tipo:#warn
@@ -813,6 +875,8 @@ fn InLab_Mapear_Peca o produto unwrapGrande rodada:undefined =
                            (InLab_Mapear_Num d.alvo) + " cm por tile.") tipo:#warn
             local resultado = #pulada
             -- 3. registro (classe antiga) e base Editable_Poly
+            -- (a mesma conversão está copiada em InLab_Paineis_Peca, fn_mapear_paineis.ms:
+            -- mudança aqui vai para lá também)
             local baseAntes = classof o.baseobject
             local rec = MapearRecord no:o baseAntes:baseAntes modsTirados:#() bitmapsAntes:#()
             local convertida = false
@@ -879,6 +943,9 @@ fn InLab_Mapear_Peca o produto unwrapGrande rodada:undefined =
                         for b in d.rebind where (InLab_RWF_CanalBitmap b) == rc[1] and (findItem canaisPresos rc[1]) == 0 do
                         (
                             local fora = for n in (refs.dependentNodes b) where isValidNode n and (InLab_EhGeometria n) and (findItem rodada n) == 0 collect n.name
+                            -- revisão final: com o Ver UV ligado, refs.dependentNodes não vê os nós com as listras
+                            if InLab_VerUV_NosQueUsam != undefined do
+                                for n in (InLab_VerUV_NosQueUsam b) where isValidNode n and (InLab_EhGeometria n) and (findItem rodada n) == 0 and (findItem fora n.name) == 0 do append fora n.name
                             if fora.count > 0 do
                             (
                                 InLab_Log (o.name + ": " + b.name + " (canal " + rc[1] as string + ") também é usado fora desta rodada (" +
@@ -936,7 +1003,13 @@ fn InLab_Mapear_Peca o produto unwrapGrande rodada:undefined =
                                            (if abs (razao - 1.0) > 1e-4 then ", tiling × " + (formattedPrint razao format:".3g") else "") + ".") tipo:#info
                             )
                         if not (InLab_Mapear_Gravar o acc[1] acc[2]) do throw "gravação do canal 1 falhou"
+                        for d in feitos do append rec.cmPorID #(d.id, d.alvo)
+                        -- fix 1: ID de tecido mantido guarda o tamanho medido (o Painéis usa)
+                        for d in decs where d.acao == #manter and d.regra == #tecido and d.cmAntes != undefined do
+                            append rec.cmPorID #(d.id, d.cmAntes)
                         append InLab_UltimoMapear rec
+                        -- revisão final: o Mapear não chega aqui numa peça com painéis (pulada no
+                        -- início), então não há rodada de Painéis mais velha a esquecer
                         resultado = #refeita
                     )
                     catch
@@ -1001,8 +1074,8 @@ fn InLab_Mapear objs produto unwrapGrande:false =
     local rodada = #()
     for o in alvos do for i in (InLab_Instancias o) do appendIfUnique rodada i
     InLab_Mapear_CanaisIni = #()
-    for o in rodada where o.material != undefined do
-        for b in (InLab_Mapear_Bitmaps o.material) where (for x in InLab_Mapear_CanaisIni where x[1] == b collect x).count == 0 do
+    for o in rodada where (InLab_Mapear_Mat o) != undefined do
+        for b in (InLab_Mapear_Bitmaps (InLab_Mapear_Mat o)) where (for x in InLab_Mapear_CanaisIni where x[1] == b collect x).count == 0 do
             append InLab_Mapear_CanaisIni #(b, InLab_RWF_CanalBitmap b)
     InLab_Mapear_TamIni = #()
     for o in alvos do
@@ -1080,6 +1153,10 @@ fn InLab_ReverterMapear =
                 (
                     try
                     (
+                        -- 26/10/2026 (fix 1): rodadas de Painéis da peça ainda na pilha são
+                        -- mais novas que o Mapear: voltam antes (da mais nova para a mais velha)
+                        -- e saem da pilha; depois o registro do Mapear
+                        if InLab_Paineis_RestaurarPeca != undefined do InLab_Paineis_RestaurarPeca rec.no
                         if InLab_Mapear_Restaurar rec do
                         (
                             n += 1

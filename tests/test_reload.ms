@@ -13,7 +13,7 @@
 */
 global INLAB_ROOT, INLAB_MODULOS, InLab_RecarregarPlugin, InLab_AbrirUI
 global InLabChecker_Rollout, InLab_Log
-global INLAB_RELOAD_MOSTRAR_MSGBOX, InLab_UltimoErroReload
+global INLAB_RELOAD_MOSTRAR_MSGBOX, InLab_UltimoErroReload, InLabSecUV, InLab_VerUV_Desligar
 global INLAB_TESTE_SAIDA, INLAB_TESTE_FALHAS
 (
     local dirTeste = getFilenamePath (getSourceFileName())
@@ -87,6 +87,30 @@ global INLAB_TESTE_SAIDA, INLAB_TESTE_FALHAS
         InLab_UltimoErroReload = undefined
         local ok3 = InLab_RecarregarPlugin()
         checar "Reload de limpeza (restaurado) retorna true" (ok3 == true)
+
+        -- 4. UI (26/10/2026, Mapear por paineis): a secao UV e Texturas tem os
+        -- botoes novos depois do reload.
+        local nomesUV = #()
+        try ( nomesUV = for c in InLabSecUV.controls collect (toLower (c.name)) ) catch ( nomesUV = #() )
+        checar "UI: InLabSecUV tem btnPaineis, btnPaineisRev e btnVerUV" \
+            ((findItem nomesUV "btnpaineis") > 0 and (findItem nomesUV "btnpaineisrev") > 0 and (findItem nomesUV "btnveruv") > 0)
+
+        -- 5. O Ver UV desliga sozinho (salvar, exportar, verificar): o botao acompanha.
+        local caixaVU = Box name:"TESTE_reload_vu"
+        local sincOk = false
+        try
+        (
+            select caixaVU
+            InLabSecUV.btnVerUV.checked = false
+            InLabSecUV.btnVerUV.changed true
+            local ligouVU = InLabSecUV.btnVerUV.checked
+            InLab_VerUV_Desligar() -- mesmo caminho do callback #filePreSave
+            sincOk = (ligouVU == true and InLabSecUV.btnVerUV.checked == false)
+        )
+        catch ( linha ("EXCECAO no item do Ver UV: " + getCurrentException()) )
+        try ( InLab_VerUV_Desligar() ) catch ()
+        try ( delete caixaVU ) catch ()
+        checar "UI: botão Ver UV desmarca quando o Ver UV desliga sozinho" sincOk
     )
     catch
     (

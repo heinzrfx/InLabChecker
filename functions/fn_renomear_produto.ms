@@ -127,10 +127,16 @@
  A parte fora do 3D sai da lista de materiais (PartesDeMaterial, que alimenta
  a seção Produto, a renomeação e as V-20/V-25/V-38), dos nomes de objeto
  (MeshesDoProduto), do aviso de matéria-prima e dos materiais especiais.
+ 26/10/2026 (Mapear por painéis, revisão final): InLab_Produto_MateriaisDaSelecao e
+ InLab_Produto_Aplicar chamam InLab_VerUV_Garantir() antes (fn_ver_uv.ms): com o Ver
+ UV ligado a lista e a renomeação liam o material das listras.
 ================================================================================
 */
 
 global InLab_UltimaRenomeacao = #() -- pares #(alvo, nomeAntigo) desde o último Reverter
+-- 26/10/2026 (Mapear por painéis, revisão final): fn_ver_uv.ms, carregado depois. Com o
+-- Ver UV ligado a lista de materiais e a renomeação leriam o material das listras.
+global InLab_VerUV_Garantir
 
 --------------------------------------------------------------------------------
 -- DADOS DO JSON
@@ -561,6 +567,7 @@ fn InLab_Produto_Canal nomeSlot =
 global InLab_Produto_MateriaisDaSelecao
 fn InLab_Produto_MateriaisDaSelecao objs =
 (
+    if InLab_VerUV_Garantir != undefined do InLab_VerUV_Garantir()
     local mtls = #()
     for o in objs where o.material != undefined do
     (
@@ -703,6 +710,7 @@ fn InLab_Produto_Renomear alvo novoNome =
 global InLab_Produto_Aplicar
 fn InLab_Produto_Aplicar produto ligacoes produtos:#() =
 (
+    if InLab_VerUV_Garantir != undefined do InLab_VerUV_Garantir()
     local motivo = InLab_Produto_MotivoBloqueio produtos produto
     local partes = InLab_Produto_PartesDeMaterial produto
 

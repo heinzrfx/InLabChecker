@@ -8,6 +8,7 @@
  topologia no Desfazer, ilhas das faces mantidas, teto do tubo e logs.
  Seção 16 (26/10/2026, Delray e Gap): tamanho do RWF no canal 1, material
  compartilhado com o Triplanar no canal 2 e peça sem UV do mesmo bitmap.
+ 26/10/2026 (Mapear por painéis, Tarefa 4): MapearRecord.cmPorID.
 */
 global InLab_Log, InLab_ParseJSON, InLab_Produto_Lista, InLab_RWF_Feitos
 global InLab_Mapear, InLab_ReverterMapear, InLab_UltimoMapear, InLab_Mapear_LerCanal1
@@ -693,6 +694,10 @@ global INLAB_TESTE_SAIDA, INLAB_TESTE_FALHAS
         InLab_Mapear #(d1) produto
         checar "D1: madeira de 300 cm refeita com o tamanho do RWF (300,0), não 60" (temLog logs #ok "TESTE_d1_cerejeira" "1 tile a cada 300,0 cm")
         checar "D1: sem o aviso de faixa" (not (temLog logs #warn "TESTE_d1_cerejeira" "fora da faixa"))
+        local recD1 = undefined
+        for r in InLab_UltimoMapear where r.no == d1 do recD1 = r
+        linha ("      cmPorID: " + (if recD1 == undefined then "sem registro" else recD1.cmPorID as string))
+        checar "cmPorID: MapearRecord guarda o tamanho usado por ID" (recD1 != undefined and recD1.cmPorID.count == 1 and             recD1.cmPorID[1][1] == undefined and (abs (recD1.cmPorID[1][2] - 300.0)) < 0.5)
         -- D2: tecido de material compartilhado com o Triplanar do RWF no canal 2
         -- (40 cm) em duas peças: as duas saem com 40, não só a 1ª.
         local mT = criarMaterial "ART_TecRW" arqImg canal:2
