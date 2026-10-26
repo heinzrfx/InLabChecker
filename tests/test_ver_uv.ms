@@ -3,8 +3,14 @@
  por listras para conferir o mapeamento). RODAR NUMA CENA VAZIA (resetMaxFile #noPrompt).
  Resultado: <pasta temp do Max>\inlab_test_ver_uv.txt (PASS/FAIL por item).
  26/10/2026 (Mapear por paineis, Tarefa 5).
+ 26/10/2026 (revisao final): InLab_VerUV_Garantir (clone com as listras, Converter
+ Material com o Ver UV ligado, export e verificacoes recusam com listras sobrando,
+ Desligar mantem material trocado). O teste do ExportGLTF tira o callback
+ #InLabVerUV durante a chamada (o #preExport mascarava o Desligar da funcao).
 */
 global InLab_Log, INLAB_ROOT
+global InLab_VerUV_Garantir, InLab_ConverterObjetos, InLab_ReverterConversao, InLab_UltimaConversao
+global InLab_AbrirExportadorRealTime, InLab_Produto_MateriaisDaSelecao, InLab_RealWorldFix
 global InLab_VerUV_Ligar, InLab_VerUV_Desligar, InLab_VerUV_Ligado
 global InLab_VerUV_MaterialDe, InLab_VerUV_Textura
 global InLab_VerUV_ExportadorAberto
@@ -30,6 +36,11 @@ global INLAB_TESTE_SAIDA, INLAB_TESTE_FALHAS
     (
         format "      [LOG %] %\n" tipo msg to:INLAB_TESTE_SAIDA
         flush INLAB_TESTE_SAIDA
+        append logs #(tipo, msg)
+    )
+    fn temLog logs tipo t1 t2 =
+    (
+        (for l in logs where l[1] == tipo and (findString l[2] t1) != undefined and (findString l[2] t2) != undefined collect l).count > 0
     )
     local rootOriginal = INLAB_ROOT
     local arqMax = (getDir #temp) + "\inlab_test_ver_uv.max"
@@ -38,8 +49,14 @@ global INLAB_TESTE_SAIDA, INLAB_TESTE_FALHAS
     (
         if INLAB_ROOT == undefined do INLAB_ROOT = raiz
         resetMaxFile #noPrompt
+        fileIn (raiz + "core\utils.ms")
+        fileIn (raiz + "functions\fn_json.ms")
+        fileIn (raiz + "functions\fn_renomear_produto.ms")
+        fileIn (raiz + "functions\fn_autouv.ms")
+        fileIn (raiz + "functions\fn_realworldfix.ms")
         fileIn (raiz + "functions\fn_mapear.ms")
         fileIn (raiz + "functions\fn_ver_uv.ms")
+        fileIn (raiz + "functions\fn_material_convert.ms")
         fileIn (raiz + "functions\fn_export_gltf.ms")
         fileIn (raiz + "verifications\verif_orquestrador.ms")
 
@@ -110,7 +127,10 @@ global INLAB_TESTE_SAIDA, INLAB_TESTE_FALHAS
         -- 11: ExportGLTF desliga antes de exportar
         InLab_VerUV_Ligar #(c9)
         select c9
+        -- sem o callback #InLabVerUV: o #preExport desligaria sozinho e mascararia a função
+        callbacks.removeScripts id:#InLabVerUV
         try ( InLab_ExportGLTF ((getDir #temp) + "\inlab_test_ver_uv.glb") ) catch ()
+        fileIn (raiz + "functions\fn_ver_uv.ms")   -- recoloca os callbacks (o registro não tem inicializador)
         checar "Ver UV: InLab_ExportGLTF desliga antes de exportar" (not (InLab_VerUV_Ligado()) and c9.material == m9)
         -- 12: verificações desligam
         InLab_VerUV_Ligar #(c9)
@@ -130,6 +150,78 @@ global INLAB_TESTE_SAIDA, INLAB_TESTE_FALHAS
         InLab_VerUV_Desligar()
         checar "Ver UV: não liga com o Real-Time Exporter aberto" (n13 == 0 and not sobrou13 and c13.material == m13)
         delete c13
+        ---------------- revisão final (26/10/2026): InLab_VerUV_Garantir ----------------
+        fn comListras = ( for o in objects where o.material != undefined and o.material.name == "InLab Ver UV" collect o )
+        -- material trocado com o Ver UV ligado: o Desligar mantém o atual
+        local cW = Box name:"TESTE_vu_troca"
+        local mW = StandardMaterial name:"TESTE_matW", mW2 = StandardMaterial name:"TESTE_matW2"
+        cW.material = mW
+        InLab_VerUV_Ligar #(cW)
+        cW.material = mW2
+        logs.count = 0
+        InLab_VerUV_Desligar()
+        checar "Ver UV: material trocado com o Ver UV ligado fica no Desligar, com #warn" \
+            (cW.material == mW2 and (temLog logs #warn "TESTE_vu_troca" "material trocado com o Ver UV ligado"))
+        delete cW
+        -- Converter Material com o Ver UV ligado
+        if (try ( CoronaPhysicalMtl != undefined ) catch ( false )) then
+        (
+            local cA = Box name:"TESTE_vu_conv"
+            local mCor = CoronaPhysicalMtl name:"TESTE_corona_conv"
+            cA.material = mCor
+            InLab_UltimaConversao = #()
+            InLab_VerUV_Ligar #(cA)
+            local nConv = try ( InLab_ConverterObjetos #(cA) fazerBake:false ) catch ( -1 )
+            local matConv = cA.material
+            InLab_VerUV_Desligar()
+            local depois = cA.material
+            try ( InLab_ReverterConversao() ) catch ()
+            linha ("      converter: " + nConv as string + " convertido(s), material " + (if matConv == undefined then "undefined" else matConv.name))
+            checar "Ver UV: Converter com o Ver UV ligado não deixa listras" \
+                (nConv == 1 and matConv != undefined and matConv.name != "InLab Ver UV" and depois == matConv and \
+                 cA.material == mCor and (comListras()).count == 0)
+            delete cA
+        )
+        else linha "PULADO  Ver UV: Converter com o Ver UV ligado (CoronaPhysicalMtl não disponível)"
+        -- Renomear pelo JSON e RWF com o Ver UV ligado: leem o material de verdade
+        local cR = Box name:"TESTE_vu_ren"
+        local mR = StandardMaterial name:"TESTE_matR"
+        cR.material = mR
+        InLab_VerUV_Ligar #(cR)
+        local mtlsR = try ( InLab_Produto_MateriaisDaSelecao #(cR) ) catch ( #() )
+        checar "Ver UV: lista de materiais do Renomear não traz as listras" \
+            (mtlsR.count == 1 and mtlsR[1] == mR and not (InLab_VerUV_Ligado()) and cR.material == mR)
+        InLab_VerUV_Ligar #(cR)
+        try ( InLab_RealWorldFix #(cR) silencioso:true ) catch ( linha ("      RWF: " + getCurrentException()) )
+        checar "Ver UV: Real World Fix desliga o Ver UV antes" (not (InLab_VerUV_Ligado()) and cR.material == mR)
+        delete cR
+        -- clone com o Ver UV ligado: instância recebe o original; cópia dá #err
+        local cO = Box name:"TESTE_vu_orig"
+        local mO = StandardMaterial name:"TESTE_matO"
+        cO.material = mO
+        InLab_VerUV_Ligar #(cO)
+        local cI = instance cO name:"TESTE_vu_inst" pos:[0,80,0]
+        local cC = copy cO name:"TESTE_vu_copia" pos:[0,160,0]
+        logs.count = 0
+        local sobra = try ( InLab_VerUV_Garantir() ) catch ( -1 )
+        checar "Ver UV: clone com o Ver UV ligado volta ao original da instância ou dá #err" \
+            (sobra == 1 and cO.material == mO and cI.material == mO and (temLog logs #info "TESTE_vu_inst" "TESTE_vu_orig") and \
+             cC.material != undefined and cC.material.name == "InLab Ver UV" and (temLog logs #err "TESTE_vu_copia" "aplique o material"))
+        -- export e verificações recusam com listras sobrando (a cópia)
+        local glb2 = (getDir #temp) + "\inlab_test_ver_uv2.glb"
+        if doesFileExist glb2 do deleteFile glb2
+        select cC
+        logs.count = 0
+        local rExp = try ( InLab_ExportGLTF glb2 ) catch ( "exceção" )
+        -- sem o Garantir (antes da correção) o Real-Time Exporter abriria de verdade: só chama com ele
+        local rRT = if InLab_VerUV_Garantir == undefined then "sem Garantir" else (try ( InLab_AbrirExportadorRealTime #(cC) ) catch ( "exceção" ))
+        local rVer = try ( InLab_RodarVerificacoes undefined ) catch ( "exceção" )
+        linha ("      export: " + rExp as string + ", real-time: " + rRT as string + ", verificações: " + rVer as string)
+        checar "Ver UV: export recusa com listras sobrando na cena" \
+            (rExp == false and rRT == false and not (doesFileExist glb2) and (temLog logs #err "Exporta" "listras"))
+        checar "Ver UV: verificações recusam com listras sobrando na cena" (rVer == false and (temLog logs #err "Verifica" "listras"))
+        if doesFileExist glb2 do deleteFile glb2
+        delete #(cO, cI, cC)
         -- 7
         INLAB_ROOT = (getDir #temp) + "\inlab_sem_raiz\\"
         local arqGerado = (getDir #temp) + "\inlab_uv_listras.png"

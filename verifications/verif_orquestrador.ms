@@ -54,10 +54,13 @@
  para a V-20, que confere arquivo, objetos e materiais contra os nomes dele.
  09/10/2026 (issue #145): e para InLab_Mat_Resolver, que tira palha/cristal
  (V-35/V-36) da matéria-prima das partes.
+ 26/10/2026 (Mapear por painéis, revisão final): InLab_RodarVerificacoes chama
+ InLab_VerUV_Garantir() (no lugar do Desligar) e recusa (#err, false) se ainda sobrar
+ nó com o material de listras do Ver UV.
 ================================================================================
 */
 
-global InLab_VerUV_Desligar   -- fn_ver_uv.ms
+global InLab_VerUV_Garantir   -- fn_ver_uv.ms
 -- Propriedade do PRODUTO (não da família): informada pelo checkbox da UI.
 -- Consumida pela V-38 (Grupo 7).
 global InLab_TampoAcessorioProduto = false
@@ -142,8 +145,14 @@ fn InLab_SalvarAntesDeVerificar produto:undefined resposta:unsupplied caminho:un
 
 fn InLab_RodarVerificacoes cfg tampoAcessorio:false codEst:"" nomeProduto:"" produto:undefined =
 (
-    -- Ver UV ligado: o relatório leria o material das listras
-    if InLab_VerUV_Desligar != undefined do InLab_VerUV_Desligar()
+    -- Ver UV ligado: o relatório leria o material das listras. 26/10/2026: o Garantir
+    -- também acha clone com as listras; se sobrar algum, não verifica.
+    local listras = if InLab_VerUV_Garantir != undefined then InLab_VerUV_Garantir() else 0
+    if listras > 0 do
+    (
+        InLab_Log ("Verificação bloqueada: " + listras as string + " peça(s) com o material de listras do Ver UV. Aplique o material e verifique de novo.") tipo:#err
+        return false
+    )
     InLab_TampoAcessorioProduto = tampoAcessorio
     InLab_ResetarResultados()
     local objetos = InLab_ObjetosVerificacao()

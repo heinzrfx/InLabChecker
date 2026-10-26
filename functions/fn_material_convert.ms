@@ -128,6 +128,10 @@
  22/10/2026: os avisos de Triplanar e de bitmap em Real-World mandam rodar o
  Real World Fix, não mais o Auto UV (o RWF saiu do Auto UV em 14/10, #185, e
  o Auto UV virou opcional nesta versão).
+ 26/10/2026 (Mapear por painéis, revisão final): InLab_ConverterObjetos e
+ InLab_ReverterConversao chamam InLab_VerUV_Garantir() antes (fn_ver_uv.ms): com o
+ Ver UV ligado, a conversão gravava as listras como material original e o Desfazer
+ as punha de volta num nó que o Ver UV não rastreava.
 ================================================================================
 */
 
@@ -151,6 +155,9 @@ struct ConversaoRecord
 )
 
 global InLab_UltimaConversao = #()
+-- 26/10/2026 (Mapear por painéis, revisão final): fn_ver_uv.ms. Com o Ver UV ligado o
+-- material do nó são as listras: a conversão gravaria as listras como original.
+global InLab_VerUV_Garantir
 global InLab_ClasseGLTF = undefined   -- cache da classe resolvida
 global InLab_BakesDestaConversao = #() -- acumulador temporário: bakes criados na conversão em andamento
 
@@ -1019,6 +1026,7 @@ fn InLab_ConverterMaterialNode mtl tamanho fazerBake especiais:#() =
 fn InLab_ConverterObjetos objs tamanhoBake:1024 fazerBake:true produto:undefined =
 (
     -- #153: palha/cristal pela matéria-prima do produto escolhido, se houver.
+    if InLab_VerUV_Garantir != undefined do InLab_VerUV_Garantir()
     local especiais = if produto == undefined or InLab_Produto_EspeciaisDoProduto == undefined then #()
                       else InLab_Produto_EspeciaisDoProduto produto
     -- NÃO zera InLab_UltimaConversao aqui — o histórico acumula entre
@@ -1099,6 +1107,7 @@ fn InLab_ConverterObjetos objs tamanhoBake:1024 fazerBake:true produto:undefined
 --------------------------------------------------------------------------------
 fn InLab_ReverterConversao =
 (
+    if InLab_VerUV_Garantir != undefined do InLab_VerUV_Garantir()
     if InLab_UltimaConversao.count == 0 then
         InLab_Log "Nenhuma conversão registrada nesta sessão para reverter." tipo:#warn
     else

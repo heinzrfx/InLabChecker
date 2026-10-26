@@ -610,7 +610,7 @@ rollout InLabSecUV "UV e Texturas" width:420
         try
         (
             if estado then InLab_VerUV_Ligar (InLab_SelecaoValida())
-            else InLab_VerUV_Desligar()
+            else InLab_VerUV_Garantir()   -- desliga e acerta clones com as listras
         )
         catch ( InLab_Log ("Ver UV: " + getCurrentException()) tipo:#err )
         try ( btnVerUV.checked = InLab_VerUV_Ligado() ) catch ()
@@ -1047,7 +1047,7 @@ rollout InLabChecker_Rollout ("InLabChecker · InLab Artefacto · v" + INLAB_VER
 
         -- 26/10/2026: fechar o painel devolve o material original da seleção
         -- (o Ver UV não pode ficar ligado sem o botão para desligar).
-        try ( InLab_VerUV_Desligar() ) catch ( InLab_Log ("Ver UV: não desligou ao fechar: " + getCurrentException()) tipo:#warn )
+        try ( InLab_VerUV_Garantir() ) catch ( InLab_Log ("Ver UV: não desligou ao fechar: " + getCurrentException()) tipo:#warn )
 
         InLab_LogUI = undefined
         InLab_Header_Pnl = undefined
