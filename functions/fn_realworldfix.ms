@@ -102,6 +102,17 @@
  leva a escala do Real-World para o glTF). Decisão do humano: só avisar.
  InLab_RWF_OriginaisRW acha o caso, e o RWF e a V-42 mandam reverter a
  conversão, rodar o RWF e converter de novo.
+
+ 26/10/2026 (teste no Aparador Delray): Editable Poly com faces selecionadas
+ guardadas (sub-objeto) passa essa seleção para cima no stack, mesmo no nível
+ de objeto. O UVW Xform do RWF só agia nessas faces (o UVW Map do Triplanar
+ não: conferido no teste). No Box010
+ (64 de 912 faces selecionadas) o Xform mudava 128 de 1488 vértices de UV e o
+ resto ficava em cm (1 tile a cada 1 cm, liso na viewport). Um Poly Select em
+ nível de objeto embaixo não resolveu. Agora InLab_RWF_LimparSelecaoFaces
+ zera a seleção de faces da base antes dos modificadores, avisa no log e
+ guarda a seleção na rodada (o Desfazer UV devolve). Só Editable Poly: na
+ base Editable Mesh o get/setFaceSelection por script não existe.
 ================================================================================
 */
 
@@ -201,7 +212,8 @@ struct RWFRodada
 (
     bitmaps = #(),      -- #(bitmap, #(#(propriedade, valor antigo)...)), antes da conversão
     triplanares = #(),  -- #(triplanar, #(#(dono, propriedade)...)): slots que apontavam para ele
-    mods = #()          -- #(nó, modificador "InLab RWF*") adicionados
+    mods = #(),         -- #(nó, modificador "InLab RWF*") adicionados
+    selecoes = #()      -- #(base Editable_Poly, faces selecionadas antes)
 )
 -- Última rodada do RWF (o Auto UV pega daqui e guarda em InLab_UltimoRWF).
 global InLab_RWF_UltimaRodada
@@ -314,8 +326,30 @@ fn InLab_RWF_Reverter rodada =
     for g in rodada.bitmaps do
         try ( InLab_RWF_RestaurarBitmap g )
         catch ( InLab_Log (g[1].name + ": não restaurei o Real-World (" + getCurrentException() + ").") tipo:#err )
+    for s in rodada.selecoes do
+        try ( polyop.setFaceSelection s[1] s[2] )
+        catch ( InLab_Log ("Real World Fix: não devolvi a seleção de faces (" + getCurrentException() + ").") tipo:#warn )
     for n in nos do InLab_Log (n.name + ": Real World Fix desfeito.") tipo:#ok
     nos.count
+)
+
+-- 26/10/2026: faces selecionadas na base Editable_Poly sobem pelo stack e o
+-- UVW Xform do RWF só agiria nelas (o UVW Map não). Zera a seleção (instâncias
+-- dividem a base: uma vez só) e guarda na rodada para o Desfazer.
+fn InLab_RWF_LimparSelecaoFaces o rodada =
+(
+    local b = o.baseobject
+    if classof b == Editable_Poly and (for s in rodada.selecoes where s[1] == b collect s).count == 0 do
+    (
+        local sel = polyop.getFaceSelection b
+        if sel.numberSet > 0 do
+        (
+            append rodada.selecoes #(b, sel)
+            polyop.setFaceSelection b #{}
+            InLab_Log (o.name + ": " + sel.numberSet as string + " face(s) selecionada(s) no Editable Poly. Seleção limpa para o UV valer na peça inteira.") tipo:#info
+        )
+    )
+    ok
 )
 
 --------------------------------------------------------------------------------
@@ -662,6 +696,7 @@ fn InLab_RealWorldFix objs silencioso:false =
                         InstanceMgr.MakeObjectsUnique o #individual
                         InLab_Log (o.name + ": era instância com Triplanar em espaço mundo. Ficou único (gizmo por objeto).") tipo:#warn
                     )
+                    InLab_RWF_LimparSelecaoFaces o InLab_RWF_UltimaRodada
                     local partes = #()
                     local uvws = InLab_RWF_UVWsRW o
                     local canalRW = 0
