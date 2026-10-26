@@ -99,6 +99,14 @@
      60 cm, com o corpo do mesmo tecido em 200. Antes das peças, a rodada guarda
      o tamanho que o RWF deu a cada bitmap do difuso (InLab_Mapear_TamIni); a
      peça sem RWF próprio e sem medida plausível usa esse tamanho.
+
+ 26/10/2026 (Mapear por painéis, Tarefa 4):
+   - MapearRecord.cmPorID = #(#(id, cm por tile)...) de cada ID refeito: o
+     Painéis usa esse tamanho, porque o Mapear tira os "InLab RWF*" do canal 1.
+   - O registro serve também ao Painéis (InLab_PilhaPaineis). InLab_Mapear_Restaurar
+     ganha desde: (texto do #warn de topologia, padrão "o Mapear").
+   - InLab_ReverterMapear: depois de restaurar uma peça, as rodadas de Painéis dela
+     saem da pilha (InLab_Paineis_EsquecerPeca): o estado de antes delas não existe mais.
 */
 
 global InLab_Log, InLab_EhGeometria, InLab_Instancias, InLab_DeduplicarInstancias
@@ -125,7 +133,8 @@ struct MapearRecord
     canal1Antes,        -- #(numMapVerts, #(point3...), #(#(face, #(idx...))...)) ou undefined (sem canal 1)
     modsTirados = #(),  -- #(#(modificador, índice)) em ordem crescente de índice
     bitmapsAntes = #(), -- #(#(bitmap, canal, uTiling, vTiling))
-    graus               -- grau de cada face da base no registro (confere a topologia no Desfazer)
+    graus,              -- grau de cada face da base no registro (confere a topologia no Desfazer)
+    cmPorID = #()       -- 26/10/2026: #(#(id, cm por tile)) de cada ID refeito (o Painéis usa)
 )
 
 -- Decisão de um ID de material (uso interno).
@@ -158,6 +167,8 @@ global InLab_Mapear_LerCanal1, InLab_Mapear_Restaurar, InLab_Mapear_ConverterBas
 global InLab_Mapear_Peca, InLab_Mapear, InLab_ReverterMapear, InLab_Mapear_FatorNo
 -- SÓ TESTE: rótulo ("<nó>" ou "<nó> (ID n)") do ID cujo gerador deve falhar
 global InLab_Mapear_ForcarFalha = undefined
+-- 26/10/2026: fn_mapear_paineis.ms (carregado depois)
+global InLab_Paineis_EsquecerPeca
 
 --------------------------------------------------------------------------------
 -- Stack
@@ -660,7 +671,7 @@ fn InLab_Mapear_LerCanal1 o =
 -- Devolve a peça ao estado do registro. Quem chama abre o undo. false (sem
 -- tocar em nada) se a malha da base mudou desde o Mapear: o canal 1 é regravado
 -- por índice de face e numa topologia diferente sairia lixo.
-fn InLab_Mapear_Restaurar rec =
+fn InLab_Mapear_Restaurar rec desde:"o Mapear" =
 (
     local o = rec.no
     local po = InLab_Mapear_PolyDe o
@@ -673,7 +684,7 @@ fn InLab_Mapear_Restaurar rec =
     )
     if not mesma do
     (
-        InLab_Log (o.name + ": a malha mudou desde o Mapear; use o Ctrl+Z.") tipo:#warn
+        InLab_Log (o.name + ": a malha mudou desde " + desde + "; use o Ctrl+Z.") tipo:#warn
         return false
     )
     local c = rec.canal1Antes
@@ -936,6 +947,7 @@ fn InLab_Mapear_Peca o produto unwrapGrande rodada:undefined =
                                            (if abs (razao - 1.0) > 1e-4 then ", tiling × " + (formattedPrint razao format:".3g") else "") + ".") tipo:#info
                             )
                         if not (InLab_Mapear_Gravar o acc[1] acc[2]) do throw "gravação do canal 1 falhou"
+                        for d in feitos do append rec.cmPorID #(d.id, d.alvo)
                         append InLab_UltimoMapear rec
                         resultado = #refeita
                     )
@@ -1083,6 +1095,8 @@ fn InLab_ReverterMapear =
                         if InLab_Mapear_Restaurar rec do
                         (
                             n += 1
+                            -- 26/10/2026: rodadas de Painéis desta peça saem da pilha
+                            if InLab_Paineis_EsquecerPeca != undefined do InLab_Paineis_EsquecerPeca rec.no
                             local agora = classof rec.no.baseobject
                             InLab_Log (rec.no.name + ": mapeamento desfeito" +
                                        (if agora != rec.baseAntes then " (a base continua " + agora as string + "; era " + rec.baseAntes as string + ")." else ".")) tipo:#ok

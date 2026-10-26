@@ -5,12 +5,18 @@
  26/10/2026 (Tarefa 1): vivos e geometria em mundo.
  26/10/2026 (Tarefa 2): costuras pelo vivo, molde em caixa, contornos.
  26/10/2026 (Tarefa 3): UV de discos e anéis (InLab_Paineis_UV / InLab_Paineis_Torta).
+ 26/10/2026 (Tarefa 4): botão Painéis (InLab_Paineis), pilha, Desfazer Painéis, Desfazer
+ Mapear e Desfazer UV com painéis por cima; ChamferBox com os nomes certos de segmentos.
 */
 global InLab_Log, InLab_EhGeometria, InLab_Mapear_PolyDe
 global InLab_Paineis_Vert, InLab_Paineis_Elementos, InLab_Paineis_VolArea
 global InLab_Paineis_EhVivo, InLab_Paineis_VivosDoProduto, InLab_Paineis_NosDaCabeca
 global InLab_Paineis_Separar, InLab_Paineis_Contornos
 global InLab_Paineis_UV, InLab_Paineis_Torta, InLab_Mapear_Medir, InLab_Mapear_Gravar
+global InLab_ParseJSON, InLab_Produto_Lista, InLab_RWF_Feitos, InLab_Mapear, InLab_ReverterMapear
+global InLab_UltimoMapear, InLab_Mapear_LerCanal1, InLab_ReverterAutoUV, InLab_UltimoRWF, InLab_UltimoAutoUV
+global InLab_Paineis, InLab_DesfazerPaineis, InLab_PilhaPaineis, InLab_Paineis_EsquecerPeca
+global InLab_Paineis_EhTecido, InLab_Paineis_Escala
 global INLAB_TESTE_SAIDA, INLAB_TESTE_FALHAS
 (
     local dirTeste = getFilenamePath (getSourceFileName())
@@ -26,18 +32,36 @@ global INLAB_TESTE_SAIDA, INLAB_TESTE_FALHAS
     )
 
     local logOriginal = InLab_Log
+    local logs = #()
     InLab_Log = fn _logTeste msg tipo:#info =
     (
         format "      [LOG %] %\n" tipo msg to:INLAB_TESTE_SAIDA
         flush INLAB_TESTE_SAIDA
+        append logs #(tipo, msg)
+    )
+    -- algum log do tipo com os dois trechos
+    fn temLog logs tipo t1 t2 =
+    (
+        (for l in logs where l[1] == tipo and (findString l[2] t1) != undefined and (findString l[2] t2) != undefined collect l).count > 0
+    )
+    fn contaLog logs t1 t2 =
+    (
+        (for l in logs where (findString l[2] t1) != undefined and (findString l[2] t2) != undefined collect l).count
     )
     local criados = #()
+    local feitosAntes = InLab_RWF_Feitos
+    local arqImg = undefined
     try
     (
         fileIn (raiz + @"core\utils.ms")
+        fileIn (raiz + @"functions\fn_json.ms")
+        fileIn (raiz + @"functions\fn_renomear_produto.ms")
+        fileIn (raiz + @"functions\fn_autouv.ms")
+        fileIn (raiz + @"functions\fn_realworldfix.ms")
         fileIn (raiz + @"functions\fn_mapear_classe.ms")
         fileIn (raiz + @"functions\fn_mapear_medir.ms")
         fileIn (raiz + @"functions\fn_mapear_gerar.ms")
+        fileIn (raiz + @"functions\fn_mapear.ms")
         fileIn (raiz + @"functions\fn_mapear_paineis.ms")
 
         -- almofada: Box 100x100x20 arredondado
@@ -133,18 +157,22 @@ global INLAB_TESTE_SAIDA, INLAB_TESTE_FALHAS
         local r2 = InLab_Paineis_Separar a2 corpo2 #()
         checar "caixa: sem vivo dá molde em caixa no eixo Z com 3 painéis" (r2.paineis.count == 3 and r2.eixoCaixa == 3 and (matchPattern r2.metodo pattern:"molde em caixa*"))
 
-        local pe = ChamferBox length:20 width:90 height:36 fillet:3 filletsegs:3 lengthsegs:4 widthsegs:8 heightsegs:4 name:"TESTE_pn_empe"
+        local pe = ChamferBox length:20 width:90 height:36 fillet:3 Fillet_Segments:3 Length_Segments:10 Width_Segments:10 Height_Segments:10 name:"TESTE_pn_empe"
         convertToPoly pe
         append criados pe
         local r3 = InLab_Paineis_Separar pe #{1..(polyop.getNumFaces pe.baseobject)} #()
         checar "caixa: almofada em pé (fina em Y) usa o eixo Y" (r3.eixoCaixa == 2)
 
-        local cb3 = ChamferBox length:100 width:100 height:20 fillet:5 filletsegs:3 name:"TESTE_pn_cb3"
+        -- 26/10/2026 (Tarefa 4): ChamferBox usa Length_Segments/Width_Segments/Height_Segments e
+        -- Fillet_Segments (lengthsegs:/filletsegs: eram ignorados em silêncio: malha de ~114 faces)
+        local cb3 = ChamferBox length:100 width:100 height:20 fillet:5 Fillet_Segments:3 Length_Segments:10 Width_Segments:10 Height_Segments:10 name:"TESTE_pn_cb3"
         convertToPoly cb3
         append criados cb3
         local r3b = InLab_Paineis_Separar cb3 #{1..(polyop.getNumFaces cb3.baseobject)} #()
         checar "caixa: ChamferBox 100×100×20 (Fillet 5) sem vivo dá 3 painéis" (r3b.paineis.count == 3 and r3b.eixoCaixa == 3)
         checar "caixa: almofada em pé ChamferBox 90×20×36 dá 3 painéis no eixo Y" (r3.paineis.count == 3 and r3.eixoCaixa == 2)
+        linha ("      ChamferBox: em pé " + (polyop.getNumFaces pe.baseobject) as string + " faces, 100×100×20 " + (polyop.getNumFaces cb3.baseobject) as string + " faces")
+        checar "caixa: os ChamferBox do teste são densos (10 segmentos por lado)" ((polyop.getNumFaces pe.baseobject) > 1000 and (polyop.getNumFaces cb3.baseobject) > 1000)
 
         local cil = Cylinder radius:20 height:45 heightsegs:3 sides:24 name:"TESTE_pn_cil"
         convertToPoly cil
@@ -349,10 +377,280 @@ global INLAB_TESTE_SAIDA, INLAB_TESTE_FALHAS
         local seg = (timeStamp() - tIni) / 1000.0
         linha ("      desempenho: " + nfG as string + " faces em " + seg as string + " s; " + (if uvG == undefined then "sem UV" else uvG[3]))
         checar "desempenho: 20 mil faces abaixo de 20 s" (nfG >= 19000 and uvG != undefined and seg < 20.0)
+
+        ---------------- Tarefa 4: botão Painéis, pilha e Desfazer Painéis ----------------
+        -- canal 1 da base (registro de InLab_Mapear_LerCanal1) igual
+        fn igualCanal a b =
+        (
+            if a == undefined or b == undefined then a == b
+            else if a[1] != b[1] or a[3].count != b[3].count then false
+            else
+            (
+                local ok = true
+                for k = 1 to a[1] while ok do if (distance a[2][k] b[2][k]) > 1e-5 do ok = false
+                for k = 1 to a[3].count while ok do
+                (
+                    local fa = a[3][k][2], fb = b[3][k][2]
+                    if fa.count != fb.count then ok = false
+                    else for j = 1 to fa.count do if fa[j] != fb[j] do ok = false
+                )
+                ok
+            )
+        )
+        -- UV avaliado (snapshot) por canto de triângulo, só das faces do ID (undefined = todas)
+        fn canalID o id =
+        (
+            local m = snapshotAsMesh o
+            local r = #()
+            if (meshop.getNumMaps m) > 1 and (meshop.getMapSupport m 1) do
+                for f = 1 to m.numfaces where id == undefined or (getFaceMatID m f) == id do
+                (
+                    local tv = meshop.getMapFace m 1 f
+                    for k = 1 to 3 do append r (meshop.getMapVert m 1 tv[k])
+                )
+            delete m
+            r
+        )
+        fn igualLista a b =
+        (
+            local ok = a.count == b.count and a.count > 0
+            for k = 1 to a.count while ok do if (distance a[k] b[k]) > 1e-5 do ok = false
+            ok
+        )
+        fn gerarImagem nome =
+        (
+            local arq = (getDir #temp) + "\\" + nome
+            local bm = dotNetObject "System.Drawing.Bitmap" 64 64
+            local claro = (dotNetClass "System.Drawing.Color").FromArgb 230 230 230
+            local escuro = (dotNetClass "System.Drawing.Color").FromArgb 40 40 40
+            for y = 0 to 63 do
+            (
+                local c = if (mod (y / 4) 2) == 0 then escuro else claro
+                for x = 0 to 63 do bm.SetPixel x y c
+            )
+            bm.Save arq
+            bm.Dispose()
+            arq
+        )
+        fn criarMaterial nome arq =
+        (
+            local b = Bitmaptexture filename:arq
+            b.coords.mapChannel = 1
+            Standardmaterial name:nome diffuseMap:b
+        )
+        -- almofada Box 100×100×20 (10×10×2 segmentos) com UV de UVW Box de 60 cm colapsado
+        fn mkPeca nome pos =
+        (
+            local b = Box length:100 width:100 height:20 lengthsegs:10 widthsegs:10 heightsegs:2 mapcoords:true name:nome pos:pos
+            addModifier b (Uvwmap maptype:4 length:60 width:60 height:60)
+            convertToPoly b
+            b
+        )
+        -- vivo quadrado (4 barras finas de 1,2 cm, uma por lado) em volta de uma almofada de meia-medida h
+        fn mkVivo nome h z desloc =
+        (
+            local n = (2 * h) as integer
+            local v = Box length:1.2 width:(2 * h + 1.2) height:1.2 widthsegs:n pos:([0, h, z - 0.6] + desloc)
+            convertToPoly v
+            local outras = #(
+                Box length:1.2 width:(2 * h + 1.2) height:1.2 widthsegs:n pos:([0, -h, z - 0.6] + desloc),
+                Box length:(2 * h + 1.2) width:1.2 height:1.2 lengthsegs:n pos:([h, 0, z - 0.6] + desloc),
+                Box length:(2 * h + 1.2) width:1.2 height:1.2 lengthsegs:n pos:([-h, 0, z - 0.6] + desloc))
+            for b in outras do ( convertToPoly b; polyop.attach v b )
+            v.name = nome
+            v
+        )
+        InLab_RWF_Feitos = #()
+        InLab_UltimoMapear = #()
+        InLab_PilhaPaineis = #()
+        InLab_UltimoRWF = #(); InLab_UltimoAutoUV = #()
+        local js = "{\"produtos\": [{\"cod_est\": \"0002\", \"partes\": [" +
+            "{\"nome_parte\": \"Almofada\", \"materia_prima\": {\"familia\": \"Tecido\", \"materia\": \"\"}, \"material_id\": \"ART_PnTecido\"}, " +
+            "{\"nome_parte\": \"AlmofadaRW\", \"materia_prima\": {\"familia\": \"Tecido\", \"materia\": \"\"}, \"material_id\": \"ART_PnTecidoRW\"}, " +
+            "{\"nome_parte\": \"Pe\", \"materia_prima\": {\"familia\": \"Madeira\", \"materia\": \"Cedro\"}, \"material_id\": \"ART_PnMadeira\"}]}]}"
+        local produto = (InLab_Produto_Lista (InLab_ParseJSON js))[1]
+        arqImg = gerarImagem "inlab_test_paineis_listras.png"
+        local mTec = criarMaterial "ART_PnTecido" arqImg
+        local mMad = criarMaterial "ART_PnMadeira" arqImg
+        local mRW = criarMaterial "ART_PnTecidoRW" arqImg
+        mRW.diffuseMap.coords.realWorldScale = true
+        mRW.diffuseMap.coords.realWorldWidth = 50; mRW.diffuseMap.coords.realWorldHeight = 50
+
+        local semMat = mkPeca "TESTE_pn4_semmat" [0,0,-500]
+        append criados semMat
+        checar "EhTecido: peça sem material não é tecido" ((InLab_Paineis_EhTecido semMat produto) == false)
+
+        -- 1. almofada com vivo (RWF do canal 1 de 80 cm) + peça de madeira na mesma seleção
+        local alm = mkPeca "TESTE_pn4_alm" [0,2000,0]
+        alm.material = mTec; append criados alm
+        local viv = mkVivo "TESTE_pn4_vivo" 50.0 10.0 [0,2000,0]
+        viv.material = mTec; append criados viv
+        viv.parent = alm
+        addModifier alm (Uvwmap name:"InLab RWF Triplanar" maptype:4 length:80 width:80 height:80 mapChannel:1)
+        append InLab_RWF_Feitos alm
+        local canalVivAntes = InLab_Mapear_LerCanal1 viv
+        local mad = mkPeca "TESTE_pn4_madeira" [300,2000,0]
+        mad.material = mMad; append criados mad
+        local canalMadAntes = InLab_Mapear_LerCanal1 mad
+        local modsMadAntes = mad.modifiers.count
+        checar "EhTecido: tecido sim, madeira não" ((InLab_Paineis_EhTecido alm produto) and not (InLab_Paineis_EhTecido mad produto))
+        logs.count = 0
+        local n1 = InLab_Paineis #(alm, mad) produto
+        local med1 = InLab_Mapear_Medir alm
+        local cm1 = if med1.escala > 0 then 1.0 / med1.escala else 0.0
+        linha ("      almofada com vivo: refeitas " + n1 as string + ", " + cm1 as string + " cm por tile")
+        checar "Painéis: almofada com vivo é refeita e o log diz '2 painéis pelo vivo'" (n1 == 1 and (temLog logs #ok "TESTE_pn4_alm" "2 painéis pelo vivo"))
+        checar "Painéis: RWF do canal 1 sai e a escala vem dele (80 cm)" (alm.modifiers.count == 0 and cm1 > 76.0 and cm1 < 84.0 and (temLog logs #ok "TESTE_pn4_alm" "80,0 cm por tile"))
+        checar "Painéis: linha de progresso por peça" (temLog logs #info "TESTE_pn4_alm" "mapeando por painéis (")
+        checar "Painéis: o vivo (outra peça) não muda" (igualCanal canalVivAntes (InLab_Mapear_LerCanal1 viv))
+        checar "Painéis: peça de madeira na seleção fica idêntica, com #warn 'só para tecido'" ((temLog logs #warn "TESTE_pn4_madeira" "só para tecido") and \
+            (igualCanal canalMadAntes (InLab_Mapear_LerCanal1 mad)) and mad.modifiers.count == modsMadAntes)
+        checar "Painéis: uma rodada na pilha, com a almofada" (InLab_PilhaPaineis.count == 1 and InLab_PilhaPaineis[1].count == 1 and InLab_PilhaPaineis[1][1].no == alm)
+        logs.count = 0
+        local d1 = InLab_DesfazerPaineis()
+        checar "Desfazer Painéis: RWF de volta e canal 1 de antes" (d1 == 1 and alm.modifiers.count == 1 and (matchPattern alm.modifiers[1].name pattern:"InLab RWF*") and InLab_PilhaPaineis.count == 0)
+
+        -- 2. Multi/Sub: ID 1 tecido (tampo e faixa), ID 2 madeira (fundo)
+        local mc = mkPeca "TESTE_pn4_multi" [0,2300,0]
+        for f = 1 to (polyop.getNumFaces mc) do polyop.setFaceMatID mc f (if (polyop.getFaceNormal mc f).z < -0.9 then 2 else 1)
+        local mm = Multimaterial numsubs:2
+        mm.materialList[1] = mTec; mm.materialList[2] = mMad
+        mc.material = mm; append criados mc
+        local uvMc1 = canalID mc 1, uvMc2 = canalID mc 2
+        logs.count = 0
+        InLab_Paineis #(mc) produto
+        checar "Painéis: Multi/Sub muda só as faces do ID de tecido" ((igualLista uvMc2 (canalID mc 2)) and not (igualLista uvMc1 (canalID mc 1)) and \
+            (temLog logs #ok "TESTE_pn4_multi" "painéis"))
+        InLab_DesfazerPaineis()
+
+        -- 3. sem produto
+        local sp = mkPeca "TESTE_pn4_semprod" [300,2300,0]
+        sp.material = mTec; append criados sp
+        local canalSp = InLab_Mapear_LerCanal1 sp
+        logs.count = 0
+        local nSp = InLab_Paineis #(sp) undefined
+        checar "Painéis: sem produto, #warn e nada muda" (nSp == 0 and (temLog logs #warn "Painéis" "produto") and (igualCanal canalSp (InLab_Mapear_LerCanal1 sp)) and InLab_PilhaPaineis.count == 0)
+
+        -- 4. sem RWF (bitmap Real-World e a peça fora de InLab_RWF_Feitos)
+        local sr = mkPeca "TESTE_pn4_semrwf" [600,2300,0]
+        sr.material = mRW; append criados sr
+        local canalSr = InLab_Mapear_LerCanal1 sr
+        logs.count = 0
+        local nSr = InLab_Paineis #(sr) produto
+        checar "Painéis: sem RWF, #err e peça pulada" (nSr == 0 and (temLog logs #err "TESTE_pn4_semrwf" "Real World Fix") and (igualCanal canalSr (InLab_Mapear_LerCanal1 sr)))
+
+        -- 5. duas rodadas, dois cliques
+        local p = mkPeca "TESTE_pn4_p" [0,2600,0]
+        p.material = mTec; append criados p
+        local q = mkPeca "TESTE_pn4_q" [300,2600,0]
+        q.material = mTec; append criados q
+        local p0 = InLab_Mapear_LerCanal1 p, q0 = InLab_Mapear_LerCanal1 q
+        InLab_Paineis #(p) produto
+        local p1 = InLab_Mapear_LerCanal1 p
+        InLab_Paineis #(q) produto
+        local okR = InLab_PilhaPaineis.count == 2 and not (igualCanal p0 p1) and not (igualCanal q0 (InLab_Mapear_LerCanal1 q))
+        InLab_DesfazerPaineis()
+        okR = okR and (igualCanal q0 (InLab_Mapear_LerCanal1 q)) and (igualCanal p1 (InLab_Mapear_LerCanal1 p)) and InLab_PilhaPaineis.count == 1
+        InLab_DesfazerPaineis()
+        okR = okR and (igualCanal p0 (InLab_Mapear_LerCanal1 p)) and InLab_PilhaPaineis.count == 0
+        checar "Desfazer Painéis: duas rodadas, dois cliques, uma de cada vez" okR
+        logs.count = 0
+        checar "Desfazer Painéis: pilha vazia, #warn e 0" ((InLab_DesfazerPaineis()) == 0 and (temLog logs #warn "Painéis" "nada a desfazer"))
+
+        -- 6. escala depois do Mapear de 200 cm; Desfazer Painéis volta ao estado do Mapear
+        fn mkSemUV nome pos =
+        (
+            local b = Box length:100 width:100 height:20 lengthsegs:10 widthsegs:10 heightsegs:2 mapcoords:false name:nome pos:pos
+            convertToPoly b
+            polyop.setMapSupport b 1 false
+            addModifier b (UVW_Xform name:"InLab RWF" U_Tile:(1.0 / 200) V_Tile:(1.0 / 200) Map_Channel:1)
+            b
+        )
+        local f1 = mkSemUV "TESTE_pn4_f1" [0,2900,0]
+        local f2 = mkSemUV "TESTE_pn4_f2" [300,2900,0]
+        for o in #(f1, f2) do ( o.material = mTec; append criados o; append InLab_RWF_Feitos o )
+        local f1Antes = InLab_Mapear_LerCanal1 f1
+        InLab_UltimoMapear = #()
+        InLab_Mapear #(f1, f2) produto
+        local recF1 = undefined
+        for r in InLab_UltimoMapear where r.no == f1 do recF1 = r
+        linha ("      cmPorID do Mapear: " + (if recF1 == undefined then "sem registro" else recF1.cmPorID as string))
+        local f1M = InLab_Mapear_LerCanal1 f1, f2M = InLab_Mapear_LerCanal1 f2
+        logs.count = 0
+        InLab_Paineis #(f1) produto
+        local medF = InLab_Mapear_Medir f1
+        local cmF = if medF.escala > 0 then 1.0 / medF.escala else 0.0
+        linha ("      escala depois do Mapear: " + cmF as string + " cm por tile")
+        checar "Escala: depois do Mapear de 200 cm, os painéis saem com 200 cm" (f1.modifiers.count == 0 and cmF >= 190.0 and cmF <= 210.0)
+        InLab_DesfazerPaineis()
+        checar "Desfazer Painéis: volta a peça ao estado do Mapear, sem mexer em outra peça refeita pelo Mapear" \
+            ((igualCanal f1M (InLab_Mapear_LerCanal1 f1)) and (igualCanal f2M (InLab_Mapear_LerCanal1 f2)) and f1.modifiers.count == 0 and InLab_UltimoMapear.count == 2)
+
+        -- 7. Desfazer Mapear depois de Painéis: a rodada da peça sai da pilha, a de outra peça fica
+        InLab_Paineis #(f1) produto
+        InLab_Paineis #(q) produto
+        logs.count = 0
+        InLab_ReverterMapear()
+        local okM = (igualCanal f1Antes (InLab_Mapear_LerCanal1 f1)) and f1.modifiers.count == 1 and InLab_PilhaPaineis.count == 1 and \
+            InLab_PilhaPaineis[1].count == 1 and InLab_PilhaPaineis[1][1].no == q
+        checar "Desfazer Mapear depois de Painéis: canal 1 de antes do Mapear e pilha sem a peça" okM
+        InLab_DesfazerPaineis()
+        checar "Desfazer Painéis depois do Desfazer Mapear: a outra peça volta" ((igualCanal q0 (InLab_Mapear_LerCanal1 q)) and InLab_PilhaPaineis.count == 0)
+
+        -- 8. Desfazer UV desfaz antes os painéis
+        InLab_UltimoRWF = #(); InLab_UltimoAutoUV = #(); InLab_UltimoMapear = #()
+        InLab_Paineis #(p) produto
+        logs.count = 0
+        local excUV = undefined
+        try ( InLab_ReverterAutoUV() ) catch ( excUV = getCurrentException() )
+        if excUV != undefined do linha ("      exceção no Desfazer UV: " + excUV)
+        checar "Desfazer UV desfaz antes os painéis" (excUV == undefined and (temLog logs #info "Desfazer UV" "desfazendo antes os painéis") and \
+            InLab_PilhaPaineis.count == 0 and (igualCanal p0 (InLab_Mapear_LerCanal1 p)))
+
+        -- 9. instância girada
+        local i1 = mkPeca "TESTE_pn4_inst1" [0,3200,0]
+        i1.material = mTec; append criados i1
+        local i2 = instance i1 name:"TESTE_pn4_inst2" pos:[300,3200,0]
+        append criados i2
+        rotate i2 (eulerAngles 0 0 90)
+        local uvI = canalID i1 undefined
+        logs.count = 0
+        InLab_Paineis #(i1, i2) produto
+        checar "Instância girada: mesmo UV nas duas e #warn" ((igualLista (canalID i1 undefined) (canalID i2 undefined)) and \
+            not (igualLista uvI (canalID i1 undefined)) and (temLog logs #warn "TESTE_pn4_inst2" "girada") and \
+            (contaLog logs "mapeando por painéis" "") == 1 and (InLab_Instancias i1).count == 2)
+        InLab_DesfazerPaineis()
+
+        -- 10. peça de ~20 mil faces
+        local g20 = ChamferBox length:100 width:100 height:20 fillet:5 Fillet_Segments:4 Length_Segments:84 Width_Segments:84 Height_Segments:8 name:"TESTE_pn4_grande"
+        convertToPoly g20
+        g20.material = mTec; append criados g20
+        logs.count = 0
+        local t0 = timeStamp()
+        InLab_Paineis #(g20) produto
+        local segG = (timeStamp() - t0) / 1000.0
+        local segLog = undefined
+        for l in logs where (matchPattern l[2] pattern:"Painéis: *") and (findString l[2] " s)") != undefined do
+        (
+            local s = l[2]
+            local i = findString s "em "
+            if i != undefined do
+            (
+                local num = substring s (i + 3) -1
+                num = substituteString (substring num 1 ((findString num " s") - 1)) "," "."
+                segLog = num as float
+            )
+        )
+        linha ("      20 mil faces: " + segG as string + " s medidos; no log: " + segLog as string)
+        checar "Peça de 20 mil faces: tempo no log abaixo de 60 s" (segLog != undefined and segLog < 60.0 and (temLog logs #ok "TESTE_pn4_grande" "painéis"))
+        InLab_DesfazerPaineis()
+        checar "nenhum nó temporário sobrou" ((for o in objects where (matchPattern o.name pattern:"InLab_tmp*") collect o).count == 0)
     )
     catch ( linha ("FAIL  exceção no teste: " + (getCurrentException())); INLAB_TESTE_FALHAS += 1 )
 
     for o in criados where isValidNode o do try ( delete o ) catch ()
+    InLab_RWF_Feitos = feitosAntes
+    if arqImg != undefined do try ( deleteFile arqImg ) catch ()
     InLab_Log = logOriginal
     linha (if INLAB_TESTE_FALHAS == 0 then "== TUDO PASSOU ==" else ("== " + INLAB_TESTE_FALHAS as string + " FALHA(S) =="))
     close INLAB_TESTE_SAIDA
