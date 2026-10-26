@@ -132,16 +132,16 @@ global INLAB_TESTE_SAIDA, INLAB_TESTE_FALHAS
         InLab_RWF_Feitos = #()
 
         local js = "{\"produtos\": [{\"cod_est\": \"0001\", \"partes\": [" +
-            "{\"nome_parte\": \"Pe\", \"familia\": \"Madeira\", \"materia\": \"Cedro\", \"material_id\": \"ART_Pe\"}, " +
-            "{\"nome_parte\": \"Assento\", \"familia\": \"Tecido\", \"materia\": \"\", \"material_id\": \"ART_Tecido\"}, " +
-            "{\"nome_parte\": \"Capa\", \"familia\": \"Tecido\", \"materia\": \"\", \"material_id\": \"ART_Capa\"}, " +
-            "{\"nome_parte\": \"Base\", \"familia\": \"Metal\", \"materia\": \"\", \"material_id\": \"ART_Metal\"}, " +
-            "{\"nome_parte\": \"BaseRW\", \"familia\": \"Metal\", \"materia\": \"\", \"material_id\": \"ART_MetalRW\"}, " +
-            "{\"nome_parte\": \"CapaB\", \"familia\": \"Tecido\", \"materia\": \"\", \"material_id\": \"ART_CapaB\"}, " +
-            "{\"nome_parte\": \"CapaH\", \"familia\": \"Tecido\", \"materia\": \"\", \"material_id\": \"ART_CapaH\"}, " +
-            "{\"nome_parte\": \"PeRW\", \"familia\": \"Madeira\", \"materia\": \"Cedro\", \"material_id\": \"ART_PeRW\"}, " +
-            "{\"nome_parte\": \"PeRWB\", \"familia\": \"Madeira\", \"materia\": \"Cedro\", \"material_id\": \"ART_PeRWB\"}, " +
-            "{\"nome_parte\": \"Acabamento\", \"familia\": \"\", \"materia\": \"\", \"material_id\": \"ART_Vazia\"}]}]}"
+            "{\"nome_parte\": \"Pe\", \"materia_prima\": {\"familia\": \"Madeira\", \"materia\": \"Cedro\"}, \"material_id\": \"ART_Pe\"}, " +
+            "{\"nome_parte\": \"Assento\", \"materia_prima\": {\"familia\": \"Tecido\", \"materia\": \"\"}, \"material_id\": \"ART_Tecido\"}, " +
+            "{\"nome_parte\": \"Capa\", \"materia_prima\": {\"familia\": \"Tecido\", \"materia\": \"\"}, \"material_id\": \"ART_Capa\"}, " +
+            "{\"nome_parte\": \"Base\", \"materia_prima\": {\"familia\": \"Metal\", \"materia\": \"\"}, \"material_id\": \"ART_Metal\"}, " +
+            "{\"nome_parte\": \"BaseRW\", \"materia_prima\": {\"familia\": \"Metal\", \"materia\": \"\"}, \"material_id\": \"ART_MetalRW\"}, " +
+            "{\"nome_parte\": \"CapaB\", \"materia_prima\": {\"familia\": \"Tecido\", \"materia\": \"\"}, \"material_id\": \"ART_CapaB\"}, " +
+            "{\"nome_parte\": \"CapaH\", \"materia_prima\": {\"familia\": \"Tecido\", \"materia\": \"\"}, \"material_id\": \"ART_CapaH\"}, " +
+            "{\"nome_parte\": \"PeRW\", \"materia_prima\": {\"familia\": \"Madeira\", \"materia\": \"Cedro\"}, \"material_id\": \"ART_PeRW\"}, " +
+            "{\"nome_parte\": \"PeRWB\", \"materia_prima\": {\"familia\": \"Madeira\", \"materia\": \"Cedro\"}, \"material_id\": \"ART_PeRWB\"}, " +
+            "{\"nome_parte\": \"Acabamento\", \"materia_prima\": {\"familia\": \"\", \"materia\": \"\"}, \"material_id\": \"ART_Vazia\"}]}]}"
         local produto = (InLab_Produto_Lista (InLab_ParseJSON js))[1]
         arqImg = gerarImagem "inlab_test_mapear_listras.png"
         local mPe = criarMaterial "ART_Pe" arqImg
