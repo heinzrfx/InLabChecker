@@ -110,6 +110,8 @@ Por ordem *(decisão do Claude, depois da revisão)*:
 
 O Painéis funciona com ou sem o Mapear ter rodado antes. Os bitmaps religados ao canal 1 seguem o Mapear (`InLab_Mapear_CanalOriginal`).
 
+**Por ID** *(revisão final, 26/10)*: cada ID de tecido tem a própria escala (`InLab_Paineis_Escala o id`), o `cmPorID` da rodada grava o cm de cada ID e o tiling de cada bitmap religado usa a escala do ID dele. Um painel que mistura IDs usa a escala do ID com mais faces nele. O log mostra um tamanho só, ou "ID 1 30,0, ID 2 120,0 cm por tile" quando diferem.
+
 ### 5.9 Instâncias
 
 Como no Mapear, a base é compartilhada e todas as instâncias recebem o mesmo UV. O corte escondido e o giro são calculados no espaço de mundo da peça selecionada. Se uma instância estiver girada ou espelhada em relação a ela, o log avisa ("instância X girada: corte e trama calculados pela peça Y"). *(Decisão do Claude.)*
@@ -128,10 +130,13 @@ Usa a mesma infraestrutura do Mapear (`fn_mapear.ms`):
 
 **Registro próprio.** Cada clique em Painéis guarda **uma rodada**: as peças e, de cada uma, o canal 1, os modificadores tirados e os bitmaps religados, como o `MapearRecord`. As rodadas ficam numa **pilha** separada do `InLab_UltimoMapear`.
 - **Desfazer Painéis** volta só a **última rodada**, e a peça fica exatamente como estava antes dela (o que o Mapear tinha deixado). Com a topologia mudada desde então, `#warn` "use o Ctrl+Z", como no Mapear. Cliques seguidos voltam as rodadas anteriores, uma por vez.
-- **Desfazer Mapear** continua como hoje e não mexe na pilha de Painéis. Se ele voltar uma peça que tem painéis por cima, as rodadas de Painéis dessa peça são descartadas da pilha, porque o estado de antes delas deixou de existir. *(Decisão do Claude.)*
-- **Desfazer UV** (que já desfaz o Mapear e o RWF) desfaz antes toda a pilha de Painéis.
+- **Desfazer Mapear** volta antes as rodadas de Painéis da peça que ainda estão na pilha (são mais novas que o Mapear), da mais nova para a mais velha, e tira-as da pilha; depois devolve o registro do Mapear (`InLab_Paineis_RestaurarPeca`). *(Comportamento final, revisão de 26/10.)*
+- **O Mapear não refaz peça com painéis** *(decisão do controlador na revisão final)*: uma peça (ou instância) com rodada de Painéis na pilha é pulada pelo Mapear com `#info` "tem painéis; o Mapear não mexe (use Desfazer Painéis antes)" e conta como mantida. Refazer com Box por cima dos painéis perdia o caminho de volta ao UV de antes deles (os "InLab RWF*" e os bitmaps religados que a rodada de Painéis guarda). Por isso o `InLab_Paineis_EsquecerPeca motivo:"o Mapear refez a peça"` não é mais chamado pelo Mapear (a função fica).
+- **Desfazer UV** (que já desfaz o Mapear e o RWF) desfaz antes toda a pilha de Painéis, depois o Mapear e por fim o RWF: RWF → Painéis → Mapear → Desfazer UV volta o canal 1 e o stack de antes do RWF.
 
-Só as faces de tecido da peça (os IDs de tecido, menos os elementos de vivo) recebem UV novo; as outras mantêm o UV avaliado, como o Mapear já faz (`InLab_Mapear_UVAvaliado`).
+Só as faces de tecido da peça (os IDs de tecido, menos os elementos de vivo) recebem UV novo; as outras mantêm o UV avaliado, como o Mapear já faz (`InLab_Mapear_UVAvaliado`). Nas faces sem painel (vivos) de um ID cujo bitmap é religado ao canal 1, o canal 1 recebe o UV avaliado **do canal do RWF que o bitmap lia** (× escala / densidade do RWF, que compensa o tiling ajustado): o vivo não muda de tamanho. Bitmap que fica preso no canal do RWF (usado fora da rodada ou por um ID que não é de tecido) gera `#warn` "o material continua lendo o canal N".
+
+Nós temporários (`InLab_tmp_*`) ficam na camada 0, visíveis e não congelados; numa exceção, quem criou apaga, e o fim de `InLab_Paineis` apaga sempre os que sobraram, com `#warn`.
 
 ## 7. Ver UV
 
@@ -140,7 +145,9 @@ Só as faces de tecido da peça (os IDs de tecido, menos os elementos de vivo) r
 - **Nunca pode ir para o arquivo nem para o GLB:** desliga sozinho antes de salvar (callback `#filePreSave`), ao abrir ou resetar uma cena, ao exportar (no Exportar GLB do plugin) e ao fechar o painel. *(Decisão do Claude.)*
 - **A textura de listras** vai no repo, em `ui/img/uv_listras.png` (512 × 512: listras horizontais e um "F" azul que mostra espelhamento). Se faltar, o plugin a gera na hora com `System.Drawing`. *(Decisão do Claude.)*
 - Funciona em qualquer peça, não só em tecido. Também serve para conferir a madeira.
-- **Painéis com o Ver UV ligado:** o Painéis (e o Mapear) lêem o material **original** guardado pelo Ver UV, e não o de listras, para achar a parte do JSON e os bitmaps. O Ver UV continua ligado e já mostra o UV novo. *(Decisão do Claude.)*
+- **Painéis com o Ver UV ligado:** o Painéis (e o Mapear) lêem o material **original** guardado pelo Ver UV, e não o de listras, para achar a parte do JSON e os bitmaps. O Ver UV continua ligado e já mostra o UV novo. *(Decisão do Claude.)* A guarda "bitmap usado fora desta rodada" soma os nós do Ver UV cujo material original usa o bitmap (`InLab_VerUV_NosQueUsam`): `refs.dependentNodes` não vê os nós com as listras.
+- **`InLab_VerUV_Garantir()`** *(revisão final, 26/10)* = varredura + `InLab_VerUV_Desligar()`; devolve o nº de nós que continuam com as listras. A varredura procura em `objects` nó com o material das listras fora do registro (clone com Shift+arrastar, apagar → salvar → Ctrl+Z, Hold/Fetch): instância de um nó registrado (`InLab_Instancias`) recebe o original dele (`#info`); o resto dá `#err` "aplique o material de novo". Função que troca `o.material` ou exporta chama o Garantir antes: Converter Material (`InLab_ConverterObjetos`, `InLab_ReverterConversao`), RWF (`InLab_RealWorldFix`), Renomear pelo JSON (`InLab_Produto_MateriaisDaSelecao`, `InLab_Produto_Aplicar`), `InLab_ExportGLTF`, `InLab_AbrirExportadorRealTime` e `InLab_RodarVerificacoes`. Os três últimos **recusam** (`#err`, `false`) se ainda sobrar nó com as listras. Os callbacks e o botão Ver UV desligado também usam o Garantir. Sem custom attribute para o original (fica para depois); o autobackup pode disparar `#filePreSave` e desligar o Ver UV (aceito).
+- **Desligar** só devolve o original quando o nó ainda está com as listras; material trocado com o Ver UV ligado fica, com `#warn` "material trocado com o Ver UV ligado; mantido". **Ligar** não registra nó que já está com as listras sem registro (guardaria as listras como original).
 
 ## 8. Log
 
