@@ -97,6 +97,12 @@
             @"functions\fn_autouv.ms",
             -- Real World Fix: usa InLab_Instancias de fn_autouv.ms
             @"functions\fn_realworldfix.ms",
+            -- Mapear (23/10/2026): classificação da parte e direção do veio
+            @"functions\fn_mapear_classe.ms",
+            @"functions\fn_mapear_medir.ms",
+            @"functions\fn_mapear_gerar.ms",
+            -- Mapear: orquestrador, registro e Desfazer (usa fn_autouv e fn_realworldfix)
+            @"functions\fn_mapear.ms",
             @"functions\fn_material_convert.ms",
             @"functions\fn_material_utils.ms",
             @"functions\fn_export_gltf.ms",

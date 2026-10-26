@@ -1,5 +1,8 @@
 /*
 ================================================================================
+ 23/10/2026 (Mapear, Tarefa 6): InLab_ReverterAutoUV desfaz antes o Mapear
+ (InLab_ReverterMapear) quando há registros, para o RWF sair em ordem de pilha.
+--------------------------------------------------------------------------------
  functions\fn_autouv.ms — FUNÇÃO 2 · "Auto UV" (reescrita · bug 2, 13/Jul ·
  canal de bake, 18/Set)
 --------------------------------------------------------------------------------
@@ -211,6 +214,8 @@ global InLab_TentarRelax, InLab_PaddingUV, InLab_AutoUV_PrepararBase, InLab_Auto
 global InLab_AbrirGruposAcima, InLab_FecharGrupos, InLab_Instancias, InLab_ContagemCanal
 global InLab_IlhasDoUnwrap, InLab_DistorcaoIlhas, InLab_UnfoldComGuarda
 global InLab_AutoUV, InLab_CanalDoModificadorUV, InLab_CleanUV, InLab_ReverterAutoUV
+-- (23/10/2026) fn_mapear.ms vem depois deste arquivo no manifesto
+global InLab_ReverterMapear, InLab_UltimoMapear
 
 -- SÓ TESTE (issue #48): nome (string) do objeto cuja rodada do Auto UV deve
 -- lançar uma exceção forçada no meio do processamento, para provar que o
@@ -823,8 +828,23 @@ fn InLab_CleanUV objs =
 --------------------------------------------------------------------------------
 fn InLab_ReverterAutoUV =
 (
+    -- 23/10/2026 (Mapear, Tarefa 6): o Mapear vem depois do Real World Fix, então
+    -- sai primeiro (devolve os "InLab RWF*" e o canal 1) e o RWF desfaz normalmente.
+    local mapearDesfeito = false
+    if InLab_UltimoMapear != undefined and InLab_UltimoMapear.count > 0 and InLab_ReverterMapear != undefined do
+    (
+        InLab_Log "Desfazer UV: desfazendo antes o Mapear." tipo:#info
+        try ( InLab_ReverterMapear(); mapearDesfeito = true )
+        catch ( InLab_Log ("Desfazer UV: o Mapear não foi desfeito (" + getCurrentException() + ").") tipo:#err )
+    )
+    -- 23/10/2026 (revisão final do Mapear): só havia o Mapear -> #info, não o #warn
     if InLab_UltimoAutoUV.count == 0 and InLab_UltimoRWF.count == 0 then
-        InLab_Log "Nenhum Auto UV registrado nesta sessão para reverter." tipo:#warn
+    (
+        if mapearDesfeito then
+            InLab_Log "Desfazer UV: só o Mapear estava registrado; nenhum Auto UV nem Real World Fix para reverter." tipo:#info
+        else
+            InLab_Log "Nenhum Auto UV registrado nesta sessão para reverter." tipo:#warn
+    )
     else
     (
         local revertidos = 0

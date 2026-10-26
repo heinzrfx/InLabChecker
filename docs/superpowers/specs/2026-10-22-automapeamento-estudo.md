@@ -67,6 +67,33 @@ A sonda está em `2026-10-22-sonda-uv-assets.ms` (só leitura). Ela grava em `(g
    - A medida é aproximada, porque usa a aresta mais longa do triângulo como comprimento da peça.
 5. **Material sem textura, ou com textura uniforme, não se preocupa com UV.** Há casos de UV esmagado ou colapsado em metal e plástico. Regra possível: só exigir mapeamento onde houver bitmap.
 
+## 2b. Segundo lote: 151 objetos (`G:\Meu Drive\Trabalhos\2026\Artefacto\InlabChecker\Assets para teste\TESTE TEXTURA.max`, 23/10/2026)
+
+A sonda rodou em 21 s, sem erro, depois de protegido o bitmap sem arquivo. São 289 pares objeto × ID de material: 114 sem textura e 13 objetos sem canal 1. Os assets misturam Corona e VRay (Verity, Minotti Fynn, Samurai, Rene, Capitol Complex, Times, Julep, Bed Desiree, Kangoroo).
+
+**Confirma os padrões do primeiro lote:**
+
+1. **Nenhuma textura usa Real-World.** A única exceção é um metal do Fynn com bitmap sem arquivo. O UV é normalizado e a escala vem do tiling.
+2. **Densidade uniforme por material.** A razão p90/p10 da escala fica entre 1,00 e 1,20 na maioria. Fora disso: Rene encosto (2,25), Kangoroo (1,85), pés e trama do Fynn (1,76 e 2,73), a sujeira do cromado do Samurai (sem importância).
+3. **Unwrap.** A distorção mediana fica entre 1,00 e 1,10, e U e V caem no eixo do mundo em 0 a 36% das faces. Os mais "projetados" são peças planas ou retas: carvalho do Rene (64%), cama Bed Desiree (60%), madeira do Object015 (46%).
+4. **O veio segue o comprimento da peça. O eixo (U ou V) depende da imagem, e o W compensa:**
+   - Com V ao longo: Times 73%, Capitol madeira 65%, carvalho do Rene 81% (com W 90°), Samurai madeira 59% (W 90°).
+   - Com U ao longo: madeira do Fynn 44 a 88% (W 0°) e trama do Ren Dining 68%.
+
+**Achado novo: tamanho do tile em cm reais**, calculado como `1 / (escala UV por cm × tiling)`:
+
+| Material | cm por tile |
+|---|---|
+| Madeira (Object015, Times, Capitol, Fynn, carvalho do Rene, Samurai) | **43 a 76, quase sempre ~60** |
+| Kangoroo (madeira, com UV irregular) | 72 |
+| Tecido liso / linho (Verity) | 37 a 62 |
+| Bouclê (Rene) | 85 a 89 |
+| Tecido do Fynn | 20 |
+| Couro (Samurai) | 17 |
+| Rattan (Capitol, padrão de trama) | 10 |
+
+Para madeira, a convenção de fato é de **~60 cm por tile**. Para tecido e couro, o tamanho depende do padrão da imagem (bouclê grande, trama fina). Isso sugere uma escala **por tipo de material**, não uma só. Ainda falta confirmar com a biblioteca Substance.
+
 ## 3. Direção proposta (a testar)
 
 | Padrão profissional | Automático sem unwrap | Situação |
@@ -78,7 +105,7 @@ A sonda está em `2026-10-22-sonda-uv-assets.ms` (só leitura). Ela grava em `(g
 
 ## Próximos passos
 
-1. Analisar o próximo arquivo de assets do usuário com a mesma sonda e comparar com os padrões acima.
+1. ~~Analisar o próximo arquivo de assets do usuário com a mesma sonda~~ (feito em 23/10, seção 2b).
 2. Testar a caixa orientada por elemento.
 3. Obter a convenção de escala e de direção do veio da biblioteca Substance.
 4. Se aprovado, desenhar o botão "Mapear canal 1" (spec + plano) antes de escrever código.
