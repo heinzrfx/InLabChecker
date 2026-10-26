@@ -7,6 +7,9 @@
  26/10/2026 (Tarefa 3): UV de discos e anéis (InLab_Paineis_UV / InLab_Paineis_Torta).
  26/10/2026 (Tarefa 4): botão Painéis (InLab_Paineis), pilha, Desfazer Painéis, Desfazer
  Mapear e Desfazer UV com painéis por cima; ChamferBox com os nomes certos de segmentos.
+ 26/10/2026 (revisão final): Painéis -> Mapear do produto mantém a peça (o Mapear não refaz
+ peça com painéis; saem os casos "o Mapear refez a peça"), Dist perto da borda da grade. Os
+ demais casos da revisão final ficam em test_mapear_paineis2.ms (cada arquivo < 120 s).
 */
 global InLab_Log, InLab_EhGeometria, InLab_Mapear_PolyDe
 global InLab_Paineis_Vert, InLab_Paineis_Elementos, InLab_Paineis_VolArea
@@ -18,6 +21,8 @@ global InLab_UltimoMapear, InLab_Mapear_LerCanal1, InLab_ReverterAutoUV, InLab_U
 global InLab_Paineis, InLab_DesfazerPaineis, InLab_PilhaPaineis, InLab_Paineis_EsquecerPeca
 global InLab_Paineis_EhTecido, InLab_Paineis_Escala
 global InLab_VerUV_Ligar, InLab_VerUV_Desligar
+-- revisão final (26/10/2026)
+global InLab_Paineis_MontarGrade, InLab_Paineis_Dist, InLab_Paineis_ForcarFalha, MapearRecord, InLab_RWF_Rodar
 global INLAB_TESTE_SAIDA, INLAB_TESTE_FALHAS
 (
     local dirTeste = getFilenamePath (getSourceFileName())
@@ -199,6 +204,11 @@ global INLAB_TESTE_SAIDA, INLAB_TESTE_FALHAS
         checar "mundo: molde em caixa com pivô deslocado dá 3 painéis" (r7.paineis.count == 3 and r7.eixoCaixa == 3)
 
         checar "contornos: anel 2, disco 1" (r2.paineis.count == 3 and (InLab_Paineis_Contornos pa2 r2.paineis[3]) == 2 and (InLab_Paineis_Contornos pa2 r2.paineis[1]) == 1)
+        -- revisão final: ponto perto da borda da grade (célula < 3) também acha o vivo
+        InLab_Paineis_MontarGrade #([0,0,0])
+        -- célula 1 da grade (antes era recusada: exigia célula >= 3) e vivo a 2,5 cm
+        local dBorda = InLab_Paineis_Dist [-2.5,0,0]
+        checar "Dist: ponto perto da borda da grade acha o vivo" ((abs (dBorda - 2.5)) < 1e-3)
 
         ---------------- Tarefa 3: UV de cada painel ----------------
         -- normal de face em mundo (vetor)
@@ -645,12 +655,14 @@ global INLAB_TESTE_SAIDA, INLAB_TESTE_FALHAS
         )
         fn rwfCanal2 o = ( addModifier o (Uvwmap name:"InLab RWF Triplanar" maptype:4 length:50 width:50 height:50 mapChannel:2) )
 
-        -- F1a/F1b: Painéis -> Mapear (refaz a mesma peça) -> Desfazer Painéis / Desfazer Mapear
+        -- F1a/F1b (revisão final): Painéis -> Mapear do produto. O Mapear não refaz peça com
+        -- rodada de Painéis na pilha (#info) e o Desfazer Painéis continua valendo
         local pm = mkPeca "TESTE_pn4_pm" [0,3500,0]
         pm.material = mTec; append criados pm
+        local cPm0 = InLab_Mapear_LerCanal1 pm
         InLab_Paineis #(pm) produto
         local cPain = InLab_Mapear_LerCanal1 pm
-        -- o tecido passa a ler o canal 2 do RWF: o Mapear é obrigado a refazer a peça
+        -- o tecido passa a ler o canal 2 do RWF: sem a regra, o Mapear refaria a peça
         local mC2a = criarMaterialC2 arqImg
         pm.material = mC2a
         rwfCanal2 pm
@@ -658,16 +670,13 @@ global INLAB_TESTE_SAIDA, INLAB_TESTE_FALHAS
         append InLab_RWF_Feitos pm
         logs.count = 0
         InLab_Mapear #(pm) produto
-        local cMap = InLab_Mapear_LerCanal1 pm
-        checar "fix 1: o Mapear refez a peça e tirou da pilha a rodada de Painéis dela" ((temLog logs #ok "TESTE_pn4_pm" "refeito") and \
-            InLab_PilhaPaineis.count == 0 and (temLog logs #info "TESTE_pn4_pm" "o Mapear refez a peça"))
-        logs.count = 0
+        checar "Painéis → Mapear do produto mantém a peça" ((temLog logs #info "TESTE_pn4_pm" "tem painéis") and \
+            not (temLog logs #ok "TESTE_pn4_pm" "refeito") and (igualCanal cPain (InLab_Mapear_LerCanal1 pm)) and \
+            pm.modifiers.count == 1 and pm.modifiers[1] == modPm and mC2a.diffuseMap.coords.mapChannel == 2 and \
+            InLab_PilhaPaineis.count == 1 and InLab_UltimoMapear.count == 0)
         local nDp = InLab_DesfazerPaineis()
-        checar "Painéis → Mapear → Desfazer Painéis: nada a desfazer da peça, Mapear intacto" (nDp == 0 and (igualCanal cMap (InLab_Mapear_LerCanal1 pm)) and \
-            pm.modifiers.count == 0 and mC2a.diffuseMap.coords.mapChannel == 1)
-        InLab_ReverterMapear()
-        checar "Painéis → Mapear → Desfazer Mapear volta ao resultado dos painéis" ((igualCanal cPain (InLab_Mapear_LerCanal1 pm)) and \
-            pm.modifiers.count == 1 and pm.modifiers[1] == modPm and mC2a.diffuseMap.coords.mapChannel == 2 and InLab_PilhaPaineis.count == 0)
+        checar "Painéis → Mapear → Desfazer Painéis volta a peça de antes dos painéis" (nDp == 1 and (igualCanal cPm0 (InLab_Mapear_LerCanal1 pm)) and \
+            InLab_PilhaPaineis.count == 0)
 
         -- F1c: Mapear deixa o RWF do canal 2 (bitmap usado fora da rodada) -> Painéis o tira -> Desfazer Mapear
         local mC2b = criarMaterialC2 arqImg

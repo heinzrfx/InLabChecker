@@ -112,6 +112,17 @@
      Mapear volta antes as rodadas de Painéis da peça que ainda estão na pilha (mais
      novas), com InLab_Paineis_RestaurarPeca. ID de tecido mantido guarda cmAntes no
      cmPorID. Varredura do stack em InLab_Mapear_VarrerStack (Mapear e Painéis).
+   - Revisão final (26/10/2026): o Mapear NÃO refaz peça com rodada de Painéis na
+     pilha (InLab_Paineis_TemPeca, fn_mapear_paineis.ms): pula com #info "use
+     Desfazer Painéis antes" e conta como mantida. O Mapear refazendo a peça com Box
+     perdia o caminho de volta ao UV de antes dos Painéis (os "InLab RWF*" e
+     bitmapsAntes da rodada de Painéis). Com isso a chamada a
+     InLab_Paineis_EsquecerPeca motivo:"o Mapear refez a peça" saiu daqui.
+   - Revisão final: a guarda "bitmap usado fora desta rodada" soma os nós do Ver UV
+     cujo material original usa o bitmap (InLab_VerUV_NosQueUsam): com o Ver UV
+     ligado, refs.dependentNodes não vê os nós com as listras.
+   - InLab_Mapear_UVAvaliado ganha canal: (padrão 1; o Painéis lê o canal do RWF
+     para as faces de vivo cujo bitmap é religado ao canal 1).
 */
 
 global InLab_Log, InLab_EhGeometria, InLab_Instancias, InLab_DeduplicarInstancias
@@ -174,6 +185,8 @@ global InLab_Mapear_Peca, InLab_Mapear, InLab_ReverterMapear, InLab_Mapear_Fator
 global InLab_Mapear_ForcarFalha = undefined
 -- 26/10/2026: fn_mapear_paineis.ms (carregado depois)
 global InLab_Paineis_EsquecerPeca, InLab_Paineis_RestaurarPeca, InLab_Mapear_VarrerStack
+global InLab_Paineis_TemPeca   -- fn_mapear_paineis.ms (revisão final)
+global InLab_VerUV_NosQueUsam  -- fn_ver_uv.ms (carregado depois)
 
 --------------------------------------------------------------------------------
 -- Stack
@@ -445,8 +458,9 @@ fn InLab_Mapear_Juntar acc r =
 
 -- UV avaliado (com o stack) das faces da base, para preservar o que não é
 -- refeito quando um "InLab RWF*" do canal 1 sai. undefined se a topologia do
--- snapshot não bate com a base.
-fn InLab_Mapear_UVAvaliado o faces =
+-- snapshot não bate com a base. canal: o canal lido (padrão 1; o Painéis lê o
+-- canal do RWF que o bitmap lia, revisão final de 26/10/2026).
+fn InLab_Mapear_UVAvaliado o faces canal:1 =
 (
     local po = InLab_Mapear_PolyDe o
     local m = snapshotAsMesh o
@@ -457,11 +471,11 @@ fn InLab_Mapear_UVAvaliado o faces =
         local nTri = 0
         for f = 1 to nf do nTri += (polyop.getFaceDeg po f) - 2
         local ok = m.numverts == (polyop.getNumVerts po) and m.numfaces == nTri and \
-            (meshop.getNumMaps m) > 1 and (meshop.getMapSupport m 1)
+            (meshop.getNumMaps m) > canal and (meshop.getMapSupport m canal)
         if ok do
         (
             local uvs = #(); local mapa = #()
-            local dic = #(); dic.count = meshop.getNumMapVerts m 1
+            local dic = #(); dic.count = meshop.getNumMapVerts m canal
             local tri = 0
             for f = 1 to nf while ok do
             (
@@ -473,7 +487,7 @@ fn InLab_Mapear_UVAvaliado o faces =
                     for t = tri + 1 to tri + deg - 2 do
                     (
                         local fv = getFace m t
-                        local tv = meshop.getMapFace m 1 t
+                        local tv = meshop.getMapFace m canal t
                         for k = 1 to 3 do
                         (
                             local p = findItem vs (fv[k] as integer)
@@ -485,7 +499,7 @@ fn InLab_Mapear_UVAvaliado o faces =
                     (
                         local idx = for mv in cantos collect
                         (
-                            if dic[mv] == undefined do ( append uvs (meshop.getMapVert m 1 mv); dic[mv] = uvs.count )
+                            if dic[mv] == undefined do ( append uvs (meshop.getMapVert m canal mv); dic[mv] = uvs.count )
                             dic[mv]
                         )
                         append mapa #(f, idx)
@@ -793,6 +807,12 @@ fn InLab_Mapear_VarrerStack o =
 --------------------------------------------------------------------------------
 fn InLab_Mapear_Peca o produto unwrapGrande rodada:undefined =
 (
+    -- revisão final (26/10/2026): peça com rodada de Painéis na pilha não é refeita
+    if InLab_Paineis_TemPeca != undefined and (InLab_Paineis_TemPeca o) do
+    (
+        InLab_Log (o.name + ": tem painéis; o Mapear não mexe (use Desfazer Painéis antes).") tipo:#info
+        return #mantida
+    )
     if rodada == undefined do rodada = InLab_Instancias o
     InLab_Log (o.name + ": mapeando (" + ((getPolygonCount o)[1]) as string + " faces)...") tipo:#info
     -- 1. stack (InLab_Mapear_VarrerStack, a mesma do Painéis)
@@ -923,6 +943,9 @@ fn InLab_Mapear_Peca o produto unwrapGrande rodada:undefined =
                         for b in d.rebind where (InLab_RWF_CanalBitmap b) == rc[1] and (findItem canaisPresos rc[1]) == 0 do
                         (
                             local fora = for n in (refs.dependentNodes b) where isValidNode n and (InLab_EhGeometria n) and (findItem rodada n) == 0 collect n.name
+                            -- revisão final: com o Ver UV ligado, refs.dependentNodes não vê os nós com as listras
+                            if InLab_VerUV_NosQueUsam != undefined do
+                                for n in (InLab_VerUV_NosQueUsam b) where isValidNode n and (InLab_EhGeometria n) and (findItem rodada n) == 0 and (findItem fora n.name) == 0 do append fora n.name
                             if fora.count > 0 do
                             (
                                 InLab_Log (o.name + ": " + b.name + " (canal " + rc[1] as string + ") também é usado fora desta rodada (" +
@@ -985,9 +1008,8 @@ fn InLab_Mapear_Peca o produto unwrapGrande rodada:undefined =
                         for d in decs where d.acao == #manter and d.regra == #tecido and d.cmAntes != undefined do
                             append rec.cmPorID #(d.id, d.cmAntes)
                         append InLab_UltimoMapear rec
-                        -- fix 1: rodadas de Painéis desta peça são mais velhas que este
-                        -- Mapear; o Desfazer Painéis não pode mais voltá-las por cima dele
-                        if InLab_Paineis_EsquecerPeca != undefined do InLab_Paineis_EsquecerPeca o motivo:"o Mapear refez a peça"
+                        -- revisão final: o Mapear não chega aqui numa peça com painéis (pulada no
+                        -- início), então não há rodada de Painéis mais velha a esquecer
                         resultado = #refeita
                     )
                     catch

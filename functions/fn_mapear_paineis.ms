@@ -58,6 +58,28 @@
  try/catch externo em InLab_Paineis zera o estado da rodada.
  Pegadinhas: nomes sao case-insensitive (local "a" esconde o parametro "A"); o
  parametro de fn usado dentro de collect em bloco aninhado da "Bad free thunk".
+ Revisao final (26/10/2026):
+ - O Mapear nao refaz peca com rodada de Paineis na pilha (InLab_Paineis_TemPeca, chamada no
+   inicio de InLab_Mapear_Peca): pula com #info "use Desfazer Paineis antes". O caminho do
+   EsquecerPeca motivo:"o Mapear refez a peca" nao acontece mais (a funcao fica).
+ - Escala por ID: cada ID de tecido usa InLab_Paineis_Escala o id, o cmPorID grava o cm de
+   cada ID e o tiling de cada bitmap religado usa a escala do ID dele. Painel que mistura IDs
+   usa a escala do ID com mais faces nele (InLab_Paineis_UV aceita uma escala por painel).
+ - Faces sem painel (vivos) dos IDs cujo bitmap e religado ao canal 1 recebem no canal 1 o UV
+   avaliado do canal do RWF que o bitmap lia (x escala/densidade do RWF): o vivo nao muda.
+ - Bitmap preso no canal do RWF: #warn "o material continua lendo o canal N" no fim da peca.
+ - Ver UV ligado: a guarda "bitmap usado fora desta rodada" soma InLab_VerUV_NosQueUsam
+   (refs.dependentNodes nao ve os nos com as listras).
+ - Temporarios (InLab_Paineis_Temp: camada 0, visiveis, nao congelados): CopiaMundo,
+   CopiaBase e VivosDoProduto apagam o temporario numa excecao e relancam; o fim de
+   InLab_Paineis apaga sempre os InLab_tmp_* que sobraram, com #warn.
+   InLab_Paineis_ForcarFalha (so teste) forca a excecao.
+ - Dist limita o indice de cada celula vizinha (antes recusava ponto perto da borda da
+   grade). Separar recorta os pontos de vivo pela caixa do corpo + 3 cm antes da grade (nenhum
+   ponto: "vivo a mais de 3 cm") e monta a adjacencia de faces uma vez para as 7 distancias
+   (InLab_Paineis_Regioes adj:).
+ - Peca nao refeita com a base convertida: a base de antes volta (o.baseobject = copia).
+ - Vivo como spline renderizavel: #info com o nome (fica fora da separacao).
 */
 global InLab_Log, InLab_EhGeometria
 global InLab_Mapear_PolyDe
@@ -88,8 +110,13 @@ global INLAB_MAPEAR_CM_POR_TILE, INLAB_MAPEAR_CM_MIN, INLAB_MAPEAR_CM_MAX
 global InLab_Paineis_EhTecido, InLab_Paineis_UTil, InLab_Paineis_CmOk, InLab_Paineis_Escala, InLab_Paineis_Girada
 global InLab_Paineis_Peca, InLab_Paineis, InLab_Paineis_EsquecerPeca, InLab_DesfazerPaineis
 global InLab_Paineis_RestaurarPeca, InLab_Mapear_VarrerStack, InLab_Mapear_Medir
+-- revisão final (26/10/2026)
+global InLab_Paineis_Temp, InLab_Paineis_TemPeca, InLab_VerUV_NosQueUsam
 -- pilha de rodadas do Painéis: cada item é #(MapearRecord...) de um clique; só o Desfazer tira
 global InLab_PilhaPaineis = #()
+-- SÓ TESTE (revisão final, 26/10/2026): "CopiaBase" ou "VivosDoProduto" força uma exceção
+-- logo depois de criar o nó temporário (conferir que nenhum InLab_tmp_* sobra)
+global InLab_Paineis_ForcarFalha = undefined
 
 -- base é Editable_Poly? Senão loga #err e devolve false
 fn InLab_Paineis_BaseOk o =
@@ -100,6 +127,17 @@ fn InLab_Paineis_BaseOk o =
     ok
 )
 
+-- nó temporário na camada 0, visível e não congelado (camada atual escondida ou congelada
+-- não pode atrapalhar o select/Unfold3D). Devolve o nó.
+fn InLab_Paineis_Temp n =
+(
+    try ( (LayerManager.getLayer 0).addNode n )
+    catch ( InLab_Log ("painéis: não pus o nó temporário na camada 0 (" + getCurrentException() + ")") tipo:#warn )
+    n.isHidden = false
+    n.isFrozen = false
+    n
+)
+
 -- cópia temporária em MUNDO (Editable_Poly, transform identidade) da malha avaliada
 fn InLab_Paineis_CopiaMundo o =
 (
@@ -107,12 +145,22 @@ fn InLab_Paineis_CopiaMundo o =
     with undo off
     (
         local m = snapshotAsMesh o
-        if m.numFaces > 0 do
+        try
         (
-            c = Editable_Mesh name:(uniqueName "InLab_tmp_paineis")
-            c.mesh = m
-            update c
-            convertToPoly c
+            if m.numFaces > 0 do
+            (
+                c = Editable_Mesh name:(uniqueName "InLab_tmp_paineis")
+                InLab_Paineis_Temp c
+                c.mesh = m
+                update c
+                convertToPoly c
+            )
+        )
+        catch
+        (
+            if isValidNode c do delete c
+            delete m
+            throw()   -- relança a mesma exceção (dentro do catch só vale throw sem argumento)
         )
         delete m
     )
@@ -214,30 +262,45 @@ fn InLab_Paineis_VivosDoProduto o nos:undefined =
         lista = InLab_Paineis_NosDaCabeca cabeca
     )
     local pts = #()
+    -- revisão final: vivo feito de spline renderizável não é malha; fica fora (#info)
+    for n in lista where isValidNode n and superclassof n == Shape and (try ( n.render_renderable ) catch ( false )) == true do
+        InLab_Log (n.name + ": vivo como spline renderizável fica fora da separação dos painéis (converta para malha para contar).") tipo:#info
     for n in lista where isValidNode n and (InLab_EhGeometria n) do
     (
         local alvo = n, temp = undefined
-        if not (classof n.baseobject == Editable_Poly and n.modifiers.count == 0) do
+        try
         (
-            temp = InLab_Paineis_CopiaMundo n
-            if temp == undefined then
+            if not (classof n.baseobject == Editable_Poly and n.modifiers.count == 0) do
             (
-                InLab_Log (n.name + ": malha avaliada sem faces, ignorada nos vivos") tipo:#warn
-                alvo = undefined
+                temp = InLab_Paineis_CopiaMundo n
+                if temp == undefined then
+                (
+                    InLab_Log (n.name + ": malha avaliada sem faces, ignorada nos vivos") tipo:#warn
+                    alvo = undefined
+                )
+                else alvo = temp
+                if temp != undefined and InLab_Paineis_ForcarFalha == "VivosDoProduto" do throw "falha forçada para teste (VivosDoProduto)"
             )
-            else alvo = temp
+            if alvo != undefined do
+            (
+                local po = alvo.baseobject
+                local tudo = #{1..(polyop.getNumFaces po)}
+                for el in (InLab_Paineis_Elementos po tudo) do
+                (
+                    if (InLab_Paineis_EhVivo alvo el)[1] do
+                        for v in (polyop.getVertsUsingFace po el) do append pts (InLab_Paineis_Vert alvo v)
+                )
+            )
         )
-        if alvo != undefined do
+        catch
         (
-            local po = alvo.baseobject
-            local tudo = #{1..(polyop.getNumFaces po)}
-            for el in (InLab_Paineis_Elementos po tudo) do
-            (
-                if (InLab_Paineis_EhVivo alvo el)[1] do
-                    for v in (polyop.getVertsUsingFace po el) do append pts (InLab_Paineis_Vert alvo v)
-            )
+            -- revisão final: o temporário não fica na cena
+            local msg = getCurrentException()
+            if temp != undefined and isValidNode temp do with undo off ( delete temp )
+            InLab_Log (n.name + ": erro ao ler os vivos (" + msg + ")") tipo:#err
+            throw()   -- relança a mesma exceção (dentro do catch só vale throw sem argumento)
         )
-        if temp != undefined do with undo off ( delete temp )
+        if temp != undefined and isValidNode temp do with undo off ( delete temp )
     )
     pts
 )
@@ -273,8 +336,11 @@ fn InLab_Paineis_Dist p =
     local gn = INLAB_PAINEIS_GN
     local q = p - INLAB_PAINEIS_GMIN
     local cx = floor q.x, cy = floor q.y, cz = floor q.z
-    if cx >= 3 and cy >= 3 and cz >= 3 and cx <= gn.x - 4 and cy <= gn.y - 4 and cz <= gn.z - 4 do
-        for dx = -3 to 3 do for dy = -3 to 3 do for dz = -3 to 3 do
+    -- revisão final: cada célula vizinha fora da grade é pulada (antes o ponto inteiro era
+    -- recusado perto da borda, mesmo com vivo a menos de 3 cm)
+    for dx = -3 to 3 where (cx + dx) >= 0 and (cx + dx) < gn.x do
+        for dy = -3 to 3 where (cy + dy) >= 0 and (cy + dy) < gn.y do
+            for dz = -3 to 3 where (cz + dz) >= 0 and (cz + dz) < gn.z do
         (
             local lst = INLAB_PAINEIS_GRADE[(cx + dx + gn.x * (cy + dy + gn.y * (cz + dz))) as integer + 1]
             if lst != undefined do
@@ -287,8 +353,9 @@ fn InLab_Paineis_Dist p =
     melhor
 )
 
--- regiões de faces conectadas sem atravessar arestas de costura
-fn InLab_Paineis_Regioes po faces costura =
+-- regiões de faces conectadas sem atravessar arestas de costura. adj: #(arestas por face,
+-- faces por aresta) montado uma vez pela peça (revisão final); indefinido = lê do poly
+fn InLab_Paineis_Regioes po faces costura adj:undefined =
 (
     local resta = copy faces
     local regs = #()
@@ -302,8 +369,9 @@ fn InLab_Paineis_Regioes po faces costura =
         (
             local f = fila[fila.count]
             fila.count = fila.count - 1
-            for e in (polyop.getFaceEdges po f) where not costura[e] do
-                for g in (polyop.getEdgeFaces po e) where resta[g] do
+            local fes = if adj != undefined then adj[1][f] else polyop.getFaceEdges po f
+            for e in fes where not costura[e] do
+                for g in (if adj != undefined then adj[2][e] else polyop.getEdgeFaces po e) where resta[g] do
                 (
                     resta[g] = false
                     reg[g] = true
@@ -395,14 +463,45 @@ fn InLab_Paineis_Separar o corpo vivoPts =
     local lista = #()
     local metodo = "nenhum"
     local diag = ""
+    -- revisão final: só os pontos de vivo dentro da caixa do corpo + 3 cm entram na grade
+    local perto = #()
     if vivoPts.count > 0 do
     (
+        local cMin = [1e9,1e9,1e9], cMax = [-1e9,-1e9,-1e9]
+        for v in (polyop.getVertsUsingFace po corpo) do
+        (
+            local q = (polyop.getVert po v) * tm
+            cacheV[v] = q
+            cMin = [amin cMin.x q.x, amin cMin.y q.y, amin cMin.z q.z]
+            cMax = [amax cMax.x q.x, amax cMax.y q.y, amax cMax.z q.z]
+        )
+        cMin -= [3,3,3]; cMax += [3,3,3]
+        local ip = 1
+        while ip <= vivoPts.count do
+        (
+            local p = vivoPts[ip]
+            if p.x >= cMin.x and p.y >= cMin.y and p.z >= cMin.z and p.x <= cMax.x and p.y <= cMax.y and p.z <= cMax.z do append perto p
+            ip += 1
+        )
+        if perto.count == 0 do diag = "vivo a mais de 3 cm"
+    )
+    if perto.count > 0 do
+    (
         -- amostra por passo fixo (while: collect com parametro da "Bad free thunk")
-        local passo = amax 1 (vivoPts.count / INLAB_PAINEIS_VIVO_MAX_PONTOS)
+        local passo = amax 1 (perto.count / INLAB_PAINEIS_VIVO_MAX_PONTOS)
         local amostra = #()
         local iv = 1
-        while iv <= vivoPts.count do ( append amostra vivoPts[iv]; iv += passo )
+        while iv <= perto.count do ( append amostra perto[iv]; iv += passo )
         InLab_Paineis_MontarGrade amostra
+        -- adjacência de faces uma vez para as 7 distâncias (revisão final)
+        local adjFE = #(), adjEF = #()
+        adjFE.count = nf
+        for f in corpo do
+        (
+            adjFE[f] = polyop.getFaceEdges po f
+            for e in adjFE[f] where adjEF[e] == undefined do adjEF[e] = polyop.getEdgeFaces po e
+        )
+        local adj = #(adjFE, adjEF)
         local es = (polyop.getEdgesUsingFace po corpo) as array
         local ds = #()
         local dMin = 1e9
@@ -421,7 +520,7 @@ fn InLab_Paineis_Separar o corpo vivoPts =
             for i = 1 to es.count where ds[i] < lim do cost[es[i]] = true
             if cost.numberSet > 0 do
             (
-                local regs = InLab_Paineis_Regioes po corpo cost
+                local regs = InLab_Paineis_Regioes po corpo cost adj:adj
                 local minimo = amax 50 (corpo.numberSet * 0.03)
                 local grandes = for g in regs where g.numberSet >= minimo collect g
                 if grandes.count >= 2 do
@@ -878,16 +977,27 @@ fn InLab_Paineis_CopiaBase o =
     local src = undefined
     with undo off
     (
-        src = Box name:(uniqueName "InLab_tmp_unfold_src")
-        src.baseobject = copy o.baseobject
-        local sp = src.baseobject
-        local tm = o.objectTransform
-        -- uma chamada com array (setVert vértice a vértice levou 5 s em 20 mil vértices)
-        local nv = polyop.getNumVerts sp
-        local pos = #()
-        pos.count = nv
-        for v = 1 to nv do pos[v] = (polyop.getVert sp v) * tm
-        if nv > 0 do polyop.setVert sp #{1..nv} pos
+        try
+        (
+            src = Box name:(uniqueName "InLab_tmp_unfold_src")
+            InLab_Paineis_Temp src
+            src.baseobject = copy o.baseobject
+            if InLab_Paineis_ForcarFalha == "CopiaBase" do throw "falha forçada para teste (CopiaBase)"
+            local sp = src.baseobject
+            local tm = o.objectTransform
+            -- uma chamada com array (setVert vértice a vértice levou 5 s em 20 mil vértices)
+            local nv = polyop.getNumVerts sp
+            local pos = #()
+            pos.count = nv
+            for v = 1 to nv do pos[v] = (polyop.getVert sp v) * tm
+            if nv > 0 do polyop.setVert sp #{1..nv} pos
+        )
+        catch
+        (
+            -- revisão final: o temporário não fica na cena
+            if isValidNode src do delete src
+            throw()   -- relança a mesma exceção (dentro do catch só vale throw sem argumento)
+        )
     )
     src
 )
@@ -910,6 +1020,7 @@ fn InLab_Paineis_Unfold src fs uvs mapa posM escala nomePeca =
         (
             polyop.detachFaces src.baseobject fs delete:false asNode:true name:nome node:src
             tmp = getNodeByName nome
+            InLab_Paineis_Temp tmp
             local tp = tmp.baseobject
             if (polyop.getNumFaces tp) != lista.count do throw "nó temporário com outro número de faces"
             for k = 1 to lista.count do
@@ -985,7 +1096,8 @@ fn InLab_Paineis_Unfold src fs uvs mapa posM escala nomePeca =
 -- Disco: plano + Unfold3D + giro travado. Anel: eixo da caixa (molde em caixa) ou o do mundo
 -- pelas normais; volta e perfil varrido, e o Unfold3D a partir da volta só se a melhor das duas
 -- passar de 0,02 de torta (senão não tem como ganhar por 0,02); fica o de menor trama torta.
--- escala = UV por cm. undefined (com #warn) se um disco não abre no Unfold3D ou um painel não
+-- escala = UV por cm (número, ou um por painel: revisão final, escala por ID). undefined (com
+-- #warn) se um disco não abre no Unfold3D ou um painel não
 -- tem contorno. Uma cópia temporária da base por chamada (para os detach do Unfold3D), painel
 -- Modify uma vez por chamada; cópia apagada e seleção devolvida sempre no fim.
 fn InLab_Paineis_UV o paineis metodo eixoCaixa escala =
@@ -1007,8 +1119,10 @@ fn InLab_Paineis_UV o paineis metodo eixoCaixa escala =
     (
         src = InLab_Paineis_CopiaBase o
         with undo off ( max modify mode )
-        for pn in paineis while falhou == "" do
+        for ip = 1 to paineis.count while falhou == "" do
         (
+            local pn = paineis[ip]
+            local esc = if classof escala == Array then escala[ip] else escala
             local posM = InLab_Paineis_PosMundo o pn
             local nCont = InLab_Paineis_Contornos po pn
             local cand = undefined
@@ -1019,11 +1133,11 @@ fn InLab_Paineis_UV o paineis metodo eixoCaixa escala =
                 local dirA = #([1,0,0], [0,1,0], [0,0,1])[k]
                 local alvo = if k == 3 then 90.0 else 0.0
                 -- 1. volta
-                local cVolta = InLab_Paineis_UVAnel po posM pn k escala
+                local cVolta = InLab_Paineis_UVAnel po posM pn k esc
                 if (InLab_Paineis_EspelhoUV po posM cVolta[1] cVolta[2] sinal) > 0.5 do InLab_Paineis_FlipU cVolta[1]
                 local desVolta = InLab_Paineis_TortaP po posM cVolta[1] cVolta[2] pn dirA alvo
                 -- 2. perfil varrido
-                local cPerf = InLab_Paineis_UVAnel po posM pn k escala perfil:true
+                local cPerf = InLab_Paineis_UVAnel po posM pn k esc perfil:true
                 if (InLab_Paineis_EspelhoUV po posM cPerf[1] cPerf[2] sinal) > 0.5 do InLab_Paineis_FlipU cPerf[1]
                 local desPerf = InLab_Paineis_TortaP po posM cPerf[1] cPerf[2] pn dirA alvo
                 local usa = "pelo perfil", desF = desPerf
@@ -1032,7 +1146,7 @@ fn InLab_Paineis_UV o paineis metodo eixoCaixa escala =
                 -- 3. Unfold3D a partir da volta (giro travado pelo eixo), só se pode ganhar por 0,02
                 if desF > 0.02 do
                 (
-                    local cUnf = InLab_Paineis_Unfold src pn cVolta[1] cVolta[2] posM escala o.name
+                    local cUnf = InLab_Paineis_Unfold src pn cVolta[1] cVolta[2] posM esc o.name
                     if cUnf != undefined do
                     (
                         InLab_Paineis_Girar cUnf[1] (alvo - (InLab_Paineis_AngDir po posM cUnf[1] cUnf[2] dirA))
@@ -1045,9 +1159,9 @@ fn InLab_Paineis_UV o paineis metodo eixoCaixa escala =
             )
             else if nCont == 1 then
             (
-                local cDisco = InLab_Paineis_UVDisco po posM pn escala sinal
+                local cDisco = InLab_Paineis_UVDisco po posM pn esc sinal
                 local nD = cDisco[3]
-                cand = InLab_Paineis_Unfold src pn cDisco[1] cDisco[2] posM escala o.name
+                cand = InLab_Paineis_Unfold src pn cDisco[1] cDisco[2] posM esc o.name
                 if cand == undefined then falhou = "Unfold3D falhou num disco"
                 else
                 (
@@ -1234,10 +1348,12 @@ fn InLab_Paineis_Peca o produto rodada cacheVivos =
     -- de InLab_Mapear_Peca (fn_mapear.ms, passo 3): mudança lá vem para cá também.
     local baseAntes = classof o.baseobject
     local convertida = false
+    local copiaBase = undefined   -- revisão final: devolvida se a peça não for refeita
     if baseAntes != Editable_Poly do
     (
         local trisAntes = (GetTriMeshFaceCount o)[1]
         local copia = copy o.baseobject
+        copiaBase = copia
         local baseOk = InLab_Mapear_ConverterBase o
         if baseOk and (GetTriMeshFaceCount o)[1] != trisAntes do
         (
@@ -1275,8 +1391,9 @@ fn InLab_Paineis_Peca o produto rodada cacheVivos =
         if pts == undefined do
         (
             local nos = #()
+            -- spline renderizável de tecido entra para o #info de VivosDoProduto (fica fora)
             for n in (InLab_Paineis_NosDaCabeca cabeca) do
-                if isValidNode n and (InLab_EhGeometria n) and (InLab_Paineis_EhTecido n produto) do append nos n
+                if isValidNode n and ((InLab_EhGeometria n) or superclassof n == Shape) and (InLab_Paineis_EhTecido n produto) do append nos n
             pts = InLab_Paineis_VivosDoProduto o nos:nos
             append cacheVivos #(cabeca, pts)
         )
@@ -1285,16 +1402,31 @@ fn InLab_Paineis_Peca o produto rodada cacheVivos =
             motivo = (if sep.diag != "" then sep.diag + "; " else "") + sep.metodo + " deu " + sep.paineis.count as string + " painel"
     )
     if motivo != "" do InLab_Log (o.name + ": não gerei painéis (" + motivo + "); peça como estava.") tipo:#warn
-    -- 4. escala e UV (sem gravar)
-    local escala = 0.0, uTil = 1.0
+    -- 4. escala e UV (sem gravar). Revisão final: escala por ID (InLab_Paineis_Escala o id); o
+    -- painel que mistura IDs usa a do ID com mais faces nele
+    local escPorID = #(), cmPorIDp = #()
     if motivo == "" do
     (
-        escala = InLab_Paineis_Escala o tec[1]
-        uTil = InLab_Paineis_UTil o tec[1]
-        for k = 2 to tec.count do
-            if (abs ((InLab_Paineis_Escala o tec[k]) / escala - 1.0)) > 0.01 do
-                InLab_Log (o.name + " (ID " + tec[k] as string + "): tamanho de textura diferente do ID " + tec[1] as string + "; os painéis usam o do ID " + tec[1] as string + ".") tipo:#warn
-        uv = InLab_Paineis_UV o sep.paineis sep.metodo sep.eixoCaixa escala
+        for id in tec do
+        (
+            local e = InLab_Paineis_Escala o id
+            append escPorID e
+            append cmPorIDp (1.0 / (e * (InLab_Paineis_UTil o id)))
+        )
+        local escPainel = #()
+        for pn in sep.paineis do
+        (
+            local cont = for id in tec collect 0
+            for f in pn do
+            (
+                local k = findItem tec (polyop.getFaceMatID po f)
+                if k > 0 do cont[k] += 1
+            )
+            local kM = 1
+            for k = 2 to tec.count where cont[k] > cont[kM] do kM = k
+            append escPainel escPorID[kM]
+        )
+        uv = InLab_Paineis_UV o sep.paineis sep.metodo sep.eixoCaixa escPainel
         if uv == undefined do motivo = "UV"   -- InLab_Paineis_UV já disse por quê
     )
     if motivo == "" do
@@ -1308,10 +1440,11 @@ fn InLab_Paineis_Peca o produto rodada cacheVivos =
             if k == 0 then append rwfCanais #(r[3], dn) else if rwfCanais[k][2] == undefined do rwfCanais[k][2] = dn
         )
         local canaisRWF = for rc in rwfCanais collect rc[1]
-        local rebind = #()
-        for id in tec do
-            for b in (InLab_Mapear_Bitmaps (InLab_Mapear_MaterialDoID (InLab_Mapear_Mat o) id)) do
-                if (findItem canaisRWF (InLab_Mapear_CanalOriginal b)) > 0 do appendIfUnique rebind b
+        local rebind = #(), rebindEsc = #()   -- bitmap e a escala do ID dele (o 1º ID que o usa)
+        for k = 1 to tec.count do
+            for b in (InLab_Mapear_Bitmaps (InLab_Mapear_MaterialDoID (InLab_Mapear_Mat o) tec[k])) do
+                if (findItem canaisRWF (InLab_Mapear_CanalOriginal b)) > 0 and (findItem rebind b) == 0 do
+                ( append rebind b; append rebindEsc escPorID[k] )
         local presos = #()
         for g in grupos where (findItem tec g[1]) == 0 do
             for b in (InLab_Mapear_Bitmaps g[2]) do
@@ -1331,6 +1464,10 @@ fn InLab_Paineis_Peca o produto rodada cacheVivos =
                 local fora = #()
                 for n in (refs.dependentNodes b) do
                     if isValidNode n and (InLab_EhGeometria n) and (findItem rodada n) == 0 do append fora n.name
+                -- revisão final: com o Ver UV ligado, refs.dependentNodes não vê os nós com as listras
+                if InLab_VerUV_NosQueUsam != undefined do
+                    for n in (InLab_VerUV_NosQueUsam b) do
+                        if isValidNode n and (InLab_EhGeometria n) and (findItem rodada n) == 0 and (findItem fora n.name) == 0 do append fora n.name
                 if fora.count > 0 do
                 (
                     InLab_Log (o.name + ": " + b.name + " (canal " + c as string + ") também é usado fora desta rodada (" +
@@ -1341,13 +1478,57 @@ fn InLab_Paineis_Peca o produto rodada cacheVivos =
         )
         local tirar = for r in rwfMods where (findItem presos r[3]) == 0 collect r
         local tiraCanal1 = (for r in tirar where r[3] == undefined or r[3] == 1 collect r).count > 0
+        -- bitmaps que vão ser religados ao canal 1 (lêem um canal do RWF que sai)
+        local religar = #(), religarEsc = #()
+        for ib = 1 to rebind.count do
+            if (InLab_RWF_CanalBitmap rebind[ib]) != 1 and (findItem presos (InLab_Mapear_CanalOriginal rebind[ib])) == 0 do
+            ( append religar rebind[ib]; append religarEsc rebindEsc[ib] )
         local acc = #(uv[1], uv[2])
-        if tiraCanal1 do
+        local refeitas = #{}
+        for e in uv[2] do refeitas[e[1]] = true
+        -- revisão final: faces sem painel (vivos) dos IDs cujo bitmap é religado recebem no canal 1
+        -- o UV avaliado do canal que o bitmap lia; o tiling vai × (densidade do RWF / escala), então
+        -- o UV copiado vai × (escala / densidade do RWF) e a textura do vivo fica do mesmo tamanho
+        local copiadas = #{}
+        for k = 1 to tec.count while motivo == "" do
+        (
+            local bk = undefined, ek = undefined
+            for b in (InLab_Mapear_Bitmaps (InLab_Mapear_MaterialDoID (InLab_Mapear_Mat o) tec[k])) where bk == undefined do
+            (
+                local j = findItem religar b
+                if j > 0 do ( bk = b; ek = religarEsc[j] )
+            )
+            if bk != undefined do
+            (
+                local fs = (InLab_Mapear_FacesDoID o tec[k]) - refeitas - copiadas
+                if not fs.isEmpty do
+                (
+                    local cBk = InLab_RWF_CanalBitmap bk
+                    local av = InLab_Mapear_UVAvaliado o fs canal:cBk
+                    if av == undefined then
+                    (
+                        InLab_Log (o.name + ": o UV do canal " + cBk as string + " das faces sem painel (vivos) não deu para copiar (topologia do stack diferente da base); peça não tocada.") tipo:#err
+                        motivo = "UV avaliado"
+                    )
+                    else
+                    (
+                        local kc = findItem canaisRWF cBk
+                        local dc = if kc > 0 then rwfCanais[kc][2] else undefined
+                        if dc != undefined and dc > 1e-12 do
+                        (
+                            local fat = ek / dc
+                            for i = 1 to av[1].count do av[1][i] = av[1][i] * fat
+                        )
+                        InLab_Mapear_Juntar acc av
+                        copiadas += fs
+                    )
+                )
+            )
+        )
+        if tiraCanal1 and motivo == "" do
         (
             -- faces que não recebem painel (outros IDs, vivos) ficam com o UV avaliado
-            local refeitas = #{}
-            for e in uv[2] do refeitas[e[1]] = true
-            local resto = #{1..nf} - refeitas
+            local resto = #{1..nf} - refeitas - copiadas
             if not resto.isEmpty do
             (
                 local av = InLab_Mapear_UVAvaliado o resto
@@ -1372,16 +1553,16 @@ fn InLab_Paineis_Peca o produto rodada cacheVivos =
                     deleteModifier o tirar[k][2]
                     insertItem #(tirar[k][1], tirar[k][2]) rec.modsTirados 1
                 )
-                for b in rebind do
+                for ib = 1 to religar.count do
                 (
+                    local b = religar[ib]
                     local c = InLab_RWF_CanalBitmap b
-                    if c != 1 and (findItem presos (InLab_Mapear_CanalOriginal b)) == 0 do
                     (
                         local t = InLab_Mapear_Tiling b
                         append rec.bitmapsAntes #(b, c, t.x, t.y)
                         local k = findItem canaisRWF c
                         local dc = if k > 0 then rwfCanais[k][2] else undefined
-                        local razao = if dc == undefined then 1.0 else dc / escala
+                        local razao = if dc == undefined then 1.0 else dc / religarEsc[ib]
                         InLab_Mapear_SetCanal b 1
                         InLab_Mapear_SetTiling b (t * razao)
                         InLab_Log (b.name + ": passa a ler o canal 1 (era o " + c as string + ")" +
@@ -1389,14 +1570,25 @@ fn InLab_Paineis_Peca o produto rodada cacheVivos =
                     )
                 )
                 if not (InLab_Mapear_Gravar o acc[1] acc[2]) do throw "gravação do canal 1 falhou"
-                local cm = 1.0 / (escala * uTil)
-                for id in tec do append rec.cmPorID #(id, cm)
+                for k = 1 to tec.count do append rec.cmPorID #(tec[k], cmPorIDp[k])
                 res = #(#refeita, rec)
                 local n = sep.paineis.count as string
                 local como = if matchPattern sep.metodo pattern:"vivo*" then (n + " painéis pelo " + sep.metodo) \
                              else ((if sep.diag != "" then sep.diag + "; " else "") + sep.metodo + ", " + n + " painéis")
-                InLab_Log (o.name + ": " + como + "; " + uv[3] + "; " + (InLab_Mapear_Num cm) + " cm por tile" +
+                -- um tamanho só, ou o de cada ID quando diferem (revisão final)
+                local txtCm = InLab_Mapear_Num cmPorIDp[1]
+                local iguais = true
+                for k = 2 to cmPorIDp.count where (abs (cmPorIDp[k] / cmPorIDp[1] - 1.0)) > 0.01 do iguais = false
+                if not iguais do
+                (
+                    txtCm = ""
+                    for k = 1 to tec.count do txtCm += (if k > 1 then ", " else "") + "ID " + tec[k] as string + " " + (InLab_Mapear_Num cmPorIDp[k])
+                )
+                InLab_Log (o.name + ": " + como + "; " + uv[3] + "; " + txtCm + " cm por tile" +
                            (if nVivos > 0 then "; " + nVivos as string + " vivo(s) como estavam" else "") + ".") tipo:#ok
+                -- revisão final: bitmap que ficou no canal do RWF
+                for c in presos do
+                    InLab_Log (o.name + ": o material continua lendo o canal " + c as string + " (Real World Fix mantido nesse canal).") tipo:#warn
             )
             catch
             (
@@ -1406,8 +1598,14 @@ fn InLab_Paineis_Peca o produto rodada cacheVivos =
             )
         )
     )
+    -- revisão final: peça não refeita devolve a base de antes
     if res[1] != #refeita and convertida do
-        InLab_Log (o.name + ": peça não refeita, mas a base ficou Editable_Poly (era " + baseAntes as string + "); o Ctrl+Z devolve.") tipo:#warn
+    (
+        local okB = false
+        try ( o.baseobject = copiaBase; okB = true )
+        catch ( InLab_Log (o.name + ": peça não refeita e não devolvi a base " + baseAntes as string + " (" + getCurrentException() + "); o Ctrl+Z devolve.") tipo:#warn )
+        if okB do InLab_Log (o.name + ": peça não refeita; base " + baseAntes as string + " devolvida.") tipo:#info
+    )
     res
 )
 
@@ -1494,6 +1692,13 @@ fn InLab_Paineis objs produto =
     catch ( InLab_Log ("Painéis: erro inesperado (" + getCurrentException() + ").") tipo:#err )
     InLab_Mapear_CanaisIni = #()
     InLab_Mapear_TamIni = #()
+    -- revisão final: nenhum nó temporário fica na cena (exceção no meio de uma peça)
+    local sobras = for n in objects where (matchPattern n.name pattern:"InLab_tmp_*") collect n
+    if sobras.count > 0 do
+    (
+        with undo off ( for n in sobras where isValidNode n do try ( delete n ) catch () )
+        InLab_Log ("Painéis: " + sobras.count as string + " nó(s) temporário(s) InLab_tmp_* apagado(s).") tipo:#warn
+    )
     if recs.count > 0 do append InLab_PilhaPaineis recs
     local seg = (timeStamp() - t0) / 1000.0
     InLab_Log ("Painéis: " + refeitas as string + " refeita(s), " + puladas as string + " pulada(s) (em " + (InLab_Mapear_Num seg) + " s).") \
@@ -1501,7 +1706,22 @@ fn InLab_Paineis objs produto =
     refeitas
 )
 
+-- revisão final: o nó (ou uma instância dele) tem rodada de Painéis na pilha? O Mapear não
+-- refaz peça assim (InLab_Mapear_Peca, fn_mapear.ms).
+fn InLab_Paineis_TemPeca no =
+(
+    local r = false
+    if InLab_PilhaPaineis != undefined and isValidNode no do
+    (
+        local inst = InLab_Instancias no
+        for rd in InLab_PilhaPaineis while not r do
+            for x in rd while not r do if isValidNode x.no and (findItem inst x.no) > 0 do r = true
+    )
+    r
+)
+
 -- tira da pilha os registros do nó (ou de uma instância dele); rodadas vazias somem. Nº tirado.
+-- Revisão final: o Mapear não chama mais (não refaz peça com painéis); fica para uso manual.
 fn InLab_Paineis_EsquecerPeca no motivo:"o estado de antes deles foi desfeito com o Mapear" =
 (
     local tirados = 0
