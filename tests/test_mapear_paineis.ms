@@ -4,11 +4,13 @@
  Resultado: <pasta temp do Max>\inlab_test_mapear_paineis.txt (PASS/FAIL por item).
  26/10/2026 (Tarefa 1): vivos e geometria em mundo.
  26/10/2026 (Tarefa 2): costuras pelo vivo, molde em caixa, contornos.
+ 26/10/2026 (Tarefa 3): UV de discos e anéis (InLab_Paineis_UV / InLab_Paineis_Torta).
 */
 global InLab_Log, InLab_EhGeometria, InLab_Mapear_PolyDe
 global InLab_Paineis_Vert, InLab_Paineis_Elementos, InLab_Paineis_VolArea
 global InLab_Paineis_EhVivo, InLab_Paineis_VivosDoProduto, InLab_Paineis_NosDaCabeca
 global InLab_Paineis_Separar, InLab_Paineis_Contornos
+global InLab_Paineis_UV, InLab_Paineis_Torta, InLab_Mapear_Medir, InLab_Mapear_Gravar
 global INLAB_TESTE_SAIDA, INLAB_TESTE_FALHAS
 (
     local dirTeste = getFilenamePath (getSourceFileName())
@@ -33,6 +35,8 @@ global INLAB_TESTE_SAIDA, INLAB_TESTE_FALHAS
     try
     (
         fileIn (raiz + @"core\utils.ms")
+        fileIn (raiz + @"functions\fn_mapear_classe.ms")
+        fileIn (raiz + @"functions\fn_mapear_medir.ms")
         fileIn (raiz + @"functions\fn_mapear_gerar.ms")
         fileIn (raiz + @"functions\fn_mapear_paineis.ms")
 
@@ -165,6 +169,149 @@ global INLAB_TESTE_SAIDA, INLAB_TESTE_FALHAS
         checar "mundo: molde em caixa com pivô deslocado dá 3 painéis" (r7.paineis.count == 3 and r7.eixoCaixa == 3)
 
         checar "contornos: anel 2, disco 1" (r2.paineis.count == 3 and (InLab_Paineis_Contornos pa2 r2.paineis[3]) == 2 and (InLab_Paineis_Contornos pa2 r2.paineis[1]) == 1)
+
+        ---------------- Tarefa 3: UV de cada painel ----------------
+        -- normal de face em mundo (vetor)
+        fn normalMundo o f = ( local tm = o.objectTransform; normalize ((polyop.getFaceNormal o.baseobject f) * tm - tm.row4) )
+        -- centro (mundo) das faces fs
+        fn centroFaces o fs =
+        (
+            local c = [0,0,0], n = 0
+            for v in (polyop.getVertsUsingFace o.baseobject fs) do ( c += InLab_Paineis_Vert o v; n += 1 )
+            c / n
+        )
+        -- faces de fs vizinhas de uma costura do UV (vértice de mapa diferente numa aresta comum)
+        fn facesCostura o fs mapa =
+        (
+            local po = o.baseobject
+            local idsDe = #()
+            for e in mapa do idsDe[e[1]] = e[2]
+            local res = #{}
+            for e in (polyop.getEdgesUsingFace po fs) do
+            (
+                local fe = polyop.getEdgeFaces po e
+                if fe.count == 2 and fs[fe[1]] and fs[fe[2]] do
+                (
+                    local fv1 = polyop.getFaceVerts po fe[1], fv2 = polyop.getFaceVerts po fe[2]
+                    local corta = false
+                    for v in (polyop.getEdgeVerts po e) do
+                        if idsDe[fe[1]][findItem fv1 v] != idsDe[fe[2]][findItem fv2 v] do corta = true
+                    if corta do ( res[fe[1]] = true; res[fe[2]] = true )
+                )
+            )
+            res
+        )
+        -- faces com UV espelhado (produto vetorial 2D das arestas de UV < 0)
+        fn nEspelhadas uvs mapa =
+        (
+            local n = 0
+            for e in mapa do
+            (
+                local t0 = uvs[e[2][1]], t1 = uvs[e[2][2]], t2 = uvs[e[2][3]]
+                if ((t1 - t0).x * (t2 - t0).y - (t1 - t0).y * (t2 - t0).x) < 0 do n += 1
+            )
+            n
+        )
+        -- rolo: cilindro r15 × 100 deitado em X (nó girado; a base fica no eixo Z do objeto)
+        fn mkRolo nome =
+        (
+            local c = Cylinder radius:15 height:100 sides:32 heightsegs:6 capsegs:3 name:nome
+            rotate c (eulerAngles 0 90 0)
+            convertToPoly c
+            c
+        )
+        -- painéis do rolo: faixa (|n·X| < 0.97) e os dois tampos
+        fn paineisRolo o =
+        (
+            local po = o.baseobject
+            local faixa = #{}, tA = #{}, tB = #{}
+            local cx = (centroFaces o #{1..(polyop.getNumFaces po)}).x
+            for f = 1 to polyop.getNumFaces po do
+            (
+                local n = normalMundo o f
+                if abs n.x < 0.97 then faixa[f] = true
+                else if (centroFaces o #{f}).x < cx then tA[f] = true else tB[f] = true
+            )
+            #(faixa, tA, tB)
+        )
+        local rolo = mkRolo "TESTE_pn_rolo"
+        append criados rolo
+        local pRolo = paineisRolo rolo
+        -- canal 1 do nó antes (o teste garante que ele existe, para conferir que não muda)
+        polyop.setMapSupport rolo.baseobject 1 true
+        local nMapAntes = polyop.getNumMapVerts rolo.baseobject 1
+        local uvMapAntes = polyop.getMapVert rolo.baseobject 1 1
+        local mfAntes = for f = 1 to (polyop.getNumFaces rolo.baseobject) collect (polyop.getMapFace rolo.baseobject 1 f) as string
+        local rR = InLab_Paineis_UV rolo pRolo "vivo (1.0 cm)" 3 (1.0 / 60.0)
+        checar "anel: UV do rolo gerado" (rR != undefined and rR.count == 3)
+        if rR != undefined do
+        (
+            local tR = InLab_Paineis_Torta rR[1] rR[2] rolo pRolo[1] [1,0,0] 0.0
+            linha ("      torta do rolo: " + tR as string + "; resumo: " + rR[3])
+            checar "anel: rolo deitado em X (cilindro 100 × r15) dá U ao longo de X" (tR < 0.05)
+            local cRolo = centroFaces rolo pRolo[1]
+            local cost = facesCostura rolo pRolo[1] rR[2]
+            local zc = (centroFaces rolo cost).z
+            checar "anel: corte do rolo fica embaixo" (cost.numberSet > 0 and zc < cRolo.z - 0.8 * 15.0)
+            local mfIgual = true
+            for f = 1 to mfAntes.count while mfIgual do if ((polyop.getMapFace rolo.baseobject 1 f) as string) != mfAntes[f] do mfIgual = false
+            checar "não grava: canal 1 do nó intacto e nó temporário apagado" (mfIgual and polyop.getNumMapVerts rolo.baseobject 1 == nMapAntes and (distance (polyop.getMapVert rolo.baseobject 1 1) uvMapAntes) < 1e-6 and (for o in objects where (matchPattern o.name pattern:"InLab_tmp*") collect o).count == 0)
+            checar "anel: mapa cobre todas as faces dos painéis" (rR[2].count == polyop.getNumFaces rolo.baseobject)
+
+            -- mundo: a mesma geometria (mundo) num nó com pivô em [5000,0,0] e girado 30° em Z
+            local rolo2 = mkRolo "TESTE_pn_rolo2"
+            append criados rolo2
+            local p2o = rolo2.baseobject
+            local pw = for v = 1 to (polyop.getNumVerts p2o) collect InLab_Paineis_Vert rolo2 v
+            rolo2.transform = (rotateZMatrix 30) * (transMatrix [5000,0,0])
+            local inv = inverse rolo2.objectTransform
+            for v = 1 to pw.count do polyop.setVert p2o v (pw[v] * inv)
+            local okGeo = true
+            for v = 1 to pw.count while okGeo do if (distance (InLab_Paineis_Vert rolo2 v) pw[v]) > 1e-3 do okGeo = false
+            local rR2 = InLab_Paineis_UV rolo2 (paineisRolo rolo2) "vivo (1.0 cm)" 3 (1.0 / 60.0)
+            local tR2 = if rR2 == undefined then 9.0 else InLab_Paineis_Torta rR2[1] rR2[2] rolo2 (paineisRolo rolo2)[1] [1,0,0] 0.0
+            linha ("      torta do rolo com pivô longe: " + tR2 as string)
+            checar "mundo: rolo com pivô em [5000,0,0] e girado 30° em Z dá a mesma torta (±0.02)" (okGeo and abs (tR2 - tR) <= 0.02)
+
+            local nEsp = nEspelhadas rR[1] rR[2]
+            -- molde em caixa: faixa vertical, corte na quina de trás
+            local rB = InLab_Paineis_UV a2 r2.paineis r2.metodo r2.eixoCaixa (1.0 / 60.0)
+            checar "anel: UV da almofada (molde em caixa) gerado" (rB != undefined)
+            if rB != undefined do
+            (
+                linha ("      resumo da almofada: " + rB[3])
+                local faixaB = r2.paineis[3]
+                local cB = centroFaces a2 faixaB
+                local costB = facesCostura a2 faixaB rB[2]
+                local okB = costB.numberSet > 0
+                for f in costB do ( local q = centroFaces a2 #{f}; if not (q.y > cB.y and q.x < cB.x) do okB = false )
+                checar "anel: faixa vertical (molde em caixa) corta na quina de trás" okB
+                nEsp += nEspelhadas rB[1] rB[2]
+            )
+            -- disco: tampo de uma almofada girada 30° em Z
+            local a4 = mkAlmofada "TESTE_pn_alm4"
+            append criados a4
+            rotate a4 (eulerAngles 0 0 30)
+            local r8 = InLab_Paineis_Separar a4 #{1..(polyop.getNumFaces a4.baseobject)} #()
+            local rD = InLab_Paineis_UV a4 r8.paineis r8.metodo r8.eixoCaixa (1.0 / 60.0)
+            local tD = if rD == undefined then 9.0 else InLab_Paineis_Torta rD[1] rD[2] a4 r8.paineis[1] [1,0,0] 0.0
+            linha ("      torta do tampo: " + tD as string)
+            checar "disco: tampo plano sai com o X do mundo no U" (r8.paineis.count == 3 and tD < 0.02)
+            if rD != undefined do nEsp += nEspelhadas rD[1] rD[2]
+            linha ("      faces espelhadas: " + nEsp as string)
+            checar "espelho: nenhum painel espelhado" (nEsp == 0)
+
+            -- escala: 1/200 por cm, gravado e medido
+            local rE = InLab_Paineis_UV rolo pRolo "vivo (1.0 cm)" 3 (1.0 / 200.0)
+            local cmTile = 0.0
+            if rE != undefined and (InLab_Mapear_Gravar rolo rE[1] rE[2]) do
+            (
+                local med = InLab_Mapear_Medir rolo
+                if med.escala > 0 do cmTile = 1.0 / med.escala
+            )
+            linha ("      cm por tile: " + cmTile as string)
+            checar "escala: 1/200 por cm dá 200 cm por tile" (cmTile >= 190.0 and cmTile <= 210.0)
+        )
     )
     catch ( linha ("FAIL  exceção no teste: " + (getCurrentException())); INLAB_TESTE_FALHAS += 1 )
 
