@@ -25,6 +25,9 @@
      troca por W), pois o mesmo arquivo pode ter W diferente em cada material.
    - Protótipo validado: wengé 10eb4f3be7b1.jpg gy/gx 1,60 (horizontal); girado
      90 graus 0,63 (vertical).
+   - 26/10/2026: família e matéria vêm de parte.materia_prima (formato do
+     export desde a v6). Antes eram lidas soltas na parte, como no JSON de
+     teste, e no export real toda peça caía em #semFamilia (Box simples).
 */
 
 global InLab_Log, InLab_JSON_Obter, InLab_Produto_Texto, InLab_Produto_Booleano
@@ -35,7 +38,7 @@ global INLAB_MAPEAR_VEIO_RAZAO = 1.15
 global InLab_Mapear_CacheVeio
 global InLab_Mapear_RegraDaParte, InLab_Mapear_ParteDoMaterial
 global InLab_Mapear_VeioDaImagem, InLab_Mapear_DifusoDe, InLab_Mapear_ZerarCache
-global InLab_Mapear_BitmapDoMapa
+global InLab_Mapear_BitmapDoMapa, InLab_Mapear_MateriaPrima
 
 fn InLab_Mapear_ZerarCache =
 (
@@ -65,10 +68,17 @@ fn InLab_Mapear_ParteDoMaterial produto nomeMaterial =
     achada
 )
 
+-- Campo de materia_prima da parte ("familia" ou "materia"); "" se não houver.
+fn InLab_Mapear_MateriaPrima parte campo =
+(
+    local mp = InLab_JSON_Obter parte "materia_prima"
+    if mp == undefined then "" else InLab_Produto_Texto mp campo
+)
+
 fn InLab_Mapear_RegraDaParte produto parte =
 (
-    local fam = InLab_Produto_Texto parte "familia"
-    local mat = InLab_Produto_Texto parte "materia"
+    local fam = InLab_Mapear_MateriaPrima parte "familia"
+    local mat = InLab_Mapear_MateriaPrima parte "materia"
     if fam == "" and (InLab_Produto_Booleano parte "so3d") do
     (
         local mae = InLab_Produto_Texto parte "subparte_de"
@@ -79,8 +89,8 @@ fn InLab_Mapear_RegraDaParte produto parte =
             for p in partes while not achou where (InLab_Produto_Texto p "nome_parte") == mae do
             (
                 achou = true
-                fam = InLab_Produto_Texto p "familia"
-                mat = InLab_Produto_Texto p "materia"
+                fam = InLab_Mapear_MateriaPrima p "familia"
+                mat = InLab_Mapear_MateriaPrima p "materia"
             )
         )
     )

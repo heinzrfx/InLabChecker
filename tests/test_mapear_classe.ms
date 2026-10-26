@@ -5,7 +5,7 @@
 */
 global InLab_ParseJSON, InLab_JSON_Obter, InLab_Log
 global InLab_Produto_Texto, InLab_Produto_Booleano, InLab_Produto_Normalizar
-global InLab_CaminhoTextura, InLab_Produto_Lista
+global InLab_CaminhoTextura, InLab_Produto_Lista, InLab_Produto_CarregarEmbutido, InLab_Mapear_MateriaPrima
 global INLAB_RWF_SLOTS_DIFUSO
 global InLab_Mapear_RegraDaParte, InLab_Mapear_ParteDoMaterial, InLab_Mapear_VeioDaImagem
 global InLab_Mapear_DifusoDe, InLab_Mapear_ZerarCache, InLab_Mapear_CacheVeio
@@ -59,15 +59,15 @@ global INLAB_TESTE_SAIDA, INLAB_TESTE_FALHAS
 
         -- 1. CLASSIFICAÇÃO
         local js = "{\"produtos\": [{\"cod_est\": \"0001\", \"partes\": [" +
-            "{\"nome_parte\": \"Estrutura\", \"familia\": \"Madeira\", \"materia\": \"Cedro\", \"material_id\": \"ART_P_Estrutura\"}, " +
-            "{\"nome_parte\": \"Pintada\", \"familia\": \"Madeira\", \"materia\": \"Microtextura\", \"material_id\": \"ART_P_Pintada\"}, " +
-            "{\"nome_parte\": \"Sola\", \"familia\": \"Soleta\", \"materia\": \"\", \"material_id\": \"ART_Sola\"}, " +
-            "{\"nome_parte\": \"Capa\", \"familia\": \"Couro\", \"materia\": \"\", \"material_id\": \"ART_Capa\"}, " +
-            "{\"nome_parte\": \"Vidro\", \"familia\": \"Louise\", \"materia\": \"Transparente\", \"material_id\": \"ART_Vidro\"}, " +
-            "{\"nome_parte\": \"Vazia\", \"familia\": \"\", \"materia\": \"\", \"material_id\": \"ART_Vazia\"}, " +
-            "{\"nome_parte\": \"Bambu\", \"familia\": \"Bambu\", \"materia\": \"\", \"material_id\": \"ART_Bambu\"}, " +
-            "{\"nome_parte\": \"Porta\", \"familia\": \"Madeira\", \"materia\": \"Cedro\", \"material_id\": \"ART_Porta\"}, " +
-            "{\"nome_parte\": \"Porta_1\", \"familia\": \"\", \"so3d\": true, \"subparte_de\": \"Porta\", \"material_id\": \"ART_Porta_1\"}]}]}"
+            "{\"nome_parte\": \"Estrutura\", \"materia_prima\": {\"familia\": \"Madeira\", \"materia\": \"Cedro\"}, \"material_id\": \"ART_P_Estrutura\"}, " +
+            "{\"nome_parte\": \"Pintada\", \"materia_prima\": {\"familia\": \"Madeira\", \"materia\": \"Microtextura\"}, \"material_id\": \"ART_P_Pintada\"}, " +
+            "{\"nome_parte\": \"Sola\", \"materia_prima\": {\"familia\": \"Soleta\", \"materia\": \"\"}, \"material_id\": \"ART_Sola\"}, " +
+            "{\"nome_parte\": \"Capa\", \"materia_prima\": {\"familia\": \"Couro\", \"materia\": \"\"}, \"material_id\": \"ART_Capa\"}, " +
+            "{\"nome_parte\": \"Vidro\", \"materia_prima\": {\"familia\": \"Louise\", \"materia\": \"Transparente\"}, \"material_id\": \"ART_Vidro\"}, " +
+            "{\"nome_parte\": \"Vazia\", \"materia_prima\": {\"familia\": \"\", \"materia\": \"\"}, \"material_id\": \"ART_Vazia\"}, " +
+            "{\"nome_parte\": \"Bambu\", \"materia_prima\": {\"familia\": \"Bambu\", \"materia\": \"\"}, \"material_id\": \"ART_Bambu\"}, " +
+            "{\"nome_parte\": \"Porta\", \"materia_prima\": {\"familia\": \"Madeira\", \"materia\": \"Cedro\"}, \"material_id\": \"ART_Porta\"}, " +
+            "{\"nome_parte\": \"Porta_1\", \"materia_prima\": {\"familia\": \"\", \"materia\": \"\"}, \"so3d\": true, \"subparte_de\": \"Porta\", \"material_id\": \"ART_Porta_1\"}]}]}"
         local produto = (InLab_Produto_Lista (InLab_ParseJSON js))[1]
         local partes = InLab_JSON_Obter produto "partes"
 
@@ -83,6 +83,23 @@ global INLAB_TESTE_SAIDA, INLAB_TESTE_FALHAS
         checar "ParteDoMaterial acha ART_P_Estrutura" (p != undefined and (InLab_Produto_Texto p "nome_parte") == "Estrutura")
         checar "ParteDoMaterial acha parte so3d" ((InLab_Mapear_ParteDoMaterial produto "ART_Porta_1") != undefined)
         checar "ParteDoMaterial devolve undefined para material sem parte" ((InLab_Mapear_ParteDoMaterial produto "ART_Nada") == undefined)
+
+        -- 26/10/2026: família lida de materia_prima na lista embutida de verdade
+        -- (o JSON acima era montado com familia solta e não pegou o export real).
+        local emb = InLab_Produto_CarregarEmbutido raiz:raiz
+        local nComFam = 0, semFam = #()
+        if emb != undefined do
+            for pr in InLab_Produto_Lista emb do
+                for pt in (InLab_JSON_Obter pr "partes") where (InLab_Mapear_MateriaPrima pt "familia") != "" do
+                (
+                    nComFam += 1
+                    local fam = InLab_Produto_Normalizar (InLab_Mapear_MateriaPrima pt "familia")
+                    if (findItem #("madeira", "tecido", "couro", "soleta", "metal", "fibra de vidro", "louise", "vidro") fam) > 0 and \
+                       (InLab_Mapear_RegraDaParte pr pt) == #semFamilia do
+                        append semFam ((InLab_Produto_Texto pr "cod_est") + "/" + (InLab_Produto_Texto pt "nome_parte"))
+                )
+        checar ("lista embutida: partes com materia_prima.familia (" + nComFam as string + ")") (nComFam > 0)
+        checar ("lista embutida: família conhecida nunca vira #semFamilia " + semFam as string) (semFam.count == 0)
 
         -- 2. VEIO
         InLab_Mapear_ZerarCache()
