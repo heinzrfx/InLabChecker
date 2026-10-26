@@ -3,10 +3,12 @@
  paineis). RODAR NUMA CENA VAZIA (resetMaxFile #noPrompt).
  Resultado: <pasta temp do Max>\inlab_test_mapear_paineis.txt (PASS/FAIL por item).
  26/10/2026 (Tarefa 1): vivos e geometria em mundo.
+ 26/10/2026 (Tarefa 2): costuras pelo vivo, molde em caixa, contornos.
 */
 global InLab_Log, InLab_EhGeometria, InLab_Mapear_PolyDe
 global InLab_Paineis_Vert, InLab_Paineis_Elementos, InLab_Paineis_VolArea
 global InLab_Paineis_EhVivo, InLab_Paineis_VivosDoProduto, InLab_Paineis_NosDaCabeca
+global InLab_Paineis_Separar, InLab_Paineis_Contornos
 global INLAB_TESTE_SAIDA, INLAB_TESTE_FALHAS
 (
     local dirTeste = getFilenamePath (getSourceFileName())
@@ -91,6 +93,70 @@ global INLAB_TESTE_SAIDA, INLAB_TESTE_FALHAS
             if (distance (InLab_Paineis_Vert m v) (getVert malha v)) > 1e-3 do ok = false
         checar "mundo: vértice de nó com pivô em [5000,0,0]" ok
         delete malha
+
+        ---------------- Tarefa 2: costuras e paineis ----------------
+        -- laço de vivo (mundo): quadrado de meia-medida h em volta da almofada, na altura z
+        fn lacoVivo h z desloc =
+        (
+            local pts = #()
+            for k = -h to h by 1.0 do
+            (
+                append pts ([k, h, z] + desloc)
+                append pts ([k, -h, z] + desloc)
+                append pts ([h, k, z] + desloc)
+                append pts ([-h, k, z] + desloc)
+            )
+            pts
+        )
+        -- almofada de teste: Box segmentado (o topo do ChamferBox é um n-gono só)
+        fn mkAlmofada nome =
+        (
+            local a = Box length:100 width:100 height:20 lengthsegs:10 widthsegs:10 heightsegs:2 name:nome
+            convertToPoly a
+            a
+        )
+        local a2 = mkAlmofada "TESTE_pn_alm2"
+        append criados a2
+        local pa2 = a2.baseobject
+        local corpo2 = #{1..(polyop.getNumFaces pa2)}
+        local vv = lacoVivo 50.0 10.0 [0,0,0]
+        local r1 = InLab_Paineis_Separar a2 corpo2 vv
+        checar "costura: almofada com vivo no meio dá 2 painéis pelo vivo" (r1.paineis.count == 2 and (matchPattern r1.metodo pattern:"vivo*"))
+        local soma = 0, inter = false, uniao = #{}
+        for p in r1.paineis do ( soma += p.numberSet; if (uniao * p).numberSet > 0 do inter = true; uniao += p )
+        checar "costura: os 2 painéis cobrem todas as faces do corpo" (soma == corpo2.numberSet and not inter and uniao.numberSet == corpo2.numberSet)
+
+        local r2 = InLab_Paineis_Separar a2 corpo2 #()
+        checar "caixa: sem vivo dá molde em caixa no eixo Z com 3 painéis" (r2.paineis.count == 3 and r2.eixoCaixa == 3 and (matchPattern r2.metodo pattern:"molde em caixa*"))
+
+        local pe = ChamferBox length:20 width:90 height:36 fillet:3 filletsegs:3 lengthsegs:4 widthsegs:8 heightsegs:4 name:"TESTE_pn_empe"
+        convertToPoly pe
+        append criados pe
+        local r3 = InLab_Paineis_Separar pe #{1..(polyop.getNumFaces pe.baseobject)} #()
+        checar "caixa: almofada em pé (fina em Y) usa o eixo Y" (r3.eixoCaixa == 2)
+
+        local cil = Cylinder radius:20 height:45 heightsegs:3 sides:24 name:"TESTE_pn_cil"
+        convertToPoly cil
+        append criados cil
+        local r4 = InLab_Paineis_Separar cil #{1..(polyop.getNumFaces cil.baseobject)} #()
+        checar "caixa: cilindro Ø40 × 45 fica no eixo Z" (r4.eixoCaixa == 3)
+
+        local r5 = InLab_Paineis_Separar a2 corpo2 (lacoVivo 55.0 10.0 [0,0,0])
+        checar "diag: vivo a 5 cm não separa e o motivo diz isso" ((matchPattern r5.metodo pattern:"molde em caixa*") and (findString r5.diag "3 cm") != undefined)
+
+        local a3 = mkAlmofada "TESTE_pn_alm3"
+        append criados a3
+        a3.pos = [5000,300,0]
+        a3.pivot = [5005,303,0]
+        local r6 = InLab_Paineis_Separar a3 #{1..(polyop.getNumFaces a3.baseobject)} (lacoVivo 50.0 10.0 [5000,300,0])
+        local c1 = for p in r1.paineis collect p.numberSet
+        local c6 = for p in r6.paineis collect p.numberSet
+        sort c1; sort c6
+        checar "mundo: a mesma almofada com pivô em [5000,300,0] dá os mesmos painéis" (c1.count == c6.count and c1.count == 2 and c1[1] == c6[1] and c1[2] == c6[2])
+        local r7 = InLab_Paineis_Separar a3 #{1..(polyop.getNumFaces a3.baseobject)} #()
+        checar "mundo: molde em caixa com pivô deslocado dá 3 painéis" (r7.paineis.count == 3 and r7.eixoCaixa == 3)
+
+        checar "contornos: anel 2, disco 1" (r2.paineis.count == 3 and (InLab_Paineis_Contornos pa2 r2.paineis[3]) == 2 and (InLab_Paineis_Contornos pa2 r2.paineis[1]) == 1)
     )
     catch ( linha ("FAIL  exceção no teste: " + (getCurrentException())); INLAB_TESTE_FALHAS += 1 )
 
