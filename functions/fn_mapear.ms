@@ -105,8 +105,13 @@
      Painéis usa esse tamanho, porque o Mapear tira os "InLab RWF*" do canal 1.
    - O registro serve também ao Painéis (InLab_PilhaPaineis). InLab_Mapear_Restaurar
      ganha desde: (texto do #warn de topologia, padrão "o Mapear").
-   - InLab_ReverterMapear: depois de restaurar uma peça, as rodadas de Painéis dela
-     saem da pilha (InLab_Paineis_EsquecerPeca): o estado de antes delas não existe mais.
+   - InLab_ReverterMapear: as rodadas de Painéis da peça saem da pilha (o estado de
+     antes delas não existe mais); no fix 1, elas são desfeitas antes (abaixo).
+   - Fix 1 (revisão): a peça refeita pelo Mapear tira da pilha as rodadas de Painéis
+     dela (mais velhas que o Mapear; o Desfazer Painéis apagava o Mapear). O Desfazer
+     Mapear volta antes as rodadas de Painéis da peça que ainda estão na pilha (mais
+     novas), com InLab_Paineis_RestaurarPeca. ID de tecido mantido guarda cmAntes no
+     cmPorID. Varredura do stack em InLab_Mapear_VarrerStack (Mapear e Painéis).
 */
 
 global InLab_Log, InLab_EhGeometria, InLab_Instancias, InLab_DeduplicarInstancias
@@ -168,7 +173,7 @@ global InLab_Mapear_Peca, InLab_Mapear, InLab_ReverterMapear, InLab_Mapear_Fator
 -- SÓ TESTE: rótulo ("<nó>" ou "<nó> (ID n)") do ID cujo gerador deve falhar
 global InLab_Mapear_ForcarFalha = undefined
 -- 26/10/2026: fn_mapear_paineis.ms (carregado depois)
-global InLab_Paineis_EsquecerPeca
+global InLab_Paineis_EsquecerPeca, InLab_Paineis_RestaurarPeca, InLab_Mapear_VarrerStack
 
 --------------------------------------------------------------------------------
 -- Stack
@@ -737,15 +742,16 @@ fn InLab_Mapear_ConverterBase o =
 )
 
 --------------------------------------------------------------------------------
--- Uma peça (o primeiro nó de um grupo de instâncias): #refeita, #mantida,
--- #pulada ou #nada (nenhuma face a medir em nenhum ID).
+-- 26/10/2026 (Tarefa 4 dos painéis, fix 1): varredura do stack, só leitura, usada
+-- pelo Mapear e pelo Painéis: #(rwfMods, bloqueio, temUnwrap, avisos).
+--   rwfMods  = #(#(modificador, índice, canal)...) do Real World Fix ("InLab RWF*", e o
+--              UVW Map com o Xform "InLab RWF" logo acima: caso A, spec 12.1)
+--   bloqueio = nome do 1º modificador de UV do usuário no canal 1 (peça não é tocada)
+--   temUnwrap = há Unwrap_UVW no stack; avisos = textos de #warn (Symmetry, UV na base)
 --------------------------------------------------------------------------------
-fn InLab_Mapear_Peca o produto unwrapGrande rodada:undefined =
+fn InLab_Mapear_VarrerStack o =
 (
-    if rodada == undefined do rodada = InLab_Instancias o
-    InLab_Log (o.name + ": mapeando (" + ((getPolygonCount o)[1]) as string + " faces)...") tipo:#info
-    -- 1. stack
-    local rwfMods = #()       -- #(modificador, índice, canal)
+    local rwfMods = #()
     local bloqueio = undefined
     local temUnwrap = false
     local avisos = #()
@@ -770,6 +776,23 @@ fn InLab_Mapear_Peca o produto unwrapGrande rodada:undefined =
         else if not (matchPattern ((classof m) as string) pattern:"*UVW*") do
             append avisos ("UV calculado na base, abaixo de " + m.name)
     )
+    #(rwfMods, bloqueio, temUnwrap, avisos)
+)
+
+--------------------------------------------------------------------------------
+-- Uma peça (o primeiro nó de um grupo de instâncias): #refeita, #mantida,
+-- #pulada ou #nada (nenhuma face a medir em nenhum ID).
+--------------------------------------------------------------------------------
+fn InLab_Mapear_Peca o produto unwrapGrande rodada:undefined =
+(
+    if rodada == undefined do rodada = InLab_Instancias o
+    InLab_Log (o.name + ": mapeando (" + ((getPolygonCount o)[1]) as string + " faces)...") tipo:#info
+    -- 1. stack (InLab_Mapear_VarrerStack, a mesma do Painéis)
+    local st = InLab_Mapear_VarrerStack o
+    local rwfMods = st[1]       -- #(modificador, índice, canal)
+    local bloqueio = st[2]
+    local temUnwrap = st[3]
+    local avisos = st[4]
     if bloqueio != undefined then
     (
         InLab_Log (o.name + ": modificador de mapeamento \"" + bloqueio + "\" no canal 1 acima da base; peça não tocada.") tipo:#warn
@@ -824,6 +847,8 @@ fn InLab_Mapear_Peca o produto unwrapGrande rodada:undefined =
                            (InLab_Mapear_Num d.alvo) + " cm por tile.") tipo:#warn
             local resultado = #pulada
             -- 3. registro (classe antiga) e base Editable_Poly
+            -- (a mesma conversão está copiada em InLab_Paineis_Peca, fn_mapear_paineis.ms:
+            -- mudança aqui vai para lá também)
             local baseAntes = classof o.baseobject
             local rec = MapearRecord no:o baseAntes:baseAntes modsTirados:#() bitmapsAntes:#()
             local convertida = false
@@ -948,7 +973,13 @@ fn InLab_Mapear_Peca o produto unwrapGrande rodada:undefined =
                             )
                         if not (InLab_Mapear_Gravar o acc[1] acc[2]) do throw "gravação do canal 1 falhou"
                         for d in feitos do append rec.cmPorID #(d.id, d.alvo)
+                        -- fix 1: ID de tecido mantido guarda o tamanho medido (o Painéis usa)
+                        for d in decs where d.acao == #manter and d.regra == #tecido and d.cmAntes != undefined do
+                            append rec.cmPorID #(d.id, d.cmAntes)
                         append InLab_UltimoMapear rec
+                        -- fix 1: rodadas de Painéis desta peça são mais velhas que este
+                        -- Mapear; o Desfazer Painéis não pode mais voltá-las por cima dele
+                        if InLab_Paineis_EsquecerPeca != undefined do InLab_Paineis_EsquecerPeca o motivo:"o Mapear refez a peça"
                         resultado = #refeita
                     )
                     catch
@@ -1092,11 +1123,13 @@ fn InLab_ReverterMapear =
                 (
                     try
                     (
+                        -- 26/10/2026 (fix 1): rodadas de Painéis da peça ainda na pilha são
+                        -- mais novas que o Mapear: voltam antes (da mais nova para a mais velha)
+                        -- e saem da pilha; depois o registro do Mapear
+                        if InLab_Paineis_RestaurarPeca != undefined do InLab_Paineis_RestaurarPeca rec.no
                         if InLab_Mapear_Restaurar rec do
                         (
                             n += 1
-                            -- 26/10/2026: rodadas de Painéis desta peça saem da pilha
-                            if InLab_Paineis_EsquecerPeca != undefined do InLab_Paineis_EsquecerPeca rec.no
                             local agora = classof rec.no.baseobject
                             InLab_Log (rec.no.name + ": mapeamento desfeito" +
                                        (if agora != rec.baseAntes then " (a base continua " + agora as string + "; era " + rec.baseAntes as string + ")." else ".")) tipo:#ok

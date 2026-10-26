@@ -621,6 +621,114 @@ global INLAB_TESTE_SAIDA, INLAB_TESTE_FALHAS
             (contaLog logs "mapeando por painéis" "") == 1 and (InLab_Instancias i1).count == 2)
         InLab_DesfazerPaineis()
 
+        ---------------- fix 1 da Tarefa 4 ----------------
+        InLab_UltimoMapear = #(); InLab_PilhaPaineis = #()
+        -- material de tecido com o difuso no canal 2 (Triplanar do RWF)
+        fn criarMaterialC2 arq =
+        (
+            local b = Bitmaptexture filename:arq
+            b.coords.mapChannel = 2
+            Standardmaterial name:"ART_PnTecido" diffuseMap:b
+        )
+        fn rwfCanal2 o = ( addModifier o (Uvwmap name:"InLab RWF Triplanar" maptype:4 length:50 width:50 height:50 mapChannel:2) )
+
+        -- F1a/F1b: Painéis -> Mapear (refaz a mesma peça) -> Desfazer Painéis / Desfazer Mapear
+        local pm = mkPeca "TESTE_pn4_pm" [0,3500,0]
+        pm.material = mTec; append criados pm
+        InLab_Paineis #(pm) produto
+        local cPain = InLab_Mapear_LerCanal1 pm
+        -- o tecido passa a ler o canal 2 do RWF: o Mapear é obrigado a refazer a peça
+        local mC2a = criarMaterialC2 arqImg
+        pm.material = mC2a
+        rwfCanal2 pm
+        local modPm = pm.modifiers[1]
+        append InLab_RWF_Feitos pm
+        logs.count = 0
+        InLab_Mapear #(pm) produto
+        local cMap = InLab_Mapear_LerCanal1 pm
+        checar "fix 1: o Mapear refez a peça e tirou da pilha a rodada de Painéis dela" ((temLog logs #ok "TESTE_pn4_pm" "refeito") and \
+            InLab_PilhaPaineis.count == 0 and (temLog logs #info "TESTE_pn4_pm" "o Mapear refez a peça"))
+        logs.count = 0
+        local nDp = InLab_DesfazerPaineis()
+        checar "Painéis → Mapear → Desfazer Painéis: nada a desfazer da peça, Mapear intacto" (nDp == 0 and (igualCanal cMap (InLab_Mapear_LerCanal1 pm)) and \
+            pm.modifiers.count == 0 and mC2a.diffuseMap.coords.mapChannel == 1)
+        InLab_ReverterMapear()
+        checar "Painéis → Mapear → Desfazer Mapear volta ao resultado dos painéis" ((igualCanal cPain (InLab_Mapear_LerCanal1 pm)) and \
+            pm.modifiers.count == 1 and pm.modifiers[1] == modPm and mC2a.diffuseMap.coords.mapChannel == 2 and InLab_PilhaPaineis.count == 0)
+
+        -- F1c: Mapear deixa o RWF do canal 2 (bitmap usado fora da rodada) -> Painéis o tira -> Desfazer Mapear
+        local mC2b = criarMaterialC2 arqImg
+        local mx = mkPeca "TESTE_pn4_mx" [300,3500,0]
+        local xx = mkPeca "TESTE_pn4_xx" [600,3500,0]
+        for o in #(mx, xx) do ( o.material = mC2b; append criados o; rwfCanal2 o; append InLab_RWF_Feitos o )
+        local cMxAntes = InLab_Mapear_LerCanal1 mx
+        local modMx = mx.modifiers[1]
+        InLab_UltimoMapear = #()
+        logs.count = 0
+        InLab_Mapear #(mx) produto
+        local okMx = (temLog logs #ok "TESTE_pn4_mx" "refeito") and mx.modifiers.count == 1 and mC2b.diffuseMap.coords.mapChannel == 2
+        InLab_Paineis #(mx, xx) produto
+        okMx = okMx and mx.modifiers.count == 0 and mC2b.diffuseMap.coords.mapChannel == 1
+        logs.count = 0
+        InLab_ReverterMapear()
+        linha ("      F1c: mods " + mx.modifiers.count as string + ", canal do bitmap " + mC2b.diffuseMap.coords.mapChannel as string + ", pilha " + InLab_PilhaPaineis.count as string)
+        checar "Mapear → Painéis (com RWF de outro canal tirado) → Desfazer Mapear volta canal 1, modificadores e canal do bitmap de antes do Mapear" \
+            (okMx and (igualCanal cMxAntes (InLab_Mapear_LerCanal1 mx)) and mx.modifiers.count == 1 and mx.modifiers[1] == modMx and \
+             mC2b.diffuseMap.coords.mapChannel == 2 and InLab_PilhaPaineis.count == 1 and InLab_PilhaPaineis[1][1].no == xx and \
+             (temLog logs #info "TESTE_pn4_mx" "desfeita(s) antes do Mapear"))
+        InLab_DesfazerPaineis tudo:true
+
+        -- F2: escala guardada pelo próprio Painéis
+        local e80 = mkPeca "TESTE_pn4_e80" [0,3800,0]
+        e80.material = mTec; append criados e80
+        addModifier e80 (Uvwmap name:"InLab RWF Triplanar" maptype:4 length:80 width:80 height:80 mapChannel:1)
+        append InLab_RWF_Feitos e80
+        logs.count = 0
+        InLab_Paineis #(e80) produto
+        InLab_Paineis #(e80) produto
+        local m80 = InLab_Mapear_Medir e80
+        local cm80 = if m80.escala > 0 then 1.0 / m80.escala else 0.0
+        linha ("      RWF 80 -> Painéis -> Painéis: " + cm80 as string + " cm por tile")
+        checar "Escala: RWF 80 → Painéis → Painéis continua em 80 cm" ((contaLog logs "TESTE_pn4_e80" "80,0 cm por tile") == 2 and cm80 > 76.0 and cm80 < 84.0)
+        InLab_DesfazerPaineis tudo:true
+
+        -- F2: ID de tecido mantido pelo Mapear (tampos com o mapcoords de 50 cm) e ID de madeira refeito
+        local km = Box length:50 width:50 height:150 lengthsegs:2 widthsegs:2 heightsegs:1 mapcoords:true name:"TESTE_pn4_kept" pos:[300,3800,0]
+        convertToPoly km
+        for f = 1 to (polyop.getNumFaces km) do polyop.setFaceMatID km f (if (abs (polyop.getFaceNormal km f).z) > 0.9 then 1 else 2)
+        local mmK = Multimaterial numsubs:2
+        mmK.materialList[1] = mTec; mmK.materialList[2] = mMad
+        km.material = mmK; append criados km
+        InLab_UltimoMapear = #()
+        logs.count = 0
+        InLab_Mapear #(km) produto
+        local recK = undefined
+        for r in InLab_UltimoMapear where r.no == km do recK = r
+        local cmK = undefined
+        if recK != undefined do for x in recK.cmPorID where x[1] == 1 do cmK = x[2]
+        local eK = InLab_Paineis_Escala km 1
+        linha ("      ID mantido: cmPorID " + (if recK == undefined then "sem registro" else recK.cmPorID as string) + "; escala " + (1.0 / eK) as string + " cm")
+        checar "Escala: ID mantido pelo Mapear guarda o tamanho" ((temLog logs #ok "TESTE_pn4_kept (ID 1)" "mantido") and cmK != undefined and \
+            (abs (cmK - 50.0)) < 1.0 and (abs (1.0 / eK - 50.0)) < 1.0)
+        InLab_ReverterMapear()
+
+        -- vivo dentro da própria peça: o elemento de vivo fica como estava
+        local av = mkPeca "TESTE_pn4_vivointerno" [600,3800,0]
+        local nfAv = polyop.getNumFaces av
+        local vi = mkVivo "TESTE_pn4_vi_tmp" 50.0 10.0 [600,3800,0]
+        polyop.attach av vi
+        av.material = mTec; append criados av
+        fn uvCantos o fs = ( local r = #(); for f in fs do for mv in (polyop.getMapFace o.baseobject 1 f) do append r (polyop.getMapVert o.baseobject 1 mv); r )
+        local fsViv = #{(nfAv + 1)..(polyop.getNumFaces av)}
+        local fsCorpo = #{1..nfAv}
+        local uvVivAntes = uvCantos av fsViv, uvCorpoAntes = uvCantos av fsCorpo
+        logs.count = 0
+        InLab_Paineis #(av) produto
+        checar "Painéis: vivo dentro da própria peça fica como estava e o corpo sai pelo vivo" ((temLog logs #ok "TESTE_pn4_vivointerno" "2 painéis pelo vivo") and \
+            (temLog logs #ok "TESTE_pn4_vivointerno" "4 vivo(s) como estavam") and (igualLista uvVivAntes (uvCantos av fsViv)) and \
+            not (igualLista uvCorpoAntes (uvCantos av fsCorpo)))
+        InLab_DesfazerPaineis tudo:true
+
         -- 10. peça de ~20 mil faces
         local g20 = ChamferBox length:100 width:100 height:20 fillet:5 Fillet_Segments:4 Length_Segments:84 Width_Segments:84 Height_Segments:8 name:"TESTE_pn4_grande"
         convertToPoly g20

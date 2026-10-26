@@ -48,6 +48,14 @@
  fechados, uma vez por base com #warn de instancia girada). Vivos lidos uma vez por cabeca na
  rodada, so das pecas de tecido (nos:). Os ChamferBox dos testes da Tarefa 2 passaram a usar
  Length_Segments etc. (densos): passaram sem mudar a separacao.
+ Fix 1 (26/10/2026, revisao da Tarefa 4): escala = cmPorID da rodada de Paineis mais nova da
+ peca > do Mapear > "InLab RWF*" > densidade medida do ID (faixa do Mapear) > tamanho do RWF
+ do mesmo bitmap na rodada > 60 cm (RWF -> Paineis -> Paineis caia para 60). Varredura do
+ stack em InLab_Mapear_VarrerStack (a mesma do Mapear). InLab_Paineis_RestaurarPeca (o
+ Desfazer Mapear volta antes as rodadas de Paineis da peca, mais novas que ele) e
+ EsquecerPeca motivo: (o Mapear que refaz a peca tira da pilha as rodadas dela). A rodada so
+ conta pecas de tecido (bitmap compartilhado com uma madeira selecionada nao e religado).
+ try/catch externo em InLab_Paineis zera o estado da rodada.
  Pegadinhas: nomes sao case-insensitive (local "a" esconde o parametro "A"); o
  parametro de fn usado dentro de collect em bloco aninhado da "Bad free thunk".
 */
@@ -79,6 +87,7 @@ global InLab_Instancias, InLab_DeduplicarInstancias, InLab_AbrirGruposAcima, InL
 global INLAB_MAPEAR_CM_POR_TILE, INLAB_MAPEAR_CM_MIN, INLAB_MAPEAR_CM_MAX
 global InLab_Paineis_EhTecido, InLab_Paineis_UTil, InLab_Paineis_CmOk, InLab_Paineis_Escala, InLab_Paineis_Girada
 global InLab_Paineis_Peca, InLab_Paineis, InLab_Paineis_EsquecerPeca, InLab_DesfazerPaineis
+global InLab_Paineis_RestaurarPeca, InLab_Mapear_VarrerStack, InLab_Mapear_Medir
 -- pilha de rodadas do Painéis: cada item é #(MapearRecord...) de um clique; só o Desfazer tira
 global InLab_PilhaPaineis = #()
 
@@ -1126,14 +1135,21 @@ fn InLab_Paineis_UTil o id =
 -- cm por tile plausível (faixa do Mapear, com 1% de folga)
 fn InLab_Paineis_CmOk cm = ( cm != undefined and cm >= INLAB_MAPEAR_CM_MIN * 0.99 and cm <= INLAB_MAPEAR_CM_MAX * 1.01 )
 
--- UV por cm do ID (spec 5.7): 1º o tamanho que o Mapear usou (cmPorID do registro mais novo da peça
--- ou de uma instância em InLab_UltimoMapear); 2º o "InLab RWF*" do canal que o difuso lê (ou o
--- tamanho que o RWF deu ao mesmo bitmap em outra peça da rodada); 3º INLAB_MAPEAR_CM_POR_TILE.
+-- UV por cm do ID (spec 5.7), pela ordem: cmPorID da rodada de Painéis mais nova da peça (ou de uma
+-- instância) em InLab_PilhaPaineis; cmPorID do Mapear mais novo em InLab_UltimoMapear; o "InLab
+-- RWF*" do canal que o difuso lê; a densidade medida do ID, se plausível; o tamanho que o RWF deu
+-- ao mesmo bitmap em outra peça da rodada; INLAB_MAPEAR_CM_POR_TILE.
 fn InLab_Paineis_Escala o id =
 (
     local uTil = InLab_Paineis_UTil o id
     local inst = InLab_Instancias o
     local cm = undefined
+    -- 1º a rodada de Painéis mais nova da peça (fix 1: RWF -> Painéis -> Painéis caía para 60)
+    for i = InLab_PilhaPaineis.count to 1 by -1 while cm == undefined do
+        for r in InLab_PilhaPaineis[i] while cm == undefined do
+            if isValidNode r.no and (findItem inst r.no) > 0 do
+                for x in r.cmPorID while cm == undefined do if x[1] == id do cm = x[2]
+    -- 2º o Mapear
     local mapeados = if InLab_UltimoMapear == undefined then #() else InLab_UltimoMapear
     for i = mapeados.count to 1 by -1 while cm == undefined do
     (
@@ -1154,6 +1170,14 @@ fn InLab_Paineis_Escala o id =
                 local d = InLab_Mapear_DensRWF o m
                 if d != undefined and d > 1e-9 and (InLab_Paineis_CmOk (1.0 / (d * uTil))) do dens = d
             )
+        )
+        -- densidade medida do ID, se plausível (como no Mapear)
+        if dens == undefined do
+        (
+            local med = try ( InLab_Mapear_Medir o matID:id )
+                        catch ( InLab_Log (o.name + ": não medi a densidade atual (" + getCurrentException() + ").") tipo:#warn; undefined )
+            if med != undefined and not med.falhou and med.temCanal and med.amostra > 0 and med.escala > 1e-9 and \
+                (InLab_Paineis_CmOk (1.0 / (med.escala * uTil))) do dens = med.escala
         )
         if dens == undefined and bmp != undefined do
         (
@@ -1188,30 +1212,12 @@ fn InLab_Paineis_Peca o produto rodada cacheVivos =
         return res
     )
     InLab_Log (o.name + ": mapeando por painéis (" + ((getPolygonCount o)[1]) as string + " faces)...") tipo:#info
-    -- 1. stack (as mesmas guardas do Mapear)
-    local rwfMods = #()       -- #(modificador, índice, canal)
-    local bloqueio = undefined
-    local temUnwrap = false
-    local avisos = #()
-    for i = 1 to o.modifiers.count do
-    (
-        local m = o.modifiers[i]
-        local canal = InLab_Mapear_CanalModUV m
-        if classof m == Unwrap_UVW do temUnwrap = true
-        local acima = if i > 1 then o.modifiers[i - 1] else undefined
-        local xformRWFAcima = acima != undefined and classof acima == UVW_Xform and (InLab_Mapear_EhRWF acima)
-        if InLab_Mapear_EhRWF m then append rwfMods #(m, i, canal)
-        else if m.name == "InLab AutoUV" then ok
-        else if classof m == Uvwmap and xformRWFAcima then append rwfMods #(m, i, canal)
-        else if canal != undefined then
-        (
-            if canal == 1 and bloqueio == undefined do bloqueio = m.name
-        )
-        else if (classof m) == Symmetry or (matchPattern ((classof m) as string) pattern:"*Mirror*") then
-            append avisos (m.name + " acima da base pode espelhar o UV")
-        else if not (matchPattern ((classof m) as string) pattern:"*UVW*") do
-            append avisos ("UV calculado na base, abaixo de " + m.name)
-    )
+    -- 1. stack (a mesma varredura do Mapear)
+    local st = InLab_Mapear_VarrerStack o
+    local rwfMods = st[1]       -- #(modificador, índice, canal)
+    local bloqueio = st[2]
+    local temUnwrap = st[3]
+    local avisos = st[4]
     if bloqueio != undefined do
     (
         InLab_Log (o.name + ": modificador de mapeamento \"" + bloqueio + "\" no canal 1 acima da base; peça não tocada.") tipo:#warn
@@ -1224,7 +1230,8 @@ fn InLab_Paineis_Peca o produto rodada cacheVivos =
         return res
     )
     for a in avisos do InLab_Log (o.name + ": " + a + ".") tipo:#warn
-    -- 2. base Editable_Poly (como no Mapear: triângulos de render conferidos)
+    -- 2. base Editable_Poly (como no Mapear: triângulos de render conferidos). Cópia da conversão
+    -- de InLab_Mapear_Peca (fn_mapear.ms, passo 3): mudança lá vem para cá também.
     local baseAntes = classof o.baseobject
     local convertida = false
     if baseAntes != Editable_Poly do
@@ -1431,54 +1438,60 @@ fn InLab_Paineis objs produto =
         else append alvos o
     )
     InLab_Mapear_ZerarCache()
-    -- nós da rodada (com as instâncias) e estado do início da rodada, como no Mapear
-    local rodada = #()
-    for o in alvos do for i in (InLab_Instancias o) do appendIfUnique rodada i
-    InLab_Mapear_CanaisIni = #()
-    for o in rodada where o.material != undefined do
-        for b in (InLab_Mapear_Bitmaps o.material) where (for x in InLab_Mapear_CanaisIni where x[1] == b collect x).count == 0 do
-            append InLab_Mapear_CanaisIni #(b, InLab_RWF_CanalBitmap b)
-    InLab_Mapear_TamIni = #()
-    for o in alvos do
-        for m in o.modifiers where (InLab_Mapear_EhRWF m) do
-        (
-            local c = InLab_Mapear_CanalModUV m
-            local dn = InLab_Mapear_DensRWF o m
-            if c != undefined and dn != undefined do
-                for g in (InLab_Mapear_Grupos o) do
-                (
-                    local b = InLab_Mapear_BitmapDifuso g[2]
-                    if b != undefined and (InLab_Mapear_TamDoBitmap b) == undefined and (InLab_RWF_CanalBitmap b) == c do
-                        append InLab_Mapear_TamIni #(b, dn)
-                )
-        )
     local recs = #()
-    local cacheVivos = #()
-    undo "InLab Painéis" on
+    try
     (
-        for g in (InLab_DeduplicarInstancias alvos) do
+        -- nós da rodada (com as instâncias) e estado do início da rodada, como no Mapear. Só peças de
+        -- tecido: as outras são puladas, e um bitmap que elas usam não pode ser religado
+        local rodada = #()
+        for o in alvos do
+            if (InLab_Paineis_EhTecido o produto) do for i in (InLab_Instancias o) do appendIfUnique rodada i
+        InLab_Mapear_CanaisIni = #()
+        for o in rodada where o.material != undefined do
+            for b in (InLab_Mapear_Bitmaps o.material) where (for x in InLab_Mapear_CanaisIni where x[1] == b collect x).count == 0 do
+                append InLab_Mapear_CanaisIni #(b, InLab_RWF_CanalBitmap b)
+        InLab_Mapear_TamIni = #()
+        for o in alvos do
+            for m in o.modifiers where (InLab_Mapear_EhRWF m) do
+            (
+                local c = InLab_Mapear_CanalModUV m
+                local dn = InLab_Mapear_DensRWF o m
+                if c != undefined and dn != undefined do
+                    for g in (InLab_Mapear_Grupos o) do
+                    (
+                        local b = InLab_Mapear_BitmapDifuso g[2]
+                        if b != undefined and (InLab_Mapear_TamDoBitmap b) == undefined and (InLab_RWF_CanalBitmap b) == c do
+                            append InLab_Mapear_TamIni #(b, dn)
+                    )
+            )
+        local cacheVivos = #()
+        undo "InLab Painéis" on
         (
-            local o = g.no
-            for n in g.instancias where n != o do
+            for g in (InLab_DeduplicarInstancias alvos) do
             (
-                InLab_Log (n.name + ": instância de " + o.name + ", recebe os mesmos painéis" +
-                           (if (findItem alvos n) > 0 then "." else " (fora da seleção).")) tipo:#info
-                if InLab_Paineis_Girada o n do
-                    InLab_Log (n.name + ": instância girada ou espelhada; corte e trama calculados pela peça " + o.name + ".") tipo:#warn
+                local o = g.no
+                for n in g.instancias where n != o do
+                (
+                    InLab_Log (n.name + ": instância de " + o.name + ", recebe os mesmos painéis" +
+                               (if (findItem alvos n) > 0 then "." else " (fora da seleção).")) tipo:#info
+                    if InLab_Paineis_Girada o n do
+                        InLab_Log (n.name + ": instância girada ou espelhada; corte e trama calculados pela peça " + o.name + ".") tipo:#warn
+                )
+                local abertos = #()
+                with undo off ( abertos = InLab_AbrirGruposAcima o )
+                local r = #(#pulada, undefined)
+                try
+                (
+                    if (getPolygonCount o)[1] == 0 then InLab_Log (o.name + ": sem faces, nada a mapear.") tipo:#info
+                    else r = InLab_Paineis_Peca o produto rodada cacheVivos
+                )
+                catch ( InLab_Log (o.name + ": erro inesperado no Painéis (" + getCurrentException() + ").") tipo:#err; r = #(#pulada, undefined) )
+                with undo off ( InLab_FecharGrupos abertos )
+                if r[1] == #refeita then ( refeitas += 1; append recs r[2] ) else puladas += 1
             )
-            local abertos = #()
-            with undo off ( abertos = InLab_AbrirGruposAcima o )
-            local r = #(#pulada, undefined)
-            try
-            (
-                if (getPolygonCount o)[1] == 0 then InLab_Log (o.name + ": sem faces, nada a mapear.") tipo:#info
-                else r = InLab_Paineis_Peca o produto rodada cacheVivos
-            )
-            catch ( InLab_Log (o.name + ": erro inesperado no Painéis (" + getCurrentException() + ").") tipo:#err; r = #(#pulada, undefined) )
-            with undo off ( InLab_FecharGrupos abertos )
-            if r[1] == #refeita then ( refeitas += 1; append recs r[2] ) else puladas += 1
         )
     )
+    catch ( InLab_Log ("Painéis: erro inesperado (" + getCurrentException() + ").") tipo:#err )
     InLab_Mapear_CanaisIni = #()
     InLab_Mapear_TamIni = #()
     if recs.count > 0 do append InLab_PilhaPaineis recs
@@ -1489,7 +1502,7 @@ fn InLab_Paineis objs produto =
 )
 
 -- tira da pilha os registros do nó (ou de uma instância dele); rodadas vazias somem. Nº tirado.
-fn InLab_Paineis_EsquecerPeca no =
+fn InLab_Paineis_EsquecerPeca no motivo:"o estado de antes deles foi desfeito com o Mapear" =
 (
     local tirados = 0
     if InLab_PilhaPaineis != undefined and isValidNode no do
@@ -1503,9 +1516,38 @@ fn InLab_Paineis_EsquecerPeca no =
             if rd.count == 0 do deleteItem InLab_PilhaPaineis i
         )
         if tirados > 0 do
-            InLab_Log (no.name + ": " + tirados as string + " registro(s) de Painéis descartado(s); o estado de antes deles foi desfeito com o Mapear.") tipo:#info
+            InLab_Log (no.name + ": " + tirados as string + " registro(s) de Painéis descartado(s); " + motivo + ".") tipo:#info
     )
     tirados
+)
+
+-- Desfazer Mapear (fix 1): volta os registros de Painéis do nó (ou de uma instância) que ainda
+-- estão na pilha, do mais novo para o mais velho, e tira-os da pilha. Quem chama abre o undo.
+-- Nº de registros restaurados.
+fn InLab_Paineis_RestaurarPeca no =
+(
+    local n = 0
+    if InLab_PilhaPaineis != undefined and isValidNode no do
+    (
+        local inst = InLab_Instancias no
+        local achados = 0
+        for i = InLab_PilhaPaineis.count to 1 by -1 do
+        (
+            local rd = InLab_PilhaPaineis[i]
+            for k = rd.count to 1 by -1 do
+                if isValidNode rd[k].no and (findItem inst rd[k].no) > 0 do
+                (
+                    achados += 1
+                    try ( if InLab_Mapear_Restaurar rd[k] desde:"os Painéis" do n += 1 )
+                    catch ( InLab_Log (no.name + ": não desfiz os painéis antes do Mapear (" + getCurrentException() + ").") tipo:#err )
+                    deleteItem rd k
+                )
+            if rd.count == 0 do deleteItem InLab_PilhaPaineis i
+        )
+        if achados > 0 do
+            InLab_Log (no.name + ": " + n as string + " de " + achados as string + " rodada(s) de Painéis desfeita(s) antes do Mapear.") tipo:#info
+    )
+    n
 )
 
 -- Desfazer Painéis: volta a última rodada (tudo:true, todas, da mais nova para a mais velha).
