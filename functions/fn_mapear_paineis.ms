@@ -287,6 +287,7 @@ fn InLab_Paineis_Juntar po grandes soltas =
     (
         local maior = 1
         for i = 2 to grandes.count where grandes[i].numberSet > grandes[maior].numberSet do maior = i
+        InLab_Log ("painéis: " + soltas.numberSet as string + " face(s) sem painel vizinho foram para o maior painel") tipo:#info
         grandes[maior] += soltas
     )
     grandes
@@ -329,7 +330,12 @@ struct InLab_PaineisSeparacao ( paineis, metodo, eixoCaixa, diag )
 fn InLab_Paineis_Separar o corpo vivoPts =
 (
     local res = InLab_PaineisSeparacao paineis:#() metodo:"nenhum" eixoCaixa:3 diag:""
-    if not (InLab_Paineis_BaseOk o) or corpo.numberSet == 0 do return res
+    if not (InLab_Paineis_BaseOk o) do return res
+    if corpo.numberSet == 0 do
+    (
+        InLab_Log (o.name + ": painéis: corpo sem faces, nada a separar") tipo:#warn
+        return res
+    )
     local po = InLab_Mapear_PolyDe o
     local tm = o.objectTransform
     local cacheV = #()
@@ -404,17 +410,32 @@ fn InLab_Paineis_Separar o corpo vivoPts =
             local c = dot (normalize n) ax
             lado[f] = if c > INLAB_PAINEIS_LIMIAR_CAIXA then 1 else if c < -INLAB_PAINEIS_LIMIAR_CAIXA then 2 else 3
         )
+        -- suavização: voto ponderado pelo comprimento (mundo) da aresta compartilhada; só faces da
+        -- faixa (classe 3) viram tampo/fundo, e só se essa classe tem MAIS DA METADE do perímetro
+        local elen = #()
         for passe = 1 to 4 do
         (
             local novo = copy lado #nomap
             for f in corpo do
             (
-                local w = #(0,0,0)
+                local w = #(0.0, 0.0, 0.0)
+                local per = 0.0
                 for e in (polyop.getFaceEdges po f) do
-                    for g in (polyop.getEdgeFaces po e) where g != f and corpo[g] do w[lado[g]] += 1
+                (
+                    if elen[e] == undefined do
+                    (
+                        local ev = polyop.getEdgeVerts po e
+                        for v in ev where cacheV[v] == undefined do cacheV[v] = (polyop.getVert po v) * tm
+                        elen[e] = distance cacheV[ev[1]] cacheV[ev[2]]
+                    )
+                    per += elen[e]
+                    for g in (polyop.getEdgeFaces po e) where g != f and corpo[g] do w[lado[g]] += elen[e]
+                )
                 local m = lado[f]
                 for k = 1 to 3 where w[k] > w[m] do m = k
-                if m != lado[f] and w[m] >= 2 do novo[f] = m
+                -- face plana de verdade (classe 1/2, normal acima do limiar) nunca muda: um n-gono grande
+                -- de tampo teria 100% do perímetro encostado na faixa e seria engolido por ela
+                if lado[f] == 3 and m != 3 and w[m] > per / 2.0 do novo[f] = m
             )
             lado = novo
         )

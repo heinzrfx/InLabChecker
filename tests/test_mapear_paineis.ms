@@ -135,11 +135,19 @@ global INLAB_TESTE_SAIDA, INLAB_TESTE_FALHAS
         local r3 = InLab_Paineis_Separar pe #{1..(polyop.getNumFaces pe.baseobject)} #()
         checar "caixa: almofada em pé (fina em Y) usa o eixo Y" (r3.eixoCaixa == 2)
 
+        local cb3 = ChamferBox length:100 width:100 height:20 fillet:5 filletsegs:3 name:"TESTE_pn_cb3"
+        convertToPoly cb3
+        append criados cb3
+        local r3b = InLab_Paineis_Separar cb3 #{1..(polyop.getNumFaces cb3.baseobject)} #()
+        checar "caixa: ChamferBox 100×100×20 (Fillet 5) sem vivo dá 3 painéis" (r3b.paineis.count == 3 and r3b.eixoCaixa == 3)
+        checar "caixa: almofada em pé ChamferBox 90×20×36 dá 3 painéis no eixo Y" (r3.paineis.count == 3 and r3.eixoCaixa == 2)
+
         local cil = Cylinder radius:20 height:45 heightsegs:3 sides:24 name:"TESTE_pn_cil"
         convertToPoly cil
         append criados cil
         local r4 = InLab_Paineis_Separar cil #{1..(polyop.getNumFaces cil.baseobject)} #()
         checar "caixa: cilindro Ø40 × 45 fica no eixo Z" (r4.eixoCaixa == 3)
+        checar "caixa: cilindro Ø40 × 45 (sides 24) dá 3 painéis" (r4.paineis.count == 3)
 
         local r5 = InLab_Paineis_Separar a2 corpo2 (lacoVivo 55.0 10.0 [0,0,0])
         checar "diag: vivo a 5 cm não separa e o motivo diz isso" ((matchPattern r5.metodo pattern:"molde em caixa*") and (findString r5.diag "3 cm") != undefined)
