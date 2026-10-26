@@ -74,6 +74,13 @@ A spec funcional (v1.0/v2.0, com numeração V-xx e seções) é citada nos come
   - Mudança **abaixo** do modificador (vértice movido, modificador inserido embaixo) invalida o cálculo: a peça volta inteira até um novo `.Calculate`.
   - Dentro de `undo on`, o `select`/`setGroupOpen`/`modPanel.setCurrentObject` também entram no Ctrl+Z: o `setCurrentObject` numa peça com instância põe a peça na seleção, e o grupo aberto e fechado deixa os membros sem a cabeça. Ponha esses em `with undo off` e deixe o `.Calculate` dentro do undo (fora dele, o Redo traz o modificador sem cálculo).
   - `KeepUV` em peça sem UV só vira `false` depois que o nó é avaliado (`classof o`).
+- **Pegadinhas do Mapear por painéis** (achadas no botão Painéis, ver cabeçalho de `fn_mapear_paineis.ms`):
+  - `polyop.getFacesUsingEdge` aresta por aresta, em 65 mil arestas, travou o Max por mais de 30 min: use `polyop.getEdgeFaces`.
+  - `polyop.getVert` na base dá coordenada de objeto (multiplique por `o.objectTransform`); `snapshotAsMesh` dá mundo.
+  - Parâmetro de função usado dentro de `collect` num bloco aninhado dá "Bad free thunk": use um laço comum.
+  - `polyop.detachFaces ... delete:false asNode:true` altera o canal 1 do nó de origem: destaque de uma cópia.
+  - Locais `aMin`/`aMax` engolem as funções `amin`/`amax` (nomes não diferenciam maiúsculas).
+  - ChamferBox usa `Length_Segments`/`Width_Segments`/`Height_Segments`/`Fillet_Segments`; `lengthsegs:` é ignorado em silêncio.
 - **`units.decodeValue` com número decimal depende do idioma do Windows:** em Max pt-BR (vírgula decimal), `units.decodeValue "0.5mm"` devolve **0**, e `"0,5mm"` dá o valor certo. Escreva `0.5 * (units.decodeValue "1mm")`, que vale em qualquer idioma (issue #106; ver `InLab_Malha_Tolerancia` em `verif_malha.ms`).
 - **Desempenho:** laço em MaxScript sobre faces ou vértices não escala para malhas de centenas de milhares de faces: `InLab_MedirUV` leva ~3 min em 300 mil faces. Em código de produção, prefira operações nativas (`selectOverlappedFaces`, contagens de `meshop`) e limite o que é medido pelo tamanho da malha (`INLAB_UV_MEDIR_MAX_FACES`).
 - **MCP do 3ds Max:** roda em `safe_mode`, que bloqueia `createFile`/`copyFile` no código enviado. Use `openFile ... mode:"wt"` e copie arquivos pelo shell. Uma chamada que passa de 120 s vai para segundo plano e, enquanto isso, a thread principal do Max fica ocupada.

@@ -87,6 +87,13 @@ global INLAB_TESTE_SAIDA, INLAB_TESTE_FALHAS
         InLab_UltimoErroReload = undefined
         local ok3 = InLab_RecarregarPlugin()
         checar "Reload de limpeza (restaurado) retorna true" (ok3 == true)
+
+        -- 4. UI (26/10/2026, Mapear por paineis): a secao UV e Texturas tem os
+        -- botoes novos depois do reload.
+        local nomesUV = #()
+        try ( nomesUV = for c in InLabSecUV.controls collect (toLower (c.name)) ) catch ( nomesUV = #() )
+        checar "UI: InLabSecUV tem btnPaineis, btnPaineisRev e btnVerUV" \
+            ((findItem nomesUV "btnpaineis") > 0 and (findItem nomesUV "btnpaineisrev") > 0 and (findItem nomesUV "btnveruv") > 0)
     )
     catch
     (

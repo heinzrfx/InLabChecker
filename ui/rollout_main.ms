@@ -537,6 +537,13 @@ rollout InLabSecUV "UV e Texturas" width:420
     -- parâmetro unwrapGrande fica no código, sem controle na UI.
     button btnMapear "Mapear" width:195 height:24 align:#left offset:[2,0] across:2 tooltip:"Refaz o UV do material (canal 1) onde ele está ruim: veio da madeira, vivos e costuras, cortes. Usa a matéria-prima do JSON. Depois do Real World Fix."
     button btnMapearRev "Desfazer Mapear" width:195 height:24 align:#right offset:[-1,0] tooltip:"Devolve o UV do material como estava antes do Mapear."
+    -- 26/10/2026 (Mapear por painéis, spec 2026-10-26-mapear-paineis-design.md):
+    -- Painéis refaz o UV do tecido cortando nas costuras (vivo) ou em painéis de
+    -- caixa; o Desfazer Painéis tem pilha própria. O Ver UV (checkbutton) troca
+    -- por um tempo o material da seleção por listras para conferir o mapeamento.
+    button btnPaineis "Painéis" width:195 height:24 align:#left offset:[2,0] across:2 tooltip:"Refaz o UV do tecido selecionado cortando nas costuras (vivo) ou em painéis de caixa. Confira com o Ver UV."
+    button btnPaineisRev "Desfazer Painéis" width:195 height:24 align:#right offset:[-1,0] tooltip:"Devolve o UV do tecido como estava antes do Painéis."
+    checkbutton btnVerUV "Ver UV" width:395 height:24 align:#left offset:[2,0] tooltip:"Troca por um tempo o material da seleção por listras para conferir o mapeamento. Desliga sozinho ao salvar e exportar."
     checkbox chkAutoUV "Unwrap" checked:INLAB_AUTOUV_OBRIGATORIO align:#left offset:[2,0]
     button btnF2 "Auto UV" width:130 height:24 align:#left offset:[2,0] across:2 tooltip:"Cria um UV próprio para bake de textura e sombra (canal 3) nos objetos selecionados. Só roda depois do Real World Fix."
     spinner spnAnguloUV "" range:[10, 90, 55] type:#float fieldWidth:45 align:#left offset:[-63,3] tooltip:"Ângulo de corte (°). Quanto maior, menos cortes no UV."
@@ -580,6 +587,31 @@ rollout InLabSecUV "UV e Texturas" width:420
         )
     )
     on btnMapearRev pressed do InLab_ReverterMapear()
+    on btnPaineis pressed do
+    (
+        local objs = InLab_SelecaoValida()
+        if objs.count > 0 do
+        (
+            local prod = try (InLabSecProduto.produtoEscolhido()) catch undefined
+            if prod == undefined then InLab_Log "Escolha o produto na seção Produto" tipo:#warn
+            else
+            (
+                InLab_ProgressoIniciar "Refazendo o UV pelos painéis..."
+                InLab_Paineis objs prod
+                InLab_ProgressoParar()
+            )
+        )
+    )
+    on btnPaineisRev pressed do InLab_DesfazerPaineis()
+    on btnVerUV changed estado do
+    (
+        if estado then
+        (
+            local n = InLab_VerUV_Ligar (InLab_SelecaoValida())
+            if n == 0 do btnVerUV.checked = false
+        )
+        else InLab_VerUV_Desligar()
+    )
     on btnF2 pressed do
     (
         local objs = InLab_SelecaoValida()
@@ -993,6 +1025,10 @@ rollout InLabChecker_Rollout ("InLabChecker · InLab Artefacto · v" + INLAB_VER
         -- de fato (não se tocam): só documentando que .pos ainda é válido
         -- aqui, o controle só morre depois que on close termina.
         InLab_PosicaoPainelGravar InLabChecker_Rollout
+
+        -- 26/10/2026: fechar o painel devolve o material original da seleção
+        -- (o Ver UV não pode ficar ligado sem o botão para desligar).
+        try ( InLab_VerUV_Desligar() ) catch ( InLab_Log ("Ver UV: não desligou ao fechar: " + getCurrentException()) tipo:#warn )
 
         InLab_LogUI = undefined
         InLab_Header_Pnl = undefined
