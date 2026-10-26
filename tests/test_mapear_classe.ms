@@ -83,6 +83,10 @@ global INLAB_TESTE_SAIDA, INLAB_TESTE_FALHAS
         checar "ParteDoMaterial acha ART_P_Estrutura" (p != undefined and (InLab_Produto_Texto p "nome_parte") == "Estrutura")
         checar "ParteDoMaterial acha parte so3d" ((InLab_Mapear_ParteDoMaterial produto "ART_Porta_1") != undefined)
         checar "ParteDoMaterial devolve undefined para material sem parte" ((InLab_Mapear_ParteDoMaterial produto "ART_Nada") == undefined)
+        -- 26/10/2026 (delta CAPA): parte fora do 3D não casa com material.
+        local prodCapa = (InLab_Produto_Lista (InLab_ParseJSON ("{\"produtos\": [{\"cod_est\": \"0002\", \"partes\": [" +
+            "{\"nome_parte\": \"Capa\", \"acessorio\": true, \"material_id\": \"ART_ACS_Capa\", \"acessorio_opcoes\": [{\"entra_3d\": false}]}]}]}")))[1]
+        checar "ParteDoMaterial ignora parte fora do 3D (Capa)" ((InLab_Mapear_ParteDoMaterial prodCapa "ART_ACS_Capa") == undefined)
 
         -- 26/10/2026: família lida de materia_prima na lista embutida de verdade
         -- (o JSON acima era montado com familia solta e não pegou o export real).
