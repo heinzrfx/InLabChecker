@@ -57,6 +57,25 @@ global INLAB_TESTE_SAIDA, INLAB_TESTE_FALHAS
         local pts2 = InLab_Paineis_VivosDoProduto toro
         checar "vivo: sem nos varre a hierarquia a partir da cabeça" (pts2.count == polyop.getNumVerts pt)
 
+        -- plano fino aberto não é vivo
+        local plano = Plane length:200 width:2 lengthsegs:4 widthsegs:1 name:"TESTE_pn_plano"
+        convertToPoly plano
+        append criados plano
+        local elP = InLab_Paineis_Elementos plano.baseobject #{1..(polyop.getNumFaces plano.baseobject)}
+        checar "vivo: plano fino aberto não é vivo" ((InLab_Paineis_EhVivo plano elP[1])[1] == false)
+
+        -- nó Editable_Mesh com um toro fino
+        local toroM = Torus radius1:50 radius2:0.6 segments:48 sides:8 name:"TESTE_pn_toroM" pos:[0,500,10]
+        convertToMesh toroM
+        append criados toroM
+        local ptsM = InLab_Paineis_VivosDoProduto toroM nos:#(toroM)
+        checar "vivo: VivosDoProduto acha o vivo de um nó Editable_Mesh" (ptsM.count == 48 * 8)
+        local nTemp = (for o in objects where (matchPattern o.name pattern:"InLab_tmp_paineis*") collect o).count
+        checar "vivo: cópia temporária apagada" (nTemp == 0)
+        local el0 = #{1..(getNumFaces toroM.mesh)}
+        local r0 = try ( InLab_Paineis_EhVivo toroM el0 ) catch ( undefined )
+        checar "guarda: EhVivo numa base Editable_Mesh devolve false sem exceção" (r0 != undefined and r0[1] == false)
+
         -- mundo: nó com pivô deslocado
         local m = Box length:30 width:20 height:10 name:"TESTE_pn_mundo"
         convertToPoly m
