@@ -1109,12 +1109,12 @@ fn InLab_Paineis_UV o paineis metodo eixoCaixa escala =
 fn InLab_Paineis_EhTecido o produto id:undefined =
 (
     local r = false
-    if produto != undefined and isValidNode o and o.material != undefined do
+    if produto != undefined and isValidNode o and (InLab_Mapear_Mat o) != undefined do
     (
         local mats = #()
-        if id != undefined then mats = #(InLab_Mapear_MaterialDoID o.material id)
+        if id != undefined then mats = #(InLab_Mapear_MaterialDoID (InLab_Mapear_Mat o) id)
         else if classof o.material == Multimaterial then ( for m in o.material.materialList do append mats m )
-        else mats = #(o.material)
+        else mats = #((InLab_Mapear_Mat o))
         for m in mats where m != undefined while not r do
         (
             local parte = InLab_Mapear_ParteDoMaterial produto m.name
@@ -1127,7 +1127,7 @@ fn InLab_Paineis_EhTecido o produto id:undefined =
 -- tiling U do difuso do ID (1 sem bitmap)
 fn InLab_Paineis_UTil o id =
 (
-    local b = InLab_Mapear_BitmapDifuso (InLab_Mapear_MaterialDoID o.material id)
+    local b = InLab_Mapear_BitmapDifuso (InLab_Mapear_MaterialDoID (InLab_Mapear_Mat o) id)
     local u = if b != undefined then abs (InLab_Mapear_Tiling b).x else 1.0
     if u < 1e-6 then 1.0 else u
 )
@@ -1161,7 +1161,7 @@ fn InLab_Paineis_Escala o id =
     else
     (
         local dens = undefined
-        local bmp = InLab_Mapear_BitmapDifuso (InLab_Mapear_MaterialDoID o.material id)
+        local bmp = InLab_Mapear_BitmapDifuso (InLab_Mapear_MaterialDoID (InLab_Mapear_Mat o) id)
         local canal = if bmp != undefined then InLab_Mapear_CanalOriginal bmp else 1
         for m in o.modifiers where (InLab_Mapear_EhRWF m) while dens == undefined do
         (
@@ -1310,7 +1310,7 @@ fn InLab_Paineis_Peca o produto rodada cacheVivos =
         local canaisRWF = for rc in rwfCanais collect rc[1]
         local rebind = #()
         for id in tec do
-            for b in (InLab_Mapear_Bitmaps (InLab_Mapear_MaterialDoID o.material id)) do
+            for b in (InLab_Mapear_Bitmaps (InLab_Mapear_MaterialDoID (InLab_Mapear_Mat o) id)) do
                 if (findItem canaisRWF (InLab_Mapear_CanalOriginal b)) > 0 do appendIfUnique rebind b
         local presos = #()
         for g in grupos where (findItem tec g[1]) == 0 do
@@ -1447,8 +1447,8 @@ fn InLab_Paineis objs produto =
         for o in alvos do
             if (InLab_Paineis_EhTecido o produto) do for i in (InLab_Instancias o) do appendIfUnique rodada i
         InLab_Mapear_CanaisIni = #()
-        for o in rodada where o.material != undefined do
-            for b in (InLab_Mapear_Bitmaps o.material) where (for x in InLab_Mapear_CanaisIni where x[1] == b collect x).count == 0 do
+        for o in rodada where (InLab_Mapear_Mat o) != undefined do
+            for b in (InLab_Mapear_Bitmaps (InLab_Mapear_Mat o)) where (for x in InLab_Mapear_CanaisIni where x[1] == b collect x).count == 0 do
                 append InLab_Mapear_CanaisIni #(b, InLab_RWF_CanalBitmap b)
         InLab_Mapear_TamIni = #()
         for o in alvos do

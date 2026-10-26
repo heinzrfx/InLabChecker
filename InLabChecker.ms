@@ -103,6 +103,7 @@
             @"functions\fn_mapear_gerar.ms",
             -- Mapear: orquestrador, registro e Desfazer (usa fn_autouv e fn_realworldfix)
             @"functions\fn_mapear.ms",
+            @"functions\fn_ver_uv.ms",
             @"functions\fn_mapear_paineis.ms",
             @"functions\fn_material_convert.ms",
             @"functions\fn_material_utils.ms",

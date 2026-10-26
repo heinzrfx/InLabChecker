@@ -134,6 +134,7 @@
 ================================================================================
 */
 
+global InLab_VerUV_Desligar   -- fn_ver_uv.ms
 global InLab_ClasseExportGLTF = undefined   -- cache do exportador resolvido
 
 --------------------------------------------------------------------------------
@@ -223,6 +224,8 @@ fn InLab_ResolverExportadorGLTF =
 --------------------------------------------------------------------------------
 fn InLab_ExportGLTF caminho somenteSelecao:true =
 (
+    -- Ver UV ligado: o GLB sairia com o material das listras
+    if InLab_VerUV_Desligar != undefined do InLab_VerUV_Desligar()
     local cls = InLab_ResolverExportadorGLTF()
     if cls == undefined then false
     else
@@ -378,6 +381,8 @@ fn InLab_TrazerExportadorAoFocoComLog jaAberta =
 --------------------------------------------------------------------------------
 fn InLab_AbrirExportadorRealTime objs somenteSelecao:true =
 (
+    -- Ver UV ligado: o GLB sairia com o material das listras
+    if InLab_VerUV_Desligar != undefined do InLab_VerUV_Desligar()
     -- 14/10/2026 (ajustes do Rafa, item 1): peça sem material ou com o
     -- fallback sai preta e sem material_id no GLB. Não abre o exportador.
     local r = InLab_Mat_SemMaterial (if somenteSelecao and objs != undefined then objs else (objects as array))

@@ -204,13 +204,21 @@ fn InLab_Mapear_CanalModUV m =
     else undefined
 )
 
+-- Material da peça como o desenhista montou: com o Ver UV ligado, o material do nó
+-- é o das listras (fn_ver_uv.ms carrega depois deste arquivo).
+global InLab_VerUV_MaterialDe
+fn InLab_Mapear_Mat o =
+(
+    if InLab_VerUV_MaterialDe != undefined then InLab_VerUV_MaterialDe o else o.material
+)
+
 --------------------------------------------------------------------------------
 -- Pré-requisito do Real World Fix (spec 12.6)
 --------------------------------------------------------------------------------
 fn InLab_Mapear_TemRealWorld o =
 (
-    (InLab_RWF_UVWsRW o).count > 0 or (InLab_RWF_BitmapsRW o.material).count > 0 or \
-        (InLab_RWF_Triplanares o.material).count > 0
+    (InLab_RWF_UVWsRW o).count > 0 or (InLab_RWF_BitmapsRW (InLab_Mapear_Mat o)).count > 0 or \
+        (InLab_RWF_Triplanares (InLab_Mapear_Mat o)).count > 0
 )
 
 fn InLab_Mapear_SemRWF o =
@@ -236,7 +244,7 @@ fn InLab_Mapear_MaterialDoID mtl id =
 -- #(#(id, material)...): um por ID presente (Multi/Sub) ou #(#(undefined, material)).
 fn InLab_Mapear_Grupos o =
 (
-    if classof o.material != Multimaterial then #(#(undefined, o.material))
+    if classof (InLab_Mapear_Mat o) != Multimaterial then #(#(undefined, (InLab_Mapear_Mat o)))
     else
     (
         local ids = #()
@@ -244,7 +252,7 @@ fn InLab_Mapear_Grupos o =
         for f = 1 to m.numfaces do appendIfUnique ids (getFaceMatID m f)
         delete m
         sort ids
-        for id in ids collect #(id, InLab_Mapear_MaterialDoID o.material id)
+        for id in ids collect #(id, InLab_Mapear_MaterialDoID (InLab_Mapear_Mat o) id)
     )
 )
 
@@ -1044,8 +1052,8 @@ fn InLab_Mapear objs produto unwrapGrande:false =
     local rodada = #()
     for o in alvos do for i in (InLab_Instancias o) do appendIfUnique rodada i
     InLab_Mapear_CanaisIni = #()
-    for o in rodada where o.material != undefined do
-        for b in (InLab_Mapear_Bitmaps o.material) where (for x in InLab_Mapear_CanaisIni where x[1] == b collect x).count == 0 do
+    for o in rodada where (InLab_Mapear_Mat o) != undefined do
+        for b in (InLab_Mapear_Bitmaps (InLab_Mapear_Mat o)) where (for x in InLab_Mapear_CanaisIni where x[1] == b collect x).count == 0 do
             append InLab_Mapear_CanaisIni #(b, InLab_RWF_CanalBitmap b)
     InLab_Mapear_TamIni = #()
     for o in alvos do
