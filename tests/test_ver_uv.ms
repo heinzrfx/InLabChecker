@@ -7,6 +7,7 @@
 global InLab_Log, INLAB_ROOT
 global InLab_VerUV_Ligar, InLab_VerUV_Desligar, InLab_VerUV_Ligado
 global InLab_VerUV_MaterialDe, InLab_VerUV_Textura
+global InLab_VerUV_ExportadorAberto
 global InLab_Mapear_Mat, InLab_ExportGLTF, InLab_RodarVerificacoes
 global INLAB_TESTE_SAIDA, INLAB_TESTE_FALHAS
 (
@@ -115,6 +116,19 @@ global INLAB_TESTE_SAIDA, INLAB_TESTE_FALHAS
         try ( InLab_RodarVerificacoes undefined ) catch ()
         checar "Ver UV: verificações desligam o Ver UV" (not (InLab_VerUV_Ligado()) and c9.material == m9)
         delete c9
+        -- 13: Real-Time Exporter aberto
+        local c13 = Box name:"TESTE_vu13"
+        local m13 = StandardMaterial name:"TESTE_mat13"
+        c13.material = m13
+        local abertoOrig = InLab_VerUV_ExportadorAberto
+        InLab_VerUV_ExportadorAberto = fn _exportadorFalso = ( true )
+        local n13 = -1
+        try ( n13 = InLab_VerUV_Ligar #(c13) ) catch ()
+        InLab_VerUV_ExportadorAberto = abertoOrig
+        local sobrou13 = InLab_VerUV_Ligado()
+        InLab_VerUV_Desligar()
+        checar "Ver UV: não liga com o Real-Time Exporter aberto" (n13 == 0 and not sobrou13 and c13.material == m13)
+        delete c13
         -- 7
         INLAB_ROOT = (getDir #temp) + "\inlab_sem_raiz\\"
         local arqGerado = (getDir #temp) + "\inlab_uv_listras.png"

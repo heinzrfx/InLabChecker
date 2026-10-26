@@ -8,6 +8,8 @@
    - InLab_VerUV_Ligar objs -> n de nos trocados (#warn e 0 sem objetos). Guarda o
      material original de cada no; o material "InLab Ver UV" e um so, com o PNG no
      canal 1 e tiling 3 (a listra de 18 px a cada 64 repete 3 vezes por tile).
+   - Ligar recusa (#warn, 0) com o Real-Time Exporter aberto (InLab_VerUV_ExportadorAberto):
+     ele exportaria o material das listras.
    - InLab_VerUV_Desligar() -> n de nos devolvidos (no apagado e ignorado).
    - InLab_VerUV_Ligado() -> bool.
    - InLab_VerUV_MaterialDe o -> o material original se o esta no Ver UV, senao
@@ -92,26 +94,35 @@ fn InLab_VerUV_CriarMaterial =
     m
 )
 
+-- true com o Real-Time Exporter aberto (ele exportaria o material das listras).
+fn InLab_VerUV_ExportadorAberto =
+(
+    (try ( GameExporterShown() ) catch ( false )) == true
+)
+
 fn InLab_VerUV_Ligar objs =
 (
     local n = 0
-    local exportador = try ( GameExporterShown() ) catch ( false )
-    local alvos = if objs == undefined then #() else (for o in objs where isValidNode o and superclassof o == GeometryClass collect o)
-    if alvos.count == 0 then InLab_Log "Ver UV: nenhum objeto de geometria selecionado." tipo:#warn
+    if InLab_VerUV_ExportadorAberto() then InLab_Log "Ver UV: feche o Real-Time Exporter antes de ligar o Ver UV" tipo:#warn
     else
     (
-        with undo off
+        local alvos = if objs == undefined then #() else (for o in objs where isValidNode o and superclassof o == GeometryClass collect o)
+        if alvos.count == 0 then InLab_Log "Ver UV: nenhum objeto de geometria selecionado." tipo:#warn
+        else
         (
-            if InLab_VerUV_Mat == undefined do InLab_VerUV_Mat = InLab_VerUV_CriarMaterial()
-            for o in alvos where (findItem InLab_VerUV_Nos o) == 0 do
+            with undo off
             (
-                append InLab_VerUV_Nos o
-                append InLab_VerUV_Origs o.material
-                o.material = InLab_VerUV_Mat
-                n += 1
+                if InLab_VerUV_Mat == undefined do InLab_VerUV_Mat = InLab_VerUV_CriarMaterial()
+                for o in alvos where (findItem InLab_VerUV_Nos o) == 0 do
+                (
+                    append InLab_VerUV_Nos o
+                    append InLab_VerUV_Origs o.material
+                    o.material = InLab_VerUV_Mat
+                    n += 1
+                )
             )
+            InLab_Log ("Ver UV: ligado em " + n as string + " peça(s).") tipo:#ok
         )
-        InLab_Log ("Ver UV: ligado em " + n as string + " peça(s).") tipo:#ok
     )
     n
 )
