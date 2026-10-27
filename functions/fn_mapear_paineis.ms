@@ -78,12 +78,18 @@
    grade). Separar recorta os pontos de vivo pela caixa do corpo + 3 cm antes da grade (nenhum
    ponto: "vivo a mais de 3 cm") e monta a adjacencia de faces uma vez para as 7 distancias
    (InLab_Paineis_Regioes adj:).
+ Hotfix 1.3.2 (27/10/2026): face morta na base (polyop.getFaceDeg undefined) travava o Max
+ (CPU 100%, RAM até 23 GB): polyop.getElementsUsingFace nela devolve vazio, e
+ InLab_Paineis_Elementos nunca a tirava do conjunto. Agora a face de partida sai sempre e
+ elemento vazio é descartado. O detachFaces do Unfold3D também compacta a cópia e renumera as
+ faces depois da morta: InLab_Paineis_Peca chama InLab_Paineis_TirarMortas
+ (polyop.collapseDeadStructs na base, dentro do undo do Painéis) antes de ler índices.
  - Peca nao refeita com a base convertida: a base de antes volta (o.baseobject = copia).
  - Vivo como spline renderizavel: #info com o nome (fica fora da separacao).
 */
 global InLab_Log, InLab_EhGeometria
 global InLab_Mapear_PolyDe
-global InLab_Paineis_Vert, InLab_Paineis_Elementos, InLab_Paineis_VolArea
+global InLab_Paineis_Vert, InLab_Paineis_Elementos, InLab_Paineis_VolArea, InLab_Paineis_TirarMortas
 global InLab_Paineis_BaseOk, InLab_Paineis_CopiaMundo
 global InLab_Paineis_EhVivo, InLab_Paineis_VivosDoProduto, InLab_Paineis_NosDaCabeca
 global InLab_Paineis_Separar, InLab_Paineis_Contornos, InLab_Paineis_Regioes, InLab_Paineis_Juntar
@@ -177,17 +183,41 @@ fn InLab_Paineis_Vert o v =
 -- elementos conexos (bitarrays de faces) dentro de faces
 fn InLab_Paineis_Elementos po faces =
 (
+    -- hotfix 1.3.2: face morta fora (getElementsUsingFace de uma face viva a inclui)
+    local vivas = copy faces
+    for f in faces do ( local d = polyop.getFaceDeg po f; if d == undefined or d < 3 do vivas[f] = false )
+    faces = vivas
     local resta = copy faces
     local els = #()
     while not resta.isEmpty do
     (
         local f0 = 0
         for f in resta while f0 == 0 do f0 = f
+        -- face morta dá elemento vazio: tirar f0 sempre (sem isso o laço não termina, hotfix 1.3.2)
+        resta[f0] = false
         local el = (polyop.getElementsUsingFace po #{f0}) * faces
-        append els el
-        resta -= el
+        if not el.isEmpty do
+        (
+            append els el
+            resta -= el
+        )
     )
     els
+)
+
+-- tira as faces e arestas mortas da base Editable_Poly de o (polyop.collapseDeadStructs).
+-- Devolve quantas faces mortas havia (0 = nada mudou). Hotfix 1.3.2.
+fn InLab_Paineis_TirarMortas o =
+(
+    local po = o.baseobject
+    local n = 0
+    for f = 1 to polyop.getNumFaces po do
+    (
+        local d = polyop.getFaceDeg po f
+        if d == undefined or d < 3 do n += 1
+    )
+    if n > 0 do polyop.collapseDeadStructs po
+    n
 )
 
 -- #(volume, area) em MUNDO de um conjunto de faces (fan dos poligonos)
@@ -1369,6 +1399,10 @@ fn InLab_Paineis_Peca o produto rodada cacheVivos =
         convertida = true
         InLab_Log (o.name + ": base " + baseAntes as string + " convertida para Editable_Poly (o Desfazer Painéis devolve o UV, não a classe).") tipo:#warn
     )
+    -- hotfix 1.3.2: face morta na base travava o Max (InLab_Paineis_Elementos) e o detachFaces
+    -- do Unfold3D compacta a cópia e renumera as faces. Tira antes de ler qualquer índice.
+    local mortas = InLab_Paineis_TirarMortas o
+    if mortas > 0 do InLab_Log (o.name + ": " + mortas as string + " face(s) morta(s) da base tirada(s) (invisíveis; o Ctrl+Z devolve).") tipo:#info
     local po = o.baseobject
     local nf = polyop.getNumFaces po
     -- 3. faces de tecido, menos os elementos de vivo da própria peça

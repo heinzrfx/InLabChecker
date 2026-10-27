@@ -10,9 +10,10 @@
  26/10/2026 (revisão final): Painéis -> Mapear do produto mantém a peça (o Mapear não refaz
  peça com painéis; saem os casos "o Mapear refez a peça"), Dist perto da borda da grade. Os
  demais casos da revisão final ficam em test_mapear_paineis2.ms (cada arquivo < 120 s).
+ 27/10/2026 (hotfix 1.3.2): face morta em Elementos e InLab_Paineis_TirarMortas.
 */
 global InLab_Log, InLab_EhGeometria, InLab_Mapear_PolyDe
-global InLab_Paineis_Vert, InLab_Paineis_Elementos, InLab_Paineis_VolArea
+global InLab_Paineis_Vert, InLab_Paineis_Elementos, InLab_Paineis_VolArea, InLab_Paineis_TirarMortas
 global InLab_Paineis_EhVivo, InLab_Paineis_VivosDoProduto, InLab_Paineis_NosDaCabeca
 global InLab_Paineis_Separar, InLab_Paineis_Contornos
 global InLab_Paineis_UV, InLab_Paineis_Torta, InLab_Mapear_Medir, InLab_Mapear_Gravar
@@ -109,6 +110,19 @@ global INLAB_TESTE_SAIDA, INLAB_TESTE_FALHAS
         checar "vivo: VivosDoProduto acha o vivo de um nó Editable_Mesh" (ptsM.count == 48 * 8)
         local nTemp = (for o in objects where (matchPattern o.name pattern:"InLab_tmp_paineis*") collect o).count
         checar "vivo: cópia temporária apagada" (nTemp == 0)
+
+        -- hotfix 1.3.2: face morta (bit 2 das flags) travava InLab_Paineis_Elementos
+        local morta = Box length:20 width:20 height:20 lengthsegs:2 widthsegs:2 heightsegs:2 name:"TESTE_pn_morta"
+        convertToPoly morta
+        append criados morta
+        local pm = morta.baseobject
+        polyop.setFaceFlags pm #{5} 2 mask:2 undoable:false
+        checar "face morta: preparada (getFaceDeg undefined)" ((polyop.getFaceDeg pm 5) == undefined)
+        local t0m = timeStamp()
+        local elM = InLab_Paineis_Elementos pm #{1..(polyop.getNumFaces pm)}
+        checar "face morta: Elementos termina e ignora a face morta" (elM.count == 1 and elM[1].numberSet == 23 and not elM[1][5] and (timeStamp() - t0m) < 5000)
+        checar "face morta: TirarMortas conta 1 e compacta a base" ((InLab_Paineis_TirarMortas morta) == 1 and (polyop.getNumFaces pm) == 23)
+        checar "face morta: TirarMortas sem morta não muda nada" ((InLab_Paineis_TirarMortas morta) == 0 and (polyop.getNumFaces pm) == 23)
         local el0 = #{1..(getNumFaces toroM.mesh)}
         local r0 = try ( InLab_Paineis_EhVivo toroM el0 ) catch ( undefined )
         checar "guarda: EhVivo numa base Editable_Mesh devolve false sem exceção" (r0 != undefined and r0[1] == false)
