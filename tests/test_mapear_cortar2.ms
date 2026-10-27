@@ -505,7 +505,13 @@ global INLAB_TESTE_SAIDA, INLAB_TESTE_FALHAS
         local pg = gr.baseobject
         local costG = costurasPelaNormal pg
         local nFG = polyop.getNumFaces pg
-        -- face morta no meio do tampo (longe das costuras)
+        -- face morta no meio do tampo (longe das costuras). Sonda de 27/10/2026: a face morta feita
+        -- assim (flag 2 com setFaceFlags) deixa a malha incoerente, porque as arestas continuam
+        -- listando a face e, depois do collapseDeadStructs, 4 arestas apontam para uma face que não
+        -- as tem. A face morta real (Box001 da cena do usuário) vem sem vértices e sem aresta
+        -- apontando para ela, e sai coerente. Não há como criar a real por script
+        -- (polyop.deleteFaces já compacta). Erros intermitentes neste caso (ACCESS_VIOLATION,
+        -- índice de face fora do intervalo) não se repetiram em 27 rodadas e vêm dessa incoerência.
         local morta = 0
         for f = 1 to nFG while morta == 0 do
         (
