@@ -14,6 +14,8 @@
  pela guia ou pela regra padrão (InLab_Cortar_UV). Detalhes no bloco da Parte 3.
  Parte 4 (Tarefa 5, 27/10/2026): botão Cortar (InLab_Cortar), uma peça por vez, com pilha,
  marcas e Ver UV. Detalhes no bloco da Parte 4.
+ Parte 5 (Tarefa 6, 27/10/2026): botão Sentido (InLab_Sentido), aresta-guia + ângulo nos painéis
+ já cortados, sem Unfold3D e sem pilha; Ctrl+Z pela troca da base. Detalhes no bloco da Parte 5.
  Spec: docs\superpowers\specs\2026-10-27-mapear-assistido-design.md
 */
 global InLab_Log
@@ -504,7 +506,7 @@ global INLAB_CORTAR_COS_GUIA_ANEL = 0.9
 global InLab_Paineis_UVDisco, InLab_Paineis_UVAnel, InLab_Paineis_CopiaBase, InLab_Paineis_Unfold
 global InLab_Paineis_AngDir, InLab_Paineis_EspelhoUV, InLab_Paineis_Sinal, InLab_Paineis_NormalArea
 global InLab_Cortar_Compor, InLab_Cortar_AngCorte, InLab_Cortar_Reescalar, InLab_Cortar_Norm180
-global InLab_Cortar_DirRef, InLab_Cortar_Orientar, InLab_Cortar_UV
+global InLab_Cortar_DirRef, InLab_Cortar_Orientar, InLab_Cortar_UV, InLab_Cortar_MedirAnel
 
 -- posição de cada id de canto (ic = InLab_Cortar_IdsCanto) a partir de uma projeção
 -- #(uvsP, mapaP) com ids próprios: busca em largura pelas faces que compartilham ids, cada
@@ -666,6 +668,27 @@ fn InLab_Cortar_Orientar o po posM uvs sub dir medir:undefined =
     InLab_Cortar_Norm180 (ang + r)
 )
 
+-- anel com guia: as entradas de sub (#(face, ids)) cujas faces estão viradas para o mesmo lado
+-- da aresta-guia (normal local das faces dela no painel reg); undefined se a normal se anula.
+-- Usado pelo Cortar (InLab_Cortar_UV) e pelo Sentido para o medir: do InLab_Cortar_Orientar.
+fn InLab_Cortar_MedirAnel po posM reg sub aresta sinal =
+(
+    local medir = undefined
+    local nG = [0,0,0]
+    for f in (polyop.getEdgeFaces po aresta) where reg[f] do nG += InLab_Paineis_NormalArea posM (polyop.getFaceVerts po f) sinal
+    if (length nG) > 1e-9 do
+    (
+        nG = normalize nG
+        medir = #()
+        for e in sub do
+        (
+            local nf = InLab_Paineis_NormalArea posM (polyop.getFaceVerts po e[1]) sinal
+            if (length nf) > 1e-12 and (dot (normalize nf) nG) > INLAB_CORTAR_COS_GUIA_ANEL do append medir e
+        )
+    )
+    medir
+)
+
 -- UV da peça pelos painéis pn (InLab_CortarPaineis). escPorPainel: UV por cm de cada painel
 -- (array, ou um número para todos); guias: #(#(aresta, ângulo)...). Devolve
 -- #(uvs, mapa, nGuia, nRegra), ou undefined (com #warn).
@@ -779,22 +802,7 @@ fn InLab_Cortar_UV o pn escPorPainel guias =
         local dir = InLab_Cortar_DirRef o po posM pn.paineis[i] pn.aneis[i] guiaDe[i]
         if guiaDe[i] != undefined then nGuia += 1 else nRegra += 1
         -- anel com guia: o ângulo é medido nas faces viradas para o mesmo lado da aresta-guia
-        local medir = undefined
-        if pn.aneis[i] and guiaDe[i] != undefined do
-        (
-            local nG = [0,0,0]
-            for f in (polyop.getEdgeFaces po guiaDe[i][1]) where pn.paineis[i][f] do nG += InLab_Paineis_NormalArea posM (polyop.getFaceVerts po f) sinal
-            if (length nG) > 1e-9 do
-            (
-                nG = normalize nG
-                medir = #()
-                for e in subs[i] do
-                (
-                    local nf = InLab_Paineis_NormalArea posM (polyop.getFaceVerts po e[1]) sinal
-                    if (length nf) > 1e-12 and (dot (normalize nf) nG) > INLAB_CORTAR_COS_GUIA_ANEL do append medir e
-                )
-            )
-        )
+        local medir = if pn.aneis[i] and guiaDe[i] != undefined then InLab_Cortar_MedirAnel po posM pn.paineis[i] subs[i] guiaDe[i][1] sinal else undefined
         InLab_Cortar_Orientar o po posM uvs subs[i] dir medir:medir
     )
     #(uvs, mapa, nGuia, nRegra)
@@ -1068,4 +1076,176 @@ fn InLab_Cortar objs produto =
         if InLab_VerUV_Ligar != undefined do InLab_VerUV_Ligar #(o)
     )
     feitas
+)
+
+/* ---------------------------------------------------------------------------------------
+ Parte 5 (Tarefa 6, 27/10/2026): botão Sentido. Spec seções 4 (item 2 e "Regras da
+ seleção"), 5.1, 5.5 e 6.
+ - Uma peça (instâncias contam como uma), base Editable_Poly, marcas guardadas (senão #warn
+   "corte a peça antes (Cortar)") e canal 1 na base.
+ - Painéis: InLab_Cortar_Paineis com as costuras guardadas e o mesmo corpo do Cortar (faces
+   dos IDs de tecido menos os vivos). Sem produto (produto:undefined), o corpo é a peça
+   inteira menos os vivos: painel que mistura tecido e outro material sem costura entre eles
+   seria girado inteiro, então a UI passa o produto.
+ - Guias = seleção de arestas da base menos as costuras. Se a seleção ainda tem TODAS as
+   costuras (o que o Cortar/Sentido deixam selecionado), as costuras e os cortes automáticos
+   do anel saem calados: o desenhista pode só somar a guia à seleção. Senão, aresta de
+   costura ou de corte automático na seleção: #warn e ignorada (é borda de UV, de dois
+   painéis). Aresta fora dos painéis: #warn e ignorada. Duas guias no mesmo painel:
+   #warn, vale a de menor índice.
+ - Lê o UV atual do canal 1 (polyop.getMapFace/getMapVert) só dos painéis com guia nova,
+   com vértices de mapa próprios por painel, gira (e espelha, se preciso) com
+   InLab_Cortar_DirRef + InLab_Cortar_Orientar (no anel, medir: pela normal local da guia,
+   InLab_Cortar_MedirAnel) e grava com InLab_Mapear_Gravar (as outras faces ficam com o UV
+   que tinham). Sem Unfold3D, sem reescala, sem pilha.
+ - undo "InLab Sentido": troca a base por uma cópia (InLab_Cortar_TrocarBase; a escrita no
+   canal de mapa não entra no Ctrl+Z), grava, atualiza as guias guardadas (guia nova no
+   painel troca a antiga) e volta a seleção às costuras guardadas.
+--------------------------------------------------------------------------------------- */
+global InLab_Sentido, InLab_Mapear_Gravar, InLab_Cortar_PaineisDaAresta
+
+-- painéis (índices) de uma aresta: só as faces que de fato têm a aresta (ver Tarefa 5 na Parte 2)
+fn InLab_Cortar_PaineisDaAresta po regDe e =
+(
+    local ps = #()
+    for f in (polyop.getEdgeFaces po e) where regDe[f] != undefined and (findItem (polyop.getFaceEdges po f) e) > 0 do appendIfUnique ps regDe[f]
+    ps
+)
+
+-- Entrada do botão Sentido: nº de painéis ajustados. angulo em graus (-90 a 90).
+fn InLab_Sentido objs angulo produto:undefined =
+(
+    local geo = if objs == undefined then #() else (for o in objs where isValidNode o and InLab_EhGeometria o collect o)
+    local grs = InLab_DeduplicarInstancias geo
+    if grs.count != 1 do
+    (
+        InLab_Log "Sentido: selecione uma peça de tecido só." tipo:#warn
+        return 0
+    )
+    local o = grs[1].no
+    if (classof o.baseobject) != Editable_Poly do
+    (
+        InLab_Log (o.name + ": converta a base para Editable Poly e marque as costuras.") tipo:#warn
+        return 0
+    )
+    local marcas = InLab_Cortar_LerMarcas o
+    local po = o.baseobject
+    if marcas == undefined or not (polyop.getMapSupport po 1) do
+    (
+        InLab_Log (o.name + ": corte a peça antes (Cortar).") tipo:#warn
+        return 0
+    )
+    angulo = if angulo == undefined then 0.0 else (angulo as float)
+    local costuras = marcas.costuras
+    local sel = polyop.getEdgeSelection po
+    local n = 0
+    try
+    (
+        if InLab_Mapear_ZerarCache != undefined do InLab_Mapear_ZerarCache()
+        -- corpo como no Cortar
+        local corpo = #{}
+        if produto != undefined then
+        (
+            local tec = for g in (InLab_Mapear_Grupos o) where (InLab_Paineis_EhTecido o produto id:g[1]) collect g[1]
+            corpo = (InLab_Cortar_Corpo o tec)[1]
+        )
+        else
+        (
+            local todas = #{1..(polyop.getNumFaces po)}
+            corpo = copy todas
+            for el in (InLab_Paineis_Elementos po todas) do if (InLab_Paineis_EhVivo o el)[1] do corpo -= el
+        )
+        local pn = InLab_Cortar_Paineis o corpo costuras
+        local nP = pn.paineis.count
+        local regDe = #()
+        regDe.count = polyop.getNumFaces po
+        for i = 1 to nP do for f in pn.paineis[i] do regDe[f] = i
+        -- guias da seleção
+        local bordas = costuras + pn.cortesAuto
+        local cand = sel - bordas
+        local recusadas = if (costuras - sel).isEmpty then #{} else (sel * bordas)
+        if not recusadas.isEmpty do
+            InLab_Log (o.name + ": " + recusadas.numberSet as string + " aresta(s) de costura (ou do corte do anel) na seleção, ignorada(s): a guia é uma aresta de dentro do painel.") tipo:#warn
+        local guiaDe = #()
+        guiaDe.count = nP
+        local fora = 0
+        for e in cand do
+        (
+            local ps = InLab_Cortar_PaineisDaAresta po regDe e
+            if ps.count == 0 then fora += 1
+            else
+                for i in ps do
+                (
+                    if guiaDe[i] == undefined then guiaDe[i] = e
+                    else InLab_Log (o.name + ": painel " + i as string + " tem mais de uma guia na seleção; vale a primeira (aresta " + guiaDe[i] as string + ").") tipo:#warn
+                )
+        )
+        if fora > 0 do
+            InLab_Log (o.name + ": " + fora as string + " aresta(s) da seleção fora dos painéis de tecido, ignorada(s).") tipo:#warn
+        local alvos = for i = 1 to nP where guiaDe[i] != undefined collect i
+        if alvos.count == 0 then
+        (
+            if recusadas.isEmpty and fora == 0 do
+                InLab_Log (o.name + ": selecione uma aresta-guia dentro do painel (uma por painel).") tipo:#warn
+            polyop.setEdgeSelection po costuras
+        )
+        else
+        (
+            -- UV atual dos painéis com guia, com vértices de mapa próprios por painel
+            local sinal = InLab_Paineis_Sinal o
+            local faces = #{}
+            for i in alvos do faces += pn.paineis[i]
+            local posM = InLab_Paineis_PosMundo o faces
+            local uvs = #(), mapa = #()
+            for i in alvos do
+            (
+                local novoDe = #()
+                local sub = #()
+                for f in pn.paineis[i] do
+                (
+                    local ids = #()
+                    for mv in (polyop.getMapFace po 1 f) do
+                    (
+                        if novoDe[mv] == undefined do ( append uvs (polyop.getMapVert po 1 mv); novoDe[mv] = uvs.count )
+                        append ids novoDe[mv]
+                    )
+                    local ent = #(f, ids)
+                    append sub ent
+                    append mapa ent
+                )
+                local dir = InLab_Cortar_DirRef o po posM pn.paineis[i] pn.aneis[i] #(guiaDe[i], angulo)
+                local medir = if pn.aneis[i] then InLab_Cortar_MedirAnel po posM pn.paineis[i] sub guiaDe[i] sinal else undefined
+                InLab_Cortar_Orientar o po posM uvs sub dir medir:medir
+            )
+            -- guias guardadas: guia nova no painel troca a antiga
+            local nE = polyop.getNumEdges po
+            local novas = #()
+            for g in marcas.guias do
+            (
+                local ps = if g[1] != undefined and g[1] >= 1 and g[1] <= nE then InLab_Cortar_PaineisDaAresta po regDe g[1] else #()
+                local trocada = false
+                for i in ps where guiaDe[i] != undefined do trocada = true
+                if not trocada do append novas g
+            )
+            for i in alvos do append novas #(guiaDe[i], angulo)
+            undo "InLab Sentido" on
+            (
+                local orig = InLab_Cortar_TrocarBase o
+                if InLab_Mapear_Gravar o uvs mapa then
+                (
+                    InLab_Cortar_GravarMarcas o (InLab_CortarMarcas costuras:costuras guias:novas)
+                    polyop.setEdgeSelection o.baseobject costuras
+                    n = alvos.count
+                )
+                else
+                (
+                    o.baseobject = orig
+                    InLab_Log (o.name + ": sentido não gravado; peça como estava.") tipo:#warn
+                )
+            )
+            if n > 0 do InLab_Log (o.name + ": sentido de " + n as string + " painel(is) ajustado.") tipo:#ok
+        )
+    )
+    catch ( InLab_Log (o.name + ": erro inesperado no Sentido (" + getCurrentException() + ").") tipo:#err; n = 0 )
+    n
 )

@@ -13,7 +13,7 @@ global InLab_Mapear, InLab_UltimoMapear, InLab_Mapear_LerCanal1, InLab_ReverterM
 global InLab_PilhaPaineis, InLab_DesfazerPaineis
 global InLab_VerUV_Nos, InLab_VerUV_Desligar
 global InLab_Cortar_LerMarcas, InLab_Cortar_TemMarcas, InLab_Cortar_ApagarMarcas, InLab_Cortar_Paineis
-global InLab_Cortar, InLab_Cortar_SelecaoArestas
+global InLab_Cortar, InLab_Cortar_SelecaoArestas, InLab_Sentido, InLab_Paineis_PosMundo, InLab_Paineis_AngDir
 global INLAB_TESTE_SAIDA, INLAB_TESTE_FALHAS
 (
     local dirTeste = getFilenamePath (getSourceFileName())
@@ -300,6 +300,113 @@ global INLAB_TESTE_SAIDA, INLAB_TESTE_FALHAS
         checar "cortar: Ctrl+Z volta canal 1 e marcas" (okZ1 and igualCanal cz0 (InLab_Mapear_LerCanal1 cz) and not (InLab_Cortar_TemMarcas cz))
         InLab_PilhaPaineis = #()
         delete cz
+
+        ---------------- Sentido (Tarefa 6) ----------------
+        -- ângulo do X do mundo no UV, medido nas faces fs (canal 1 atual da base)
+        fn angX o fs =
+        (
+            local p = o.baseobject
+            local posM = InLab_Paineis_PosMundo o fs
+            local uvs = for i = 1 to (polyop.getNumMapVerts p 1) collect (polyop.getMapVert p 1 i)
+            local sub = for f in fs collect #(f, polyop.getMapFace p 1 f)
+            InLab_Paineis_AngDir p posM uvs sub [1,0,0]
+        )
+        -- UV por canto de face (posições), para comparar sem depender dos índices
+        fn cantos o fs =
+        (
+            local p = o.baseobject
+            for f in fs collect (for mv in (polyop.getMapFace p 1 f) collect (polyop.getMapVert p 1 mv))
+        )
+        fn igualCantos a b =
+        (
+            local ok = a.count == b.count
+            for k = 1 to a.count while ok do
+            (
+                if a[k].count != b[k].count then ok = false
+                else for j = 1 to a[k].count do if (distance a[k][j] b[k][j]) > 1e-5 do ok = false
+            )
+            ok
+        )
+        local cs = caixa "TESTE_cr2_sentido" [0,800,0]
+        cs.material = mTec
+        local costS = costurasPelaNormal cs.baseobject
+        local cs0 = InLab_Mapear_LerCanal1 cs
+        polyop.setEdgeSelection cs.baseobject costS
+        local nS0 = InLab_Cortar #(cs) produto
+        local ps = cs.baseobject
+        local pnS = InLab_Cortar_Paineis cs #{1..(polyop.getNumFaces ps)} costS
+        local faixaS = #{}, tampoFundo = #{}
+        for k = 1 to pnS.paineis.count do if pnS.aneis[k] then faixaS = pnS.paineis[k] else tampoFundo += pnS.paineis[k]
+        -- frente da faixa (normal -Y) e duas guias horizontais (ao longo de X) nela, longe das costuras
+        local frente = for f in faixaS where (polyop.getFaceNormal ps f).y < -0.9 collect f
+        frente = frente as bitarray
+        local guias = #()
+        for e in (polyop.getEdgesUsingFace ps frente) where not costS[e] and not pnS.cortesAuto[e] do
+        (
+            local vs = polyop.getEdgeVerts ps e
+            local p1 = (polyop.getVert ps vs[1]) * cs.objectTransform, p2 = (polyop.getVert ps vs[2]) * cs.objectTransform
+            if abs (p1.z - p2.z) < 0.01 and (abs (p1.x - p2.x)) > 1.0 and abs p1.x < 30 and p1.z > 5 and p1.z < 15 and \
+               (for f in (polyop.getEdgeFaces ps e) where frente[f] collect f).count == 2 do append guias e
+        )
+        local guia = if guias.count > 0 then guias[1] else 0
+        local angAntes = angX cs frente
+        local tf0 = cantos cs tampoFundo
+        local cS1 = InLab_Mapear_LerCanal1 cs
+        linha ("      sentido: faixa " + faixaS.numberSet as string + " faces, guias candidatas " + guias.count as string + ", X no UV antes " + angAntes as string)
+        polyop.setEdgeSelection ps #{guia}
+        logs.count = 0
+        local nS = InLab_Sentido #(cs) 0.0 produto:produto
+        local angDepois = angX cs frente
+        local mS = InLab_Cortar_LerMarcas cs
+        linha ("      sentido: X no UV depois " + angDepois as string)
+        checar "sentido: só a faixa muda" \
+            (nS0 == 1 and guia > 0 and nS == 1 and abs ((abs angAntes) - 90.0) > 45.0 and abs ((abs angDepois) - 90.0) < 5.0 and \
+             igualCantos tf0 (cantos cs tampoFundo) and temLog logs #ok "sentido de 1 painel(is) ajustado" "" and \
+             mS != undefined and mS.guias.count == 1 and mS.guias[1][1] == guia and mS.guias[1][2] == 0.0 and \
+             mesmo (InLab_Cortar_SelecaoArestas cs) costS and InLab_PilhaPaineis.count == 1)
+        max undo
+        local mZ = InLab_Cortar_LerMarcas cs
+        checar "sentido: Ctrl+Z desfaz" (igualCanal cS1 (InLab_Mapear_LerCanal1 cs) and mZ != undefined and mZ.guias.count == 0)
+        -- guia numa aresta de costura
+        local eCost = 0
+        for e in costS while eCost == 0 do eCost = e
+        polyop.setEdgeSelection cs.baseobject #{eCost}
+        logs.count = 0
+        local nC = InLab_Sentido #(cs) 0.0 produto:produto
+        checar "sentido: guia em costura recusada" (nC == 0 and temLog logs #warn "costura" "" and igualCanal cS1 (InLab_Mapear_LerCanal1 cs))
+        -- duas guias no mesmo painel: vale a primeira
+        polyop.setEdgeSelection cs.baseobject (#{guia} + (if guias.count > 1 then #{guias[guias.count]} else #{}))
+        logs.count = 0
+        local n2g = InLab_Sentido #(cs) 30.0 produto:produto
+        local m2g = InLab_Cortar_LerMarcas cs
+        checar "sentido: duas guias no painel, #warn e vale a primeira" \
+            (guias.count > 1 and n2g == 1 and temLog logs #warn "mais de uma guia" "" and m2g.guias.count == 1 and m2g.guias[1][1] == guia and m2g.guias[1][2] == 30.0)
+        max undo
+        -- guia de novo (0 grau) e Cortar sem mexer na seleção (volta às costuras)
+        polyop.setEdgeSelection cs.baseobject #{guia}
+        InLab_Sentido #(cs) 0.0 produto:produto
+        local cS2 = InLab_Mapear_LerCanal1 cs
+        logs.count = 0
+        local nCs = InLab_Cortar #(cs) produto
+        local mCs = InLab_Cortar_LerMarcas cs
+        local angCs = angX cs frente
+        checar "cortar depois de sentido: mesmo corte e guia mantida" \
+            (nCs == 1 and temLog logs #ok "3 painéis pelas costuras (0 piques), 1 com guia" "" and mCs != undefined and mesmo mCs.costuras costS and \
+             mCs.guias.count == 1 and mCs.guias[1][1] == guia and abs ((abs angCs) - 90.0) < 5.0 and InLab_PilhaPaineis.count == 2)
+        -- Desfazer Painéis: o 1º volta para depois do Sentido; o 2º para antes do 1º Cortar (sem marcas)
+        InLab_DesfazerPaineis()
+        local mD1 = InLab_Cortar_LerMarcas cs
+        local okD1 = igualCanal cS2 (InLab_Mapear_LerCanal1 cs) and mD1 != undefined and mD1.guias.count == 1
+        InLab_DesfazerPaineis()
+        checar "sentido: Desfazer Painéis volta para antes do Cortar" \
+            (okD1 and igualCanal cs0 (InLab_Mapear_LerCanal1 cs) and not (InLab_Cortar_TemMarcas cs) and InLab_PilhaPaineis.count == 0)
+        -- sem marcas
+        polyop.setEdgeSelection cs.baseobject #{guia}
+        logs.count = 0
+        local nSm = InLab_Sentido #(cs) 0.0 produto:produto
+        checar "sentido: peça sem corte pede o Cortar" (nSm == 0 and temLog logs #warn "corte a peça antes" "")
+        InLab_VerUV_Desligar()
+        delete cs
 
         ---------------- peça grande com face morta ----------------
         local gr = ChamferBox length:100 width:100 height:20 fillet:5 Fillet_Segments:4 Length_Segments:100 Width_Segments:100 Height_Segments:30 name:"TESTE_cr2_grande" pos:[0,400,0]
