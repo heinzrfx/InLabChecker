@@ -772,10 +772,11 @@ fn InLab_Paineis_SPerfil dr t drc tc perfTabA perfTabS idxGrau =
 
 -- anel em volta do eixo k (1=X 2=Y 3=Z). Volta pelo contorno de fora (maior raio a cada
 -- 2 graus); corte numa quina de trás (entre -X e +Y) se o eixo é Z, embaixo (-Z) se é
--- horizontal. perfil:true troca a coordenada no eixo pelo comprimento ao longo do perfil
+-- horizontal (corte: em graus substitui esse padrão). perfil:true troca a coordenada no
+-- eixo pelo comprimento ao longo do perfil
 -- da seção (plano raio x eixo). O U NÃO é escalado por r/rOut (abre a trama em leque).
 -- Ângulo e raio por vértice calculados uma vez; tabelas por faixa/grau com acesso direto.
-fn InLab_Paineis_UVAnel po posM fs k escala perfil:false =
+fn InLab_Paineis_UVAnel po posM fs k escala perfil:false corte:undefined =
 (
     local ax = #([1,0,0], [0,1,0], [0,0,1])[k]
     local e1 = if k == 3 then [1,0,0] else if k == 1 then [0,1,0] else [1,0,0]
@@ -784,13 +785,14 @@ fn InLab_Paineis_UVAnel po posM fs k escala perfil:false =
     local c1 = 0.0, c2 = 0.0
     for v in vs do ( local q = posM[v]; c1 += dot q e1; c2 += dot q e2 )
     c1 /= vs.count; c2 /= vs.count
-    local corte = if k == 3 then 135.0 else -90.0
+    -- corte: (graus, Tarefa 3 do Mapear assistido, 27/10/2026) substitui o padrão quando dado
+    local angCorte = if corte != undefined then (corte as float) else (if k == 3 then 135.0 else -90.0)
     -- ângulo e raio de cada vértice (indexados pelo vértice da base)
     local angV = #(), raioV = #()
     for v in vs do
     (
         local q = posM[v]
-        angV[v] = InLab_Paineis_AngP q e1 e2 c1 c2 corte
+        angV[v] = InLab_Paineis_AngP q e1 e2 c1 c2 angCorte
         raioV[v] = distance [(dot q e1), (dot q e2), 0] [c1, c2, 0]
     )
     -- contorno de fora: maior raio a cada 2 graus
