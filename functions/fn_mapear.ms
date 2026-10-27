@@ -150,7 +150,8 @@ struct MapearRecord
     modsTirados = #(),  -- #(#(modificador, índice)) em ordem crescente de índice
     bitmapsAntes = #(), -- #(#(bitmap, canal, uTiling, vTiling))
     graus,              -- grau de cada face da base no registro (confere a topologia no Desfazer)
-    cmPorID = #()       -- 26/10/2026: #(#(id, cm por tile)) de cada ID refeito (o Painéis usa)
+    cmPorID = #(),    -- 26/10/2026: #(#(id, cm por tile)) de cada ID refeito (o Painéis usa)
+    marcas = undefined  -- 27/10/2026: marcas do Cortar de antes (Mapear assistido)
 )
 
 -- Decisão de um ID de material (uso interno).
