@@ -9,6 +9,8 @@
  Parte 2 (Tarefa 3): painéis pelas costuras, piques e corte automático do anel
  (InLab_Cortar_Paineis) e ids de UV por canto abertos nos cortes (InLab_Cortar_IdsCanto).
  Só geometria; detalhes no bloco da Parte 2, mais abaixo.
+ Parte 3 (Tarefa 4, 27/10/2026): UV da peça com um Unfold3D só, escala por ilha e trama
+ pela guia ou pela regra padrão (InLab_Cortar_UV). Detalhes no bloco da Parte 3.
  Spec: docs\superpowers\specs\2026-10-27-mapear-assistido-design.md
 */
 global INLAB_CORTAR_APPDATA_COSTURAS = 7301
@@ -421,4 +423,330 @@ fn InLab_Cortar_IdsCanto po fs cortes =
         append mapa #(f, ids)
     )
     #(mapa, nIds)
+)
+
+/* ---------------------------------------------------------------------------------------
+ Parte 3 (Tarefa 4, 27/10/2026): UV da peça. Spec seções 5.3, 5.4, 5.5 e 9.1. Nada é
+ gravado: devolve #(uvs, mapa, nGuia, nRegra) no formato de InLab_Mapear_Gravar.
+ 1. UV inicial por painel: disco pela InLab_Paineis_UVDisco, anel pela InLab_Paineis_UVAnel
+    (corte: no ângulo médio do pique/corte automático do anel). Os ids por canto vêm de
+    InLab_Cortar_IdsCanto (piques + cortes automáticos; as costuras já separam os painéis,
+    porque os ids são montados painel a painel). A posição de cada id sai da projeção por
+    uma busca em largura pelas faces: cada face vizinha é transladada para bater no id
+    compartilhado. Assim o anel fica desenrolado no corte de verdade, mesmo que o corte da
+    UVAnel (um ângulo só) não coincida com o caminho do corte (lá o U difere de um perímetro).
+ 2. Um InLab_Paineis_Unfold só, com todas as faces (escala 1; sonda: 13.450 faces em 4 s).
+    Acima de INLAB_CORTAR_MAX_FACES_UNFOLD faces, ou se o Unfold3D falha, fica a projeção
+    do passo 1, com #warn.
+ 3. Cada ilha é reescalada pela própria área (área 3D / área UV) x escala do painel.
+ 4. Trama no V: guia (aresta girada pelo ângulo em volta da normal) ou regra padrão
+    (anel: eixo do anel; senão |n.z| > INLAB_CORTAR_LIMIAR_DEITADO = deitado: Y; senão Z).
+    Decisão desta tarefa: no painel em anel, a guia gira em volta da normal LOCAL da aresta
+    (as faces dela no painel), porque a normal média do anel se anula (sonda 9.1); e o
+    ângulo é medido só nas faces viradas para o mesmo lado da guia (dot > INLAB_CORTAR_COS_GUIA_ANEL),
+    porque no anel desenrolado uma direção fixa do mundo se anula entre frente e trás.
+    Giro menor entre (90 - ang) e (-90 - ang): a trama não tem sentido. Ilha espelhada
+    (sentido de render, sinal do nó) tem o U invertido.
+--------------------------------------------------------------------------------------- */
+global INLAB_CORTAR_MAX_FACES_UNFOLD = 200000
+global INLAB_CORTAR_LIMIAR_DEITADO = 0.7
+-- anel com guia: faces com a normal a menos de ~25 graus da normal da aresta-guia medem o ângulo
+global INLAB_CORTAR_COS_GUIA_ANEL = 0.9
+global InLab_Paineis_UVDisco, InLab_Paineis_UVAnel, InLab_Paineis_CopiaBase, InLab_Paineis_Unfold
+global InLab_Paineis_AngDir, InLab_Paineis_EspelhoUV, InLab_Paineis_Sinal, InLab_Paineis_NormalArea
+global InLab_Cortar_Compor, InLab_Cortar_AngCorte, InLab_Cortar_Reescalar, InLab_Cortar_Norm180
+global InLab_Cortar_DirRef, InLab_Cortar_Orientar, InLab_Cortar_UV
+
+-- posição de cada id de canto (ic = InLab_Cortar_IdsCanto) a partir de uma projeção
+-- #(uvsP, mapaP) com ids próprios: busca em largura pelas faces que compartilham ids, cada
+-- face transladada para bater no id já posto. Devolve o array de posições (nIds).
+fn InLab_Cortar_Compor ic proj =
+(
+    local mapaIds = ic[1], nIds = ic[2]
+    local uvsP = proj[1]
+    local idsP = #()
+    for e in proj[2] do idsP[e[1]] = e[2]
+    local facesDe = #()
+    facesDe.count = nIds
+    for k = 1 to mapaIds.count do
+        for i in mapaIds[k][2] do
+        (
+            if facesDe[i] == undefined do facesDe[i] = #()
+            append facesDe[i] k
+        )
+    local pos = #()
+    pos.count = nIds
+    local visto = #{}
+    for k0 = 1 to mapaIds.count where not visto[k0] do
+    (
+        visto[k0] = true
+        local fila = #(k0)
+        local f0 = mapaIds[k0]
+        local p0 = idsP[f0[1]]
+        for j = 1 to f0[2].count where pos[f0[2][j]] == undefined do pos[f0[2][j]] = uvsP[p0[j]]
+        local ini = 1
+        while ini <= fila.count do
+        (
+            local g = mapaIds[fila[ini]]
+            ini += 1
+            for i in g[2] do
+                for h in facesDe[i] where not visto[h] do
+                (
+                    visto[h] = true
+                    local fh = mapaIds[h]
+                    local ph = idsP[fh[1]]
+                    local j = findItem fh[2] i
+                    local desl = pos[i] - uvsP[ph[j]]
+                    for jj = 1 to fh[2].count where pos[fh[2][jj]] == undefined do pos[fh[2][jj]] = uvsP[ph[jj]] + desl
+                    append fila h
+                )
+        )
+    )
+    pos
+)
+
+fn InLab_Cortar_Norm180 a = ( while a > 180.0 do a -= 360.0; while a < -180.0 do a += 360.0; a )
+
+-- ângulo (graus, na convenção da UVAnel) dos cortes de um anel em volta do eixo k; undefined sem corte
+fn InLab_Cortar_AngCorte po posM fs k cortes =
+(
+    local e1 = if k == 3 then [1,0,0] else if k == 1 then [0,1,0] else [1,0,0]
+    local e2 = if k == 3 then [0,1,0] else [0,0,1]
+    local vs = polyop.getVertsUsingFace po fs
+    local c1 = 0.0, c2 = 0.0
+    for v in vs do ( c1 += dot posM[v] e1; c2 += dot posM[v] e2 )
+    c1 /= vs.numberSet; c2 /= vs.numberSet
+    local vc = (polyop.getVertsUsingEdge po (cortes * (polyop.getEdgesUsingFace po fs))) * vs
+    if vc.isEmpty then undefined
+    else
+    (
+        local sc = 0.0, ss = 0.0
+        for v in vc do
+        (
+            local a = atan2 ((dot posM[v] e2) - c2) ((dot posM[v] e1) - c1)
+            sc += cos a; ss += sin a
+        )
+        atan2 ss sc
+    )
+)
+
+-- reescala os uvs da ilha sub pela própria área, em volta do centro: área UV = área 3D x esc^2
+fn InLab_Cortar_Reescalar po posM uvs sub esc =
+(
+    local a3 = 0.0, auv = 0.0, c = [0,0,0]
+    local idx = #{}
+    for e in sub do
+    (
+        a3 += length (InLab_Paineis_NormalArea posM (polyop.getFaceVerts po e[1]) 1.0)
+        local q = #()
+        for i in e[2] do ( append q uvs[i]; idx[i] = true )
+        for j = 2 to q.count - 1 do auv += abs (((q[j] - q[1]).x * (q[j+1] - q[1]).y - (q[j] - q[1]).y * (q[j+1] - q[1]).x) / 2.0)
+    )
+    if auv > 1e-12 and not idx.isEmpty do
+    (
+        for i in idx do c += uvs[i]
+        c /= idx.numberSet
+        local s = (sqrt (a3 / auv)) * esc
+        for i in idx do uvs[i] = (uvs[i] - c) * s + c
+    )
+    uvs
+)
+
+-- direção (mundo) da trama do painel fs. guia = #(aresta, ângulo) ou undefined; anel = bool
+fn InLab_Cortar_DirRef o po posM fs anel guia =
+(
+    local sinal = InLab_Paineis_Sinal o
+    if guia != undefined then
+    (
+        local ev = polyop.getEdgeVerts po guia[1]
+        local v0 = posM[ev[2]] - posM[ev[1]]
+        local n = [0,0,0]
+        if anel then
+        (
+            for f in (polyop.getEdgeFaces po guia[1]) where fs[f] do n += InLab_Paineis_NormalArea posM (polyop.getFaceVerts po f) sinal
+        )
+        else for f in fs do n += InLab_Paineis_NormalArea posM (polyop.getFaceVerts po f) sinal
+        if (length n) < 1e-9 then normalize v0
+        else
+        (
+            n = normalize n
+            local v = v0 - n * (dot v0 n)
+            if (length v) < 1e-9 then normalize v0
+            else
+            (
+                v = normalize v
+                local a = guia[2] as float
+                -- Rodrigues com v perpendicular a n
+                normalize (v * (cos a) + (cross n v) * (sin a))
+            )
+        )
+    )
+    else if anel then
+        #([1,0,0], [0,1,0], [0,0,1])[InLab_Paineis_EixoAnel po posM fs sinal]
+    else
+    (
+        local n = [0,0,0]
+        for f in fs do n += InLab_Paineis_NormalArea posM (polyop.getFaceVerts po f) sinal
+        if (length n) > 1e-9 and abs (normalize n).z > INLAB_CORTAR_LIMIAR_DEITADO then [0,1,0] else [0,0,1]
+    )
+)
+
+-- gira (e espelha, se preciso) os uvs da ilha sub até dir cair no V, pelo menor giro;
+-- devolve o ângulo final de dir no UV. medir: (subconjunto de sub) mede o ângulo só nessas
+-- faces: num anel desenrolado, uma direção fixa do mundo vai para +U na frente e -U atrás,
+-- e a média na volta inteira se anula (achado nesta tarefa com a guia na faixa)
+fn InLab_Cortar_Orientar o po posM uvs sub dir medir:undefined =
+(
+    local idx = #{}
+    for e in sub do for i in e[2] do idx[i] = true
+    if idx.isEmpty do return 0.0
+    local c = [0,0,0]
+    for i in idx do c += uvs[i]
+    c /= idx.numberSet
+    if (InLab_Paineis_EspelhoUV po posM uvs sub (InLab_Paineis_Sinal o)) > 0.5 do
+        for i in idx do uvs[i] = [2.0 * c.x - uvs[i].x, uvs[i].y, 0]
+    local ang = InLab_Paineis_AngDir po posM uvs (if medir != undefined and medir.count > 0 then medir else sub) dir
+    local r1 = InLab_Cortar_Norm180 (90.0 - ang), r2 = InLab_Cortar_Norm180 (-90.0 - ang)
+    local r = if abs r1 <= abs r2 then r1 else r2
+    local cs = cos r, sn = sin r
+    for i in idx do
+    (
+        local u = uvs[i] - c
+        uvs[i] = [u.x * cs - u.y * sn, u.x * sn + u.y * cs, 0] + c
+    )
+    InLab_Cortar_Norm180 (ang + r)
+)
+
+-- UV da peça pelos painéis pn (InLab_CortarPaineis). escPorPainel: UV por cm de cada painel
+-- (array, ou um número para todos); guias: #(#(aresta, ângulo)...). Devolve
+-- #(uvs, mapa, nGuia, nRegra), ou undefined (com #warn).
+fn InLab_Cortar_UV o pn escPorPainel guias =
+(
+    if pn == undefined or pn.paineis.count == 0 do
+    (
+        InLab_Log (o.name + ": cortar: nenhum painel para mapear.") tipo:#warn
+        return undefined
+    )
+    local po = InLab_Mapear_PolyDe o
+    local sinal = InLab_Paineis_Sinal o
+    local nP = pn.paineis.count
+    local escDe = for i = 1 to nP collect (if classof escPorPainel == Array then escPorPainel[i] else escPorPainel)
+    local todas = #{}
+    for reg in pn.paineis do todas += reg
+    local posM = InLab_Paineis_PosMundo o todas
+    local cortes = pn.piques + pn.cortesAuto
+    local uvs = #(), mapa = #()
+    local painelDe = #()
+    local erro = undefined
+    try
+    (
+        -- 1. UV inicial por painel
+        for i = 1 to nP do
+        (
+            local reg = pn.paineis[i]
+            for f in reg do painelDe[f] = i
+            local proj = undefined
+            if pn.aneis[i] then
+            (
+                local k = InLab_Paineis_EixoAnel po posM reg sinal
+                local ac = InLab_Cortar_AngCorte po posM reg k cortes
+                proj = InLab_Paineis_UVAnel po posM reg k escDe[i] corte:ac
+            )
+            else proj = InLab_Paineis_UVDisco po posM reg escDe[i] sinal
+            local ic = InLab_Cortar_IdsCanto po reg cortes
+            local pos = InLab_Cortar_Compor ic proj
+            local base = uvs.count
+            for q in pos do append uvs (if q == undefined then [0,0,0] else [q.x, q.y, 0])
+            for e in ic[1] do
+            (
+                local ids = #()
+                for i2 in e[2] do append ids (i2 + base)
+                append mapa #(e[1], ids)
+            )
+        )
+    )
+    catch ( erro = getCurrentException() )
+    if erro != undefined do
+    (
+        InLab_Log (o.name + ": cortar: erro no UV inicial dos painéis (" + erro + ")") tipo:#warn
+        return undefined
+    )
+    -- 2. um Unfold3D com todas as faces
+    local nF = todas.numberSet
+    local res = undefined
+    if nF > INLAB_CORTAR_MAX_FACES_UNFOLD then
+        InLab_Log (o.name + ": cortar: " + nF as string + " faces, acima do teto do Unfold3D (" + INLAB_CORTAR_MAX_FACES_UNFOLD as string + "); fica a projeção plana.") tipo:#warn
+    else
+    (
+        local selAntes = selection as array
+        local src = undefined
+        try
+        (
+            src = InLab_Paineis_CopiaBase o
+            with undo off ( max modify mode )
+            res = InLab_Paineis_Unfold src todas uvs mapa posM 1.0 o.name
+        )
+        catch
+        (
+            InLab_Log (o.name + ": cortar: erro no Unfold3D (" + (getCurrentException()) + ")") tipo:#warn
+            res = undefined
+        )
+        with undo off
+        (
+            if isValidNode src do delete src
+            clearSelection()
+            for n in selAntes where isValidNode n do selectMore n
+        )
+        if res == undefined do
+            InLab_Log (o.name + ": cortar: o Unfold3D não abriu a peça; fica a projeção plana.") tipo:#warn
+    )
+    if res != undefined do ( uvs = res[1]; mapa = res[2] )
+    -- guias por painel (a aresta toca alguma face do painel)
+    local guiaDe = #()
+    guiaDe.count = nP
+    local nE = polyop.getNumEdges po
+    for g in guias do
+    (
+        if g[1] == undefined or g[1] < 1 or g[1] > nE then
+            InLab_Log (o.name + ": cortar: guia na aresta " + g[1] as string + " fora da malha; ignorada.") tipo:#warn
+        else
+        (
+            local ps = #()
+            for f in (polyop.getEdgeFaces po g[1]) where painelDe[f] != undefined do appendIfUnique ps painelDe[f]
+            for i in ps do
+            (
+                if guiaDe[i] == undefined then guiaDe[i] = g
+                else InLab_Log (o.name + ": cortar: painel " + i as string + " tem mais de uma guia; vale a primeira (aresta " + guiaDe[i][1] as string + ").") tipo:#warn
+            )
+        )
+    )
+    -- 3 e 4. escala e direção por ilha
+    local subs = for i = 1 to nP collect #()
+    for e in mapa do append subs[painelDe[e[1]]] e
+    local nGuia = 0, nRegra = 0
+    for i = 1 to nP do
+    (
+        InLab_Cortar_Reescalar po posM uvs subs[i] escDe[i]
+        local dir = InLab_Cortar_DirRef o po posM pn.paineis[i] pn.aneis[i] guiaDe[i]
+        if guiaDe[i] != undefined then nGuia += 1 else nRegra += 1
+        -- anel com guia: o ângulo é medido nas faces viradas para o mesmo lado da aresta-guia
+        local medir = undefined
+        if pn.aneis[i] and guiaDe[i] != undefined do
+        (
+            local nG = [0,0,0]
+            for f in (polyop.getEdgeFaces po guiaDe[i][1]) where pn.paineis[i][f] do nG += InLab_Paineis_NormalArea posM (polyop.getFaceVerts po f) sinal
+            if (length nG) > 1e-9 do
+            (
+                nG = normalize nG
+                medir = #()
+                for e in subs[i] do
+                (
+                    local nf = InLab_Paineis_NormalArea posM (polyop.getFaceVerts po e[1]) sinal
+                    if (length nf) > 1e-12 and (dot (normalize nf) nG) > INLAB_CORTAR_COS_GUIA_ANEL do append medir e
+                )
+            )
+        )
+        InLab_Cortar_Orientar o po posM uvs subs[i] dir medir:medir
+    )
+    #(uvs, mapa, nGuia, nRegra)
 )
