@@ -64,7 +64,7 @@ A seleção de costuras vai sendo trocada pela de guias. Por isso as costuras fi
 
 **Regras da seleção** *(decisões do Claude, depois da revisão)*:
 - A seleção de arestas no Cortar é **o conjunto completo** de costuras, não uma mudança sobre as guardadas.
-- **Ao fim de todo Cortar e de todo Sentido, a seleção de arestas da base volta a ser a das costuras guardadas.** Assim o desenhista vê onde cortou, um Cortar logo depois de um Sentido não toma as guias por costuras, e o Recortar é só somar ou tirar arestas da seleção que já está ali. Os piques aparecem no log (quantos) e não mudam a seleção.
+- **Ao fim de todo Cortar e de todo Sentido, a seleção de arestas da base volta a ser a das costuras guardadas.** Assim o desenhista vê onde cortou, um Cortar logo depois de um Sentido não toma as guias por costuras, e o Recortar é só somar ou tirar arestas da seleção que já está ali. Só as costuras guardadas ficam selecionadas: o corte automático do anel sai no log (`#info` com o número de arestas), não na seleção. Os piques aparecem no log (quantos) e não mudam a seleção.
 - Num primeiro Cortar, uma seleção de arestas que sobrou da modelagem é tomada como costura. O log diz quantas arestas foram usadas, e o desenhista vê o resultado nas listras.
 - **Onde selecionar:** na base Editable Poly, sem conversão. Base de outra classe (Editable Mesh, primitiva): `#warn` "converta a base para Editable Poly e marque as costuras" e nada muda (a conversão renumera as arestas e a seleção feita antes perderia o sentido). Seleção feita num Edit_Poly do stack não vale: o Cortar lê só a base. Modificador acima da base que muda a topologia (TurboSmooth, Symmetry, Shell) segue as guardas de stack do Painéis de hoje (`#warn` e cálculo na base).
 - **Tirar uma guia:** fica fora desta versão. Um Sentido novo no mesmo painel troca a guia; voltar à regra padrão só pelo Desfazer Painéis.
@@ -79,7 +79,7 @@ A seleção de costuras vai sendo trocada pela de guias. Por isso as costuras fi
 
 - **Costuras:** o conjunto de arestas da base usado no último Cortar.
 - **Guias:** para cada guia, a aresta e o ângulo.
-- Guardados no próprio nó, para irem junto no `.max` salvo e sobreviverem a reabrir o arquivo e a recarregar o plugin. O formato e o mecanismo (appData, custom attribute, conjunto nomeado de arestas) ficam com quem implementar.
+- Guardados no próprio nó, para irem junto no `.max` salvo e sobreviverem a reabrir o arquivo e a recarregar o plugin. Mecanismo adotado: custom attribute scripted no objeto base (entra no Ctrl+Z e é compartilhado pelas instâncias; appData não entra no undo).
 - Os índices de aresta valem para a topologia da base no momento do Cortar. Se a topologia mudou (número de arestas ou de faces), as costuras e guias guardadas são descartadas com `#warn` "a malha mudou desde o último corte; marque as costuras de novo".
 
 ### 5.2 Painéis a partir das costuras
@@ -97,7 +97,7 @@ A seleção de costuras vai sendo trocada pela de guias. Por isso as costuras fi
 2. Esse UV vai para um nó temporário (cópia da base, como `InLab_Paineis_CopiaBase`), com **um** `Unwrap_UVW` e **um** `Unfold3DSolve` em todas as faces. O solve respeita a topologia do UV, então cada ilha abre sozinha.
 3. O resultado é lido por canto de face, no poly colapsado. O `Unfold3DSolve` renumera os vértices UV (CLAUDE.md).
 
-**Painel em anel** (a faixa que dá a volta, ou seja, região com dois ou mais contornos de borda e nenhum pique que a abra): sem um corte a mais ele não abre plano. O plugin faz esse corte sozinho (pergunta 1 da seção 10): um caminho de arestas de um contorno de borda ao outro, no lado mais escondido do painel (a maior coordenada Y, atrás; em painel de eixo vertical sem "atrás" claro, a menor Z, embaixo). O caminho entra como pique no UV inicial, sai no log com `#info` e fica selecionado ao fim do Cortar com as costuras, mas **não é guardado como costura**: num Recortar ele é recalculado, a não ser que o desenhista tenha marcado um pique no anel. O algoritmo do caminho (o mais curto entre as bordas, restrito ao lado escondido) fica com quem implementar.
+**Painel em anel** (a faixa que dá a volta, ou seja, região com dois ou mais contornos de borda e nenhum pique que a abra): sem um corte a mais ele não abre plano. O plugin faz esse corte sozinho (pergunta 1 da seção 10): um caminho de arestas de um contorno de borda ao outro, no lado mais escondido do painel (atrás, Y maior, se o eixo do anel é vertical; embaixo, Z menor, se é horizontal). O caminho entra como pique no UV inicial, sai no log com `#info` e **não fica selecionado** (só as costuras guardadas ficam) nem é guardado como costura: num Recortar ele é recalculado, a não ser que o desenhista tenha marcado um pique no anel. O algoritmo do caminho (o mais curto entre as bordas, restrito ao lado escondido) fica com quem implementar.
 
 **Peça grande:** log de progresso por etapa. O `Unfold3DSolve` é síncrono e não pode ser interrompido, então o teto é uma **previsão pelo tamanho** (faces da peça), calibrada na sonda: acima dele, ou se o solve falhar, a peça fica com a projeção plana do passo 1, com `#warn`. A peça não fica sem UV.
 
@@ -109,7 +109,7 @@ A regra de hoje, sem mudança: `InLab_Paineis_Escala o id` (cmPorID do Mapear > 
 
 **Convenção:** a trama é o **V** da textura (o vertical da imagem do tecido). É a mesma convenção do Painéis de hoje (disco em pé: Z do mundo no V; deitado: X no U, logo Y no V).
 
-- **Com aresta-guia:** a direção de referência é o vetor da aresta-guia em mundo, girado pelo ângulo em torno da normal média do painel. A ilha é girada até essa direção, levada ao UV face a face, cair no V em média pela área (`InLab_Paineis_AngDir` + `InLab_Paineis_Girar`, hoje com o eixo deduzido). O sinal da aresta não importa (a trama não tem sentido): fica o giro menor.
+- **Com aresta-guia:** a direção de referência é o vetor da aresta-guia em mundo, girado pelo ângulo em torno da normal local das faces da aresta-guia (em painel de anel a normal média se anula). A ilha é girada até essa direção, levada ao UV face a face, cair no V em média pela área (`InLab_Paineis_AngDir` + `InLab_Paineis_Girar`, hoje com o eixo deduzido). O sinal da aresta não importa (a trama não tem sentido): fica o giro menor.
 - **Sem guia (regra padrão):** normal média do painel (pela área) com `|n.z| > 0,7` = deitado: referência = Y do mundo (frente para trás; a frente é −Y). Senão, em pé: referência = Z do mundo. O limiar 0,7 é *decisão do Claude*, ajustável numa constante.
 - **Espelho:** se a ilha sair espelhada (sentido de render, com o sinal do nó como hoje em `InLab_Paineis_EspelhoUV`), inverte o U.
 - **Sentido** recalcula só o giro e o espelho das ilhas dos painéis com guia nova. Não roda o Unfold3D de novo: lê o UV atual da peça, gira e grava.

@@ -537,12 +537,15 @@ rollout InLabSecUV "UV e Texturas" width:420
     -- parâmetro unwrapGrande fica no código, sem controle na UI.
     button btnMapear "Mapear" width:195 height:24 align:#left offset:[2,0] across:2 tooltip:"Refaz o UV do material (canal 1) onde ele está ruim: veio da madeira, vivos e costuras, cortes. Usa a matéria-prima do JSON. Depois do Real World Fix."
     button btnMapearRev "Desfazer Mapear" width:195 height:24 align:#right offset:[-1,0] tooltip:"Devolve o UV do material como estava antes do Mapear."
-    -- 26/10/2026 (Mapear por painéis, spec 2026-10-26-mapear-paineis-design.md):
-    -- Painéis refaz o UV do tecido cortando nas costuras (vivo) ou em painéis de
-    -- caixa; o Desfazer Painéis tem pilha própria. O Ver UV (checkbutton) troca
-    -- por um tempo o material da seleção por listras para conferir o mapeamento.
-    button btnPaineis "Painéis" width:195 height:24 align:#left offset:[2,0] across:2 tooltip:"Refaz o UV do tecido selecionado cortando nas costuras (vivo) ou em painéis de caixa. Confira com o Ver UV."
-    button btnPaineisRev "Desfazer Painéis" width:195 height:24 align:#right offset:[-1,0] tooltip:"Devolve o UV do tecido como estava antes do Painéis."
+    -- 27/10/2026 (Mapear assistido, spec 2026-10-27-mapear-assistido-design.md, seção 4): o
+    -- Painéis automático saiu. Cortar abre o UV do tecido nas arestas de costura que o
+    -- desenhista selecionou na base Editable Poly; Sentido alinha a trama do painel à aresta
+    -- selecionada (mais o ângulo do spinner). O Desfazer Painéis tem pilha própria. O Ver UV
+    -- (checkbutton) troca por um tempo o material da seleção por listras para conferir.
+    button btnCortar "Cortar" width:195 height:24 align:#left offset:[2,0] across:2 tooltip:"Abre o UV do tecido nas arestas de costura selecionadas na base Editable Poly. Confira com o Ver UV."
+    button btnPaineisRev "Desfazer Painéis" width:195 height:24 align:#right offset:[-1,0] tooltip:"Devolve o UV do tecido como estava antes do Cortar e do Sentido."
+    button btnSentido "Sentido" width:195 height:24 align:#left offset:[2,0] across:2 tooltip:"Alinha a trama do painel à aresta selecionada (mais o ângulo)."
+    spinner spnAngulo "" range:[-90, 90, 0] type:#float fieldWidth:60 align:#left offset:[8,3] tooltip:"Ângulo (°) somado à aresta-guia do Sentido."
     checkbutton btnVerUV "Ver UV" width:395 height:24 align:#left offset:[2,0] tooltip:"Troca por um tempo o material da seleção por listras para conferir o mapeamento. Desliga sozinho ao salvar e exportar."
     checkbox chkAutoUV "Unwrap" checked:INLAB_AUTOUV_OBRIGATORIO align:#left offset:[2,0]
     button btnF2 "Auto UV" width:130 height:24 align:#left offset:[2,0] across:2 tooltip:"Cria um UV próprio para bake de textura e sombra (canal 3) nos objetos selecionados. Só roda depois do Real World Fix."
@@ -587,7 +590,7 @@ rollout InLabSecUV "UV e Texturas" width:420
         )
     )
     on btnMapearRev pressed do InLab_ReverterMapear()
-    on btnPaineis pressed do
+    on btnCortar pressed do
     (
         local objs = InLab_SelecaoValida()
         if objs.count > 0 do
@@ -596,8 +599,23 @@ rollout InLabSecUV "UV e Texturas" width:420
             if prod == undefined then InLab_Log "Escolha o produto na seção Produto" tipo:#warn
             else
             (
-                InLab_ProgressoIniciar "Refazendo o UV pelos painéis..."
-                InLab_Paineis objs prod
+                InLab_ProgressoIniciar "Cortando o UV..."
+                InLab_Cortar objs prod
+                InLab_ProgressoParar()
+            )
+        )
+    )
+    on btnSentido pressed do
+    (
+        local objs = InLab_SelecaoValida()
+        if objs.count > 0 do
+        (
+            local prod = try (InLabSecProduto.produtoEscolhido()) catch undefined
+            if prod == undefined then InLab_Log "Escolha o produto na seção Produto" tipo:#warn
+            else
+            (
+                InLab_ProgressoIniciar "Alinhando o sentido..."
+                InLab_Sentido objs spnAngulo.value produto:prod
                 InLab_ProgressoParar()
             )
         )
