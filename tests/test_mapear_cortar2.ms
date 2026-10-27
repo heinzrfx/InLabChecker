@@ -3,7 +3,8 @@
  InLab_Cortar (guardas, costuras da seleção ou guardadas, pilha, marcas, seleção no fim,
  Ver UV), Desfazer Painéis devolvendo as marcas, o Mapear pulando peça cortada (também
  depois de reabrir), pique no anel dispensando o corte automático e peça grande com face morta.
- Tarefa 6 (27/10/2026): Ctrl+Z de um Cortar (marcas em custom attribute) e botão Sentido.
+ Tarefa 6 (27/10/2026): Ctrl+Z de um Cortar (marcas em custom attribute) e botão Sentido;
+ revisão: instância com stack vazio continua instância, seleção no fim só com as costuras.
  RODAR NUMA CENA VAZIA (resetMaxFile #noPrompt).
  Resultado: <pasta temp do Max>\inlab_test_mapear_cortar2.txt (PASS/FAIL por item).
 */
@@ -236,7 +237,8 @@ global INLAB_TESTE_SAIDA, INLAB_TESTE_FALHAS
         local m1 = InLab_Cortar_LerMarcas cx
         checar "cortar: marcas guardadas" (InLab_Cortar_TemMarcas cx and m1 != undefined and mesmo m1.costuras cost)
         local sel1 = InLab_Cortar_SelecaoArestas cx
-        checar "cortar: seleção volta às costuras + corte automático" (not pnRef.cortesAuto.isEmpty and mesmo sel1 (cost + pnRef.cortesAuto))
+        -- revisão da Tarefa 6: a seleção volta só às costuras; o corte automático vai para o log
+        checar "cortar: seleção volta às costuras (corte automático só no log)"             (not pnRef.cortesAuto.isEmpty and mesmo sel1 cost and temLog logs #info "corte automático do anel com" (pnRef.cortesAuto.numberSet as string))
         checar "cortar: log por etapa (painéis, Unfold3D, gravação)" \
             ((temLog logs #info "TESTE_cr2_caixa" "painéis") and (temLog logs #info "TESTE_cr2_caixa" "Unfold3D") and (temLog logs #info "TESTE_cr2_caixa" "gravação"))
 
@@ -253,7 +255,7 @@ global INLAB_TESTE_SAIDA, INLAB_TESTE_FALHAS
         logs.count = 0
         local n2c = InLab_Cortar #(cx) produto
         checar "cortar: usa as costuras guardadas" \
-            (n2c == 1 and InLab_PilhaPaineis.count == 2 and temLog logs #ok "3 painéis pelas costuras" "" and mesmo (InLab_Cortar_SelecaoArestas cx) (cost + pnRef.cortesAuto))
+            (n2c == 1 and InLab_PilhaPaineis.count == 2 and temLog logs #ok "3 painéis pelas costuras" "" and mesmo (InLab_Cortar_SelecaoArestas cx) cost)
 
         -- Recortar com uma aresta solta no tampo (pique)
         po = cx.baseobject
@@ -272,7 +274,7 @@ global INLAB_TESTE_SAIDA, INLAB_TESTE_FALHAS
         local m3 = InLab_Cortar_LerMarcas cx
         checar "cortar: recorte com pique (log e seleção com o pique)" \
             (n3 == 1 and solta > 0 and temLog logs #ok "(1 piques)" "" and temLog logs #info "pique" "" and \
-             m3 != undefined and mesmo m3.costuras (cost + #{solta}) and mesmo (InLab_Cortar_SelecaoArestas cx) (cost + #{solta} + pnRef.cortesAuto))
+             m3 != undefined and mesmo m3.costuras (cost + #{solta}) and mesmo (InLab_Cortar_SelecaoArestas cx) (cost + #{solta}))
 
         -- Desfazer: volta as marcas de antes; até o fim, o canal 1 de antes do 1º Cortar e sem marcas
         logs.count = 0
@@ -298,6 +300,15 @@ global INLAB_TESTE_SAIDA, INLAB_TESTE_FALHAS
         max undo
         linha ("      ctrl+z: canal antes " + (cz0 != undefined) as string + ", depois " + ((InLab_Mapear_LerCanal1 cz) != undefined) as string + ", cortou " + okZ1 as string + ", canal igual " + (igualCanal cz0 (InLab_Mapear_LerCanal1 cz)) as string + ", marcas " + (InLab_Cortar_TemMarcas cz) as string)
         checar "cortar: Ctrl+Z volta canal 1 e marcas" (okZ1 and igualCanal cz0 (InLab_Mapear_LerCanal1 cz) and not (InLab_Cortar_TemMarcas cz))
+        -- revisão da Tarefa 6: dois Cortar seguidos sem mexer na seleção
+        local costZ = costurasPelaNormal cz.baseobject
+        polyop.setEdgeSelection cz.baseobject costZ
+        InLab_Cortar #(cz) produto
+        logs.count = 0
+        local nz2 = InLab_Cortar #(cz) produto
+        local mz2 = InLab_Cortar_LerMarcas cz
+        checar "cortar: Cortar duas vezes seguidas não guarda o corte automático como costura"             (nz2 == 1 and temLog logs #ok "3 painéis pelas costuras (0 piques)" "" and mz2 != undefined and mesmo mz2.costuras costZ and              mesmo (InLab_Cortar_SelecaoArestas cz) costZ and temLog logs #info "corte automático do anel com" "")
+        InLab_VerUV_Desligar()
         InLab_PilhaPaineis = #()
         delete cz
 
@@ -407,6 +418,43 @@ global INLAB_TESTE_SAIDA, INLAB_TESTE_FALHAS
         checar "sentido: peça sem corte pede o Cortar" (nSm == 0 and temLog logs #warn "corte a peça antes" "")
         InLab_VerUV_Desligar()
         delete cs
+
+        ---------------- instância com o stack vazio (revisão da Tarefa 6) ----------------
+        -- a troca da base (Ctrl+Z) não pode separar as instâncias
+        fn nInst o = ( local ins = #(); InstanceMgr.GetInstances o &ins; ins.count )
+        fn juntas a b = ( (nInst a) == 2 and a.baseobject == b.baseobject and igualCanal (InLab_Mapear_LerCanal1 a) (InLab_Mapear_LerCanal1 b) )
+        local ia = caixa "TESTE_cr2_instA" [0,1200,0]
+        ia.material = mTec
+        local ib = instance ia
+        ib.name = "TESTE_cr2_instB"
+        ib.pos = [300,1200,0]
+        local ci0 = InLab_Mapear_LerCanal1 ia
+        local costI = costurasPelaNormal ia.baseobject
+        polyop.setEdgeSelection ia.baseobject costI
+        local nI = InLab_Cortar #(ia) produto
+        checar "instância sem stack: Cortar mantém as 2 instâncias" (nI == 1 and ia.modifiers.count == 0 and juntas ia ib and not (igualCanal ci0 (InLab_Mapear_LerCanal1 ib)))
+        local ciC = InLab_Mapear_LerCanal1 ia
+        -- guia horizontal na frente da faixa
+        local pInst = ia.baseobject
+        local pnI = InLab_Cortar_Paineis ia #{1..(polyop.getNumFaces pInst)} costI
+        local guiaI = 0
+        for k = 1 to pnI.paineis.count where pnI.aneis[k] do
+            for e in (polyop.getEdgesUsingFace pInst pnI.paineis[k]) where guiaI == 0 and not costI[e] and not pnI.cortesAuto[e] do
+            (
+                local vs = polyop.getEdgeVerts pInst e
+                local p1 = polyop.getVert pInst vs[1], p2 = polyop.getVert pInst vs[2]
+                if abs (p1.z - p2.z) < 0.01 and (abs (p1.x - p2.x)) > 1.0 and abs p1.x < 30 and p1.y < -40 and p1.z > 5 and p1.z < 15 do guiaI = e
+            )
+        polyop.setEdgeSelection pInst #{guiaI}
+        local nIS = InLab_Sentido #(ia) 0.0 produto:produto
+        checar "instância sem stack: Sentido mantém as 2 instâncias" (guiaI > 0 and nIS == 1 and juntas ia ib and not (igualCanal ciC (InLab_Mapear_LerCanal1 ib)))
+        max undo
+        checar "instância sem stack: Ctrl+Z do Sentido mantém as 2 instâncias" (juntas ia ib and igualCanal ciC (InLab_Mapear_LerCanal1 ib))
+        InLab_VerUV_Desligar()
+        InLab_DesfazerPaineis()
+        checar "instância sem stack: Desfazer Painéis volta as 2 instâncias" \
+            (juntas ia ib and igualCanal ci0 (InLab_Mapear_LerCanal1 ia) and igualCanal ci0 (InLab_Mapear_LerCanal1 ib) and not (InLab_Cortar_TemMarcas ib) and InLab_PilhaPaineis.count == 0)
+        delete #(ia, ib)
 
         ---------------- peça grande com face morta ----------------
         local gr = ChamferBox length:100 width:100 height:20 fillet:5 Fillet_Segments:4 Length_Segments:100 Width_Segments:100 Height_Segments:30 name:"TESTE_cr2_grande" pos:[0,400,0]

@@ -825,13 +825,17 @@ fn InLab_Cortar_UV o pn escPorPainel guias =
    faltar); o painel que mistura IDs usa a escala do ID com mais faces nele.
  - rec.marcas = marcas de antes do Cortar, ou #nenhuma (não havia marca). O Desfazer
    Painéis e o InLab_Paineis_RestaurarPeca devolvem (InLab_Paineis_VoltarMarcas).
- - Marcas novas = costuras + guias de antes. Seleção no fim = costuras + cortes automáticos
-   (piques são costuras, ficam selecionados). Ver UV ligado na peça.
+ - Marcas novas = costuras + guias de antes. Seleção no fim = só as costuras guardadas
+   (piques são costuras, ficam selecionados). Revisão da Tarefa 6: o corte automático do
+   anel saiu da seleção (um 2º Cortar o guardava como costura, contra a spec 5.3); vai para
+   o log (#info com o nº de arestas). Ver UV ligado na peça.
  - Tarefa 6 (27/10/2026): o Cortar troca a base por uma cópia dentro do undo
-   (InLab_Cortar_TrocarBase) e grava nela; peça pulada volta a base original. Motivo: as
+   (InLab_Cortar_TrocarBase, a mesma cópia em todas as instâncias) e grava nela; peça pulada
+   volta a base original (InLab_Cortar_PorBase). Motivo: as
    escritas de canal de mapa do polyop não entram no Ctrl+Z, e a troca de base entra.
 --------------------------------------------------------------------------------------- */
 global InLab_Cortar, InLab_Cortar_SelecaoArestas, InLab_Cortar_Corpo, InLab_Cortar_Peca, InLab_Cortar_TrocarBase
+global InLab_Cortar_NosDaBase, InLab_Cortar_PorBase
 global InLab_Paineis_Preparar, InLab_Paineis_Aplicar, InLab_Paineis_DevolverBase
 global InLab_Paineis_EhTecido, InLab_Paineis_EhVivo, InLab_Paineis_Escala, InLab_Paineis_UTil, InLab_Paineis_Girada
 global InLab_Mapear_FacesDoID, InLab_Mapear_SemRWF, InLab_Mapear_ZerarCache, InLab_Mapear_Num
@@ -846,10 +850,31 @@ global InLab_Instancias, InLab_DeduplicarInstancias, InLab_AbrirGruposAcima, InL
 -- setNumMapVerts NÃO entra no Ctrl+Z (sondado no Max 2024: depois do max undo o canal 1
 -- fica como gravado), mas a troca da base entra; o Ctrl+Z volta a base original intacta,
 -- com o canal 1 e as marcas (custom attribute, copiado junto) de antes.
+-- Correção da revisão (27/10/2026): com o stack VAZIO (o normal depois de um Cortar, que tira
+-- os RWF) o o.baseobject = ... troca só o objeto daquele nó e a instância fica com a base
+-- velha (InstanceMgr.GetInstances cai de 2 para 1). Por isso a mesma cópia vai para todos os
+-- nós que dividem a base (instâncias + referências); com modificador também vale (sondado).
+fn InLab_Cortar_NosDaBase o =
+(
+    local b = o.baseobject
+    local ns = #(o)
+    for n in (InLab_Instancias o) where isValidNode n do appendIfUnique ns n
+    for n in (refs.dependentNodes b) where isValidNode n and n.baseobject == b do appendIfUnique ns n
+    ns
+)
+
+-- põe a base b em todos os nós que dividem a base atual de o
+fn InLab_Cortar_PorBase o b =
+(
+    local ns = InLab_Cortar_NosDaBase o
+    for n in ns do n.baseobject = b
+    ns
+)
+
 fn InLab_Cortar_TrocarBase o =
 (
     local orig = o.baseobject
-    o.baseobject = copy orig
+    InLab_Cortar_PorBase o (copy orig)
     orig
 )
 
@@ -955,7 +980,10 @@ fn InLab_Cortar_Peca o produto costuras marcasAntes rodada =
     local rec = ap[2]
     rec.marcas = if marcasAntes != undefined then marcasAntes else #nenhuma
     InLab_Cortar_GravarMarcas o (InLab_CortarMarcas costuras:costuras guias:guias)
-    polyop.setEdgeSelection po (costuras + pn.cortesAuto)
+    -- revisão da Tarefa 6: só as costuras (com o corte automático selecionado, um 2º Cortar o guardava como costura)
+    polyop.setEdgeSelection po costuras
+    if not pn.cortesAuto.isEmpty do
+        InLab_Log (o.name + ": corte automático do anel com " + pn.cortesAuto.numberSet as string + " aresta(s) (fica fora da seleção e é recalculado a cada Cortar).") tipo:#info
     InLab_Log (o.name + ": gravação do canal 1 e das marcas em " + (InLab_Mapear_Num ((timeStamp() - tG) / 1000.0)) + " s.") tipo:#info
     -- resumo (spec 7)
     local txtCm = InLab_Mapear_Num cmPorIDp[1]
@@ -1055,7 +1083,7 @@ fn InLab_Cortar objs produto =
             local baseOrig = InLab_Cortar_TrocarBase o
             try ( r = InLab_Cortar_Peca o produto costuras marcasAntes rodada )
             catch ( InLab_Log (o.name + ": erro inesperado no Cortar (" + getCurrentException() + ").") tipo:#err; r = #(#pulada, undefined, undefined) )
-            if r[1] != #refeita do try ( o.baseobject = baseOrig ) catch ( InLab_Log (o.name + ": não devolvi a base de antes (" + getCurrentException() + "); use o Ctrl+Z.") tipo:#err )
+            if r[1] != #refeita do try ( InLab_Cortar_PorBase o baseOrig ) catch ( InLab_Log (o.name + ": não devolvi a base de antes (" + getCurrentException() + "); use o Ctrl+Z.") tipo:#err )
             with undo off ( InLab_FecharGrupos abertos )
             if r[1] == #refeita do ( feitas = 1; rec = r[2] )
         )
@@ -1239,7 +1267,7 @@ fn InLab_Sentido objs angulo produto:undefined =
                 )
                 else
                 (
-                    o.baseobject = orig
+                    InLab_Cortar_PorBase o orig
                     InLab_Log (o.name + ": sentido não gravado; peça como estava.") tipo:#warn
                 )
             )
