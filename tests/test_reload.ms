@@ -92,8 +92,8 @@ global INLAB_TESTE_SAIDA, INLAB_TESTE_FALHAS
         -- botoes novos depois do reload.
         local nomesUV = #()
         try ( nomesUV = for c in InLabSecUV.controls collect (toLower (c.name)) ) catch ( nomesUV = #() )
-        checar "UI: InLabSecUV tem btnPaineis, btnPaineisRev e btnVerUV" \
-            ((findItem nomesUV "btnpaineis") > 0 and (findItem nomesUV "btnpaineisrev") > 0 and (findItem nomesUV "btnveruv") > 0)
+        checar "UI: InLabSecUV tem btnCortar, btnSentido, spnAngulo, btnPaineisRev e btnVerUV" \
+            ((findItem nomesUV "btncortar") > 0 and (findItem nomesUV "btnsentido") > 0 and (findItem nomesUV "spnangulo") > 0 and (findItem nomesUV "btnpaineisrev") > 0 and (findItem nomesUV "btnveruv") > 0)
 
         -- 5. O Ver UV desliga sozinho (salvar, exportar, verificar): o botao acompanha.
         local caixaVU = Box name:"TESTE_reload_vu"

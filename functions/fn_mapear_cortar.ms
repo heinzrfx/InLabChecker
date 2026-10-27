@@ -349,17 +349,24 @@ fn InLab_Cortar_Paineis o corpo costuras =
     )
     -- Tarefa 5: depois do collapseDeadStructs de uma face morta, as arestas dela ainda listam o
     -- índice antigo (agora outra face) no getEdgeFaces: só fica a face que tem a aresta
+    local descartadas = 0
     for e in arestas do
     (
         local fs = #()
         for g in (polyop.getEdgeFaces po e) do
         (
-            local eg = if faceEdges[g] != undefined then faceEdges[g] else polyop.getFaceEdges po g
-            if (findItem eg e) > 0 do append fs g
+            -- referência de face fora de 1..nF (resto de face morta compactada): ignora e conta
+            if g < 1 or g > nF then descartadas += 1
+            else
+            (
+                local eg = if faceEdges[g] != undefined then faceEdges[g] else polyop.getFaceEdges po g
+                if (findItem eg e) > 0 do append fs g
+            )
         )
         edgeFaces[e] = fs
         eVerts[e] = polyop.getEdgeVerts po e
     )
+    if descartadas > 0 do InLab_Log (o.name + ": " + descartadas as string + " referência(s) de face inválida(s) nas arestas ignorada(s).") tipo:#warn
     local adj = #(faceEdges, edgeFaces)
     local posM = InLab_Paineis_PosMundo o corpo
     local nomePeca = o.name
