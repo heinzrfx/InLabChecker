@@ -141,6 +141,21 @@ Na própria cena das peças que travaram em 27/10 (pergunta 2 da seção 10), pe
 
 Se o Unfold3D único não aguentar a peça grande, a seção 5.3 volta para decisão antes do plano.
 
+### 9.1 Resultado da sonda (27/10, cena do usuário com o rolo e o assento)
+
+Script da sonda fora do repo (scratchpad da sessão): costuras simuladas pela normal (tampo, fundo e faixa no eixo do assento; pontas no eixo do rolo), projeção plana por painel, `InLab_Paineis_UVAnel` na faixa, **um** `InLab_Paineis_Unfold` com todas as faces do corpo, giro pela regra padrão, gravação numa cópia, Ver UV e render no VFB do Corona.
+
+- **Causa do travamento da v1.3.0: face morta na base.** O assento (`Box001`) tem 2 faces mortas (32.820 em `polyop.getNumFaces`, 32.818 em `getPolygonCount`). Em face morta, `polyop.getElementsUsingFace` devolve vazio, e `InLab_Paineis_Elementos` nunca tira a face do conjunto: laço sem fim, com a RAM subindo até 23 GB. Reproduzido duas vezes. Não era a quantidade de elementos (o rolo tem 5, o assento 2) nem o Unfold3D.
+- **Segundo efeito da face morta:** o `polyop.detachFaces` do Unfold3D compacta a malha de origem (tira as faces mortas e renumera as faces depois delas), e a leitura por índice volta errada. Na sonda, `polyop.collapseDeadStructs` numa cópia resolveu.
+- **Tempos com um Unfold3D só:** rolo, 2.176 faces de tecido, 3 painéis, **2,8 s** no total (2,4 s de solve). Assento, 13.450 faces de tecido, 3 painéis, **8,3 a 8,8 s** (3,8 a 4,1 s de solve). Nada perto de travar; o teto pelo tamanho da seção 5.3 pode ser generoso.
+- **Visual (viewport e VFB):** a faixa do rolo abre limpa em volta; tampas e tampo sem rasgo nem esticamento visível. As listras curvam um pouco na borda das tampas arredondadas.
+- **Regra padrão errada na faixa em anel:** a normal média de uma faixa que dá a volta se anula, e a faixa foi tomada por "deitada" (trama na diagonal no VFB). Com a referência = **eixo do anel** para painel em anel, a faixa do assento ficou com a trama na vertical.
+
+**O que muda na spec por causa da sonda:**
+- Seção 5.2: no início do Cortar, a base com faces ou arestas mortas passa por `polyop.collapseDeadStructs` (dentro do undo). Faces mortas são invisíveis; a seleção de arestas continua valendo. `#info` com quantas foram tiradas. Toda varredura de elementos ignora face morta e sempre tira a face de partida do conjunto.
+- Seção 5.5: painel em anel (dois ou mais contornos antes do corte automático) usa o eixo do anel como referência da regra padrão, não a normal média.
+- A correção do laço em `InLab_Paineis_Elementos` vale também para a v1.3.x instalada no time (hotfix à parte, a decidir com o usuário).
+
 ## 10. Perguntas abertas para o usuário
 
 Respondidas pelo usuário em 27/10:
