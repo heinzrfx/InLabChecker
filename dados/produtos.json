@@ -1,7 +1,153 @@
 {
   "versao_export": "nomenclatura-3D-v2",
-  "exportado_em": "2026-10-27T13:44:20.068Z",
+  "exportado_em": "2026-10-27T17:53:52.647Z",
   "produtos": [
+    {
+      "linha": "Artefacto & Beach",
+      "cod_est": "00111091",
+      "id": "",
+      "nome": "APARADOR ZUCCHI - 147 X 042 X 072.5 H",
+      "familia": "ZUCCHI",
+      "classe": "APARADOR",
+      "marca": "ARTEFACTO",
+      "natureza": "corpo_unico",
+      "ref": true,
+      "ok_fd": true,
+      "ok_3d": true,
+      "ok_revisado": false,
+      "animacao": false,
+      "qt_meshes": 1,
+      "qt_materiais_art": 1,
+      "qt_botoes_sem": 1,
+      "qt_botoes_com": 1,
+      "tecido_desmembravel": false,
+      "acabamento_resumo": "Principal: Estrutura | Pré-definido: Deslizador",
+      "obs_cotas": "",
+      "obs_restr_tecido": "",
+      "obs_confeccao": "",
+      "obs_nao_acompanha": "",
+      "obs_outras": "",
+      "obs_custom": "",
+      "obs_original": "",
+      "meshes": [
+        {
+          "nome": "00111091",
+          "partes": [
+            "Estrutura",
+            "Deslizador"
+          ]
+        }
+      ],
+      "botoes_sem_desm": [
+        {
+          "apelido": "Estrutura",
+          "partes": [
+            "Estrutura"
+          ]
+        }
+      ],
+      "botoes_com_desm": [
+        {
+          "apelido": "Estrutura",
+          "metragem": "",
+          "partes": [
+            "Estrutura"
+          ]
+        }
+      ],
+      "bloco_3d": {
+        "papel": "master",
+        "base_codest": "00111091",
+        "duplicar_renomear": false,
+        "obs": ""
+      },
+      "glb_multiplos": {
+        "qtd": 1,
+        "variantes": []
+      },
+      "partes": [
+        {
+          "ordem": 1,
+          "nome_parte": "Estrutura",
+          "termo": "Estrutura",
+          "qualificador": "",
+          "qualificadores": [],
+          "numero": "sing",
+          "apelido_cliente": "Estrutura",
+          "apelido_override": "Estrutura",
+          "termo_novo": false,
+          "so3d": false,
+          "subparte_de": "",
+          "tipo": "P",
+          "materia_prima": {
+            "familia": "Madeira",
+            "materia": "Cedro"
+          },
+          "materias_primas": [
+            {
+              "familia": "Madeira",
+              "materia": "Cedro"
+            }
+          ],
+          "materia_prima_herdada": false,
+          "material_id": "ART_P_Estrutura",
+          "configuravel": true,
+          "entra_3d": true,
+          "mesh_final": "00111091",
+          "tecido": false,
+          "botao_sem_desm": "Estrutura",
+          "botao_com_desm": "Estrutura",
+          "metragem_desm": "",
+          "acessorio": false,
+          "acessorio_obrigatorio": null,
+          "acessorio_acabamentos": [],
+          "acessorio_fixo": false,
+          "acessorio_botao_pai": "",
+          "acessorio_opcoes": [],
+          "par_segue": null
+        },
+        {
+          "ordem": 2,
+          "nome_parte": "Deslizador",
+          "termo": "Deslizador",
+          "qualificador": "",
+          "qualificadores": [],
+          "numero": "plur",
+          "apelido_cliente": "Deslizadores",
+          "apelido_override": "",
+          "termo_novo": false,
+          "so3d": false,
+          "subparte_de": "",
+          "tipo": "PD",
+          "materia_prima": {
+            "familia": "Metal",
+            "materia": "Aço Inox"
+          },
+          "materias_primas": [
+            {
+              "familia": "Metal",
+              "materia": "Aço Inox"
+            }
+          ],
+          "materia_prima_herdada": false,
+          "material_id": "PD_Deslizador",
+          "configuravel": false,
+          "entra_3d": true,
+          "mesh_final": "00111091",
+          "tecido": false,
+          "botao_sem_desm": "",
+          "botao_com_desm": "",
+          "metragem_desm": "",
+          "acessorio": false,
+          "acessorio_obrigatorio": null,
+          "acessorio_acabamentos": [],
+          "acessorio_fixo": false,
+          "acessorio_botao_pai": "",
+          "acessorio_opcoes": [],
+          "par_segue": null
+        }
+      ]
+    },
     {
       "linha": "Artefacto & Beach",
       "cod_est": "00150099",
@@ -7035,6 +7181,1437 @@
     },
     {
       "linha": "Artefacto & Beach",
+      "cod_est": "00128089",
+      "id": "",
+      "nome": "MOLDURA EMILIANO - MICROTEXTURA - ESPELHO BRONZE - 100 X 008 X 200 H",
+      "familia": "EMILIANO",
+      "classe": "MOLDURA",
+      "marca": "BEACH",
+      "natureza": "corpo_unico",
+      "ref": false,
+      "ok_fd": false,
+      "ok_3d": true,
+      "ok_revisado": false,
+      "animacao": false,
+      "qt_meshes": 1,
+      "qt_materiais_art": 2,
+      "qt_botoes_sem": 2,
+      "qt_botoes_com": 2,
+      "tecido_desmembravel": false,
+      "acabamento_resumo": "Principal: Estrutura | Específico: Espelho",
+      "obs_cotas": "",
+      "obs_restr_tecido": "",
+      "obs_confeccao": "",
+      "obs_nao_acompanha": "",
+      "obs_outras": "",
+      "obs_custom": "",
+      "obs_original": "",
+      "meshes": [
+        {
+          "nome": "00128089",
+          "partes": [
+            "Estrutura",
+            "Espelho"
+          ]
+        }
+      ],
+      "botoes_sem_desm": [
+        {
+          "apelido": "Estrutura",
+          "partes": [
+            "Estrutura"
+          ]
+        },
+        {
+          "apelido": "Espelho",
+          "partes": [
+            "Espelho"
+          ]
+        }
+      ],
+      "botoes_com_desm": [
+        {
+          "apelido": "Estrutura",
+          "metragem": "",
+          "partes": [
+            "Estrutura"
+          ]
+        },
+        {
+          "apelido": "Espelho",
+          "metragem": "",
+          "partes": [
+            "Espelho"
+          ]
+        }
+      ],
+      "bloco_3d": {
+        "papel": "copia",
+        "base_codest": "00128088",
+        "duplicar_renomear": true,
+        "obs": ""
+      },
+      "glb_multiplos": {
+        "qtd": 1,
+        "variantes": []
+      },
+      "partes": [
+        {
+          "ordem": 1,
+          "nome_parte": "Estrutura",
+          "termo": "Estrutura",
+          "qualificador": "",
+          "qualificadores": [],
+          "numero": "sing",
+          "apelido_cliente": "Estrutura",
+          "apelido_override": "",
+          "termo_novo": false,
+          "so3d": false,
+          "subparte_de": "",
+          "tipo": "P",
+          "materia_prima": {
+            "familia": "Madeira",
+            "materia": "Microtextura"
+          },
+          "materias_primas": [
+            {
+              "familia": "Madeira",
+              "materia": "Microtextura"
+            }
+          ],
+          "materia_prima_herdada": false,
+          "material_id": "ART_P_Estrutura",
+          "configuravel": true,
+          "entra_3d": true,
+          "mesh_final": "00128089",
+          "tecido": false,
+          "botao_sem_desm": "Estrutura",
+          "botao_com_desm": "Estrutura",
+          "metragem_desm": "",
+          "acessorio": false,
+          "acessorio_obrigatorio": null,
+          "acessorio_acabamentos": [],
+          "acessorio_fixo": false,
+          "acessorio_botao_pai": "",
+          "acessorio_opcoes": [],
+          "par_segue": null
+        },
+        {
+          "ordem": 2,
+          "nome_parte": "Espelho",
+          "termo": "Espelho",
+          "qualificador": "",
+          "qualificadores": [],
+          "numero": "sing",
+          "apelido_cliente": "Espelho",
+          "apelido_override": "",
+          "termo_novo": true,
+          "so3d": false,
+          "subparte_de": "",
+          "tipo": "E",
+          "materia_prima": {
+            "familia": "Espelho",
+            "materia": ""
+          },
+          "materias_primas": [
+            {
+              "familia": "Espelho",
+              "materia": ""
+            }
+          ],
+          "materia_prima_herdada": false,
+          "material_id": "ART_E_Espelho",
+          "configuravel": true,
+          "entra_3d": true,
+          "mesh_final": "00128089",
+          "tecido": false,
+          "botao_sem_desm": "Espelho",
+          "botao_com_desm": "Espelho",
+          "metragem_desm": "",
+          "acessorio": false,
+          "acessorio_obrigatorio": null,
+          "acessorio_acabamentos": [],
+          "acessorio_fixo": false,
+          "acessorio_botao_pai": "",
+          "acessorio_opcoes": [],
+          "par_segue": null
+        }
+      ]
+    },
+    {
+      "linha": "Artefacto & Beach",
+      "cod_est": "00128117",
+      "id": "",
+      "nome": "MOLDURA EMILIANO - MICROTEXTURA - ESPELHO BRONZE - 170 X 008 X 200 H",
+      "familia": "EMILIANO",
+      "classe": "MOLDURA",
+      "marca": "BEACH",
+      "natureza": "corpo_unico",
+      "ref": false,
+      "ok_fd": false,
+      "ok_3d": true,
+      "ok_revisado": false,
+      "animacao": false,
+      "qt_meshes": 1,
+      "qt_materiais_art": 2,
+      "qt_botoes_sem": 2,
+      "qt_botoes_com": 2,
+      "tecido_desmembravel": false,
+      "acabamento_resumo": "Principal: Estrutura | Específico: Espelho",
+      "obs_cotas": "",
+      "obs_restr_tecido": "",
+      "obs_confeccao": "",
+      "obs_nao_acompanha": "",
+      "obs_outras": "",
+      "obs_custom": "",
+      "obs_original": "",
+      "meshes": [
+        {
+          "nome": "00128117",
+          "partes": [
+            "Estrutura",
+            "Espelho"
+          ]
+        }
+      ],
+      "botoes_sem_desm": [
+        {
+          "apelido": "Estrutura",
+          "partes": [
+            "Estrutura"
+          ]
+        },
+        {
+          "apelido": "Espelho",
+          "partes": [
+            "Espelho"
+          ]
+        }
+      ],
+      "botoes_com_desm": [
+        {
+          "apelido": "Estrutura",
+          "metragem": "",
+          "partes": [
+            "Estrutura"
+          ]
+        },
+        {
+          "apelido": "Espelho",
+          "metragem": "",
+          "partes": [
+            "Espelho"
+          ]
+        }
+      ],
+      "bloco_3d": {
+        "papel": "copia",
+        "base_codest": "00128029",
+        "duplicar_renomear": true,
+        "obs": ""
+      },
+      "glb_multiplos": {
+        "qtd": 1,
+        "variantes": []
+      },
+      "partes": [
+        {
+          "ordem": 1,
+          "nome_parte": "Estrutura",
+          "termo": "Estrutura",
+          "qualificador": "",
+          "qualificadores": [],
+          "numero": "sing",
+          "apelido_cliente": "Estrutura",
+          "apelido_override": "",
+          "termo_novo": false,
+          "so3d": false,
+          "subparte_de": "",
+          "tipo": "P",
+          "materia_prima": {
+            "familia": "Madeira",
+            "materia": "Microtextura"
+          },
+          "materias_primas": [
+            {
+              "familia": "Madeira",
+              "materia": "Microtextura"
+            }
+          ],
+          "materia_prima_herdada": false,
+          "material_id": "ART_P_Estrutura",
+          "configuravel": true,
+          "entra_3d": true,
+          "mesh_final": "00128117",
+          "tecido": false,
+          "botao_sem_desm": "Estrutura",
+          "botao_com_desm": "Estrutura",
+          "metragem_desm": "",
+          "acessorio": false,
+          "acessorio_obrigatorio": null,
+          "acessorio_acabamentos": [],
+          "acessorio_fixo": false,
+          "acessorio_botao_pai": "",
+          "acessorio_opcoes": [],
+          "par_segue": null
+        },
+        {
+          "ordem": 2,
+          "nome_parte": "Espelho",
+          "termo": "Espelho",
+          "qualificador": "",
+          "qualificadores": [],
+          "numero": "sing",
+          "apelido_cliente": "Espelho",
+          "apelido_override": "",
+          "termo_novo": true,
+          "so3d": false,
+          "subparte_de": "",
+          "tipo": "E",
+          "materia_prima": {
+            "familia": "Espelho",
+            "materia": ""
+          },
+          "materias_primas": [
+            {
+              "familia": "Espelho",
+              "materia": ""
+            }
+          ],
+          "materia_prima_herdada": false,
+          "material_id": "ART_E_Espelho",
+          "configuravel": true,
+          "entra_3d": true,
+          "mesh_final": "00128117",
+          "tecido": false,
+          "botao_sem_desm": "Espelho",
+          "botao_com_desm": "Espelho",
+          "metragem_desm": "",
+          "acessorio": false,
+          "acessorio_obrigatorio": null,
+          "acessorio_acabamentos": [],
+          "acessorio_fixo": false,
+          "acessorio_botao_pai": "",
+          "acessorio_opcoes": [],
+          "par_segue": null
+        }
+      ]
+    },
+    {
+      "linha": "Artefacto & Beach",
+      "cod_est": "00128088",
+      "id": "",
+      "nome": "MOLDURA EMILIANO - MICROTEXTURA - ESPELHO CHUMBO - 100 X 008 X 200 H",
+      "familia": "EMILIANO",
+      "classe": "MOLDURA",
+      "marca": "BEACH",
+      "natureza": "corpo_unico",
+      "ref": false,
+      "ok_fd": false,
+      "ok_3d": true,
+      "ok_revisado": false,
+      "animacao": false,
+      "qt_meshes": 1,
+      "qt_materiais_art": 2,
+      "qt_botoes_sem": 2,
+      "qt_botoes_com": 2,
+      "tecido_desmembravel": false,
+      "acabamento_resumo": "Principal: Estrutura | Específico: Espelho",
+      "obs_cotas": "",
+      "obs_restr_tecido": "",
+      "obs_confeccao": "",
+      "obs_nao_acompanha": "",
+      "obs_outras": "",
+      "obs_custom": "",
+      "obs_original": "",
+      "meshes": [
+        {
+          "nome": "00128088",
+          "partes": [
+            "Estrutura",
+            "Espelho"
+          ]
+        }
+      ],
+      "botoes_sem_desm": [
+        {
+          "apelido": "Estrutura",
+          "partes": [
+            "Estrutura"
+          ]
+        },
+        {
+          "apelido": "Espelho",
+          "partes": [
+            "Espelho"
+          ]
+        }
+      ],
+      "botoes_com_desm": [
+        {
+          "apelido": "Estrutura",
+          "metragem": "",
+          "partes": [
+            "Estrutura"
+          ]
+        },
+        {
+          "apelido": "Espelho",
+          "metragem": "",
+          "partes": [
+            "Espelho"
+          ]
+        }
+      ],
+      "bloco_3d": {
+        "papel": "master",
+        "base_codest": "00128088",
+        "duplicar_renomear": false,
+        "obs": ""
+      },
+      "glb_multiplos": {
+        "qtd": 1,
+        "variantes": []
+      },
+      "partes": [
+        {
+          "ordem": 1,
+          "nome_parte": "Estrutura",
+          "termo": "Estrutura",
+          "qualificador": "",
+          "qualificadores": [],
+          "numero": "sing",
+          "apelido_cliente": "Estrutura",
+          "apelido_override": "",
+          "termo_novo": false,
+          "so3d": false,
+          "subparte_de": "",
+          "tipo": "P",
+          "materia_prima": {
+            "familia": "Madeira",
+            "materia": "Microtextura"
+          },
+          "materias_primas": [
+            {
+              "familia": "Madeira",
+              "materia": "Microtextura"
+            }
+          ],
+          "materia_prima_herdada": false,
+          "material_id": "ART_P_Estrutura",
+          "configuravel": true,
+          "entra_3d": true,
+          "mesh_final": "00128088",
+          "tecido": false,
+          "botao_sem_desm": "Estrutura",
+          "botao_com_desm": "Estrutura",
+          "metragem_desm": "",
+          "acessorio": false,
+          "acessorio_obrigatorio": null,
+          "acessorio_acabamentos": [],
+          "acessorio_fixo": false,
+          "acessorio_botao_pai": "",
+          "acessorio_opcoes": [],
+          "par_segue": null
+        },
+        {
+          "ordem": 2,
+          "nome_parte": "Espelho",
+          "termo": "Espelho",
+          "qualificador": "",
+          "qualificadores": [],
+          "numero": "sing",
+          "apelido_cliente": "Espelho",
+          "apelido_override": "",
+          "termo_novo": true,
+          "so3d": false,
+          "subparte_de": "",
+          "tipo": "E",
+          "materia_prima": {
+            "familia": "Espelho",
+            "materia": ""
+          },
+          "materias_primas": [
+            {
+              "familia": "Espelho",
+              "materia": ""
+            }
+          ],
+          "materia_prima_herdada": false,
+          "material_id": "ART_E_Espelho",
+          "configuravel": true,
+          "entra_3d": true,
+          "mesh_final": "00128088",
+          "tecido": false,
+          "botao_sem_desm": "Espelho",
+          "botao_com_desm": "Espelho",
+          "metragem_desm": "",
+          "acessorio": false,
+          "acessorio_obrigatorio": null,
+          "acessorio_acabamentos": [],
+          "acessorio_fixo": false,
+          "acessorio_botao_pai": "",
+          "acessorio_opcoes": [],
+          "par_segue": null
+        }
+      ]
+    },
+    {
+      "linha": "Artefacto & Beach",
+      "cod_est": "00128038",
+      "id": "",
+      "nome": "MOLDURA EMILIANO - MICROTEXTURA - ESPELHO CHUMBO - 170 X 008 X 200 H",
+      "familia": "EMILIANO",
+      "classe": "MOLDURA",
+      "marca": "BEACH",
+      "natureza": "corpo_unico",
+      "ref": false,
+      "ok_fd": false,
+      "ok_3d": true,
+      "ok_revisado": false,
+      "animacao": false,
+      "qt_meshes": 1,
+      "qt_materiais_art": 2,
+      "qt_botoes_sem": 2,
+      "qt_botoes_com": 2,
+      "tecido_desmembravel": false,
+      "acabamento_resumo": "Principal: Estrutura | Específico: Espelho",
+      "obs_cotas": "",
+      "obs_restr_tecido": "",
+      "obs_confeccao": "",
+      "obs_nao_acompanha": "",
+      "obs_outras": "",
+      "obs_custom": "",
+      "obs_original": "",
+      "meshes": [
+        {
+          "nome": "00128038",
+          "partes": [
+            "Estrutura",
+            "Espelho"
+          ]
+        }
+      ],
+      "botoes_sem_desm": [
+        {
+          "apelido": "Estrutura",
+          "partes": [
+            "Estrutura"
+          ]
+        },
+        {
+          "apelido": "Espelho",
+          "partes": [
+            "Espelho"
+          ]
+        }
+      ],
+      "botoes_com_desm": [
+        {
+          "apelido": "Estrutura",
+          "metragem": "",
+          "partes": [
+            "Estrutura"
+          ]
+        },
+        {
+          "apelido": "Espelho",
+          "metragem": "",
+          "partes": [
+            "Espelho"
+          ]
+        }
+      ],
+      "bloco_3d": {
+        "papel": "copia",
+        "base_codest": "00128029",
+        "duplicar_renomear": true,
+        "obs": ""
+      },
+      "glb_multiplos": {
+        "qtd": 1,
+        "variantes": []
+      },
+      "partes": [
+        {
+          "ordem": 1,
+          "nome_parte": "Estrutura",
+          "termo": "Estrutura",
+          "qualificador": "",
+          "qualificadores": [],
+          "numero": "sing",
+          "apelido_cliente": "Estrutura",
+          "apelido_override": "",
+          "termo_novo": false,
+          "so3d": false,
+          "subparte_de": "",
+          "tipo": "P",
+          "materia_prima": {
+            "familia": "Madeira",
+            "materia": "Microtextura"
+          },
+          "materias_primas": [
+            {
+              "familia": "Madeira",
+              "materia": "Microtextura"
+            }
+          ],
+          "materia_prima_herdada": false,
+          "material_id": "ART_P_Estrutura",
+          "configuravel": true,
+          "entra_3d": true,
+          "mesh_final": "00128038",
+          "tecido": false,
+          "botao_sem_desm": "Estrutura",
+          "botao_com_desm": "Estrutura",
+          "metragem_desm": "",
+          "acessorio": false,
+          "acessorio_obrigatorio": null,
+          "acessorio_acabamentos": [],
+          "acessorio_fixo": false,
+          "acessorio_botao_pai": "",
+          "acessorio_opcoes": [],
+          "par_segue": null
+        },
+        {
+          "ordem": 2,
+          "nome_parte": "Espelho",
+          "termo": "Espelho",
+          "qualificador": "",
+          "qualificadores": [],
+          "numero": "sing",
+          "apelido_cliente": "Espelho",
+          "apelido_override": "",
+          "termo_novo": true,
+          "so3d": false,
+          "subparte_de": "",
+          "tipo": "E",
+          "materia_prima": {
+            "familia": "Espelho",
+            "materia": ""
+          },
+          "materias_primas": [
+            {
+              "familia": "Espelho",
+              "materia": ""
+            }
+          ],
+          "materia_prima_herdada": false,
+          "material_id": "ART_E_Espelho",
+          "configuravel": true,
+          "entra_3d": true,
+          "mesh_final": "00128038",
+          "tecido": false,
+          "botao_sem_desm": "Espelho",
+          "botao_com_desm": "Espelho",
+          "metragem_desm": "",
+          "acessorio": false,
+          "acessorio_obrigatorio": null,
+          "acessorio_acabamentos": [],
+          "acessorio_fixo": false,
+          "acessorio_botao_pai": "",
+          "acessorio_opcoes": [],
+          "par_segue": null
+        }
+      ]
+    },
+    {
+      "linha": "Artefacto & Beach",
+      "cod_est": "00128090",
+      "id": "",
+      "nome": "MOLDURA EMILIANO - MICROTEXTURA - ESPELHO PRATA - 100 X 008 X 200 H",
+      "familia": "EMILIANO",
+      "classe": "MOLDURA",
+      "marca": "BEACH",
+      "natureza": "corpo_unico",
+      "ref": false,
+      "ok_fd": false,
+      "ok_3d": true,
+      "ok_revisado": false,
+      "animacao": false,
+      "qt_meshes": 1,
+      "qt_materiais_art": 2,
+      "qt_botoes_sem": 2,
+      "qt_botoes_com": 2,
+      "tecido_desmembravel": false,
+      "acabamento_resumo": "Principal: Estrutura | Específico: Espelho",
+      "obs_cotas": "",
+      "obs_restr_tecido": "",
+      "obs_confeccao": "",
+      "obs_nao_acompanha": "",
+      "obs_outras": "",
+      "obs_custom": "",
+      "obs_original": "",
+      "meshes": [
+        {
+          "nome": "00128090",
+          "partes": [
+            "Estrutura",
+            "Espelho"
+          ]
+        }
+      ],
+      "botoes_sem_desm": [
+        {
+          "apelido": "Estrutura",
+          "partes": [
+            "Estrutura"
+          ]
+        },
+        {
+          "apelido": "Espelho",
+          "partes": [
+            "Espelho"
+          ]
+        }
+      ],
+      "botoes_com_desm": [
+        {
+          "apelido": "Estrutura",
+          "metragem": "",
+          "partes": [
+            "Estrutura"
+          ]
+        },
+        {
+          "apelido": "Espelho",
+          "metragem": "",
+          "partes": [
+            "Espelho"
+          ]
+        }
+      ],
+      "bloco_3d": {
+        "papel": "copia",
+        "base_codest": "00128088",
+        "duplicar_renomear": true,
+        "obs": ""
+      },
+      "glb_multiplos": {
+        "qtd": 1,
+        "variantes": []
+      },
+      "partes": [
+        {
+          "ordem": 1,
+          "nome_parte": "Estrutura",
+          "termo": "Estrutura",
+          "qualificador": "",
+          "qualificadores": [],
+          "numero": "sing",
+          "apelido_cliente": "Estrutura",
+          "apelido_override": "",
+          "termo_novo": false,
+          "so3d": false,
+          "subparte_de": "",
+          "tipo": "P",
+          "materia_prima": {
+            "familia": "Madeira",
+            "materia": "Microtextura"
+          },
+          "materias_primas": [
+            {
+              "familia": "Madeira",
+              "materia": "Microtextura"
+            }
+          ],
+          "materia_prima_herdada": false,
+          "material_id": "ART_P_Estrutura",
+          "configuravel": true,
+          "entra_3d": true,
+          "mesh_final": "00128090",
+          "tecido": false,
+          "botao_sem_desm": "Estrutura",
+          "botao_com_desm": "Estrutura",
+          "metragem_desm": "",
+          "acessorio": false,
+          "acessorio_obrigatorio": null,
+          "acessorio_acabamentos": [],
+          "acessorio_fixo": false,
+          "acessorio_botao_pai": "",
+          "acessorio_opcoes": [],
+          "par_segue": null
+        },
+        {
+          "ordem": 2,
+          "nome_parte": "Espelho",
+          "termo": "Espelho",
+          "qualificador": "",
+          "qualificadores": [],
+          "numero": "sing",
+          "apelido_cliente": "Espelho",
+          "apelido_override": "",
+          "termo_novo": true,
+          "so3d": false,
+          "subparte_de": "",
+          "tipo": "E",
+          "materia_prima": {
+            "familia": "Espelho",
+            "materia": ""
+          },
+          "materias_primas": [
+            {
+              "familia": "Espelho",
+              "materia": ""
+            }
+          ],
+          "materia_prima_herdada": false,
+          "material_id": "ART_E_Espelho",
+          "configuravel": true,
+          "entra_3d": true,
+          "mesh_final": "00128090",
+          "tecido": false,
+          "botao_sem_desm": "Espelho",
+          "botao_com_desm": "Espelho",
+          "metragem_desm": "",
+          "acessorio": false,
+          "acessorio_obrigatorio": null,
+          "acessorio_acabamentos": [],
+          "acessorio_fixo": false,
+          "acessorio_botao_pai": "",
+          "acessorio_opcoes": [],
+          "par_segue": null
+        }
+      ]
+    },
+    {
+      "linha": "Artefacto & Beach",
+      "cod_est": "00128029",
+      "id": "",
+      "nome": "MOLDURA EMILIANO - MICROTEXTURA - ESPELHO PRATA - 170 X 008 X 200 H",
+      "familia": "EMILIANO",
+      "classe": "MOLDURA",
+      "marca": "BEACH",
+      "natureza": "corpo_unico",
+      "ref": false,
+      "ok_fd": false,
+      "ok_3d": true,
+      "ok_revisado": false,
+      "animacao": false,
+      "qt_meshes": 1,
+      "qt_materiais_art": 2,
+      "qt_botoes_sem": 2,
+      "qt_botoes_com": 2,
+      "tecido_desmembravel": false,
+      "acabamento_resumo": "Principal: Estrutura | Específico: Espelho",
+      "obs_cotas": "",
+      "obs_restr_tecido": "",
+      "obs_confeccao": "",
+      "obs_nao_acompanha": "",
+      "obs_outras": "",
+      "obs_custom": "",
+      "obs_original": "",
+      "meshes": [
+        {
+          "nome": "00128029",
+          "partes": [
+            "Estrutura",
+            "Espelho"
+          ]
+        }
+      ],
+      "botoes_sem_desm": [
+        {
+          "apelido": "Estrutura",
+          "partes": [
+            "Estrutura"
+          ]
+        },
+        {
+          "apelido": "Espelho",
+          "partes": [
+            "Espelho"
+          ]
+        }
+      ],
+      "botoes_com_desm": [
+        {
+          "apelido": "Estrutura",
+          "metragem": "",
+          "partes": [
+            "Estrutura"
+          ]
+        },
+        {
+          "apelido": "Espelho",
+          "metragem": "",
+          "partes": [
+            "Espelho"
+          ]
+        }
+      ],
+      "bloco_3d": {
+        "papel": "master",
+        "base_codest": "00128029",
+        "duplicar_renomear": false,
+        "obs": ""
+      },
+      "glb_multiplos": {
+        "qtd": 1,
+        "variantes": []
+      },
+      "partes": [
+        {
+          "ordem": 1,
+          "nome_parte": "Estrutura",
+          "termo": "Estrutura",
+          "qualificador": "",
+          "qualificadores": [],
+          "numero": "sing",
+          "apelido_cliente": "Estrutura",
+          "apelido_override": "",
+          "termo_novo": false,
+          "so3d": false,
+          "subparte_de": "",
+          "tipo": "P",
+          "materia_prima": {
+            "familia": "Madeira",
+            "materia": "Microtextura"
+          },
+          "materias_primas": [
+            {
+              "familia": "Madeira",
+              "materia": "Microtextura"
+            }
+          ],
+          "materia_prima_herdada": false,
+          "material_id": "ART_P_Estrutura",
+          "configuravel": true,
+          "entra_3d": true,
+          "mesh_final": "00128029",
+          "tecido": false,
+          "botao_sem_desm": "Estrutura",
+          "botao_com_desm": "Estrutura",
+          "metragem_desm": "",
+          "acessorio": false,
+          "acessorio_obrigatorio": null,
+          "acessorio_acabamentos": [],
+          "acessorio_fixo": false,
+          "acessorio_botao_pai": "",
+          "acessorio_opcoes": [],
+          "par_segue": null
+        },
+        {
+          "ordem": 2,
+          "nome_parte": "Espelho",
+          "termo": "Espelho",
+          "qualificador": "",
+          "qualificadores": [],
+          "numero": "sing",
+          "apelido_cliente": "Espelho",
+          "apelido_override": "",
+          "termo_novo": true,
+          "so3d": false,
+          "subparte_de": "",
+          "tipo": "E",
+          "materia_prima": {
+            "familia": "Espelho",
+            "materia": ""
+          },
+          "materias_primas": [
+            {
+              "familia": "Espelho",
+              "materia": ""
+            }
+          ],
+          "materia_prima_herdada": false,
+          "material_id": "ART_E_Espelho",
+          "configuravel": true,
+          "entra_3d": true,
+          "mesh_final": "00128029",
+          "tecido": false,
+          "botao_sem_desm": "Espelho",
+          "botao_com_desm": "Espelho",
+          "metragem_desm": "",
+          "acessorio": false,
+          "acessorio_obrigatorio": null,
+          "acessorio_acabamentos": [],
+          "acessorio_fixo": false,
+          "acessorio_botao_pai": "",
+          "acessorio_opcoes": [],
+          "par_segue": null
+        }
+      ]
+    },
+    {
+      "linha": "Artefacto & Beach",
+      "cod_est": "00128092",
+      "id": "",
+      "nome": "MOLDURA EMILIANO - REDONDA - ESPELHO BRONZE - DIAM 120 X 008 H",
+      "familia": "EMILIANO",
+      "classe": "MOLDURA",
+      "marca": "BEACH",
+      "natureza": "corpo_unico",
+      "ref": false,
+      "ok_fd": false,
+      "ok_3d": true,
+      "ok_revisado": false,
+      "animacao": false,
+      "qt_meshes": 1,
+      "qt_materiais_art": 2,
+      "qt_botoes_sem": 2,
+      "qt_botoes_com": 2,
+      "tecido_desmembravel": false,
+      "acabamento_resumo": "Principal: Estrutura | Específico: Espelho",
+      "obs_cotas": "",
+      "obs_restr_tecido": "",
+      "obs_confeccao": "",
+      "obs_nao_acompanha": "",
+      "obs_outras": "",
+      "obs_custom": "",
+      "obs_original": "",
+      "meshes": [
+        {
+          "nome": "00128092",
+          "partes": [
+            "Estrutura",
+            "Espelho"
+          ]
+        }
+      ],
+      "botoes_sem_desm": [
+        {
+          "apelido": "Estrutura",
+          "partes": [
+            "Estrutura"
+          ]
+        },
+        {
+          "apelido": "Espelho",
+          "partes": [
+            "Espelho"
+          ]
+        }
+      ],
+      "botoes_com_desm": [
+        {
+          "apelido": "Estrutura",
+          "metragem": "",
+          "partes": [
+            "Estrutura"
+          ]
+        },
+        {
+          "apelido": "Espelho",
+          "metragem": "",
+          "partes": [
+            "Espelho"
+          ]
+        }
+      ],
+      "bloco_3d": {
+        "papel": "copia",
+        "base_codest": "00128091",
+        "duplicar_renomear": true,
+        "obs": ""
+      },
+      "glb_multiplos": {
+        "qtd": 1,
+        "variantes": []
+      },
+      "partes": [
+        {
+          "ordem": 1,
+          "nome_parte": "Estrutura",
+          "termo": "Estrutura",
+          "qualificador": "",
+          "qualificadores": [],
+          "numero": "sing",
+          "apelido_cliente": "Estrutura",
+          "apelido_override": "",
+          "termo_novo": false,
+          "so3d": false,
+          "subparte_de": "",
+          "tipo": "P",
+          "materia_prima": {
+            "familia": "Madeira",
+            "materia": "Microtextura"
+          },
+          "materias_primas": [
+            {
+              "familia": "Madeira",
+              "materia": "Microtextura"
+            }
+          ],
+          "materia_prima_herdada": false,
+          "material_id": "ART_P_Estrutura",
+          "configuravel": true,
+          "entra_3d": true,
+          "mesh_final": "00128092",
+          "tecido": false,
+          "botao_sem_desm": "Estrutura",
+          "botao_com_desm": "Estrutura",
+          "metragem_desm": "",
+          "acessorio": false,
+          "acessorio_obrigatorio": null,
+          "acessorio_acabamentos": [],
+          "acessorio_fixo": false,
+          "acessorio_botao_pai": "",
+          "acessorio_opcoes": [],
+          "par_segue": null
+        },
+        {
+          "ordem": 2,
+          "nome_parte": "Espelho",
+          "termo": "Espelho",
+          "qualificador": "",
+          "qualificadores": [],
+          "numero": "sing",
+          "apelido_cliente": "Espelho",
+          "apelido_override": "",
+          "termo_novo": true,
+          "so3d": false,
+          "subparte_de": "",
+          "tipo": "E",
+          "materia_prima": {
+            "familia": "Espelho",
+            "materia": ""
+          },
+          "materias_primas": [
+            {
+              "familia": "Espelho",
+              "materia": ""
+            }
+          ],
+          "materia_prima_herdada": false,
+          "material_id": "ART_E_Espelho",
+          "configuravel": true,
+          "entra_3d": true,
+          "mesh_final": "00128092",
+          "tecido": false,
+          "botao_sem_desm": "Espelho",
+          "botao_com_desm": "Espelho",
+          "metragem_desm": "",
+          "acessorio": false,
+          "acessorio_obrigatorio": null,
+          "acessorio_acabamentos": [],
+          "acessorio_fixo": false,
+          "acessorio_botao_pai": "",
+          "acessorio_opcoes": [],
+          "par_segue": null
+        }
+      ]
+    },
+    {
+      "linha": "Artefacto & Beach",
+      "cod_est": "00128091",
+      "id": "",
+      "nome": "MOLDURA EMILIANO - REDONDA - ESPELHO CHUMBO - DIAM 120 X 008 H",
+      "familia": "EMILIANO",
+      "classe": "MOLDURA",
+      "marca": "BEACH",
+      "natureza": "corpo_unico",
+      "ref": false,
+      "ok_fd": false,
+      "ok_3d": true,
+      "ok_revisado": false,
+      "animacao": false,
+      "qt_meshes": 1,
+      "qt_materiais_art": 2,
+      "qt_botoes_sem": 2,
+      "qt_botoes_com": 2,
+      "tecido_desmembravel": false,
+      "acabamento_resumo": "Principal: Estrutura | Específico: Espelho",
+      "obs_cotas": "",
+      "obs_restr_tecido": "",
+      "obs_confeccao": "",
+      "obs_nao_acompanha": "",
+      "obs_outras": "",
+      "obs_custom": "",
+      "obs_original": "",
+      "meshes": [
+        {
+          "nome": "00128091",
+          "partes": [
+            "Estrutura",
+            "Espelho"
+          ]
+        }
+      ],
+      "botoes_sem_desm": [
+        {
+          "apelido": "Estrutura",
+          "partes": [
+            "Estrutura"
+          ]
+        },
+        {
+          "apelido": "Espelho",
+          "partes": [
+            "Espelho"
+          ]
+        }
+      ],
+      "botoes_com_desm": [
+        {
+          "apelido": "Estrutura",
+          "metragem": "",
+          "partes": [
+            "Estrutura"
+          ]
+        },
+        {
+          "apelido": "Espelho",
+          "metragem": "",
+          "partes": [
+            "Espelho"
+          ]
+        }
+      ],
+      "bloco_3d": {
+        "papel": "master",
+        "base_codest": "00128091",
+        "duplicar_renomear": false,
+        "obs": ""
+      },
+      "glb_multiplos": {
+        "qtd": 1,
+        "variantes": []
+      },
+      "partes": [
+        {
+          "ordem": 1,
+          "nome_parte": "Estrutura",
+          "termo": "Estrutura",
+          "qualificador": "",
+          "qualificadores": [],
+          "numero": "sing",
+          "apelido_cliente": "Estrutura",
+          "apelido_override": "",
+          "termo_novo": false,
+          "so3d": false,
+          "subparte_de": "",
+          "tipo": "P",
+          "materia_prima": {
+            "familia": "Madeira",
+            "materia": "Microtextura"
+          },
+          "materias_primas": [
+            {
+              "familia": "Madeira",
+              "materia": "Microtextura"
+            }
+          ],
+          "materia_prima_herdada": false,
+          "material_id": "ART_P_Estrutura",
+          "configuravel": true,
+          "entra_3d": true,
+          "mesh_final": "00128091",
+          "tecido": false,
+          "botao_sem_desm": "Estrutura",
+          "botao_com_desm": "Estrutura",
+          "metragem_desm": "",
+          "acessorio": false,
+          "acessorio_obrigatorio": null,
+          "acessorio_acabamentos": [],
+          "acessorio_fixo": false,
+          "acessorio_botao_pai": "",
+          "acessorio_opcoes": [],
+          "par_segue": null
+        },
+        {
+          "ordem": 2,
+          "nome_parte": "Espelho",
+          "termo": "Espelho",
+          "qualificador": "",
+          "qualificadores": [],
+          "numero": "sing",
+          "apelido_cliente": "Espelho",
+          "apelido_override": "",
+          "termo_novo": true,
+          "so3d": false,
+          "subparte_de": "",
+          "tipo": "E",
+          "materia_prima": {
+            "familia": "Espelho",
+            "materia": ""
+          },
+          "materias_primas": [
+            {
+              "familia": "Espelho",
+              "materia": ""
+            }
+          ],
+          "materia_prima_herdada": false,
+          "material_id": "ART_E_Espelho",
+          "configuravel": true,
+          "entra_3d": true,
+          "mesh_final": "00128091",
+          "tecido": false,
+          "botao_sem_desm": "Espelho",
+          "botao_com_desm": "Espelho",
+          "metragem_desm": "",
+          "acessorio": false,
+          "acessorio_obrigatorio": null,
+          "acessorio_acabamentos": [],
+          "acessorio_fixo": false,
+          "acessorio_botao_pai": "",
+          "acessorio_opcoes": [],
+          "par_segue": null
+        }
+      ]
+    },
+    {
+      "linha": "Artefacto & Beach",
+      "cod_est": "00128044",
+      "id": "",
+      "nome": "MOLDURA EMILIANO - REDONDA - ESPELHO PRATA -  DIAM 120 X 008",
+      "familia": "EMILIANO",
+      "classe": "MOLDURA",
+      "marca": "BEACH",
+      "natureza": "corpo_unico",
+      "ref": false,
+      "ok_fd": false,
+      "ok_3d": true,
+      "ok_revisado": false,
+      "animacao": false,
+      "qt_meshes": 1,
+      "qt_materiais_art": 2,
+      "qt_botoes_sem": 2,
+      "qt_botoes_com": 2,
+      "tecido_desmembravel": false,
+      "acabamento_resumo": "Principal: Estrutura | Específico: Espelho",
+      "obs_cotas": "",
+      "obs_restr_tecido": "",
+      "obs_confeccao": "",
+      "obs_nao_acompanha": "",
+      "obs_outras": "",
+      "obs_custom": "",
+      "obs_original": "",
+      "meshes": [
+        {
+          "nome": "00128044",
+          "partes": [
+            "Estrutura",
+            "Espelho"
+          ]
+        }
+      ],
+      "botoes_sem_desm": [
+        {
+          "apelido": "Estrutura",
+          "partes": [
+            "Estrutura"
+          ]
+        },
+        {
+          "apelido": "Espelho",
+          "partes": [
+            "Espelho"
+          ]
+        }
+      ],
+      "botoes_com_desm": [
+        {
+          "apelido": "Estrutura",
+          "metragem": "",
+          "partes": [
+            "Estrutura"
+          ]
+        },
+        {
+          "apelido": "Espelho",
+          "metragem": "",
+          "partes": [
+            "Espelho"
+          ]
+        }
+      ],
+      "bloco_3d": {
+        "papel": "master",
+        "base_codest": "00128044",
+        "duplicar_renomear": false,
+        "obs": ""
+      },
+      "glb_multiplos": {
+        "qtd": 1,
+        "variantes": []
+      },
+      "partes": [
+        {
+          "ordem": 1,
+          "nome_parte": "Estrutura",
+          "termo": "Estrutura",
+          "qualificador": "",
+          "qualificadores": [],
+          "numero": "sing",
+          "apelido_cliente": "Estrutura",
+          "apelido_override": "",
+          "termo_novo": false,
+          "so3d": false,
+          "subparte_de": "",
+          "tipo": "P",
+          "materia_prima": {
+            "familia": "Madeira",
+            "materia": "Microtextura"
+          },
+          "materias_primas": [
+            {
+              "familia": "Madeira",
+              "materia": "Microtextura"
+            }
+          ],
+          "materia_prima_herdada": false,
+          "material_id": "ART_P_Estrutura",
+          "configuravel": true,
+          "entra_3d": true,
+          "mesh_final": "00128044",
+          "tecido": false,
+          "botao_sem_desm": "Estrutura",
+          "botao_com_desm": "Estrutura",
+          "metragem_desm": "",
+          "acessorio": false,
+          "acessorio_obrigatorio": null,
+          "acessorio_acabamentos": [],
+          "acessorio_fixo": false,
+          "acessorio_botao_pai": "",
+          "acessorio_opcoes": [],
+          "par_segue": null
+        },
+        {
+          "ordem": 2,
+          "nome_parte": "Espelho",
+          "termo": "Espelho",
+          "qualificador": "",
+          "qualificadores": [],
+          "numero": "sing",
+          "apelido_cliente": "Espelho",
+          "apelido_override": "",
+          "termo_novo": true,
+          "so3d": false,
+          "subparte_de": "",
+          "tipo": "E",
+          "materia_prima": {
+            "familia": "Espelho",
+            "materia": ""
+          },
+          "materias_primas": [
+            {
+              "familia": "Espelho",
+              "materia": ""
+            }
+          ],
+          "materia_prima_herdada": false,
+          "material_id": "ART_E_Espelho",
+          "configuravel": true,
+          "entra_3d": true,
+          "mesh_final": "00128044",
+          "tecido": false,
+          "botao_sem_desm": "Espelho",
+          "botao_com_desm": "Espelho",
+          "metragem_desm": "",
+          "acessorio": false,
+          "acessorio_obrigatorio": null,
+          "acessorio_acabamentos": [],
+          "acessorio_fixo": false,
+          "acessorio_botao_pai": "",
+          "acessorio_opcoes": [],
+          "par_segue": null
+        }
+      ]
+    },
+    {
+      "linha": "Artefacto & Beach",
       "cod_est": "07129418",
       "id": "",
       "nome": "POLTRONA GAP - OUTDOOR - 114 X 093.5 X 072 H",
@@ -12185,1398 +13762,6 @@
           "configuravel": false,
           "entra_3d": true,
           "mesh_final": "07132222",
-          "tecido": false,
-          "botao_sem_desm": "",
-          "botao_com_desm": "",
-          "metragem_desm": "",
-          "acessorio": false,
-          "acessorio_obrigatorio": null,
-          "acessorio_acabamentos": [],
-          "acessorio_fixo": false,
-          "acessorio_botao_pai": "",
-          "acessorio_opcoes": [],
-          "par_segue": null
-        }
-      ]
-    },
-    {
-      "linha": "Artefacto & Beach",
-      "cod_est": "07131248",
-      "id": "",
-      "nome": "SOFA JAEN - ENCOSTO DIREITO - OUTDOOR - 268 X 119 X 072 H",
-      "familia": "JAEN",
-      "classe": "SOFA",
-      "marca": "BEACH",
-      "natureza": "estrutura_estofado",
-      "ref": true,
-      "ok_fd": false,
-      "ok_3d": true,
-      "ok_revisado": false,
-      "animacao": false,
-      "qt_meshes": 1,
-      "qt_materiais_art": 4,
-      "qt_botoes_sem": 2,
-      "qt_botoes_com": 3,
-      "tecido_desmembravel": false,
-      "acabamento_resumo": "Complementar: Pé | Tecido: Assento, Encosto | Acessório: Capa | Pré-definido: Deslizador, Espaçador",
-      "obs_cotas": "",
-      "obs_restr_tecido": "",
-      "obs_confeccao": "",
-      "obs_nao_acompanha": "",
-      "obs_outras": "",
-      "obs_custom": "",
-      "obs_original": "",
-      "meshes": [
-        {
-          "nome": "07131248",
-          "partes": [
-            "Pé",
-            "Assento",
-            "Encosto",
-            "Deslizador",
-            "Capa",
-            "Espaçador"
-          ]
-        }
-      ],
-      "botoes_sem_desm": [
-        {
-          "apelido": "Pés",
-          "partes": [
-            "Pé"
-          ]
-        },
-        {
-          "apelido": "Assento e Encosto",
-          "partes": [
-            "Assento",
-            "Encosto"
-          ]
-        }
-      ],
-      "botoes_com_desm": [
-        {
-          "apelido": "Pés",
-          "metragem": "",
-          "partes": [
-            "Pé"
-          ]
-        },
-        {
-          "apelido": "Assento",
-          "metragem": "",
-          "partes": [
-            "Assento"
-          ]
-        },
-        {
-          "apelido": "Encosto",
-          "metragem": "",
-          "partes": [
-            "Encosto"
-          ]
-        }
-      ],
-      "bloco_3d": {
-        "papel": "master",
-        "base_codest": "07131248",
-        "duplicar_renomear": false,
-        "obs": ""
-      },
-      "glb_multiplos": {
-        "qtd": 1,
-        "variantes": []
-      },
-      "partes": [
-        {
-          "ordem": 1,
-          "nome_parte": "Pé",
-          "termo": "Pé",
-          "qualificador": "",
-          "qualificadores": [],
-          "numero": "plur",
-          "apelido_cliente": "Pés",
-          "apelido_override": "",
-          "termo_novo": false,
-          "so3d": false,
-          "subparte_de": "",
-          "tipo": "C",
-          "materia_prima": {
-            "familia": "Madeira",
-            "materia": "Teca"
-          },
-          "materias_primas": [
-            {
-              "familia": "Madeira",
-              "materia": "Teca"
-            }
-          ],
-          "materia_prima_herdada": false,
-          "material_id": "ART_C_Pe",
-          "configuravel": true,
-          "entra_3d": true,
-          "mesh_final": "07131248",
-          "tecido": false,
-          "botao_sem_desm": "Pés",
-          "botao_com_desm": "Pés",
-          "metragem_desm": "",
-          "acessorio": false,
-          "acessorio_obrigatorio": null,
-          "acessorio_acabamentos": [],
-          "acessorio_fixo": false,
-          "acessorio_botao_pai": "",
-          "acessorio_opcoes": [],
-          "par_segue": null
-        },
-        {
-          "ordem": 2,
-          "nome_parte": "Assento",
-          "termo": "Assento",
-          "qualificador": "",
-          "qualificadores": [],
-          "numero": "sing",
-          "apelido_cliente": "Assento",
-          "apelido_override": "",
-          "termo_novo": false,
-          "so3d": false,
-          "subparte_de": "",
-          "tipo": "T",
-          "materia_prima": {
-            "familia": "Tecido",
-            "materia": ""
-          },
-          "materias_primas": [
-            {
-              "familia": "Tecido",
-              "materia": ""
-            }
-          ],
-          "materia_prima_herdada": false,
-          "material_id": "ART_T_Assento",
-          "configuravel": true,
-          "entra_3d": true,
-          "mesh_final": "07131248",
-          "tecido": true,
-          "botao_sem_desm": "Assento e Encosto",
-          "botao_com_desm": "Assento",
-          "metragem_desm": "",
-          "acessorio": false,
-          "acessorio_obrigatorio": null,
-          "acessorio_acabamentos": [],
-          "acessorio_fixo": false,
-          "acessorio_botao_pai": "",
-          "acessorio_opcoes": [],
-          "par_segue": null
-        },
-        {
-          "ordem": 3,
-          "nome_parte": "Encosto",
-          "termo": "Encosto",
-          "qualificador": "",
-          "qualificadores": [],
-          "numero": "sing",
-          "apelido_cliente": "Encosto",
-          "apelido_override": "",
-          "termo_novo": false,
-          "so3d": false,
-          "subparte_de": "",
-          "tipo": "T",
-          "materia_prima": {
-            "familia": "Tecido",
-            "materia": ""
-          },
-          "materias_primas": [
-            {
-              "familia": "Tecido",
-              "materia": ""
-            }
-          ],
-          "materia_prima_herdada": false,
-          "material_id": "ART_T_Encosto",
-          "configuravel": true,
-          "entra_3d": true,
-          "mesh_final": "07131248",
-          "tecido": true,
-          "botao_sem_desm": "Assento e Encosto",
-          "botao_com_desm": "Encosto",
-          "metragem_desm": "",
-          "acessorio": false,
-          "acessorio_obrigatorio": null,
-          "acessorio_acabamentos": [],
-          "acessorio_fixo": false,
-          "acessorio_botao_pai": "",
-          "acessorio_opcoes": [],
-          "par_segue": null
-        },
-        {
-          "ordem": 4,
-          "nome_parte": "Deslizador",
-          "termo": "Deslizador",
-          "qualificador": "",
-          "qualificadores": [],
-          "numero": "plur",
-          "apelido_cliente": "Deslizadores",
-          "apelido_override": "",
-          "termo_novo": false,
-          "so3d": false,
-          "subparte_de": "",
-          "tipo": "PD",
-          "materia_prima": {
-            "familia": "Metal",
-            "materia": "Aço Inox"
-          },
-          "materias_primas": [
-            {
-              "familia": "Metal",
-              "materia": "Aço Inox"
-            }
-          ],
-          "materia_prima_herdada": false,
-          "material_id": "PD_Deslizador",
-          "configuravel": false,
-          "entra_3d": true,
-          "mesh_final": "07131248",
-          "tecido": false,
-          "botao_sem_desm": "",
-          "botao_com_desm": "",
-          "metragem_desm": "",
-          "acessorio": false,
-          "acessorio_obrigatorio": null,
-          "acessorio_acabamentos": [],
-          "acessorio_fixo": false,
-          "acessorio_botao_pai": "",
-          "acessorio_opcoes": [],
-          "par_segue": null
-        },
-        {
-          "ordem": 5,
-          "nome_parte": "Capa",
-          "termo": "Capa",
-          "qualificador": "",
-          "qualificadores": [],
-          "numero": "sing",
-          "apelido_cliente": "Capa",
-          "apelido_override": "Capa",
-          "termo_novo": false,
-          "so3d": false,
-          "subparte_de": "",
-          "tipo": "ACS",
-          "materia_prima": {
-            "familia": "",
-            "materia": ""
-          },
-          "materias_primas": [],
-          "materia_prima_herdada": false,
-          "material_id": "",
-          "configuravel": false,
-          "entra_3d": false,
-          "mesh_final": "",
-          "tecido": false,
-          "botao_sem_desm": "",
-          "botao_com_desm": "",
-          "metragem_desm": "",
-          "acessorio": true,
-          "acessorio_obrigatorio": null,
-          "acessorio_acabamentos": [],
-          "acessorio_fixo": false,
-          "acessorio_botao_pai": "Capa",
-          "acessorio_opcoes": [
-            {
-              "rotulo": "CAPA AVULSA",
-              "cod_est": "07146323",
-              "medida": "268 X 119 X 072",
-              "familia": "Capa",
-              "entra_3d": false,
-              "acabamentos": [
-                {
-                  "materia": "CAPA AVULSA",
-                  "tipo": "fixo",
-                  "configuravel": false
-                }
-              ],
-              "acabamento": "fixo",
-              "material_id": "",
-              "mesh": "",
-              "textura_fixa": "",
-              "botao": "CAPA AVULSA",
-              "padrao": true,
-              "id": ""
-            }
-          ],
-          "par_segue": null
-        },
-        {
-          "ordem": 6,
-          "nome_parte": "Espaçador",
-          "termo": "Espaçador",
-          "qualificador": "",
-          "qualificadores": [],
-          "numero": "sing",
-          "apelido_cliente": "Espaçador",
-          "apelido_override": "",
-          "termo_novo": false,
-          "so3d": false,
-          "subparte_de": "",
-          "tipo": "PD",
-          "materia_prima": {
-            "familia": "Metal",
-            "materia": "Aço Inox"
-          },
-          "materias_primas": [
-            {
-              "familia": "Metal",
-              "materia": "Aço Inox"
-            }
-          ],
-          "materia_prima_herdada": false,
-          "material_id": "PD_Espacador",
-          "configuravel": false,
-          "entra_3d": true,
-          "mesh_final": "07131248",
-          "tecido": false,
-          "botao_sem_desm": "",
-          "botao_com_desm": "",
-          "metragem_desm": "",
-          "acessorio": false,
-          "acessorio_obrigatorio": null,
-          "acessorio_acabamentos": [],
-          "acessorio_fixo": false,
-          "acessorio_botao_pai": "",
-          "acessorio_opcoes": [],
-          "par_segue": null
-        }
-      ]
-    },
-    {
-      "linha": "Artefacto & Beach",
-      "cod_est": "07131254",
-      "id": "",
-      "nome": "SOFA JAEN - ENCOSTO ESQUERDO - OUTDOOR -  268 X 119 X 072 H",
-      "familia": "JAEN",
-      "classe": "SOFA",
-      "marca": "BEACH",
-      "natureza": "estrutura_estofado",
-      "ref": false,
-      "ok_fd": false,
-      "ok_3d": true,
-      "ok_revisado": false,
-      "animacao": false,
-      "qt_meshes": 1,
-      "qt_materiais_art": 4,
-      "qt_botoes_sem": 2,
-      "qt_botoes_com": 3,
-      "tecido_desmembravel": false,
-      "acabamento_resumo": "Complementar: Pé | Tecido: Assento, Encosto | Acessório: Capa | Pré-definido: Deslizador, Espaçador",
-      "obs_cotas": "",
-      "obs_restr_tecido": "",
-      "obs_confeccao": "",
-      "obs_nao_acompanha": "",
-      "obs_outras": "",
-      "obs_custom": "",
-      "obs_original": "",
-      "meshes": [
-        {
-          "nome": "07131254",
-          "partes": [
-            "Pé",
-            "Assento",
-            "Encosto",
-            "Deslizador",
-            "Capa",
-            "Espaçador"
-          ]
-        }
-      ],
-      "botoes_sem_desm": [
-        {
-          "apelido": "Pés",
-          "partes": [
-            "Pé"
-          ]
-        },
-        {
-          "apelido": "Assento e Encosto",
-          "partes": [
-            "Assento",
-            "Encosto"
-          ]
-        }
-      ],
-      "botoes_com_desm": [
-        {
-          "apelido": "Pés",
-          "metragem": "",
-          "partes": [
-            "Pé"
-          ]
-        },
-        {
-          "apelido": "Assento",
-          "metragem": "",
-          "partes": [
-            "Assento"
-          ]
-        },
-        {
-          "apelido": "Encosto",
-          "metragem": "",
-          "partes": [
-            "Encosto"
-          ]
-        }
-      ],
-      "bloco_3d": {
-        "papel": "copia",
-        "base_codest": "07131248",
-        "duplicar_renomear": true,
-        "obs": ""
-      },
-      "glb_multiplos": {
-        "qtd": 1,
-        "variantes": []
-      },
-      "partes": [
-        {
-          "ordem": 1,
-          "nome_parte": "Pé",
-          "termo": "Pé",
-          "qualificador": "",
-          "qualificadores": [],
-          "numero": "plur",
-          "apelido_cliente": "Pés",
-          "apelido_override": "",
-          "termo_novo": false,
-          "so3d": false,
-          "subparte_de": "",
-          "tipo": "C",
-          "materia_prima": {
-            "familia": "Madeira",
-            "materia": "Teca"
-          },
-          "materias_primas": [
-            {
-              "familia": "Madeira",
-              "materia": "Teca"
-            }
-          ],
-          "materia_prima_herdada": false,
-          "material_id": "ART_C_Pe",
-          "configuravel": true,
-          "entra_3d": true,
-          "mesh_final": "07131254",
-          "tecido": false,
-          "botao_sem_desm": "Pés",
-          "botao_com_desm": "Pés",
-          "metragem_desm": "",
-          "acessorio": false,
-          "acessorio_obrigatorio": null,
-          "acessorio_acabamentos": [],
-          "acessorio_fixo": false,
-          "acessorio_botao_pai": "",
-          "acessorio_opcoes": [],
-          "par_segue": null
-        },
-        {
-          "ordem": 2,
-          "nome_parte": "Assento",
-          "termo": "Assento",
-          "qualificador": "",
-          "qualificadores": [],
-          "numero": "sing",
-          "apelido_cliente": "Assento",
-          "apelido_override": "",
-          "termo_novo": false,
-          "so3d": false,
-          "subparte_de": "",
-          "tipo": "T",
-          "materia_prima": {
-            "familia": "Tecido",
-            "materia": ""
-          },
-          "materias_primas": [
-            {
-              "familia": "Tecido",
-              "materia": ""
-            }
-          ],
-          "materia_prima_herdada": false,
-          "material_id": "ART_T_Assento",
-          "configuravel": true,
-          "entra_3d": true,
-          "mesh_final": "07131254",
-          "tecido": true,
-          "botao_sem_desm": "Assento e Encosto",
-          "botao_com_desm": "Assento",
-          "metragem_desm": "",
-          "acessorio": false,
-          "acessorio_obrigatorio": null,
-          "acessorio_acabamentos": [],
-          "acessorio_fixo": false,
-          "acessorio_botao_pai": "",
-          "acessorio_opcoes": [],
-          "par_segue": null
-        },
-        {
-          "ordem": 3,
-          "nome_parte": "Encosto",
-          "termo": "Encosto",
-          "qualificador": "",
-          "qualificadores": [],
-          "numero": "sing",
-          "apelido_cliente": "Encosto",
-          "apelido_override": "",
-          "termo_novo": false,
-          "so3d": false,
-          "subparte_de": "",
-          "tipo": "T",
-          "materia_prima": {
-            "familia": "Tecido",
-            "materia": ""
-          },
-          "materias_primas": [
-            {
-              "familia": "Tecido",
-              "materia": ""
-            }
-          ],
-          "materia_prima_herdada": false,
-          "material_id": "ART_T_Encosto",
-          "configuravel": true,
-          "entra_3d": true,
-          "mesh_final": "07131254",
-          "tecido": true,
-          "botao_sem_desm": "Assento e Encosto",
-          "botao_com_desm": "Encosto",
-          "metragem_desm": "",
-          "acessorio": false,
-          "acessorio_obrigatorio": null,
-          "acessorio_acabamentos": [],
-          "acessorio_fixo": false,
-          "acessorio_botao_pai": "",
-          "acessorio_opcoes": [],
-          "par_segue": null
-        },
-        {
-          "ordem": 4,
-          "nome_parte": "Deslizador",
-          "termo": "Deslizador",
-          "qualificador": "",
-          "qualificadores": [],
-          "numero": "plur",
-          "apelido_cliente": "Deslizadores",
-          "apelido_override": "",
-          "termo_novo": false,
-          "so3d": false,
-          "subparte_de": "",
-          "tipo": "PD",
-          "materia_prima": {
-            "familia": "Metal",
-            "materia": "Aço Inox"
-          },
-          "materias_primas": [
-            {
-              "familia": "Metal",
-              "materia": "Aço Inox"
-            }
-          ],
-          "materia_prima_herdada": false,
-          "material_id": "PD_Deslizador",
-          "configuravel": false,
-          "entra_3d": true,
-          "mesh_final": "07131254",
-          "tecido": false,
-          "botao_sem_desm": "",
-          "botao_com_desm": "",
-          "metragem_desm": "",
-          "acessorio": false,
-          "acessorio_obrigatorio": null,
-          "acessorio_acabamentos": [],
-          "acessorio_fixo": false,
-          "acessorio_botao_pai": "",
-          "acessorio_opcoes": [],
-          "par_segue": null
-        },
-        {
-          "ordem": 5,
-          "nome_parte": "Capa",
-          "termo": "Capa",
-          "qualificador": "",
-          "qualificadores": [],
-          "numero": "sing",
-          "apelido_cliente": "Capa",
-          "apelido_override": "Capa",
-          "termo_novo": false,
-          "so3d": false,
-          "subparte_de": "",
-          "tipo": "ACS",
-          "materia_prima": {
-            "familia": "",
-            "materia": ""
-          },
-          "materias_primas": [],
-          "materia_prima_herdada": false,
-          "material_id": "",
-          "configuravel": false,
-          "entra_3d": false,
-          "mesh_final": "",
-          "tecido": false,
-          "botao_sem_desm": "",
-          "botao_com_desm": "",
-          "metragem_desm": "",
-          "acessorio": true,
-          "acessorio_obrigatorio": null,
-          "acessorio_acabamentos": [],
-          "acessorio_fixo": false,
-          "acessorio_botao_pai": "Capa",
-          "acessorio_opcoes": [
-            {
-              "rotulo": "CAPA AVULSA",
-              "cod_est": "07146324",
-              "medida": "268 X 119 X 072",
-              "familia": "Capa",
-              "entra_3d": false,
-              "acabamentos": [
-                {
-                  "materia": "CAPA AVULSA",
-                  "tipo": "fixo",
-                  "configuravel": false
-                }
-              ],
-              "acabamento": "fixo",
-              "material_id": "",
-              "mesh": "",
-              "textura_fixa": "",
-              "botao": "CAPA AVULSA",
-              "padrao": true,
-              "id": ""
-            }
-          ],
-          "par_segue": null
-        },
-        {
-          "ordem": 6,
-          "nome_parte": "Espaçador",
-          "termo": "Espaçador",
-          "qualificador": "",
-          "qualificadores": [],
-          "numero": "sing",
-          "apelido_cliente": "Espaçador",
-          "apelido_override": "",
-          "termo_novo": false,
-          "so3d": false,
-          "subparte_de": "",
-          "tipo": "PD",
-          "materia_prima": {
-            "familia": "Metal",
-            "materia": "Aço Inox"
-          },
-          "materias_primas": [
-            {
-              "familia": "Metal",
-              "materia": "Aço Inox"
-            }
-          ],
-          "materia_prima_herdada": false,
-          "material_id": "PD_Espacador",
-          "configuravel": false,
-          "entra_3d": true,
-          "mesh_final": "07131254",
-          "tecido": false,
-          "botao_sem_desm": "",
-          "botao_com_desm": "",
-          "metragem_desm": "",
-          "acessorio": false,
-          "acessorio_obrigatorio": null,
-          "acessorio_acabamentos": [],
-          "acessorio_fixo": false,
-          "acessorio_botao_pai": "",
-          "acessorio_opcoes": [],
-          "par_segue": null
-        }
-      ]
-    },
-    {
-      "linha": "Artefacto & Beach",
-      "cod_est": "07131A11",
-      "id": "",
-      "nome": "SOFA JAEN - CENTRAL - OUTDOOR - 122.5 X 089 X 072 H",
-      "familia": "JAEN",
-      "classe": "SOFA",
-      "marca": "BEACH",
-      "natureza": "estrutura_estofado",
-      "ref": false,
-      "ok_fd": false,
-      "ok_3d": true,
-      "ok_revisado": false,
-      "animacao": false,
-      "qt_meshes": 1,
-      "qt_materiais_art": 4,
-      "qt_botoes_sem": 2,
-      "qt_botoes_com": 3,
-      "tecido_desmembravel": false,
-      "acabamento_resumo": "Complementar: Pé | Tecido: Assento, Encosto | Acessório: Capa | Pré-definido: Deslizador, Espaçador",
-      "obs_cotas": "",
-      "obs_restr_tecido": "",
-      "obs_confeccao": "",
-      "obs_nao_acompanha": "",
-      "obs_outras": "",
-      "obs_custom": "",
-      "obs_original": "",
-      "meshes": [
-        {
-          "nome": "07131A11",
-          "partes": [
-            "Pé",
-            "Assento",
-            "Encosto",
-            "Deslizador",
-            "Capa",
-            "Espaçador"
-          ]
-        }
-      ],
-      "botoes_sem_desm": [
-        {
-          "apelido": "Pés",
-          "partes": [
-            "Pé"
-          ]
-        },
-        {
-          "apelido": "Assento e Encosto",
-          "partes": [
-            "Assento",
-            "Encosto"
-          ]
-        }
-      ],
-      "botoes_com_desm": [
-        {
-          "apelido": "Pés",
-          "metragem": "",
-          "partes": [
-            "Pé"
-          ]
-        },
-        {
-          "apelido": "Assento",
-          "metragem": "",
-          "partes": [
-            "Assento"
-          ]
-        },
-        {
-          "apelido": "Encosto",
-          "metragem": "",
-          "partes": [
-            "Encosto"
-          ]
-        }
-      ],
-      "bloco_3d": {
-        "papel": "master",
-        "base_codest": "07131A11",
-        "duplicar_renomear": false,
-        "obs": ""
-      },
-      "glb_multiplos": {
-        "qtd": 1,
-        "variantes": []
-      },
-      "partes": [
-        {
-          "ordem": 1,
-          "nome_parte": "Pé",
-          "termo": "Pé",
-          "qualificador": "",
-          "qualificadores": [],
-          "numero": "plur",
-          "apelido_cliente": "Pés",
-          "apelido_override": "",
-          "termo_novo": false,
-          "so3d": false,
-          "subparte_de": "",
-          "tipo": "C",
-          "materia_prima": {
-            "familia": "Madeira",
-            "materia": "Teca"
-          },
-          "materias_primas": [
-            {
-              "familia": "Madeira",
-              "materia": "Teca"
-            }
-          ],
-          "materia_prima_herdada": false,
-          "material_id": "ART_C_Pe",
-          "configuravel": true,
-          "entra_3d": true,
-          "mesh_final": "07131A11",
-          "tecido": false,
-          "botao_sem_desm": "Pés",
-          "botao_com_desm": "Pés",
-          "metragem_desm": "",
-          "acessorio": false,
-          "acessorio_obrigatorio": null,
-          "acessorio_acabamentos": [],
-          "acessorio_fixo": false,
-          "acessorio_botao_pai": "",
-          "acessorio_opcoes": [],
-          "par_segue": null
-        },
-        {
-          "ordem": 2,
-          "nome_parte": "Assento",
-          "termo": "Assento",
-          "qualificador": "",
-          "qualificadores": [],
-          "numero": "sing",
-          "apelido_cliente": "Assento",
-          "apelido_override": "",
-          "termo_novo": false,
-          "so3d": false,
-          "subparte_de": "",
-          "tipo": "T",
-          "materia_prima": {
-            "familia": "Tecido",
-            "materia": ""
-          },
-          "materias_primas": [
-            {
-              "familia": "Tecido",
-              "materia": ""
-            }
-          ],
-          "materia_prima_herdada": false,
-          "material_id": "ART_T_Assento",
-          "configuravel": true,
-          "entra_3d": true,
-          "mesh_final": "07131A11",
-          "tecido": true,
-          "botao_sem_desm": "Assento e Encosto",
-          "botao_com_desm": "Assento",
-          "metragem_desm": "",
-          "acessorio": false,
-          "acessorio_obrigatorio": null,
-          "acessorio_acabamentos": [],
-          "acessorio_fixo": false,
-          "acessorio_botao_pai": "",
-          "acessorio_opcoes": [],
-          "par_segue": null
-        },
-        {
-          "ordem": 3,
-          "nome_parte": "Encosto",
-          "termo": "Encosto",
-          "qualificador": "",
-          "qualificadores": [],
-          "numero": "sing",
-          "apelido_cliente": "Encosto",
-          "apelido_override": "",
-          "termo_novo": false,
-          "so3d": false,
-          "subparte_de": "",
-          "tipo": "T",
-          "materia_prima": {
-            "familia": "Tecido",
-            "materia": ""
-          },
-          "materias_primas": [
-            {
-              "familia": "Tecido",
-              "materia": ""
-            }
-          ],
-          "materia_prima_herdada": false,
-          "material_id": "ART_T_Encosto",
-          "configuravel": true,
-          "entra_3d": true,
-          "mesh_final": "07131A11",
-          "tecido": true,
-          "botao_sem_desm": "Assento e Encosto",
-          "botao_com_desm": "Encosto",
-          "metragem_desm": "",
-          "acessorio": false,
-          "acessorio_obrigatorio": null,
-          "acessorio_acabamentos": [],
-          "acessorio_fixo": false,
-          "acessorio_botao_pai": "",
-          "acessorio_opcoes": [],
-          "par_segue": null
-        },
-        {
-          "ordem": 4,
-          "nome_parte": "Deslizador",
-          "termo": "Deslizador",
-          "qualificador": "",
-          "qualificadores": [],
-          "numero": "plur",
-          "apelido_cliente": "Deslizadores",
-          "apelido_override": "",
-          "termo_novo": false,
-          "so3d": false,
-          "subparte_de": "",
-          "tipo": "PD",
-          "materia_prima": {
-            "familia": "Metal",
-            "materia": "Aço Inox"
-          },
-          "materias_primas": [
-            {
-              "familia": "Metal",
-              "materia": "Aço Inox"
-            }
-          ],
-          "materia_prima_herdada": false,
-          "material_id": "PD_Deslizador",
-          "configuravel": false,
-          "entra_3d": true,
-          "mesh_final": "07131A11",
-          "tecido": false,
-          "botao_sem_desm": "",
-          "botao_com_desm": "",
-          "metragem_desm": "",
-          "acessorio": false,
-          "acessorio_obrigatorio": null,
-          "acessorio_acabamentos": [],
-          "acessorio_fixo": false,
-          "acessorio_botao_pai": "",
-          "acessorio_opcoes": [],
-          "par_segue": null
-        },
-        {
-          "ordem": 5,
-          "nome_parte": "Capa",
-          "termo": "Capa",
-          "qualificador": "",
-          "qualificadores": [],
-          "numero": "sing",
-          "apelido_cliente": "Capa",
-          "apelido_override": "Capa",
-          "termo_novo": false,
-          "so3d": false,
-          "subparte_de": "",
-          "tipo": "ACS",
-          "materia_prima": {
-            "familia": "",
-            "materia": ""
-          },
-          "materias_primas": [],
-          "materia_prima_herdada": false,
-          "material_id": "",
-          "configuravel": false,
-          "entra_3d": false,
-          "mesh_final": "",
-          "tecido": false,
-          "botao_sem_desm": "",
-          "botao_com_desm": "",
-          "metragem_desm": "",
-          "acessorio": true,
-          "acessorio_obrigatorio": null,
-          "acessorio_acabamentos": [],
-          "acessorio_fixo": false,
-          "acessorio_botao_pai": "Capa",
-          "acessorio_opcoes": [
-            {
-              "rotulo": "CAPA AVULSA",
-              "cod_est": "07146229",
-              "medida": "122.5 X 089 X 072",
-              "familia": "Capa",
-              "entra_3d": false,
-              "acabamentos": [
-                {
-                  "materia": "CAPA AVULSA",
-                  "tipo": "fixo",
-                  "configuravel": false
-                }
-              ],
-              "acabamento": "fixo",
-              "material_id": "",
-              "mesh": "",
-              "textura_fixa": "",
-              "botao": "CAPA AVULSA",
-              "padrao": true,
-              "id": ""
-            }
-          ],
-          "par_segue": null
-        },
-        {
-          "ordem": 6,
-          "nome_parte": "Espaçador",
-          "termo": "Espaçador",
-          "qualificador": "",
-          "qualificadores": [],
-          "numero": "sing",
-          "apelido_cliente": "Espaçador",
-          "apelido_override": "",
-          "termo_novo": false,
-          "so3d": false,
-          "subparte_de": "",
-          "tipo": "PD",
-          "materia_prima": {
-            "familia": "Metal",
-            "materia": "Aço Inox"
-          },
-          "materias_primas": [
-            {
-              "familia": "Metal",
-              "materia": "Aço Inox"
-            }
-          ],
-          "materia_prima_herdada": false,
-          "material_id": "PD_Espacador",
-          "configuravel": false,
-          "entra_3d": true,
-          "mesh_final": "07131A11",
-          "tecido": false,
-          "botao_sem_desm": "",
-          "botao_com_desm": "",
-          "metragem_desm": "",
-          "acessorio": false,
-          "acessorio_obrigatorio": null,
-          "acessorio_acabamentos": [],
-          "acessorio_fixo": false,
-          "acessorio_botao_pai": "",
-          "acessorio_opcoes": [],
-          "par_segue": null
-        }
-      ]
-    },
-    {
-      "linha": "Artefacto & Beach",
-      "cod_est": "07131A34",
-      "id": "",
-      "nome": "SOFA JAEN - ENCOSTO INTEIRO - OUTDOOR - 268 X 119 X 072 H",
-      "familia": "JAEN",
-      "classe": "SOFA",
-      "marca": "BEACH",
-      "natureza": "estrutura_estofado",
-      "ref": false,
-      "ok_fd": false,
-      "ok_3d": true,
-      "ok_revisado": false,
-      "animacao": false,
-      "qt_meshes": 1,
-      "qt_materiais_art": 4,
-      "qt_botoes_sem": 2,
-      "qt_botoes_com": 3,
-      "tecido_desmembravel": false,
-      "acabamento_resumo": "Complementar: Pé | Tecido: Assento, Encosto | Acessório: Capa | Pré-definido: Deslizador, Espaçador",
-      "obs_cotas": "",
-      "obs_restr_tecido": "",
-      "obs_confeccao": "",
-      "obs_nao_acompanha": "",
-      "obs_outras": "",
-      "obs_custom": "",
-      "obs_original": "",
-      "meshes": [
-        {
-          "nome": "07131A34",
-          "partes": [
-            "Pé",
-            "Assento",
-            "Encosto",
-            "Deslizador",
-            "Capa",
-            "Espaçador"
-          ]
-        }
-      ],
-      "botoes_sem_desm": [
-        {
-          "apelido": "Pés",
-          "partes": [
-            "Pé"
-          ]
-        },
-        {
-          "apelido": "Assento e Encosto",
-          "partes": [
-            "Assento",
-            "Encosto"
-          ]
-        }
-      ],
-      "botoes_com_desm": [
-        {
-          "apelido": "Pés",
-          "metragem": "",
-          "partes": [
-            "Pé"
-          ]
-        },
-        {
-          "apelido": "Assento",
-          "metragem": "",
-          "partes": [
-            "Assento"
-          ]
-        },
-        {
-          "apelido": "Encosto",
-          "metragem": "",
-          "partes": [
-            "Encosto"
-          ]
-        }
-      ],
-      "bloco_3d": {
-        "papel": "copia",
-        "base_codest": "07131248",
-        "duplicar_renomear": true,
-        "obs": ""
-      },
-      "glb_multiplos": {
-        "qtd": 1,
-        "variantes": []
-      },
-      "partes": [
-        {
-          "ordem": 1,
-          "nome_parte": "Pé",
-          "termo": "Pé",
-          "qualificador": "",
-          "qualificadores": [],
-          "numero": "plur",
-          "apelido_cliente": "Pés",
-          "apelido_override": "",
-          "termo_novo": false,
-          "so3d": false,
-          "subparte_de": "",
-          "tipo": "C",
-          "materia_prima": {
-            "familia": "Madeira",
-            "materia": "Teca"
-          },
-          "materias_primas": [
-            {
-              "familia": "Madeira",
-              "materia": "Teca"
-            }
-          ],
-          "materia_prima_herdada": false,
-          "material_id": "ART_C_Pe",
-          "configuravel": true,
-          "entra_3d": true,
-          "mesh_final": "07131A34",
-          "tecido": false,
-          "botao_sem_desm": "Pés",
-          "botao_com_desm": "Pés",
-          "metragem_desm": "",
-          "acessorio": false,
-          "acessorio_obrigatorio": null,
-          "acessorio_acabamentos": [],
-          "acessorio_fixo": false,
-          "acessorio_botao_pai": "",
-          "acessorio_opcoes": [],
-          "par_segue": null
-        },
-        {
-          "ordem": 2,
-          "nome_parte": "Assento",
-          "termo": "Assento",
-          "qualificador": "",
-          "qualificadores": [],
-          "numero": "sing",
-          "apelido_cliente": "Assento",
-          "apelido_override": "",
-          "termo_novo": false,
-          "so3d": false,
-          "subparte_de": "",
-          "tipo": "T",
-          "materia_prima": {
-            "familia": "Tecido",
-            "materia": ""
-          },
-          "materias_primas": [
-            {
-              "familia": "Tecido",
-              "materia": ""
-            }
-          ],
-          "materia_prima_herdada": false,
-          "material_id": "ART_T_Assento",
-          "configuravel": true,
-          "entra_3d": true,
-          "mesh_final": "07131A34",
-          "tecido": true,
-          "botao_sem_desm": "Assento e Encosto",
-          "botao_com_desm": "Assento",
-          "metragem_desm": "",
-          "acessorio": false,
-          "acessorio_obrigatorio": null,
-          "acessorio_acabamentos": [],
-          "acessorio_fixo": false,
-          "acessorio_botao_pai": "",
-          "acessorio_opcoes": [],
-          "par_segue": null
-        },
-        {
-          "ordem": 3,
-          "nome_parte": "Encosto",
-          "termo": "Encosto",
-          "qualificador": "",
-          "qualificadores": [],
-          "numero": "sing",
-          "apelido_cliente": "Encosto",
-          "apelido_override": "",
-          "termo_novo": false,
-          "so3d": false,
-          "subparte_de": "",
-          "tipo": "T",
-          "materia_prima": {
-            "familia": "Tecido",
-            "materia": ""
-          },
-          "materias_primas": [
-            {
-              "familia": "Tecido",
-              "materia": ""
-            }
-          ],
-          "materia_prima_herdada": false,
-          "material_id": "ART_T_Encosto",
-          "configuravel": true,
-          "entra_3d": true,
-          "mesh_final": "07131A34",
-          "tecido": true,
-          "botao_sem_desm": "Assento e Encosto",
-          "botao_com_desm": "Encosto",
-          "metragem_desm": "",
-          "acessorio": false,
-          "acessorio_obrigatorio": null,
-          "acessorio_acabamentos": [],
-          "acessorio_fixo": false,
-          "acessorio_botao_pai": "",
-          "acessorio_opcoes": [],
-          "par_segue": null
-        },
-        {
-          "ordem": 4,
-          "nome_parte": "Deslizador",
-          "termo": "Deslizador",
-          "qualificador": "",
-          "qualificadores": [],
-          "numero": "plur",
-          "apelido_cliente": "Deslizadores",
-          "apelido_override": "",
-          "termo_novo": false,
-          "so3d": false,
-          "subparte_de": "",
-          "tipo": "PD",
-          "materia_prima": {
-            "familia": "Metal",
-            "materia": "Aço Inox"
-          },
-          "materias_primas": [
-            {
-              "familia": "Metal",
-              "materia": "Aço Inox"
-            }
-          ],
-          "materia_prima_herdada": false,
-          "material_id": "PD_Deslizador",
-          "configuravel": false,
-          "entra_3d": true,
-          "mesh_final": "07131A34",
-          "tecido": false,
-          "botao_sem_desm": "",
-          "botao_com_desm": "",
-          "metragem_desm": "",
-          "acessorio": false,
-          "acessorio_obrigatorio": null,
-          "acessorio_acabamentos": [],
-          "acessorio_fixo": false,
-          "acessorio_botao_pai": "",
-          "acessorio_opcoes": [],
-          "par_segue": null
-        },
-        {
-          "ordem": 5,
-          "nome_parte": "Capa",
-          "termo": "Capa",
-          "qualificador": "",
-          "qualificadores": [],
-          "numero": "sing",
-          "apelido_cliente": "Capa",
-          "apelido_override": "Capa",
-          "termo_novo": false,
-          "so3d": false,
-          "subparte_de": "",
-          "tipo": "ACS",
-          "materia_prima": {
-            "familia": "",
-            "materia": ""
-          },
-          "materias_primas": [],
-          "materia_prima_herdada": false,
-          "material_id": "",
-          "configuravel": false,
-          "entra_3d": false,
-          "mesh_final": "",
-          "tecido": false,
-          "botao_sem_desm": "",
-          "botao_com_desm": "",
-          "metragem_desm": "",
-          "acessorio": true,
-          "acessorio_obrigatorio": null,
-          "acessorio_acabamentos": [],
-          "acessorio_fixo": false,
-          "acessorio_botao_pai": "Capa",
-          "acessorio_opcoes": [
-            {
-              "rotulo": "CAPA AVULSA",
-              "cod_est": "07146358",
-              "medida": "268 X 119 X 072",
-              "familia": "Capa",
-              "entra_3d": false,
-              "acabamentos": [
-                {
-                  "materia": "CAPA AVULSA",
-                  "tipo": "fixo",
-                  "configuravel": false
-                }
-              ],
-              "acabamento": "fixo",
-              "material_id": "",
-              "mesh": "",
-              "textura_fixa": "",
-              "botao": "CAPA AVULSA",
-              "padrao": true,
-              "id": ""
-            }
-          ],
-          "par_segue": null
-        },
-        {
-          "ordem": 6,
-          "nome_parte": "Espaçador",
-          "termo": "Espaçador",
-          "qualificador": "",
-          "qualificadores": [],
-          "numero": "sing",
-          "apelido_cliente": "Espaçador",
-          "apelido_override": "",
-          "termo_novo": false,
-          "so3d": false,
-          "subparte_de": "",
-          "tipo": "PD",
-          "materia_prima": {
-            "familia": "Metal",
-            "materia": "Aço Inox"
-          },
-          "materias_primas": [
-            {
-              "familia": "Metal",
-              "materia": "Aço Inox"
-            }
-          ],
-          "materia_prima_herdada": false,
-          "material_id": "PD_Espacador",
-          "configuravel": false,
-          "entra_3d": true,
-          "mesh_final": "07131A34",
           "tecido": false,
           "botao_sem_desm": "",
           "botao_com_desm": "",
