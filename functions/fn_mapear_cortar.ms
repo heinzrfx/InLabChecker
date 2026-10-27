@@ -11,6 +11,8 @@
  Só geometria; detalhes no bloco da Parte 2, mais abaixo.
  Parte 3 (Tarefa 4, 27/10/2026): UV da peça com um Unfold3D só, escala por ilha e trama
  pela guia ou pela regra padrão (InLab_Cortar_UV). Detalhes no bloco da Parte 3.
+ Parte 4 (Tarefa 5, 27/10/2026): botão Cortar (InLab_Cortar), uma peça por vez, com pilha,
+ marcas e Ver UV. Detalhes no bloco da Parte 4.
  Spec: docs\superpowers\specs\2026-10-27-mapear-assistido-design.md
 */
 global INLAB_CORTAR_APPDATA_COSTURAS = 7301
@@ -104,6 +106,10 @@ fn InLab_Cortar_LerMarcas o =
    corte por vez até todos ficarem ligados.
  - Adjacência montada uma vez com polyop.getFaceEdges/getEdgeFaces/getEdgeVerts (nunca
    getFacesUsingEdge por aresta: travou o Max por 30 min no Painéis).
+ - Tarefa 5 (27/10/2026): depois do polyop.collapseDeadStructs de uma face morta (o Preparar
+   tira), o getEdgeFaces das arestas dela ainda lista o índice antigo, que agora é outra
+   face ("array index 0" no InLab_Cortar_IdsCanto). Paineis e IdsCanto só aceitam a face
+   que tem a aresta no getFaceEdges.
 --------------------------------------------------------------------------------------- */
 global InLab_Paineis_Elementos, InLab_Paineis_Regioes, InLab_Paineis_PosMundo, InLab_Paineis_EixoAnel
 global InLab_Mapear_PolyDe
@@ -311,7 +317,19 @@ fn InLab_Cortar_Paineis o corpo costuras =
             for e in faceEdges[f] do arestas[e] = true
         )
     )
-    for e in arestas do ( edgeFaces[e] = polyop.getEdgeFaces po e; eVerts[e] = polyop.getEdgeVerts po e )
+    -- Tarefa 5: depois do collapseDeadStructs de uma face morta, as arestas dela ainda listam o
+    -- índice antigo (agora outra face) no getEdgeFaces: só fica a face que tem a aresta
+    for e in arestas do
+    (
+        local fs = #()
+        for g in (polyop.getEdgeFaces po e) do
+        (
+            local eg = if faceEdges[g] != undefined then faceEdges[g] else polyop.getFaceEdges po g
+            if (findItem eg e) > 0 do append fs g
+        )
+        edgeFaces[e] = fs
+        eVerts[e] = polyop.getEdgeVerts po e
+    )
     local adj = #(faceEdges, edgeFaces)
     local posM = InLab_Paineis_PosMundo o corpo
     local nomePeca = o.name
@@ -394,10 +412,13 @@ fn InLab_Cortar_IdsCanto po fs cortes =
     )
     local pai = for i = 1 to n collect i
     local arestas = #{}
-    for f in lista do for e in (polyop.getFaceEdges po f) do arestas[e] = true
+    local fEdges = #()
+    fEdges.count = nF
+    for f in lista do ( fEdges[f] = polyop.getFaceEdges po f; for e in fEdges[f] do arestas[e] = true )
     for e in arestas where not cortes[e] do
     (
-        local gs = for g in (polyop.getEdgeFaces po e) where ini[g] != undefined collect g
+        -- Tarefa 5: face que não tem a aresta (índice velho depois do collapseDeadStructs) fica fora
+        local gs = for g in (polyop.getEdgeFaces po e) where ini[g] != undefined and (findItem fEdges[g] e) > 0 collect g
         if gs.count == 2 do
             for v in (polyop.getEdgeVerts po e) do
             (
@@ -749,4 +770,256 @@ fn InLab_Cortar_UV o pn escPorPainel guias =
         InLab_Cortar_Orientar o po posM uvs subs[i] dir medir:medir
     )
     #(uvs, mapa, nGuia, nRegra)
+)
+
+/* ---------------------------------------------------------------------------------------
+ Parte 4 (Tarefa 5, 27/10/2026): botão Cortar. Spec seções 4, 5.1, 5.2, 6 e 7.
+ Uma peça por vez. Guardas (#warn, nada muda): sem produto; nenhuma ou mais de uma peça
+ (instâncias da mesma peça contam como uma); sem RWF; base que não é Editable_Poly (a
+ conversão renumeraria as arestas selecionadas); não é tecido; sem costuras (seleção de
+ arestas da BASE vazia e nenhuma marca guardada; seleção num Edit_Poly do stack não vale).
+ Orquestração como o InLab_Paineis faz para uma peça: InLab_Mapear_CanaisIni/TamIni,
+ grupos abertos, undo "InLab Cortar", varredura dos InLab_tmp_*, pilha InLab_PilhaPaineis.
+ - As costuras vão para a seleção de arestas da base ANTES do InLab_Paineis_Preparar: o
+   collapseDeadStructs da face morta renumera as faces e mantém a seleção (sonda de 27/10),
+   então as costuras são relidas da seleção depois do Preparar.
+ - Corpo = faces dos IDs de tecido menos os elementos de vivo (InLab_Paineis_EhVivo), a mesma
+   regra do passo 3 de InLab_Paineis_Peca.
+ - cm por ID: TODOS os IDs de prep.tec vão no refeitasCmPorID (o Aplicar põe 1.0 no que
+   faltar); o painel que mistura IDs usa a escala do ID com mais faces nele.
+ - rec.marcas = marcas de antes do Cortar, ou #nenhuma (não havia marca). O Desfazer
+   Painéis e o InLab_Paineis_RestaurarPeca devolvem (InLab_Paineis_VoltarMarcas).
+ - Marcas novas = costuras + guias de antes. Seleção no fim = costuras + cortes automáticos
+   (piques são costuras, ficam selecionados). Ver UV ligado na peça.
+--------------------------------------------------------------------------------------- */
+global InLab_Cortar, InLab_Cortar_SelecaoArestas, InLab_Cortar_Corpo, InLab_Cortar_Peca
+global InLab_Paineis_Preparar, InLab_Paineis_Aplicar, InLab_Paineis_DevolverBase
+global InLab_Paineis_EhTecido, InLab_Paineis_EhVivo, InLab_Paineis_Escala, InLab_Paineis_UTil, InLab_Paineis_Girada
+global InLab_Mapear_FacesDoID, InLab_Mapear_SemRWF, InLab_Mapear_ZerarCache, InLab_Mapear_Num
+global InLab_Mapear_CanaisIni, InLab_Mapear_TamIni, InLab_Mapear_Bitmaps, InLab_Mapear_Mat, InLab_RWF_CanalBitmap
+global InLab_Mapear_EhRWF, InLab_Mapear_CanalModUV, InLab_Mapear_DensRWF, InLab_Mapear_Grupos
+global InLab_Mapear_BitmapDifuso, InLab_Mapear_TamDoBitmap
+global InLab_PilhaPaineis, InLab_VerUV_Ligar, InLab_EhGeometria
+global InLab_Instancias, InLab_DeduplicarInstancias, InLab_AbrirGruposAcima, InLab_FecharGrupos
+
+-- seleção de arestas da base Editable Poly (#{} em outra classe)
+fn InLab_Cortar_SelecaoArestas o =
+(
+    if isValidNode o and (classof o.baseobject) == Editable_Poly then polyop.getEdgeSelection o.baseobject else #{}
+)
+
+-- faces dos IDs de tecido menos os elementos de vivo: #(corpo, nº de vivos)
+fn InLab_Cortar_Corpo o tec =
+(
+    local po = o.baseobject
+    local tecFaces = #{}
+    for id in tec do tecFaces += InLab_Mapear_FacesDoID o id
+    local corpo = copy tecFaces
+    local nVivos = 0
+    for el in (InLab_Paineis_Elementos po tecFaces) do
+        if (InLab_Paineis_EhVivo o el)[1] do ( corpo -= el; nVivos += 1 )
+    #(corpo, nVivos)
+)
+
+-- uma peça já conferida pelas guardas. costuras: bitarray; marcasAntes: InLab_CortarMarcas ou
+-- undefined. Devolve #(#refeita, MapearRecord, painéis) ou #(#pulada, undefined, undefined).
+fn InLab_Cortar_Peca o produto costuras marcasAntes rodada =
+(
+    local res = #(#pulada, undefined, undefined)
+    local t0 = timeStamp()
+    local po = o.baseobject
+    local selAntes = polyop.getEdgeSelection po
+    polyop.setEdgeSelection po costuras
+    local prep = InLab_Paineis_Preparar o produto
+    if prep == undefined do
+    (
+        polyop.setEdgeSelection po selAntes
+        return res
+    )
+    -- relida: o Preparar pode ter tirado face morta (a seleção acompanha a renumeração)
+    costuras = polyop.getEdgeSelection po
+    local tec = prep.tec
+    local cv = InLab_Cortar_Corpo o tec
+    local corpo = cv[1], nVivos = cv[2]
+    if corpo.isEmpty do
+    (
+        InLab_Log (o.name + ": só há vivo nas faces de tecido; peça como estava.") tipo:#warn
+        polyop.setEdgeSelection po selAntes
+        InLab_Paineis_DevolverBase o prep
+        return res
+    )
+    -- painéis
+    local tP = timeStamp()
+    local pn = InLab_Cortar_Paineis o corpo costuras
+    InLab_Log (o.name + ": " + pn.paineis.count as string + " painéis pelas costuras (" + costuras.numberSet as string +
+               " aresta(s)) em " + (InLab_Mapear_Num ((timeStamp() - tP) / 1000.0)) + " s.") tipo:#info
+    if not pn.piques.isEmpty do
+        InLab_Log (o.name + ": " + pn.piques.numberSet as string + " aresta(s) de costura são pique (abrem o UV sem separar painel).") tipo:#info
+    for reg in pn.paineis where reg.numberSet < 4 do
+        InLab_Log (o.name + ": painel minúsculo de " + reg.numberSet as string + " face(s) (costura mal fechada?); aberto como os outros.") tipo:#warn
+    -- escala por ID (todos os IDs de tecido) e por painel (o ID com mais faces nele)
+    local escPorID = #(), cmPorIDp = #()
+    for id in tec do
+    (
+        local e = InLab_Paineis_Escala o id
+        append escPorID e
+        append cmPorIDp (1.0 / (e * (InLab_Paineis_UTil o id)))
+    )
+    local escPainel = #()
+    for reg in pn.paineis do
+    (
+        local cont = for id in tec collect 0
+        for f in reg do
+        (
+            local k = findItem tec (polyop.getFaceMatID po f)
+            if k > 0 do cont[k] += 1
+        )
+        local kM = 1
+        for k = 2 to tec.count where cont[k] > cont[kM] do kM = k
+        append escPainel escPorID[kM]
+    )
+    -- UV (um Unfold3D) com as guias de antes
+    local guias = if marcasAntes != undefined then marcasAntes.guias else #()
+    local tU = timeStamp()
+    local uv = InLab_Cortar_UV o pn escPainel guias
+    InLab_Log (o.name + ": UV dos painéis (Unfold3D) em " + (InLab_Mapear_Num ((timeStamp() - tU) / 1000.0)) + " s.") tipo:#info
+    if uv == undefined do
+    (
+        InLab_Log (o.name + ": não gerei o UV dos painéis; peça como estava.") tipo:#warn
+        polyop.setEdgeSelection po selAntes
+        InLab_Paineis_DevolverBase o prep
+        return res
+    )
+    -- gravação
+    local tG = timeStamp()
+    local cmLista = #()
+    for k = 1 to tec.count do append cmLista #(tec[k], cmPorIDp[k])
+    local ap = InLab_Paineis_Aplicar o prep uv cmLista rodada
+    if ap[1] != #refeita do
+    (
+        polyop.setEdgeSelection po selAntes
+        InLab_Paineis_DevolverBase o prep
+        return res
+    )
+    local rec = ap[2]
+    rec.marcas = if marcasAntes != undefined then marcasAntes else #nenhuma
+    InLab_Cortar_GravarMarcas o (InLab_CortarMarcas costuras:costuras guias:guias)
+    polyop.setEdgeSelection po (costuras + pn.cortesAuto)
+    InLab_Log (o.name + ": gravação do canal 1 e das marcas em " + (InLab_Mapear_Num ((timeStamp() - tG) / 1000.0)) + " s.") tipo:#info
+    -- resumo (spec 7)
+    local txtCm = InLab_Mapear_Num cmPorIDp[1]
+    local iguais = true
+    for k = 2 to cmPorIDp.count where (abs (cmPorIDp[k] / cmPorIDp[1] - 1.0)) > 0.01 do iguais = false
+    if not iguais do
+    (
+        txtCm = ""
+        for k = 1 to tec.count do txtCm += (if k > 1 then ", " else "") + "ID " + tec[k] as string + " " + (InLab_Mapear_Num cmPorIDp[k])
+    )
+    InLab_Log (o.name + ": " + pn.paineis.count as string + " painéis pelas costuras (" + pn.piques.numberSet as string + " piques), " +
+               uv[3] as string + " com guia, " + uv[4] as string + " pela regra; " + txtCm + " cm por tile" +
+               (if nVivos > 0 then "; " + nVivos as string + " vivo(s) como estavam" else "") +
+               " (em " + (InLab_Mapear_Num ((timeStamp() - t0) / 1000.0)) + " s).") tipo:#ok
+    #(#refeita, rec, pn)
+)
+
+-- Entrada do botão Cortar: nº de peças cortadas (0 ou 1).
+fn InLab_Cortar objs produto =
+(
+    if produto == undefined do
+    (
+        InLab_Log "Cortar: nenhum produto carregado; escolha o produto antes. Nada mudou." tipo:#warn
+        return 0
+    )
+    local geo = if objs == undefined then #() else (for o in objs where isValidNode o and InLab_EhGeometria o collect o)
+    local grs = InLab_DeduplicarInstancias geo
+    if grs.count != 1 do
+    (
+        InLab_Log "Cortar: selecione uma peça de tecido só." tipo:#warn
+        return 0
+    )
+    local o = grs[1].no
+    if InLab_Mapear_SemRWF o do
+    (
+        InLab_Log (o.name + ": tem Real-World ou Triplanar e não passou pelo Real World Fix; rode o Real World Fix antes. Nada mudou.") tipo:#warn
+        return 0
+    )
+    if (classof o.baseobject) != Editable_Poly do
+    (
+        InLab_Log (o.name + ": converta a base para Editable Poly e marque as costuras.") tipo:#warn
+        return 0
+    )
+    if not (InLab_Paineis_EhTecido o produto) do
+    (
+        InLab_Log (o.name + ": Cortar é só para tecido; peça como estava.") tipo:#warn
+        return 0
+    )
+    -- costuras: a seleção de arestas da base, senão as guardadas (as marcas de antes valem para as guias)
+    local marcasAntes = InLab_Cortar_LerMarcas o
+    local costuras = InLab_Cortar_SelecaoArestas o
+    local deOnde = "da seleção"
+    if costuras.isEmpty and marcasAntes != undefined do ( costuras = copy marcasAntes.costuras; deOnde = "guardadas" )
+    if costuras.isEmpty do
+    (
+        InLab_Log (o.name + ": selecione as arestas de costura.") tipo:#warn
+        return 0
+    )
+    InLab_Log (o.name + ": cortando com " + costuras.numberSet as string + " aresta(s) de costura " + deOnde + ".") tipo:#info
+    local feitas = 0
+    InLab_Mapear_ZerarCache()
+    local rec = undefined
+    try
+    (
+        -- nós da rodada (as instâncias) e estado do início da rodada, como no Painéis
+        local rodada = InLab_Instancias o
+        InLab_Mapear_CanaisIni = #()
+        for n in rodada where (InLab_Mapear_Mat n) != undefined do
+            for b in (InLab_Mapear_Bitmaps (InLab_Mapear_Mat n)) where (for x in InLab_Mapear_CanaisIni where x[1] == b collect x).count == 0 do
+                append InLab_Mapear_CanaisIni #(b, InLab_RWF_CanalBitmap b)
+        InLab_Mapear_TamIni = #()
+        for m in o.modifiers where (InLab_Mapear_EhRWF m) do
+        (
+            local c = InLab_Mapear_CanalModUV m
+            local dn = InLab_Mapear_DensRWF o m
+            if c != undefined and dn != undefined do
+                for g in (InLab_Mapear_Grupos o) do
+                (
+                    local b = InLab_Mapear_BitmapDifuso g[2]
+                    if b != undefined and (InLab_Mapear_TamDoBitmap b) == undefined and (InLab_RWF_CanalBitmap b) == c do
+                        append InLab_Mapear_TamIni #(b, dn)
+                )
+        )
+        undo "InLab Cortar" on
+        (
+            for n in rodada where n != o do
+            (
+                InLab_Log (n.name + ": instância de " + o.name + ", recebe o mesmo corte" +
+                           (if (findItem geo n) > 0 then "." else " (fora da seleção).")) tipo:#info
+                if InLab_Paineis_Girada o n do
+                    InLab_Log (n.name + ": instância girada ou espelhada; corte e trama calculados pela peça " + o.name + ".") tipo:#warn
+            )
+            local abertos = #()
+            with undo off ( abertos = InLab_AbrirGruposAcima o )
+            local r = #(#pulada, undefined, undefined)
+            try ( r = InLab_Cortar_Peca o produto costuras marcasAntes rodada )
+            catch ( InLab_Log (o.name + ": erro inesperado no Cortar (" + getCurrentException() + ").") tipo:#err; r = #(#pulada, undefined, undefined) )
+            with undo off ( InLab_FecharGrupos abertos )
+            if r[1] == #refeita do ( feitas = 1; rec = r[2] )
+        )
+    )
+    catch ( InLab_Log ("Cortar: erro inesperado (" + getCurrentException() + ").") tipo:#err )
+    InLab_Mapear_CanaisIni = #()
+    InLab_Mapear_TamIni = #()
+    -- nenhum nó temporário fica na cena
+    local sobras = for n in objects where (matchPattern n.name pattern:"InLab_tmp_*") collect n
+    if sobras.count > 0 do
+    (
+        with undo off ( for n in sobras where isValidNode n do try ( delete n ) catch () )
+        InLab_Log ("Cortar: " + sobras.count as string + " nó(s) temporário(s) InLab_tmp_* apagado(s).") tipo:#warn
+    )
+    if rec != undefined do
+    (
+        append InLab_PilhaPaineis #(rec)
+        if InLab_VerUV_Ligar != undefined do InLab_VerUV_Ligar #(o)
+    )
+    feitas
 )

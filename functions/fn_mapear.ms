@@ -123,6 +123,10 @@
      ligado, refs.dependentNodes não vê os nós com as listras.
    - InLab_Mapear_UVAvaliado ganha canal: (padrão 1; o Painéis lê o canal do RWF
      para as faces de vivo cujo bitmap é religado ao canal 1).
+
+ 27/10/2026 (Mapear assistido, Tarefa 5): InLab_Mapear_Peca pula a peça (ou instância) com
+   costuras guardadas pelo Cortar (InLab_Cortar_TemMarcas, appData no nó): #info "peça
+   cortada nas costuras; use Cortar" e conta como mantida. Vale depois de reabrir o .max.
 */
 
 global InLab_Log, InLab_EhGeometria, InLab_Instancias, InLab_DeduplicarInstancias
@@ -188,6 +192,7 @@ global InLab_Mapear_ForcarFalha = undefined
 global InLab_Paineis_EsquecerPeca, InLab_Paineis_RestaurarPeca, InLab_Mapear_VarrerStack
 global InLab_Paineis_TemPeca   -- fn_mapear_paineis.ms (revisão final)
 global InLab_VerUV_NosQueUsam  -- fn_ver_uv.ms (carregado depois)
+global InLab_Cortar_TemMarcas  -- fn_mapear_cortar.ms (carregado depois, 27/10/2026)
 
 --------------------------------------------------------------------------------
 -- Stack
@@ -808,6 +813,13 @@ fn InLab_Mapear_VarrerStack o =
 --------------------------------------------------------------------------------
 fn InLab_Mapear_Peca o produto unwrapGrande rodada:undefined =
 (
+    -- 27/10/2026 (Mapear assistido): peça com costuras guardadas (Cortar) não é refeita,
+    -- nem depois de reabrir o .max (a pilha some, as marcas ficam no nó)
+    if InLab_Cortar_TemMarcas != undefined and         (for i in (InLab_Instancias o) where isValidNode i and (InLab_Cortar_TemMarcas i) collect i).count > 0 do
+    (
+        InLab_Log (o.name + ": peça cortada nas costuras; use Cortar.") tipo:#info
+        return #mantida
+    )
     -- revisão final (26/10/2026): peça com rodada de Painéis na pilha não é refeita
     if InLab_Paineis_TemPeca != undefined and (InLab_Paineis_TemPeca o) do
     (

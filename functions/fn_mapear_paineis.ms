@@ -92,6 +92,9 @@
  Aplicar sai do cm por tile recebido.
  - Peca nao refeita com a base convertida: a base de antes volta (o.baseobject = copia).
  - Vivo como spline renderizavel: #info com o nome (fica fora da separacao).
+ 27/10/2026 (Mapear assistido, Tarefa 5): o Desfazer Painéis e o InLab_Paineis_RestaurarPeca
+ devolvem as marcas do Cortar de antes (InLab_Paineis_VoltarMarcas: rec.marcas definido;
+ #nenhuma apaga as marcas). Registro do Painéis automático (marcas undefined) não mexe nelas.
 */
 global InLab_Log, InLab_EhGeometria
 global InLab_Mapear_PolyDe
@@ -125,6 +128,8 @@ global InLab_Paineis_Peca, InLab_Paineis, InLab_Paineis_EsquecerPeca, InLab_Desf
 global InLab_Paineis_RestaurarPeca, InLab_Mapear_VarrerStack, InLab_Mapear_Medir
 -- revisão final (26/10/2026)
 global InLab_Paineis_Temp, InLab_Paineis_TemPeca, InLab_VerUV_NosQueUsam
+-- 27/10/2026 (Mapear assistido, Tarefa 5): fn_mapear_cortar.ms (carregado depois)
+global InLab_Cortar_GravarMarcas, InLab_Cortar_ApagarMarcas, InLab_Paineis_VoltarMarcas
 -- pilha de rodadas do Painéis: cada item é #(MapearRecord...) de um clique; só o Desfazer tira
 global InLab_PilhaPaineis = #()
 -- SÓ TESTE (revisão final, 26/10/2026): "CopiaBase" ou "VivosDoProduto" força uma exceção
@@ -1835,6 +1840,17 @@ fn InLab_Paineis_EsquecerPeca no motivo:"o estado de antes deles foi desfeito co
     tirados
 )
 
+-- 27/10/2026 (Tarefa 5): registro do Cortar (rec.marcas definido) devolve as marcas de antes;
+-- #nenhuma = não havia marca (apaga). Registro do Painéis (marcas undefined) não mexe.
+fn InLab_Paineis_VoltarMarcas rec =
+(
+    if rec.marcas != undefined and isValidNode rec.no and InLab_Cortar_GravarMarcas != undefined do
+    (
+        if rec.marcas == #nenhuma then InLab_Cortar_ApagarMarcas rec.no
+        else InLab_Cortar_GravarMarcas rec.no rec.marcas
+    )
+)
+
 -- Desfazer Mapear (fix 1): volta os registros de Painéis do nó (ou de uma instância) que ainda
 -- estão na pilha, do mais novo para o mais velho, e tira-os da pilha. Quem chama abre o undo.
 -- Nº de registros restaurados.
@@ -1852,7 +1868,7 @@ fn InLab_Paineis_RestaurarPeca no =
                 if isValidNode rd[k].no and (findItem inst rd[k].no) > 0 do
                 (
                     achados += 1
-                    try ( if InLab_Mapear_Restaurar rd[k] desde:"os Painéis" do n += 1 )
+                    try ( if InLab_Mapear_Restaurar rd[k] desde:"os Painéis" do ( n += 1; InLab_Paineis_VoltarMarcas rd[k] ) )
                     catch ( InLab_Log (no.name + ": não desfiz os painéis antes do Mapear (" + getCurrentException() + ").") tipo:#err )
                     deleteItem rd k
                 )
@@ -1890,6 +1906,7 @@ fn InLab_DesfazerPaineis tudo:false =
                             if InLab_Mapear_Restaurar rec desde:"os Painéis" do
                             (
                                 n += 1
+                                InLab_Paineis_VoltarMarcas rec
                                 InLab_Log (rec.no.name + ": painéis desfeitos.") tipo:#ok
                             )
                         )
