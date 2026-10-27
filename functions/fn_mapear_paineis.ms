@@ -788,10 +788,10 @@ fn InLab_Paineis_Preparar o produto =
     for g in grupos do if (InLab_Paineis_EhTecido o produto id:g[1]) do append tec g[1]
     if tec.count == 0 do
     (
-        InLab_Log (o.name + ": Painéis é só para tecido; peça como estava.") tipo:#warn
+        InLab_Log (o.name + ": o mapeamento por painéis (Cortar) é só para tecido; peça como estava.") tipo:#warn
         return undefined
     )
-    InLab_Log (o.name + ": mapeando por painéis (" + ((getPolygonCount o)[1]) as string + " faces)...") tipo:#info
+    InLab_Log (o.name + ": cortando em painéis (" + ((getPolygonCount o)[1]) as string + " faces)...") tipo:#info
     -- 1. stack (a mesma varredura do Mapear)
     local st = InLab_Mapear_VarrerStack o
     local rwfMods = st[1]       -- #(modificador, índice, canal)
@@ -1008,7 +1008,7 @@ fn InLab_Paineis_Aplicar o prep uv refeitasCmPorID rodada =
         )
         catch
         (
-            InLab_Log (o.name + ": Painéis falhou (" + getCurrentException() + "); peça restaurada.") tipo:#err
+            InLab_Log (o.name + ": gravação dos painéis (Cortar) falhou (" + getCurrentException() + "); peça restaurada.") tipo:#err
             try ( InLab_Mapear_Restaurar rec desde:"os Painéis" )
             catch ( InLab_Log (o.name + ": não restaurei a peça (" + getCurrentException() + "); use o Ctrl+Z.") tipo:#err )
         )

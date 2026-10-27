@@ -16,6 +16,10 @@
  marcas e Ver UV. Detalhes no bloco da Parte 4.
  Parte 5 (Tarefa 6, 27/10/2026): botão Sentido (InLab_Sentido), aresta-guia + ângulo nos painéis
  já cortados, sem Unfold3D e sem pilha; Ctrl+Z pela troca da base. Detalhes no bloco da Parte 5.
+ Revisão final (27/10/2026): o Cortar volta o painel Modify ao nível de sub-objeto em que o
+ desenhista estava (InLab_Cortar_NivelAntes/VoltarNivel; o Unfold3D o levava para objeto e as
+ costuras selecionadas não apareciam); a guia do Cortar usa o filtro "a face tem a aresta";
+ log próprio na guarda de 50 voltas do corte do anel.
  Spec: docs\superpowers\specs\2026-10-27-mapear-assistido-design.md
 */
 global InLab_Log
@@ -310,7 +314,11 @@ fn InLab_Cortar_AbrirAnel po posM reg arestasReg eVerts eFacesReg piquesReg nome
             )
             if cam == undefined or voltas > 50 then
             (
-                InLab_Log (nomePeca + ": anel sem caminho entre as bordas; ficou sem corte automático.") tipo:#warn
+                -- revisão final: a guarda de 50 voltas tem log próprio (antes saía "sem caminho")
+                if cam == undefined then
+                    InLab_Log (nomePeca + ": anel sem caminho entre as bordas; ficou sem corte automático.") tipo:#warn
+                else
+                    InLab_Log (nomePeca + ": anel com mais de 50 contornos de borda para ligar; parei o corte automático na 50ª ligação (o resto fica sem corte).") tipo:#warn
                 seguir = false
             )
             else
@@ -780,7 +788,8 @@ fn InLab_Cortar_UV o pn escPorPainel guias =
             InLab_Log (o.name + ": cortar: o Unfold3D não abriu a peça; fica a projeção plana.") tipo:#warn
     )
     if res != undefined do ( uvs = res[1]; mapa = res[2] )
-    -- guias por painel (a aresta toca alguma face do painel)
+    -- guias por painel (a aresta toca alguma face do painel; só face que de fato lista a aresta,
+    -- o mesmo filtro de InLab_Cortar_PaineisDaAresta, revisão final de 27/10/2026)
     local guiaDe = #()
     guiaDe.count = nP
     local nE = polyop.getNumEdges po
@@ -791,7 +800,7 @@ fn InLab_Cortar_UV o pn escPorPainel guias =
         else
         (
             local ps = #()
-            for f in (polyop.getEdgeFaces po g[1]) where painelDe[f] != undefined do appendIfUnique ps painelDe[f]
+            for f in (polyop.getEdgeFaces po g[1]) where painelDe[f] != undefined and (findItem (polyop.getFaceEdges po f) g[1]) > 0 do appendIfUnique ps painelDe[f]
             for i in ps do
             (
                 if guiaDe[i] == undefined then guiaDe[i] = g
@@ -842,7 +851,7 @@ fn InLab_Cortar_UV o pn escPorPainel guias =
    escritas de canal de mapa do polyop não entram no Ctrl+Z, e a troca de base entra.
 --------------------------------------------------------------------------------------- */
 global InLab_Cortar, InLab_Cortar_SelecaoArestas, InLab_Cortar_Corpo, InLab_Cortar_Peca, InLab_Cortar_TrocarBase
-global InLab_Cortar_NosDaBase, InLab_Cortar_PorBase
+global InLab_Cortar_NosDaBase, InLab_Cortar_PorBase, InLab_Cortar_NivelAntes, InLab_Cortar_VoltarNivel
 global InLab_Paineis_Preparar, InLab_Paineis_Aplicar, InLab_Paineis_DevolverBase
 global InLab_Paineis_EhTecido, InLab_Paineis_EhVivo, InLab_Paineis_Escala, InLab_Paineis_UTil, InLab_Paineis_Girada
 global InLab_Mapear_FacesDoID, InLab_Mapear_SemRWF, InLab_Mapear_ZerarCache, InLab_Mapear_Num
@@ -883,6 +892,40 @@ fn InLab_Cortar_TrocarBase o =
     local orig = o.baseobject
     InLab_Cortar_PorBase o (copy orig)
     orig
+)
+
+-- Revisão final (27/10/2026): fluxo real do desenhista, painel Modify no nível Aresta da base.
+-- Sondado no Max 2024: a troca da base com subObjectLevel 2 não dá erro e mantém o nível e as
+-- instâncias, mas o Unfold3D (select do nó temporário e a seleção devolvida) volta o nível para
+-- objeto, e as costuras guardadas ficam selecionadas sem aparecer. O Cortar guarda o nível
+-- antes e devolve no fim (with undo off). O Sentido não mexe na seleção de nós: o nível fica.
+-- nível de sub-objeto do painel Modify se ele mostra a base de o (senão 0)
+fn InLab_Cortar_NivelAntes o =
+(
+    local so = 0
+    try
+    (
+        if (getCommandPanelTaskMode()) == #modify and selection.count == 1 and            (findItem (InLab_Cortar_NosDaBase o) selection[1]) > 0 and (modPanel.getCurrentObject()) == o.baseobject do
+            so = subObjectLevel
+    )
+    catch ( so = 0 )
+    if so == undefined then 0 else so
+)
+
+-- devolve o nível so na base de o, se a seleção ainda é a peça (ou uma instância dela)
+fn InLab_Cortar_VoltarNivel o so =
+(
+    if so > 0 and isValidNode o and selection.count == 1 and (findItem (InLab_Cortar_NosDaBase o) selection[1]) > 0 do
+        try
+        (
+            with undo off
+            (
+                if (getCommandPanelTaskMode()) != #modify do max modify mode
+                if (modPanel.getCurrentObject()) != o.baseobject do modPanel.setCurrentObject o.baseobject
+                subObjectLevel = so
+            )
+        )
+        catch ( InLab_Log (o.name + ": não voltei o nível de sub-objeto do painel Modify (" + getCurrentException() + ").") tipo:#warn )
 )
 
 -- seleção de arestas da base Editable Poly (#{} em outra classe)
@@ -1053,6 +1096,7 @@ fn InLab_Cortar objs produto =
     local feitas = 0
     InLab_Mapear_ZerarCache()
     local rec = undefined
+    local nivelAntes = InLab_Cortar_NivelAntes o
     try
     (
         -- nós da rodada (as instâncias) e estado do início da rodada, como no Painéis
@@ -1110,6 +1154,8 @@ fn InLab_Cortar objs produto =
         append InLab_PilhaPaineis #(rec)
         if InLab_VerUV_Ligar != undefined do InLab_VerUV_Ligar #(o)
     )
+    -- revisão final: o desenhista volta ao nível em que estava (Aresta) e vê as costuras
+    InLab_Cortar_VoltarNivel o nivelAntes
     feitas
 )
 

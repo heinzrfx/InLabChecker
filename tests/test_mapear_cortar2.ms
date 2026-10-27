@@ -5,6 +5,8 @@
  depois de reabrir), pique no anel dispensando o corte automático e peça grande com face morta.
  Tarefa 6 (27/10/2026): Ctrl+Z de um Cortar (marcas em custom attribute) e botão Sentido;
  revisão: instância com stack vazio continua instância, seleção no fim só com as costuras.
+ Revisão final (27/10/2026): Cortar e Sentido com o painel Modify no nível Aresta da base
+ (fluxo real do desenhista): sem erro, instâncias juntas, nível e costuras visíveis no fim.
  RODAR NUMA CENA VAZIA (resetMaxFile #noPrompt).
  Resultado: <pasta temp do Max>\inlab_test_mapear_cortar2.txt (PASS/FAIL por item).
 */
@@ -455,6 +457,46 @@ global INLAB_TESTE_SAIDA, INLAB_TESTE_FALHAS
         checar "instância sem stack: Desfazer Painéis volta as 2 instâncias" \
             (juntas ia ib and igualCanal ci0 (InLab_Mapear_LerCanal1 ia) and igualCanal ci0 (InLab_Mapear_LerCanal1 ib) and not (InLab_Cortar_TemMarcas ib) and InLab_PilhaPaineis.count == 0)
         delete #(ia, ib)
+
+        ---------------- fluxo do desenhista: painel Modify no nível Aresta da base (revisão final) ----------------
+        -- as arestas são selecionadas no nível 2 da Editable Poly (não por polyop em nível de objeto)
+        local sa = caixa "TESTE_cr2_soA" [0,1600,0]
+        sa.material = mTec
+        local sb = instance sa
+        sb.name = "TESTE_cr2_soB"
+        sb.pos = [300,1600,0]
+        local costSO = costurasPelaNormal sa.baseobject
+        select sa
+        max modify mode
+        modPanel.setCurrentObject sa.baseobject
+        subObjectLevel = 2
+        sa.baseobject.EditablePoly.SetSelection #Edge costSO
+        logs.count = 0
+        local nSO = try ( InLab_Cortar (selection as array) produto ) catch ( linha ("      cortar no nível Aresta: " + getCurrentException()); -1 )
+        linha ("      nível Aresta, depois do Cortar: subObjectLevel " + subObjectLevel as string + ", seleção " + ((for n in selection collect n.name) as string))
+        checar "nível Aresta: Cortar sem erro, instâncias juntas, volta ao nível Aresta com as costuras selecionadas"             (nSO == 1 and (for l in logs where l[1] == #err collect l).count == 0 and juntas sa sb and subObjectLevel == 2 and              (modPanel.getCurrentObject()) == sa.baseobject and mesmo (InLab_Cortar_SelecaoArestas sa) costSO)
+        -- guia escolhida no mesmo nível Aresta
+        local pSO = sa.baseobject
+        local pnSO = InLab_Cortar_Paineis sa #{1..(polyop.getNumFaces pSO)} costSO
+        local guiaSO = 0
+        for k = 1 to pnSO.paineis.count where pnSO.aneis[k] do
+            for e in (polyop.getEdgesUsingFace pSO pnSO.paineis[k]) where guiaSO == 0 and not costSO[e] and not pnSO.cortesAuto[e] do
+            (
+                local vs = polyop.getEdgeVerts pSO e
+                local p1 = polyop.getVert pSO vs[1], p2 = polyop.getVert pSO vs[2]
+                if abs (p1.z - p2.z) < 0.01 and (abs (p1.x - p2.x)) > 1.0 and abs p1.x < 30 and p1.y < -40 and p1.z > 5 and p1.z < 15 do guiaSO = e
+            )
+        local soOk = subObjectLevel == 2
+        if not soOk do ( modPanel.setCurrentObject sa.baseobject; subObjectLevel = 2 )
+        sa.baseobject.EditablePoly.SetSelection #Edge #{guiaSO}
+        logs.count = 0
+        local nSSO = try ( InLab_Sentido (selection as array) 0.0 produto:produto ) catch ( linha ("      sentido no nível Aresta: " + getCurrentException()); -1 )
+        checar "nível Aresta: Sentido sem erro, instâncias juntas, nível Aresta e costuras selecionadas"             (guiaSO > 0 and nSSO == 1 and (for l in logs where l[1] == #err collect l).count == 0 and juntas sa sb and subObjectLevel == 2 and              mesmo (InLab_Cortar_SelecaoArestas sa) costSO)
+        subObjectLevel = 0
+        clearSelection()
+        InLab_VerUV_Desligar()
+        InLab_PilhaPaineis = #()
+        delete #(sa, sb)
 
         ---------------- peça grande com face morta ----------------
         local gr = ChamferBox length:100 width:100 height:20 fillet:5 Fillet_Segments:4 Length_Segments:100 Width_Segments:100 Height_Segments:30 name:"TESTE_cr2_grande" pos:[0,400,0]

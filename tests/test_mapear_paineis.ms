@@ -5,8 +5,8 @@
  Resultado: <pasta temp do Max>\inlab_test_mapear_paineis.txt (PASS/FAIL por item).
  26/10/2026 (Tarefa 1): vivos e geometria em mundo.
  27/10/2026 (hotfix 1.3.2): face morta em Elementos e InLab_Paineis_TirarMortas.
- 27/10/2026 (Mapear assistido, Tarefa 7): saiu o Painéis automático e com ele os casos de
- VivosDoProduto, Separar, Dist, UV/Torta e do botão InLab_Paineis; a pilha, o Desfazer e o
+ 27/10/2026 (Mapear assistido, Tarefa 7): saiu o Painéis automático (VivosDoProduto, Separar,
+ Dist, UV/Torta e o botão InLab_Paineis foram apagados do módulo) e com ele os casos deles; a pilha, o Desfazer e o
  Mapear->Cortar são cobertos por test_mapear_cortar.ms e test_mapear_cortar2.ms.
 */
 global InLab_Log, InLab_EhGeometria, InLab_Mapear_PolyDe

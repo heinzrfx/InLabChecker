@@ -815,7 +815,7 @@ fn InLab_Mapear_Peca o produto unwrapGrande rodada:undefined =
 (
     -- 27/10/2026 (Mapear assistido): peça com costuras guardadas (Cortar) não é refeita,
     -- nem depois de reabrir o .max (a pilha some, as marcas ficam no nó)
-    if InLab_Cortar_TemMarcas != undefined and         (for i in (InLab_Instancias o) where isValidNode i and (InLab_Cortar_TemMarcas i) collect i).count > 0 do
+    if InLab_Cortar_TemMarcas != undefined and (for i in (InLab_Instancias o) where isValidNode i and (InLab_Cortar_TemMarcas i) collect i).count > 0 do
     (
         InLab_Log (o.name + ": peça cortada nas costuras; use Cortar.") tipo:#info
         return #mantida
@@ -888,7 +888,7 @@ fn InLab_Mapear_Peca o produto unwrapGrande rodada:undefined =
                            (InLab_Mapear_Num d.alvo) + " cm por tile.") tipo:#warn
             local resultado = #pulada
             -- 3. registro (classe antiga) e base Editable_Poly
-            -- (a mesma conversão está copiada em InLab_Paineis_Peca, fn_mapear_paineis.ms:
+            -- (a mesma conversão está copiada em InLab_Paineis_Preparar, fn_mapear_paineis.ms:
             -- mudança aqui vai para lá também)
             local baseAntes = classof o.baseobject
             local rec = MapearRecord no:o baseAntes:baseAntes modsTirados:#() bitmapsAntes:#()

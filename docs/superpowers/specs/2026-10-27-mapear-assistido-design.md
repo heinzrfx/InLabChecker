@@ -109,7 +109,7 @@ A regra de hoje, sem mudança: `InLab_Paineis_Escala o id` (cmPorID do Mapear > 
 
 **Convenção:** a trama é o **V** da textura (o vertical da imagem do tecido). É a mesma convenção do Painéis de hoje (disco em pé: Z do mundo no V; deitado: X no U, logo Y no V).
 
-- **Com aresta-guia:** a direção de referência é o vetor da aresta-guia em mundo, girado pelo ângulo em torno da normal local das faces da aresta-guia (em painel de anel a normal média se anula). A ilha é girada até essa direção, levada ao UV face a face, cair no V em média pela área (`InLab_Paineis_AngDir` + `InLab_Paineis_Girar`, hoje com o eixo deduzido). O sinal da aresta não importa (a trama não tem sentido): fica o giro menor.
+- **Com aresta-guia:** a direção de referência é o vetor da aresta-guia em mundo, girado pelo ângulo em torno de uma normal: no painel de disco, a normal média do painel; no painel de anel (onde a normal média se anula), a normal local das faces da aresta-guia (`InLab_Cortar_DirRef`). Em 0° tanto faz; em ±45° num painel de disco curvo o eixo de giro é o da média. A ilha é girada até essa direção, levada ao UV face a face, cair no V em média pela área (`InLab_Paineis_AngDir` + `InLab_Paineis_Girar`, hoje com o eixo deduzido). O sinal da aresta não importa (a trama não tem sentido): fica o giro menor.
 - **Sem guia (regra padrão):** normal média do painel (pela área) com `|n.z| > 0,7` = deitado: referência = Y do mundo (frente para trás; a frente é −Y). Senão, em pé: referência = Z do mundo. O limiar 0,7 é *decisão do Claude*, ajustável numa constante.
 - **Espelho:** se a ilha sair espelhada (sentido de render, com o sinal do nó como hoje em `InLab_Paineis_EspelhoUV`), inverte o U.
 - **Sentido** recalcula só o giro e o espelho das ilhas dos painéis com guia nova. Não roda o Unfold3D de novo: lê o UV atual da peça, gira e grava.
@@ -160,7 +160,7 @@ Script da sonda fora do repo (scratchpad da sessão): costuras simuladas pela no
 
 Respondidas pelo usuário em 27/10:
 
-1. **Painel em anel sem pique: corte automático.** O plugin abre o anel com um corte reto num lugar escondido (atrás, ou embaixo), com `#info` no log, e a aresta do corte fica selecionada junto com as costuras ao fim do Cortar. Se o desenhista não gostar do lugar, marca o pique onde quiser e corta de novo: um pique marcado no anel dispensa o corte automático.
+1. **Painel em anel sem pique: corte automático.** O plugin abre o anel com um corte reto num lugar escondido (atrás, ou embaixo), com `#info` no log (número de arestas). A aresta do corte **não** fica selecionada: ao fim do Cortar só as costuras guardadas ficam (seções 4 e 5.3; um 2º Cortar com o corte selecionado o guardaria como costura). O corte é recalculado a cada Cortar. Se o desenhista não gostar do lugar, marca o pique onde quiser e corta de novo: um pique marcado no anel dispensa o corte automático.
 2. **Cena da sonda:** o usuário abre no Max a cena de um dos produtos que travaram, e a sonda lê pelo MCP qual cena está aberta.
 
 ## 11. Testes (tests/)
