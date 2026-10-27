@@ -123,6 +123,10 @@
      ligado, refs.dependentNodes não vê os nós com as listras.
    - InLab_Mapear_UVAvaliado ganha canal: (padrão 1; o Painéis lê o canal do RWF
      para as faces de vivo cujo bitmap é religado ao canal 1).
+
+ 27/10/2026 (Mapear assistido, Tarefa 5): InLab_Mapear_Peca pula a peça (ou instância) com
+   costuras guardadas pelo Cortar (InLab_Cortar_TemMarcas, custom attribute na base): #info "peça
+   cortada nas costuras; use Cortar" e conta como mantida. Vale depois de reabrir o .max.
 */
 
 global InLab_Log, InLab_EhGeometria, InLab_Instancias, InLab_DeduplicarInstancias
@@ -150,7 +154,8 @@ struct MapearRecord
     modsTirados = #(),  -- #(#(modificador, índice)) em ordem crescente de índice
     bitmapsAntes = #(), -- #(#(bitmap, canal, uTiling, vTiling))
     graus,              -- grau de cada face da base no registro (confere a topologia no Desfazer)
-    cmPorID = #()       -- 26/10/2026: #(#(id, cm por tile)) de cada ID refeito (o Painéis usa)
+    cmPorID = #(),    -- 26/10/2026: #(#(id, cm por tile)) de cada ID refeito (o Painéis usa)
+    marcas = undefined  -- 27/10/2026: marcas do Cortar de antes (Mapear assistido)
 )
 
 -- Decisão de um ID de material (uso interno).
@@ -187,6 +192,7 @@ global InLab_Mapear_ForcarFalha = undefined
 global InLab_Paineis_EsquecerPeca, InLab_Paineis_RestaurarPeca, InLab_Mapear_VarrerStack
 global InLab_Paineis_TemPeca   -- fn_mapear_paineis.ms (revisão final)
 global InLab_VerUV_NosQueUsam  -- fn_ver_uv.ms (carregado depois)
+global InLab_Cortar_TemMarcas  -- fn_mapear_cortar.ms (carregado depois, 27/10/2026)
 
 --------------------------------------------------------------------------------
 -- Stack
@@ -807,6 +813,13 @@ fn InLab_Mapear_VarrerStack o =
 --------------------------------------------------------------------------------
 fn InLab_Mapear_Peca o produto unwrapGrande rodada:undefined =
 (
+    -- 27/10/2026 (Mapear assistido): peça com costuras guardadas (Cortar) não é refeita,
+    -- nem depois de reabrir o .max (a pilha some, as marcas ficam no nó)
+    if InLab_Cortar_TemMarcas != undefined and (for i in (InLab_Instancias o) where isValidNode i and (InLab_Cortar_TemMarcas i) collect i).count > 0 do
+    (
+        InLab_Log (o.name + ": peça cortada nas costuras; use Cortar.") tipo:#info
+        return #mantida
+    )
     -- revisão final (26/10/2026): peça com rodada de Painéis na pilha não é refeita
     if InLab_Paineis_TemPeca != undefined and (InLab_Paineis_TemPeca o) do
     (
@@ -875,7 +888,7 @@ fn InLab_Mapear_Peca o produto unwrapGrande rodada:undefined =
                            (InLab_Mapear_Num d.alvo) + " cm por tile.") tipo:#warn
             local resultado = #pulada
             -- 3. registro (classe antiga) e base Editable_Poly
-            -- (a mesma conversão está copiada em InLab_Paineis_Peca, fn_mapear_paineis.ms:
+            -- (a mesma conversão está copiada em InLab_Paineis_Preparar, fn_mapear_paineis.ms:
             -- mudança aqui vai para lá também)
             local baseAntes = classof o.baseobject
             local rec = MapearRecord no:o baseAntes:baseAntes modsTirados:#() bitmapsAntes:#()

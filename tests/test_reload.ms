@@ -14,6 +14,7 @@
 global INLAB_ROOT, INLAB_MODULOS, InLab_RecarregarPlugin, InLab_AbrirUI
 global InLabChecker_Rollout, InLab_Log
 global INLAB_RELOAD_MOSTRAR_MSGBOX, InLab_UltimoErroReload, InLabSecUV, InLab_VerUV_Desligar
+global InLab_Cortar_GravarMarcas, InLab_Cortar_TemMarcas, InLab_Cortar_LerMarcas, InLab_CortarMarcas
 global INLAB_TESTE_SAIDA, INLAB_TESTE_FALHAS
 (
     local dirTeste = getFilenamePath (getSourceFileName())
@@ -57,6 +58,16 @@ global INLAB_TESTE_SAIDA, INLAB_TESTE_FALHAS
 
         modulosOriginais = for m in INLAB_MODULOS collect m
 
+        -- 27/10/2026 (Mapear assistido): marcas do Cortar gravadas ANTES dos reloads; o
+        -- custom attribute (InLabCortarMarcas) e redefinido a cada fileIn e tem que continuar
+        -- achando as marcas (senao o Mapear deixa de pular a peca cortada na mesma sessao).
+        local caixaCA = ChamferBox length:100 width:100 height:20 fillet:5 Fillet_Segments:3 name:"TESTE_reload_ca"
+        convertToPoly caixaCA
+        local costCA = #{1, 5, 9, 12}
+        local guiasCA = #(#(7, 30.0), #(20, -45.5))
+        InLab_Cortar_GravarMarcas caixaCA (InLab_CortarMarcas costuras:costCA guias:guiasCA)
+        local textoCA = (InLab_Cortar_LerMarcas caixaCA) as string
+
         -- 1. RELOAD LIMPO (sem forcar erro) — sanidade da funcao em si.
         INLAB_RELOAD_MOSTRAR_MSGBOX = false -- nunca deixa o messageBox abrir num teste automatizado
         InLab_UltimoErroReload = undefined
@@ -88,12 +99,18 @@ global INLAB_TESTE_SAIDA, INLAB_TESTE_FALHAS
         local ok3 = InLab_RecarregarPlugin()
         checar "Reload de limpeza (restaurado) retorna true" (ok3 == true)
 
+        -- 3b. marcas do Cortar depois dos reloads
+        local mCA = InLab_Cortar_LerMarcas caixaCA
+        checar "Marcas do Cortar: TemMarcas depois do reload" (InLab_Cortar_TemMarcas caixaCA)
+        checar "Marcas do Cortar: LerMarcas devolve as mesmas costuras e guias depois do reload"             (mCA != undefined and (mCA as string) == textoCA and (mCA.costuras as string) == (costCA as string) and              mCA.guias.count == 2 and mCA.guias[1][1] == 7 and mCA.guias[1][2] == 30.0 and mCA.guias[2][1] == 20 and mCA.guias[2][2] == -45.5)
+        try ( delete caixaCA ) catch ()
+
         -- 4. UI (26/10/2026, Mapear por paineis): a secao UV e Texturas tem os
         -- botoes novos depois do reload.
         local nomesUV = #()
         try ( nomesUV = for c in InLabSecUV.controls collect (toLower (c.name)) ) catch ( nomesUV = #() )
-        checar "UI: InLabSecUV tem btnPaineis, btnPaineisRev e btnVerUV" \
-            ((findItem nomesUV "btnpaineis") > 0 and (findItem nomesUV "btnpaineisrev") > 0 and (findItem nomesUV "btnveruv") > 0)
+        checar "UI: InLabSecUV tem btnCortar, btnSentido, spnAngulo, btnPaineisRev e btnVerUV" \
+            ((findItem nomesUV "btncortar") > 0 and (findItem nomesUV "btnsentido") > 0 and (findItem nomesUV "spnangulo") > 0 and (findItem nomesUV "btnpaineisrev") > 0 and (findItem nomesUV "btnveruv") > 0)
 
         -- 5. O Ver UV desliga sozinho (salvar, exportar, verificar): o botao acompanha.
         local caixaVU = Box name:"TESTE_reload_vu"
@@ -119,6 +136,7 @@ global INLAB_TESTE_SAIDA, INLAB_TESTE_FALHAS
         -- Garante que INLAB_MODULOS nao fica quebrado se o teste explodir no meio.
         if modulosOriginais != undefined do INLAB_MODULOS = modulosOriginais
     )
+    try ( delete (getNodeByName "TESTE_reload_ca") ) catch ()
 
     -- Nunca deixa o painel aberto nem o messageBox desligado pro resto da sessao.
     try ( destroyDialog InLabChecker_Rollout ) catch()
