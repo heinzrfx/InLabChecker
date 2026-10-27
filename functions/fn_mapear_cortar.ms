@@ -2,7 +2,8 @@
  functions\fn_mapear_cortar.ms — Mapear assistido: Cortar e Sentido (feature de 27/10/2026).
  Parte 1 (Tarefa 2): marcas guardadas na peça. O desenhista seleciona arestas de costura na
  base Editable Poly; o plugin guarda as costuras (bitarray de arestas) e as guias de veio
- (aresta + angulo) no proprio no via setAppData, para sobreviverem a salvar e reabrir o .max.
+ (aresta + angulo) num custom attribute da base (InLabCortarMarcas; ate a Tarefa 6 era
+ appData no no, que nao entra no Ctrl+Z), para sobreviverem a salvar e reabrir o .max.
  Formato: costuras = "<nFaces>;<nArestas>;<e1>,<e2>,..." ; guias = "<e>:<ang>;<e>:<ang>"
  (angulo com formattedPrint format:".2f", ponto decimal garantido na gravacao e na leitura).
  Se nFaces/nArestas nao batem com a base (malha mudou), a leitura apaga as marcas e avisa.
@@ -15,21 +16,41 @@
  marcas e Ver UV. Detalhes no bloco da Parte 4.
  Spec: docs\superpowers\specs\2026-10-27-mapear-assistido-design.md
 */
-global INLAB_CORTAR_APPDATA_COSTURAS = 7301
-global INLAB_CORTAR_APPDATA_GUIAS = 7302
 global InLab_Log
 
 struct InLab_CortarMarcas ( nFaces, nArestas, costuras, guias )
 
-fn InLab_Cortar_TemMarcas o =
+-- 27/10/2026 (Tarefa 6): custom attribute na BASE em vez de appData no nó. O setAppData não
+-- entra no Ctrl+Z (conferido no Max: undo on (setAppData ...) e max undo mantém o valor novo);
+-- mudança em parameter block entra, e o custAttributes.add também. Instâncias dividem a base,
+-- então dividem as marcas. attribID fixo: a definição salva no .max é achada de novo ao reabrir.
+global INLAB_CORTAR_CA_DEF = attributes InLabCortarMarcas attribID:#(0x4c7e2a91, 0x1b9d63f5)
 (
-    (getAppData o INLAB_CORTAR_APPDATA_COSTURAS) != undefined
+    parameters main
+    (
+        costuras type:#string default:""
+        guias type:#string default:""
+    )
 )
 
+-- o custom attribute das marcas na base de o, ou undefined
+fn InLab_Cortar_AtribMarcas o =
+(
+    if not (isValidNode o) or o.baseobject == undefined then undefined
+    else custAttributes.get o.baseobject INLAB_CORTAR_CA_DEF
+)
+
+fn InLab_Cortar_TemMarcas o =
+(
+    local ca = InLab_Cortar_AtribMarcas o
+    ca != undefined and ca.costuras != ""
+)
+
+-- zera as marcas (parameter block: entra no Ctrl+Z)
 fn InLab_Cortar_ApagarMarcas o =
 (
-    deleteAppData o INLAB_CORTAR_APPDATA_COSTURAS
-    deleteAppData o INLAB_CORTAR_APPDATA_GUIAS
+    local ca = InLab_Cortar_AtribMarcas o
+    if ca != undefined do ( ca.costuras = ""; ca.guias = "" )
     true
 )
 
@@ -46,7 +67,6 @@ fn InLab_Cortar_GravarMarcas o marcas =
         s += e as string
         primeiro = false
     )
-    setAppData o INLAB_CORTAR_APPDATA_COSTURAS s
     local g = ""
     for k = 1 to marcas.guias.count do
     (
@@ -55,14 +75,22 @@ fn InLab_Cortar_GravarMarcas o marcas =
         if k > 1 do g += ";"
         g += (marcas.guias[k][1] as string) + ":" + a
     )
-    setAppData o INLAB_CORTAR_APPDATA_GUIAS g
+    local ca = InLab_Cortar_AtribMarcas o
+    if ca == undefined do
+    (
+        custAttributes.add b INLAB_CORTAR_CA_DEF
+        ca = InLab_Cortar_AtribMarcas o
+    )
+    ca.costuras = s
+    ca.guias = g
     true
 )
 
 fn InLab_Cortar_LerMarcas o =
 (
-    local sc = getAppData o INLAB_CORTAR_APPDATA_COSTURAS
-    if sc == undefined do return undefined
+    local ca = InLab_Cortar_AtribMarcas o
+    if ca == undefined or ca.costuras == "" do return undefined
+    local sc = ca.costuras
     local b = o.baseobject
     local partes = filterString sc ";"
     local nF = if partes.count >= 1 then (partes[1] as integer) else undefined
@@ -77,8 +105,8 @@ fn InLab_Cortar_LerMarcas o =
     if partes.count >= 3 do
         for t in (filterString partes[3] ",") do ( local v = t as integer; if v != undefined and v > 0 do cost[v] = true )
     local guias = #()
-    local sg = getAppData o INLAB_CORTAR_APPDATA_GUIAS
-    if sg != undefined do
+    local sg = ca.guias
+    if sg != "" do
         for par in (filterString sg ";") do
         (
             local kv = filterString par ":"
@@ -791,8 +819,11 @@ fn InLab_Cortar_UV o pn escPorPainel guias =
    Painéis e o InLab_Paineis_RestaurarPeca devolvem (InLab_Paineis_VoltarMarcas).
  - Marcas novas = costuras + guias de antes. Seleção no fim = costuras + cortes automáticos
    (piques são costuras, ficam selecionados). Ver UV ligado na peça.
+ - Tarefa 6 (27/10/2026): o Cortar troca a base por uma cópia dentro do undo
+   (InLab_Cortar_TrocarBase) e grava nela; peça pulada volta a base original. Motivo: as
+   escritas de canal de mapa do polyop não entram no Ctrl+Z, e a troca de base entra.
 --------------------------------------------------------------------------------------- */
-global InLab_Cortar, InLab_Cortar_SelecaoArestas, InLab_Cortar_Corpo, InLab_Cortar_Peca
+global InLab_Cortar, InLab_Cortar_SelecaoArestas, InLab_Cortar_Corpo, InLab_Cortar_Peca, InLab_Cortar_TrocarBase
 global InLab_Paineis_Preparar, InLab_Paineis_Aplicar, InLab_Paineis_DevolverBase
 global InLab_Paineis_EhTecido, InLab_Paineis_EhVivo, InLab_Paineis_Escala, InLab_Paineis_UTil, InLab_Paineis_Girada
 global InLab_Mapear_FacesDoID, InLab_Mapear_SemRWF, InLab_Mapear_ZerarCache, InLab_Mapear_Num
@@ -801,6 +832,18 @@ global InLab_Mapear_EhRWF, InLab_Mapear_CanalModUV, InLab_Mapear_DensRWF, InLab_
 global InLab_Mapear_BitmapDifuso, InLab_Mapear_TamDoBitmap
 global InLab_PilhaPaineis, InLab_VerUV_Ligar, InLab_EhGeometria
 global InLab_Instancias, InLab_DeduplicarInstancias, InLab_AbrirGruposAcima, InLab_FecharGrupos
+
+-- Tarefa 6 (27/10/2026): troca a base de o (e das instâncias, que dividem a base) por uma
+-- cópia e devolve a original. Chamar dentro do undo: o polyop.setMapVert/setMapFace/
+-- setNumMapVerts NÃO entra no Ctrl+Z (sondado no Max 2024: depois do max undo o canal 1
+-- fica como gravado), mas a troca da base entra; o Ctrl+Z volta a base original intacta,
+-- com o canal 1 e as marcas (custom attribute, copiado junto) de antes.
+fn InLab_Cortar_TrocarBase o =
+(
+    local orig = o.baseobject
+    o.baseobject = copy orig
+    orig
+)
 
 -- seleção de arestas da base Editable Poly (#{} em outra classe)
 fn InLab_Cortar_SelecaoArestas o =
@@ -1000,8 +1043,11 @@ fn InLab_Cortar objs produto =
             local abertos = #()
             with undo off ( abertos = InLab_AbrirGruposAcima o )
             local r = #(#pulada, undefined, undefined)
+            -- Tarefa 6: o Cortar trabalha numa cópia da base (o Ctrl+Z devolve a original)
+            local baseOrig = InLab_Cortar_TrocarBase o
             try ( r = InLab_Cortar_Peca o produto costuras marcasAntes rodada )
             catch ( InLab_Log (o.name + ": erro inesperado no Cortar (" + getCurrentException() + ").") tipo:#err; r = #(#pulada, undefined, undefined) )
+            if r[1] != #refeita do try ( o.baseobject = baseOrig ) catch ( InLab_Log (o.name + ": não devolvi a base de antes (" + getCurrentException() + "); use o Ctrl+Z.") tipo:#err )
             with undo off ( InLab_FecharGrupos abertos )
             if r[1] == #refeita do ( feitas = 1; rec = r[2] )
         )

@@ -3,6 +3,7 @@
  InLab_Cortar (guardas, costuras da seleção ou guardadas, pilha, marcas, seleção no fim,
  Ver UV), Desfazer Painéis devolvendo as marcas, o Mapear pulando peça cortada (também
  depois de reabrir), pique no anel dispensando o corte automático e peça grande com face morta.
+ Tarefa 6 (27/10/2026): Ctrl+Z de um Cortar (marcas em custom attribute) e botão Sentido.
  RODAR NUMA CENA VAZIA (resetMaxFile #noPrompt).
  Resultado: <pasta temp do Max>\inlab_test_mapear_cortar2.txt (PASS/FAIL por item).
 */
@@ -246,6 +247,8 @@ global INLAB_TESTE_SAIDA, INLAB_TESTE_FALHAS
         if InLab_UltimoMapear.count > 0 do InLab_ReverterMapear()
 
         -- sem seleção e com marcas
+        -- Tarefa 6: o Cortar troca a base por uma cópia (Ctrl+Z); relê a base depois de cada Cortar
+        po = cx.baseobject
         polyop.setEdgeSelection po #{}
         logs.count = 0
         local n2c = InLab_Cortar #(cx) produto
@@ -253,6 +256,7 @@ global INLAB_TESTE_SAIDA, INLAB_TESTE_FALHAS
             (n2c == 1 and InLab_PilhaPaineis.count == 2 and temLog logs #ok "3 painéis pelas costuras" "" and mesmo (InLab_Cortar_SelecaoArestas cx) (cost + pnRef.cortesAuto))
 
         -- Recortar com uma aresta solta no tampo (pique)
+        po = cx.baseobject
         local bb = nodeGetBoundingBox cx (matrix3 1)
         local zMax = bb[2].z
         local solta = 0
@@ -281,6 +285,21 @@ global INLAB_TESTE_SAIDA, INLAB_TESTE_FALHAS
             (okD1 and igualCanal c0 (InLab_Mapear_LerCanal1 cx) and not (InLab_Cortar_TemMarcas cx) and InLab_PilhaPaineis.count == 0 and cx.modifiers.count == nModsRWF)
         InLab_VerUV_Desligar()
         delete cx
+
+        ---------------- Ctrl+Z de um Cortar (Tarefa 6: marcas em custom attribute) ----------------
+        local cz = caixa "TESTE_cr2_ctrlz" [0,-800,0]
+        cz.material = mTec
+        local pz = cz.baseobject
+        local cz0 = InLab_Mapear_LerCanal1 cz
+        polyop.setEdgeSelection pz (costurasPelaNormal pz)
+        local nz1 = InLab_Cortar #(cz) produto
+        local okZ1 = nz1 == 1 and InLab_Cortar_TemMarcas cz and not (igualCanal cz0 (InLab_Mapear_LerCanal1 cz))
+        InLab_VerUV_Desligar()
+        max undo
+        linha ("      ctrl+z: canal antes " + (cz0 != undefined) as string + ", depois " + ((InLab_Mapear_LerCanal1 cz) != undefined) as string + ", cortou " + okZ1 as string + ", canal igual " + (igualCanal cz0 (InLab_Mapear_LerCanal1 cz)) as string + ", marcas " + (InLab_Cortar_TemMarcas cz) as string)
+        checar "cortar: Ctrl+Z volta canal 1 e marcas" (okZ1 and igualCanal cz0 (InLab_Mapear_LerCanal1 cz) and not (InLab_Cortar_TemMarcas cz))
+        InLab_PilhaPaineis = #()
+        delete cz
 
         ---------------- peça grande com face morta ----------------
         local gr = ChamferBox length:100 width:100 height:20 fillet:5 Fillet_Segments:4 Length_Segments:100 Width_Segments:100 Height_Segments:30 name:"TESTE_cr2_grande" pos:[0,400,0]

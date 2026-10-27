@@ -5,13 +5,14 @@
  27/10/2026 (Tarefa 2): marcas guardadas na peça (costuras e guias).
  27/10/2026 (Tarefa 3): painéis pelas costuras, piques, corte automático do anel, ids por canto, UVAnel corte:.
  27/10/2026 (Tarefa 4): UV da peça (um Unfold3D), densidade, trama pela regra e pela guia, peça espelhada.
+ 27/10/2026 (Tarefa 6): marcas em custom attribute na base, Ctrl+Z de uma gravação.
 */
 global InLab_Log, InLab_EhGeometria, InLab_Mapear_PolyDe
 global InLab_Cortar_LerMarcas, InLab_Cortar_GravarMarcas, InLab_Cortar_ApagarMarcas, InLab_Cortar_TemMarcas
 global InLab_CortarMarcas, InLab_CortarPaineis, InLab_Cortar_Paineis, InLab_Cortar_IdsCanto
 global InLab_Paineis_PosMundo, InLab_Paineis_UVAnel
 global InLab_Cortar_UV, InLab_Paineis_AngDir, InLab_Paineis_NormalArea, InLab_Paineis_Sinal, InLab_Paineis_EspelhoUV
-global INLAB_CORTAR_MAX_FACES_UNFOLD
+global INLAB_CORTAR_MAX_FACES_UNFOLD, INLAB_CORTAR_CA_DEF
 global INLAB_TESTE_SAIDA, INLAB_TESTE_FALHAS
 (
     local dirTeste = getFilenamePath (getSourceFileName())
@@ -62,7 +63,13 @@ global INLAB_TESTE_SAIDA, INLAB_TESTE_FALHAS
         local m = InLab_Cortar_LerMarcas cx
         checar "marcas: ida e volta" (m != undefined and m.costuras as string == "#{1, 5, 9}" and m.guias[1][1] == 12 and m.guias[1][2] == 45.0)
         checar "marcas: TemMarcas verdadeiro" (InLab_Cortar_TemMarcas cx)
-        linha ("      guias gravadas: " + (getAppData cx 7302))
+        linha ("      guias gravadas: " + (custAttributes.get cx.baseobject INLAB_CORTAR_CA_DEF).guias)
+        -- Tarefa 6: as marcas entram no Ctrl+Z (custom attribute na base, não appData)
+        undo on ( InLab_Cortar_GravarMarcas cx (InLab_CortarMarcas costuras:#{2,4} guias:#(#(7, -30.0))) )
+        local mU = InLab_Cortar_LerMarcas cx
+        max undo
+        local mV = InLab_Cortar_LerMarcas cx
+        checar "marcas: Ctrl+Z de uma gravação volta as marcas de antes"             (mU != undefined and mU.costuras as string == "#{2, 4}" and mV != undefined and mV.costuras as string == "#{1, 5, 9}" and mV.guias[1][1] == 12 and mV.guias[1][2] == 45.0)
 
         holdMaxFile()
         fetchMaxFile quiet:true

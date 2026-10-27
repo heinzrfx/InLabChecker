@@ -125,7 +125,7 @@
      para as faces de vivo cujo bitmap é religado ao canal 1).
 
  27/10/2026 (Mapear assistido, Tarefa 5): InLab_Mapear_Peca pula a peça (ou instância) com
-   costuras guardadas pelo Cortar (InLab_Cortar_TemMarcas, appData no nó): #info "peça
+   costuras guardadas pelo Cortar (InLab_Cortar_TemMarcas, custom attribute na base): #info "peça
    cortada nas costuras; use Cortar" e conta como mantida. Vale depois de reabrir o .max.
 */
 
