@@ -130,6 +130,10 @@
  26/10/2026 (Mapear por painéis, revisão final): InLab_Produto_MateriaisDaSelecao e
  InLab_Produto_Aplicar chamam InLab_VerUV_Garantir() antes (fn_ver_uv.ms): com o Ver
  UV ligado a lista e a renomeação liam o material das listras.
+ 28/10/2026 (delta "Puff Zazah 06/08", v2): parte com materia_prima_nao_aplica:true
+ (InLab_Produto_MateriaNaoAplica) é posição/geometria, não material: sai da lista
+ de materiais (PartesDeMaterial: seção Produto, renomeação, V-20/V-25/V-38) e do
+ aviso de matéria-prima. Continua nos nomes de objeto (a mesh existe).
 ================================================================================
 */
 
@@ -233,11 +237,20 @@ fn InLab_Produto_EntraNo3D parte =
     not fora
 )
 
+-- 28/10/2026 (delta Zazah v2): parte que é posição/geometria/variante, não
+-- material (ex.: "Posição" do Puff Zazah, tipo A, ligada a glb_multiplos). O
+-- export marca com materia_prima_nao_aplica:true. Só o campo vale: material_id
+-- vazio sem ele continua sendo lacuna do export.
+global InLab_Produto_MateriaNaoAplica
+fn InLab_Produto_MateriaNaoAplica parte =
+    InLab_Produto_Booleano parte "materia_prima_nao_aplica"
+
 global InLab_Produto_PartesDeMaterial
 fn InLab_Produto_PartesDeMaterial produto =
 (
     local partes = if produto == undefined then undefined else InLab_JSON_Obter produto "partes"
-    if isKindOf partes Array then (for p in partes where not (InLab_Produto_Booleano p "so3d") and (InLab_Produto_EntraNo3D p) collect p) else #()
+    if isKindOf partes Array then (for p in partes where not (InLab_Produto_Booleano p "so3d") and (InLab_Produto_EntraNo3D p) and
+        not (InLab_Produto_MateriaNaoAplica p) collect p) else #()
 )
 
 -- 09/10/2026 (issue #136): texto do produto no dropdown da seção Produto.
@@ -506,7 +519,7 @@ fn InLab_Produto_PartesSemMateriaPrima produto =
 (
     local partes = if produto == undefined then undefined else InLab_JSON_Obter produto "partes"
     if not (isKindOf partes Array) then #()
-    else for p in partes where not (InLab_Produto_Booleano p "tecido") and (InLab_Produto_EntraNo3D p) and
+    else for p in partes where not (InLab_Produto_Booleano p "tecido") and (InLab_Produto_EntraNo3D p) and not (InLab_Produto_MateriaNaoAplica p) and
         (local mp = InLab_JSON_Obter p "materia_prima"; isKindOf mp Array and (InLab_Produto_Texto mp "familia") == "" and (InLab_Produto_Texto mp "materia") == "") collect p
 )
 

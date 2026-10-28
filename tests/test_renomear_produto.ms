@@ -19,6 +19,7 @@ global InLab_Produto_Variantes, InLab_Produto_IndicePorArquivo
 global InLab_Produto_BaseDaCopia, InLab_Produto_CopiasDe, InLab_Produto_MotivoBloqueio, InLab_Produto_AvisosDeBloco
 global InLab_Produto_AvisoExportCopias
 global InLab_Produto_PartesSemMateriaPrima, InLab_Produto_AvisosMateriaPrima, InLab_Produto_EntraNo3D
+global InLab_Produto_MateriaNaoAplica, InLab_UltimaRenomeacao
 global InLab_JSON_LerArquivoUTF8, InLab_Produto_CarregarEmbutido, InLab_Produto_ResumoLista
 global INLAB_TESTE_SAIDA, INLAB_TESTE_FALHAS
 (
@@ -523,6 +524,23 @@ global INLAB_TESTE_SAIDA, INLAB_TESTE_FALHAS
                     append capasNo3D (InLab_Produto_Texto pr "cod_est")
             checar ("CAPA: lista embutida sem Capa na lista de materiais " + capasNo3D as string) (capasNo3D.count == 0)
         )
+
+        -- 28/10/2026 (delta Zazah v2): parte com materia_prima_nao_aplica:true é
+        -- posição/geometria: sem material e sem aviso, mas com mesh.
+        local jsZaz = "{\"produtos\": [{\"cod_est\": \"0010\", \"partes\": [" +
+            "{\"nome_parte\": \"Pino\", \"tipo\": \"C\", \"material_id\": \"ART_C_Pino\", \"mesh_final\": \"0010\", \"materia_prima\": {\"familia\": \"Metal\", \"materia\": \"\"}, \"materia_prima_nao_aplica\": false}, " +
+            "{\"nome_parte\": \"Posição\", \"tipo\": \"A\", \"material_id\": \"\", \"mesh_final\": \"0010\", \"materia_prima\": {\"familia\": \"\", \"materia\": \"\"}, \"materia_prima_nao_aplica\": true}, " +
+            "{\"nome_parte\": \"Lacuna\", \"tipo\": \"C\", \"material_id\": \"ART_C_Lacuna\", \"mesh_final\": \"0010_Lacuna\", \"materia_prima\": {\"familia\": \"\", \"materia\": \"\"}, \"materia_prima_nao_aplica\": false}]}]}"
+        local prodZaz = (InLab_Produto_Lista (InLab_ParseJSON jsZaz))[1]
+        local ptsZaz = InLab_JSON_Obter prodZaz "partes"
+        checar "Zazah: Posição com o campo true não aplica" (InLab_Produto_MateriaNaoAplica ptsZaz[2])
+        checar "Zazah: Pino com o campo false aplica" (not (InLab_Produto_MateriaNaoAplica ptsZaz[1]))
+        local nomesZaz = for p in (InLab_Produto_PartesDeMaterial prodZaz) collect (InLab_Produto_Texto p "nome_parte")
+        checar ("Zazah: PartesDeMaterial sem Posição " + nomesZaz as string) (nomesZaz as string == #("Pino", "Lacuna") as string)
+        local semMPZaz = for p in (InLab_Produto_PartesSemMateriaPrima prodZaz) collect (InLab_Produto_Texto p "nome_parte")
+        checar ("Zazah: aviso de matéria-prima só na Lacuna " + semMPZaz as string) (semMPZaz as string == #("Lacuna") as string)
+        local meshesZaz = InLab_Produto_MeshesDoProduto prodZaz avisar:false
+        checar ("Zazah: a mesh da Posição continua " + meshesZaz as string) (meshesZaz as string == #("0010", "0010_Lacuna") as string)
 
         -- Ctrl+Z nativo NÃO é testável daqui: rodado de dentro do script,
         -- `max undo` desfaz o script inteiro (inclusive a criação das caixas),
