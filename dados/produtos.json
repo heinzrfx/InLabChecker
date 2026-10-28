@@ -1,6 +1,6 @@
 {
   "versao_export": "nomenclatura-3D-v2",
-  "exportado_em": "2026-10-28T16:39:15.751Z",
+  "exportado_em": "2026-10-28T17:25:46.478Z",
   "produtos": [
     {
       "linha": "Artefacto & Beach",
@@ -13925,9 +13925,9 @@
           },
           "materias_primas": [],
           "materia_prima_herdada": false,
-          "materia_prima_nao_aplica": false,
-          "material_id": "ART_A_Posicao_Detalhe",
-          "configuravel": true,
+          "materia_prima_nao_aplica": true,
+          "material_id": "",
+          "configuravel": false,
           "entra_3d": true,
           "mesh_final": "07132222",
           "tecido": false,
