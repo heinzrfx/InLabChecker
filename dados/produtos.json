@@ -1,6 +1,6 @@
 {
   "versao_export": "nomenclatura-3D-v2",
-  "exportado_em": "2026-10-27T17:53:52.647Z",
+  "exportado_em": "2026-10-28T16:39:15.751Z",
   "produtos": [
     {
       "linha": "Artefacto & Beach",
@@ -90,6 +90,7 @@
             }
           ],
           "materia_prima_herdada": false,
+          "materia_prima_nao_aplica": false,
           "material_id": "ART_P_Estrutura",
           "configuravel": true,
           "entra_3d": true,
@@ -130,6 +131,7 @@
             }
           ],
           "materia_prima_herdada": false,
+          "materia_prima_nao_aplica": false,
           "material_id": "PD_Deslizador",
           "configuravel": false,
           "entra_3d": true,
@@ -235,6 +237,7 @@
             }
           ],
           "materia_prima_herdada": false,
+          "materia_prima_nao_aplica": false,
           "material_id": "ART_P_Estrutura",
           "configuravel": true,
           "entra_3d": true,
@@ -341,6 +344,7 @@
             }
           ],
           "materia_prima_herdada": false,
+          "materia_prima_nao_aplica": false,
           "material_id": "ART_P_Estrutura",
           "configuravel": true,
           "entra_3d": true,
@@ -446,6 +450,7 @@
             }
           ],
           "materia_prima_herdada": false,
+          "materia_prima_nao_aplica": false,
           "material_id": "ART_P_Estrutura",
           "configuravel": true,
           "entra_3d": true,
@@ -551,6 +556,7 @@
             }
           ],
           "materia_prima_herdada": false,
+          "materia_prima_nao_aplica": false,
           "material_id": "ART_P_Estrutura",
           "configuravel": true,
           "entra_3d": true,
@@ -671,6 +677,7 @@
             }
           ],
           "materia_prima_herdada": false,
+          "materia_prima_nao_aplica": false,
           "material_id": "ART_P_Pe",
           "configuravel": true,
           "entra_3d": true,
@@ -711,6 +718,7 @@
             }
           ],
           "materia_prima_herdada": false,
+          "materia_prima_nao_aplica": false,
           "material_id": "ART_T_Assento",
           "configuravel": true,
           "entra_3d": true,
@@ -751,6 +759,7 @@
             }
           ],
           "materia_prima_herdada": false,
+          "materia_prima_nao_aplica": false,
           "material_id": "PD_Deslizador",
           "configuravel": false,
           "entra_3d": true,
@@ -857,6 +866,7 @@
             }
           ],
           "materia_prima_herdada": false,
+          "materia_prima_nao_aplica": false,
           "material_id": "ART_P_Estrutura",
           "configuravel": true,
           "entra_3d": true,
@@ -897,6 +907,7 @@
             }
           ],
           "materia_prima_herdada": false,
+          "materia_prima_nao_aplica": false,
           "material_id": "PD_Deslizador",
           "configuravel": false,
           "entra_3d": true,
@@ -1003,6 +1014,7 @@
             }
           ],
           "materia_prima_herdada": false,
+          "materia_prima_nao_aplica": false,
           "material_id": "ART_P_Estrutura",
           "configuravel": true,
           "entra_3d": true,
@@ -1043,6 +1055,7 @@
             }
           ],
           "materia_prima_herdada": false,
+          "materia_prima_nao_aplica": false,
           "material_id": "PD_Deslizador",
           "configuravel": false,
           "entra_3d": true,
@@ -1183,6 +1196,7 @@
             }
           ],
           "materia_prima_herdada": false,
+          "materia_prima_nao_aplica": false,
           "material_id": "ART_C_Base",
           "configuravel": true,
           "entra_3d": true,
@@ -1223,6 +1237,7 @@
             }
           ],
           "materia_prima_herdada": false,
+          "materia_prima_nao_aplica": false,
           "material_id": "ART_T_Assento",
           "configuravel": true,
           "entra_3d": true,
@@ -1265,6 +1280,7 @@
             }
           ],
           "materia_prima_herdada": false,
+          "materia_prima_nao_aplica": false,
           "material_id": "ART_T_Encosto_Externo",
           "configuravel": true,
           "entra_3d": true,
@@ -1307,6 +1323,7 @@
             }
           ],
           "materia_prima_herdada": false,
+          "materia_prima_nao_aplica": false,
           "material_id": "ART_T_Encosto_Interno",
           "configuravel": true,
           "entra_3d": true,
@@ -1347,6 +1364,7 @@
             }
           ],
           "materia_prima_herdada": false,
+          "materia_prima_nao_aplica": false,
           "material_id": "ART_E_Ponteira",
           "configuravel": true,
           "entra_3d": true,
@@ -1387,6 +1405,7 @@
             }
           ],
           "materia_prima_herdada": false,
+          "materia_prima_nao_aplica": false,
           "material_id": "PD_Apoio_de_Pes",
           "configuravel": false,
           "entra_3d": true,
@@ -1427,6 +1446,7 @@
             }
           ],
           "materia_prima_herdada": false,
+          "materia_prima_nao_aplica": false,
           "material_id": "PD_Deslizador",
           "configuravel": false,
           "entra_3d": true,
@@ -1567,6 +1587,7 @@
             }
           ],
           "materia_prima_herdada": false,
+          "materia_prima_nao_aplica": false,
           "material_id": "ART_C_Base",
           "configuravel": true,
           "entra_3d": true,
@@ -1607,6 +1628,7 @@
             }
           ],
           "materia_prima_herdada": false,
+          "materia_prima_nao_aplica": false,
           "material_id": "ART_T_Assento",
           "configuravel": true,
           "entra_3d": true,
@@ -1649,6 +1671,7 @@
             }
           ],
           "materia_prima_herdada": false,
+          "materia_prima_nao_aplica": false,
           "material_id": "ART_T_Encosto_Externo",
           "configuravel": true,
           "entra_3d": true,
@@ -1691,6 +1714,7 @@
             }
           ],
           "materia_prima_herdada": false,
+          "materia_prima_nao_aplica": false,
           "material_id": "ART_T_Encosto_Interno",
           "configuravel": true,
           "entra_3d": true,
@@ -1731,6 +1755,7 @@
             }
           ],
           "materia_prima_herdada": false,
+          "materia_prima_nao_aplica": false,
           "material_id": "ART_E_Ponteira",
           "configuravel": true,
           "entra_3d": true,
@@ -1771,6 +1796,7 @@
             }
           ],
           "materia_prima_herdada": false,
+          "materia_prima_nao_aplica": false,
           "material_id": "PD_Apoio_de_Pes",
           "configuravel": false,
           "entra_3d": true,
@@ -1811,6 +1837,7 @@
             }
           ],
           "materia_prima_herdada": false,
+          "materia_prima_nao_aplica": false,
           "material_id": "PD_Deslizador",
           "configuravel": false,
           "entra_3d": true,
@@ -1963,6 +1990,7 @@
             }
           ],
           "materia_prima_herdada": false,
+          "materia_prima_nao_aplica": false,
           "material_id": "ART_C_Base",
           "configuravel": true,
           "entra_3d": true,
@@ -2005,6 +2033,7 @@
             }
           ],
           "materia_prima_herdada": false,
+          "materia_prima_nao_aplica": false,
           "material_id": "ART_T_Encosto_Externo",
           "configuravel": true,
           "entra_3d": true,
@@ -2047,6 +2076,7 @@
             }
           ],
           "materia_prima_herdada": false,
+          "materia_prima_nao_aplica": false,
           "material_id": "ART_T_Encosto_Interno",
           "configuravel": true,
           "entra_3d": true,
@@ -2087,6 +2117,7 @@
             }
           ],
           "materia_prima_herdada": false,
+          "materia_prima_nao_aplica": false,
           "material_id": "ART_T_Assento",
           "configuravel": true,
           "entra_3d": true,
@@ -2129,6 +2160,7 @@
             }
           ],
           "materia_prima_herdada": false,
+          "materia_prima_nao_aplica": false,
           "material_id": "ART_E_Base_Ponteira",
           "configuravel": true,
           "entra_3d": true,
@@ -2169,6 +2201,7 @@
             }
           ],
           "materia_prima_herdada": false,
+          "materia_prima_nao_aplica": false,
           "material_id": "PD_Deslizador",
           "configuravel": false,
           "entra_3d": true,
@@ -2315,6 +2348,7 @@
             }
           ],
           "materia_prima_herdada": false,
+          "materia_prima_nao_aplica": false,
           "material_id": "ART_C_Base",
           "configuravel": true,
           "entra_3d": true,
@@ -2357,6 +2391,7 @@
             }
           ],
           "materia_prima_herdada": false,
+          "materia_prima_nao_aplica": false,
           "material_id": "ART_C_Encosto_Externo",
           "configuravel": true,
           "entra_3d": true,
@@ -2399,6 +2434,7 @@
             }
           ],
           "materia_prima_herdada": false,
+          "materia_prima_nao_aplica": false,
           "material_id": "ART_T_Encosto_Interno",
           "configuravel": true,
           "entra_3d": true,
@@ -2439,6 +2475,7 @@
             }
           ],
           "materia_prima_herdada": false,
+          "materia_prima_nao_aplica": false,
           "material_id": "ART_T_Assento",
           "configuravel": true,
           "entra_3d": true,
@@ -2481,6 +2518,7 @@
             }
           ],
           "materia_prima_herdada": false,
+          "materia_prima_nao_aplica": false,
           "material_id": "ART_E_Base_Ponteira",
           "configuravel": true,
           "entra_3d": true,
@@ -2521,6 +2559,7 @@
             }
           ],
           "materia_prima_herdada": false,
+          "materia_prima_nao_aplica": false,
           "material_id": "PD_Deslizador",
           "configuravel": false,
           "entra_3d": true,
@@ -2673,6 +2712,7 @@
             }
           ],
           "materia_prima_herdada": false,
+          "materia_prima_nao_aplica": false,
           "material_id": "ART_C_Base",
           "configuravel": true,
           "entra_3d": true,
@@ -2715,6 +2755,7 @@
             }
           ],
           "materia_prima_herdada": false,
+          "materia_prima_nao_aplica": false,
           "material_id": "ART_T_Encosto_Externo",
           "configuravel": true,
           "entra_3d": true,
@@ -2757,6 +2798,7 @@
             }
           ],
           "materia_prima_herdada": false,
+          "materia_prima_nao_aplica": false,
           "material_id": "ART_T_Encosto_Interno",
           "configuravel": true,
           "entra_3d": true,
@@ -2797,6 +2839,7 @@
             }
           ],
           "materia_prima_herdada": false,
+          "materia_prima_nao_aplica": false,
           "material_id": "ART_T_Assento",
           "configuravel": true,
           "entra_3d": true,
@@ -2839,6 +2882,7 @@
             }
           ],
           "materia_prima_herdada": false,
+          "materia_prima_nao_aplica": false,
           "material_id": "ART_E_Base_Ponteira",
           "configuravel": true,
           "entra_3d": true,
@@ -2879,6 +2923,7 @@
             }
           ],
           "materia_prima_herdada": false,
+          "materia_prima_nao_aplica": false,
           "material_id": "PD_Deslizador",
           "configuravel": false,
           "entra_3d": true,
@@ -3025,6 +3070,7 @@
             }
           ],
           "materia_prima_herdada": false,
+          "materia_prima_nao_aplica": false,
           "material_id": "ART_C_Base",
           "configuravel": true,
           "entra_3d": true,
@@ -3067,6 +3113,7 @@
             }
           ],
           "materia_prima_herdada": false,
+          "materia_prima_nao_aplica": false,
           "material_id": "ART_C_Encosto_Externo",
           "configuravel": true,
           "entra_3d": true,
@@ -3107,6 +3154,7 @@
             }
           ],
           "materia_prima_herdada": false,
+          "materia_prima_nao_aplica": false,
           "material_id": "ART_T_Assento",
           "configuravel": true,
           "entra_3d": true,
@@ -3149,6 +3197,7 @@
             }
           ],
           "materia_prima_herdada": false,
+          "materia_prima_nao_aplica": false,
           "material_id": "ART_T_Encosto_Interno",
           "configuravel": true,
           "entra_3d": true,
@@ -3191,6 +3240,7 @@
             }
           ],
           "materia_prima_herdada": false,
+          "materia_prima_nao_aplica": false,
           "material_id": "ART_E_Base_Ponteira",
           "configuravel": true,
           "entra_3d": true,
@@ -3231,6 +3281,7 @@
             }
           ],
           "materia_prima_herdada": false,
+          "materia_prima_nao_aplica": false,
           "material_id": "PD_Deslizador",
           "configuravel": false,
           "entra_3d": true,
@@ -3389,6 +3440,7 @@
             }
           ],
           "materia_prima_herdada": false,
+          "materia_prima_nao_aplica": false,
           "material_id": "ART_P_Estrutura",
           "configuravel": true,
           "entra_3d": true,
@@ -3429,6 +3481,7 @@
             }
           ],
           "materia_prima_herdada": false,
+          "materia_prima_nao_aplica": false,
           "material_id": "ART_C_Pino",
           "configuravel": true,
           "entra_3d": true,
@@ -3471,6 +3524,7 @@
             }
           ],
           "materia_prima_herdada": false,
+          "materia_prima_nao_aplica": false,
           "material_id": "ART_A_Encosto_Externo",
           "configuravel": true,
           "entra_3d": true,
@@ -3513,6 +3567,7 @@
             }
           ],
           "materia_prima_herdada": false,
+          "materia_prima_nao_aplica": false,
           "material_id": "ART_T_Encosto_Almofada",
           "configuravel": true,
           "entra_3d": true,
@@ -3553,6 +3608,7 @@
             }
           ],
           "materia_prima_herdada": false,
+          "materia_prima_nao_aplica": false,
           "material_id": "ART_T_Assento",
           "configuravel": true,
           "entra_3d": true,
@@ -3596,6 +3652,7 @@
             }
           ],
           "materia_prima_herdada": false,
+          "materia_prima_nao_aplica": false,
           "material_id": "PD_Assento_Fechamento_Inferior",
           "configuravel": false,
           "entra_3d": true,
@@ -3636,6 +3693,7 @@
             }
           ],
           "materia_prima_herdada": false,
+          "materia_prima_nao_aplica": false,
           "material_id": "PD_Deslizador",
           "configuravel": false,
           "entra_3d": true,
@@ -3756,6 +3814,7 @@
             }
           ],
           "materia_prima_herdada": false,
+          "materia_prima_nao_aplica": false,
           "material_id": "ART_P_Estrutura",
           "configuravel": true,
           "entra_3d": true,
@@ -3789,15 +3848,16 @@
           "tipo": "C",
           "materia_prima": {
             "familia": "Soleta",
-            "materia": ""
+            "materia": "Acabamento"
           },
           "materias_primas": [
             {
               "familia": "Soleta",
-              "materia": ""
+              "materia": "Acabamento"
             }
           ],
           "materia_prima_herdada": false,
+          "materia_prima_nao_aplica": false,
           "material_id": "ART_C_Estrutura_Detalhe",
           "configuravel": true,
           "entra_3d": true,
@@ -3838,6 +3898,7 @@
             }
           ],
           "materia_prima_herdada": false,
+          "materia_prima_nao_aplica": false,
           "material_id": "PD_Deslizador",
           "configuravel": false,
           "entra_3d": true,
@@ -3958,6 +4019,7 @@
             }
           ],
           "materia_prima_herdada": false,
+          "materia_prima_nao_aplica": false,
           "material_id": "ART_P_Estrutura",
           "configuravel": true,
           "entra_3d": true,
@@ -3991,15 +4053,16 @@
           "tipo": "C",
           "materia_prima": {
             "familia": "Soleta",
-            "materia": ""
+            "materia": "Acabamento"
           },
           "materias_primas": [
             {
               "familia": "Soleta",
-              "materia": ""
+              "materia": "Acabamento"
             }
           ],
           "materia_prima_herdada": false,
+          "materia_prima_nao_aplica": false,
           "material_id": "ART_C_Estrutura_Detalhe",
           "configuravel": true,
           "entra_3d": true,
@@ -4040,6 +4103,7 @@
             }
           ],
           "materia_prima_herdada": false,
+          "materia_prima_nao_aplica": false,
           "material_id": "PD_Deslizador",
           "configuravel": false,
           "entra_3d": true,
@@ -4160,6 +4224,7 @@
             }
           ],
           "materia_prima_herdada": false,
+          "materia_prima_nao_aplica": false,
           "material_id": "ART_P_Tampo",
           "configuravel": true,
           "entra_3d": true,
@@ -4200,6 +4265,7 @@
             }
           ],
           "materia_prima_herdada": false,
+          "materia_prima_nao_aplica": false,
           "material_id": "ART_C_Base",
           "configuravel": true,
           "entra_3d": true,
@@ -4240,6 +4306,7 @@
             }
           ],
           "materia_prima_herdada": false,
+          "materia_prima_nao_aplica": false,
           "material_id": "PD_Deslizador",
           "configuravel": false,
           "entra_3d": true,
@@ -4369,6 +4436,7 @@
             }
           ],
           "materia_prima_herdada": false,
+          "materia_prima_nao_aplica": false,
           "material_id": "ART_P_Tampo",
           "configuravel": true,
           "entra_3d": true,
@@ -4411,6 +4479,7 @@
             }
           ],
           "materia_prima_herdada": false,
+          "materia_prima_nao_aplica": false,
           "material_id": "ART_P_Prato_Giratoria",
           "configuravel": true,
           "entra_3d": true,
@@ -4451,6 +4520,7 @@
             }
           ],
           "materia_prima_herdada": false,
+          "materia_prima_nao_aplica": false,
           "material_id": "ART_C_Base",
           "configuravel": true,
           "entra_3d": true,
@@ -4491,6 +4561,7 @@
             }
           ],
           "materia_prima_herdada": false,
+          "materia_prima_nao_aplica": false,
           "material_id": "PD_Deslizador",
           "configuravel": false,
           "entra_3d": true,
@@ -4611,6 +4682,7 @@
             }
           ],
           "materia_prima_herdada": false,
+          "materia_prima_nao_aplica": false,
           "material_id": "ART_P_Tampo",
           "configuravel": true,
           "entra_3d": true,
@@ -4651,6 +4723,7 @@
             }
           ],
           "materia_prima_herdada": false,
+          "materia_prima_nao_aplica": false,
           "material_id": "ART_C_Base",
           "configuravel": true,
           "entra_3d": true,
@@ -4691,6 +4764,7 @@
             }
           ],
           "materia_prima_herdada": false,
+          "materia_prima_nao_aplica": false,
           "material_id": "PD_Deslizador",
           "configuravel": false,
           "entra_3d": true,
@@ -4719,7 +4793,7 @@
       "marca": "BEACH",
       "natureza": "corpo_unico",
       "ref": true,
-      "ok_fd": true,
+      "ok_fd": false,
       "ok_3d": true,
       "ok_revisado": false,
       "animacao": false,
@@ -4811,6 +4885,7 @@
             }
           ],
           "materia_prima_herdada": false,
+          "materia_prima_nao_aplica": false,
           "material_id": "ART_P_Estrutura",
           "configuravel": true,
           "entra_3d": true,
@@ -4844,15 +4919,16 @@
           "tipo": "C",
           "materia_prima": {
             "familia": "Soleta",
-            "materia": ""
+            "materia": "Acabamento"
           },
           "materias_primas": [
             {
               "familia": "Soleta",
-              "materia": ""
+              "materia": "Acabamento"
             }
           ],
           "materia_prima_herdada": false,
+          "materia_prima_nao_aplica": false,
           "material_id": "ART_C_Estrutura_Detalhe",
           "configuravel": true,
           "entra_3d": true,
@@ -4893,6 +4969,7 @@
             }
           ],
           "materia_prima_herdada": false,
+          "materia_prima_nao_aplica": false,
           "material_id": "PD_Deslizador",
           "configuravel": false,
           "entra_3d": true,
@@ -4999,6 +5076,7 @@
             }
           ],
           "materia_prima_herdada": false,
+          "materia_prima_nao_aplica": false,
           "material_id": "ART_P_Estrutura",
           "configuravel": true,
           "entra_3d": true,
@@ -5039,6 +5117,7 @@
             }
           ],
           "materia_prima_herdada": false,
+          "materia_prima_nao_aplica": false,
           "material_id": "PD_Deslizador",
           "configuravel": false,
           "entra_3d": true,
@@ -5158,6 +5237,7 @@
             }
           ],
           "materia_prima_herdada": false,
+          "materia_prima_nao_aplica": false,
           "material_id": "ART_E_Estrutura",
           "configuravel": true,
           "entra_3d": true,
@@ -5200,6 +5280,7 @@
             }
           ],
           "materia_prima_herdada": false,
+          "materia_prima_nao_aplica": false,
           "material_id": "ART_E_Estrutura_Detalhe",
           "configuravel": true,
           "entra_3d": true,
@@ -5322,6 +5403,7 @@
             }
           ],
           "materia_prima_herdada": false,
+          "materia_prima_nao_aplica": false,
           "material_id": "ART_E_Estrutura_Superior",
           "configuravel": true,
           "entra_3d": true,
@@ -5364,6 +5446,7 @@
             }
           ],
           "materia_prima_herdada": false,
+          "materia_prima_nao_aplica": false,
           "material_id": "ART_E_Estrutura_Inferior",
           "configuravel": true,
           "entra_3d": true,
@@ -5406,6 +5489,7 @@
             }
           ],
           "materia_prima_herdada": false,
+          "materia_prima_nao_aplica": false,
           "material_id": "ART_E_Estrutura_Detalhe",
           "configuravel": true,
           "entra_3d": true,
@@ -5528,6 +5612,7 @@
             }
           ],
           "materia_prima_herdada": false,
+          "materia_prima_nao_aplica": false,
           "material_id": "ART_E_Estrutura_Superior",
           "configuravel": true,
           "entra_3d": true,
@@ -5570,6 +5655,7 @@
             }
           ],
           "materia_prima_herdada": false,
+          "materia_prima_nao_aplica": false,
           "material_id": "ART_E_Estrutura_Inferior",
           "configuravel": true,
           "entra_3d": true,
@@ -5612,6 +5698,7 @@
             }
           ],
           "materia_prima_herdada": false,
+          "materia_prima_nao_aplica": false,
           "material_id": "ART_E_Estrutura_Detalhe",
           "configuravel": true,
           "entra_3d": true,
@@ -5731,6 +5818,7 @@
             }
           ],
           "materia_prima_herdada": false,
+          "materia_prima_nao_aplica": false,
           "material_id": "ART_E_Estrutura",
           "configuravel": true,
           "entra_3d": true,
@@ -5773,6 +5861,7 @@
             }
           ],
           "materia_prima_herdada": false,
+          "materia_prima_nao_aplica": false,
           "material_id": "ART_E_Estrutura_Detalhe",
           "configuravel": true,
           "entra_3d": true,
@@ -5895,6 +5984,7 @@
             }
           ],
           "materia_prima_herdada": false,
+          "materia_prima_nao_aplica": false,
           "material_id": "ART_E_Estrutura_Superior",
           "configuravel": true,
           "entra_3d": true,
@@ -5937,6 +6027,7 @@
             }
           ],
           "materia_prima_herdada": false,
+          "materia_prima_nao_aplica": false,
           "material_id": "ART_E_Estrutura_Inferior",
           "configuravel": true,
           "entra_3d": true,
@@ -5979,6 +6070,7 @@
             }
           ],
           "materia_prima_herdada": false,
+          "materia_prima_nao_aplica": false,
           "material_id": "ART_E_Estrutura_Detalhe",
           "configuravel": true,
           "entra_3d": true,
@@ -6101,6 +6193,7 @@
             }
           ],
           "materia_prima_herdada": false,
+          "materia_prima_nao_aplica": false,
           "material_id": "ART_E_Estrutura_Superior",
           "configuravel": true,
           "entra_3d": true,
@@ -6143,6 +6236,7 @@
             }
           ],
           "materia_prima_herdada": false,
+          "materia_prima_nao_aplica": false,
           "material_id": "ART_E_Estrutura_Inferior",
           "configuravel": true,
           "entra_3d": true,
@@ -6185,6 +6279,7 @@
             }
           ],
           "materia_prima_herdada": false,
+          "materia_prima_nao_aplica": false,
           "material_id": "ART_E_Estrutura_Detalhe",
           "configuravel": true,
           "entra_3d": true,
@@ -6304,6 +6399,7 @@
             }
           ],
           "materia_prima_herdada": false,
+          "materia_prima_nao_aplica": false,
           "material_id": "ART_E_Estrutura",
           "configuravel": true,
           "entra_3d": true,
@@ -6346,6 +6442,7 @@
             }
           ],
           "materia_prima_herdada": false,
+          "materia_prima_nao_aplica": false,
           "material_id": "ART_E_Estrutura_Detalhe",
           "configuravel": true,
           "entra_3d": true,
@@ -6465,6 +6562,7 @@
             }
           ],
           "materia_prima_herdada": false,
+          "materia_prima_nao_aplica": false,
           "material_id": "ART_E_Estrutura",
           "configuravel": true,
           "entra_3d": true,
@@ -6507,6 +6605,7 @@
             }
           ],
           "materia_prima_herdada": false,
+          "materia_prima_nao_aplica": false,
           "material_id": "ART_E_Estrutura_Detalhe",
           "configuravel": true,
           "entra_3d": true,
@@ -6626,6 +6725,7 @@
             }
           ],
           "materia_prima_herdada": false,
+          "materia_prima_nao_aplica": false,
           "material_id": "ART_E_Estrutura",
           "configuravel": true,
           "entra_3d": true,
@@ -6668,6 +6768,7 @@
             }
           ],
           "materia_prima_herdada": false,
+          "materia_prima_nao_aplica": false,
           "material_id": "ART_E_Estrutura_Detalhe",
           "configuravel": true,
           "entra_3d": true,
@@ -6813,6 +6914,7 @@
             }
           ],
           "materia_prima_herdada": false,
+          "materia_prima_nao_aplica": false,
           "material_id": "ART_P_Estrutura",
           "configuravel": true,
           "entra_3d": true,
@@ -6853,6 +6955,7 @@
             }
           ],
           "materia_prima_herdada": false,
+          "materia_prima_nao_aplica": false,
           "material_id": "ART_P_Tampo",
           "configuravel": true,
           "entra_3d": true,
@@ -6895,6 +6998,7 @@
             }
           ],
           "materia_prima_herdada": false,
+          "materia_prima_nao_aplica": false,
           "material_id": "ART_C_Estrutura_Detalhe",
           "configuravel": true,
           "entra_3d": true,
@@ -6935,6 +7039,7 @@
             }
           ],
           "materia_prima_herdada": false,
+          "materia_prima_nao_aplica": false,
           "material_id": "ART_C_Base",
           "configuravel": true,
           "entra_3d": true,
@@ -6975,6 +7080,7 @@
             }
           ],
           "materia_prima_herdada": false,
+          "materia_prima_nao_aplica": false,
           "material_id": "ART_E_Regulagem",
           "configuravel": true,
           "entra_3d": true,
@@ -7015,6 +7121,7 @@
             }
           ],
           "materia_prima_herdada": false,
+          "materia_prima_nao_aplica": false,
           "material_id": "PD_Deslizador",
           "configuravel": false,
           "entra_3d": true,
@@ -7121,6 +7228,7 @@
             }
           ],
           "materia_prima_herdada": false,
+          "materia_prima_nao_aplica": false,
           "material_id": "ART_P_Estrutura",
           "configuravel": true,
           "entra_3d": true,
@@ -7161,6 +7269,7 @@
             }
           ],
           "materia_prima_herdada": false,
+          "materia_prima_nao_aplica": false,
           "material_id": "PD_Deslizador",
           "configuravel": false,
           "entra_3d": true,
@@ -7280,6 +7389,7 @@
             }
           ],
           "materia_prima_herdada": false,
+          "materia_prima_nao_aplica": false,
           "material_id": "ART_P_Estrutura",
           "configuravel": true,
           "entra_3d": true,
@@ -7320,6 +7430,7 @@
             }
           ],
           "materia_prima_herdada": false,
+          "materia_prima_nao_aplica": false,
           "material_id": "ART_E_Espelho",
           "configuravel": true,
           "entra_3d": true,
@@ -7439,6 +7550,7 @@
             }
           ],
           "materia_prima_herdada": false,
+          "materia_prima_nao_aplica": false,
           "material_id": "ART_P_Estrutura",
           "configuravel": true,
           "entra_3d": true,
@@ -7479,6 +7591,7 @@
             }
           ],
           "materia_prima_herdada": false,
+          "materia_prima_nao_aplica": false,
           "material_id": "ART_E_Espelho",
           "configuravel": true,
           "entra_3d": true,
@@ -7598,6 +7711,7 @@
             }
           ],
           "materia_prima_herdada": false,
+          "materia_prima_nao_aplica": false,
           "material_id": "ART_P_Estrutura",
           "configuravel": true,
           "entra_3d": true,
@@ -7638,6 +7752,7 @@
             }
           ],
           "materia_prima_herdada": false,
+          "materia_prima_nao_aplica": false,
           "material_id": "ART_E_Espelho",
           "configuravel": true,
           "entra_3d": true,
@@ -7757,6 +7872,7 @@
             }
           ],
           "materia_prima_herdada": false,
+          "materia_prima_nao_aplica": false,
           "material_id": "ART_P_Estrutura",
           "configuravel": true,
           "entra_3d": true,
@@ -7797,6 +7913,7 @@
             }
           ],
           "materia_prima_herdada": false,
+          "materia_prima_nao_aplica": false,
           "material_id": "ART_E_Espelho",
           "configuravel": true,
           "entra_3d": true,
@@ -7916,6 +8033,7 @@
             }
           ],
           "materia_prima_herdada": false,
+          "materia_prima_nao_aplica": false,
           "material_id": "ART_P_Estrutura",
           "configuravel": true,
           "entra_3d": true,
@@ -7956,6 +8074,7 @@
             }
           ],
           "materia_prima_herdada": false,
+          "materia_prima_nao_aplica": false,
           "material_id": "ART_E_Espelho",
           "configuravel": true,
           "entra_3d": true,
@@ -8075,6 +8194,7 @@
             }
           ],
           "materia_prima_herdada": false,
+          "materia_prima_nao_aplica": false,
           "material_id": "ART_P_Estrutura",
           "configuravel": true,
           "entra_3d": true,
@@ -8115,6 +8235,7 @@
             }
           ],
           "materia_prima_herdada": false,
+          "materia_prima_nao_aplica": false,
           "material_id": "ART_E_Espelho",
           "configuravel": true,
           "entra_3d": true,
@@ -8234,6 +8355,7 @@
             }
           ],
           "materia_prima_herdada": false,
+          "materia_prima_nao_aplica": false,
           "material_id": "ART_P_Estrutura",
           "configuravel": true,
           "entra_3d": true,
@@ -8274,6 +8396,7 @@
             }
           ],
           "materia_prima_herdada": false,
+          "materia_prima_nao_aplica": false,
           "material_id": "ART_E_Espelho",
           "configuravel": true,
           "entra_3d": true,
@@ -8393,6 +8516,7 @@
             }
           ],
           "materia_prima_herdada": false,
+          "materia_prima_nao_aplica": false,
           "material_id": "ART_P_Estrutura",
           "configuravel": true,
           "entra_3d": true,
@@ -8433,6 +8557,7 @@
             }
           ],
           "materia_prima_herdada": false,
+          "materia_prima_nao_aplica": false,
           "material_id": "ART_E_Espelho",
           "configuravel": true,
           "entra_3d": true,
@@ -8552,6 +8677,7 @@
             }
           ],
           "materia_prima_herdada": false,
+          "materia_prima_nao_aplica": false,
           "material_id": "ART_P_Estrutura",
           "configuravel": true,
           "entra_3d": true,
@@ -8592,6 +8718,7 @@
             }
           ],
           "materia_prima_herdada": false,
+          "materia_prima_nao_aplica": false,
           "material_id": "ART_E_Espelho",
           "configuravel": true,
           "entra_3d": true,
@@ -8723,6 +8850,7 @@
             }
           ],
           "materia_prima_herdada": false,
+          "materia_prima_nao_aplica": false,
           "material_id": "ART_C_Pe",
           "configuravel": true,
           "entra_3d": true,
@@ -8763,6 +8891,7 @@
             }
           ],
           "materia_prima_herdada": false,
+          "materia_prima_nao_aplica": false,
           "material_id": "ART_T_Assento",
           "configuravel": true,
           "entra_3d": true,
@@ -8803,6 +8932,7 @@
             }
           ],
           "materia_prima_herdada": false,
+          "materia_prima_nao_aplica": false,
           "material_id": "ART_T_Encosto",
           "configuravel": true,
           "entra_3d": true,
@@ -8843,6 +8973,7 @@
             }
           ],
           "materia_prima_herdada": false,
+          "materia_prima_nao_aplica": false,
           "material_id": "PD_Deslizador",
           "configuravel": false,
           "entra_3d": true,
@@ -8878,6 +9009,7 @@
           },
           "materias_primas": [],
           "materia_prima_herdada": false,
+          "materia_prima_nao_aplica": false,
           "material_id": "",
           "configuravel": false,
           "entra_3d": false,
@@ -8940,6 +9072,7 @@
             }
           ],
           "materia_prima_herdada": false,
+          "materia_prima_nao_aplica": false,
           "material_id": "PD_Espacador",
           "configuravel": false,
           "entra_3d": true,
@@ -9069,6 +9202,7 @@
             }
           ],
           "materia_prima_herdada": false,
+          "materia_prima_nao_aplica": false,
           "material_id": "ART_C_Base",
           "configuravel": true,
           "entra_3d": true,
@@ -9109,6 +9243,7 @@
             }
           ],
           "materia_prima_herdada": false,
+          "materia_prima_nao_aplica": false,
           "material_id": "ART_T_Assento",
           "configuravel": true,
           "entra_3d": true,
@@ -9149,6 +9284,7 @@
             }
           ],
           "materia_prima_herdada": false,
+          "materia_prima_nao_aplica": false,
           "material_id": "ART_T_Encosto",
           "configuravel": true,
           "entra_3d": true,
@@ -9189,6 +9325,7 @@
             }
           ],
           "materia_prima_herdada": false,
+          "materia_prima_nao_aplica": false,
           "material_id": "PD_Deslizador",
           "configuravel": false,
           "entra_3d": true,
@@ -9332,6 +9469,7 @@
             }
           ],
           "materia_prima_herdada": false,
+          "materia_prima_nao_aplica": false,
           "material_id": "ART_C_Estrutura",
           "configuravel": true,
           "entra_3d": true,
@@ -9372,6 +9510,7 @@
             }
           ],
           "materia_prima_herdada": false,
+          "materia_prima_nao_aplica": false,
           "material_id": "ART_T_Assento",
           "configuravel": true,
           "entra_3d": true,
@@ -9412,6 +9551,7 @@
             }
           ],
           "materia_prima_herdada": false,
+          "materia_prima_nao_aplica": false,
           "material_id": "ART_T_Encosto",
           "configuravel": true,
           "entra_3d": true,
@@ -9454,6 +9594,7 @@
             }
           ],
           "materia_prima_herdada": false,
+          "materia_prima_nao_aplica": false,
           "material_id": "ART_T_Almofada_Decorativa",
           "configuravel": true,
           "entra_3d": true,
@@ -9494,6 +9635,7 @@
             }
           ],
           "materia_prima_herdada": false,
+          "materia_prima_nao_aplica": false,
           "material_id": "PD_Deslizador",
           "configuravel": false,
           "entra_3d": true,
@@ -9614,6 +9756,7 @@
             }
           ],
           "materia_prima_herdada": false,
+          "materia_prima_nao_aplica": false,
           "material_id": "ART_C_Base",
           "configuravel": true,
           "entra_3d": true,
@@ -9654,6 +9797,7 @@
             }
           ],
           "materia_prima_herdada": false,
+          "materia_prima_nao_aplica": false,
           "material_id": "ART_P_Assento",
           "configuravel": true,
           "entra_3d": true,
@@ -9694,6 +9838,7 @@
             }
           ],
           "materia_prima_herdada": false,
+          "materia_prima_nao_aplica": false,
           "material_id": "PD_Deslizador",
           "configuravel": false,
           "entra_3d": true,
@@ -9817,6 +9962,7 @@
             }
           ],
           "materia_prima_herdada": false,
+          "materia_prima_nao_aplica": false,
           "material_id": "ART_C_Base",
           "configuravel": true,
           "entra_3d": true,
@@ -9857,6 +10003,7 @@
             }
           ],
           "materia_prima_herdada": false,
+          "materia_prima_nao_aplica": false,
           "material_id": "ART_C_Friso",
           "configuravel": true,
           "entra_3d": true,
@@ -9897,6 +10044,7 @@
             }
           ],
           "materia_prima_herdada": false,
+          "materia_prima_nao_aplica": false,
           "material_id": "ART_T_Assento",
           "configuravel": true,
           "entra_3d": true,
@@ -9937,6 +10085,7 @@
             }
           ],
           "materia_prima_herdada": false,
+          "materia_prima_nao_aplica": false,
           "material_id": "PD_Deslizador",
           "configuravel": false,
           "entra_3d": true,
@@ -10060,6 +10209,7 @@
             }
           ],
           "materia_prima_herdada": false,
+          "materia_prima_nao_aplica": false,
           "material_id": "ART_C_Base",
           "configuravel": true,
           "entra_3d": true,
@@ -10100,6 +10250,7 @@
             }
           ],
           "materia_prima_herdada": false,
+          "materia_prima_nao_aplica": false,
           "material_id": "ART_C_Friso",
           "configuravel": true,
           "entra_3d": true,
@@ -10140,6 +10291,7 @@
             }
           ],
           "materia_prima_herdada": false,
+          "materia_prima_nao_aplica": false,
           "material_id": "ART_T_Assento",
           "configuravel": true,
           "entra_3d": true,
@@ -10180,6 +10332,7 @@
             }
           ],
           "materia_prima_herdada": false,
+          "materia_prima_nao_aplica": false,
           "material_id": "PD_Deslizador",
           "configuravel": false,
           "entra_3d": true,
@@ -10300,6 +10453,7 @@
             }
           ],
           "materia_prima_herdada": false,
+          "materia_prima_nao_aplica": false,
           "material_id": "ART_C_Base",
           "configuravel": true,
           "entra_3d": true,
@@ -10340,6 +10494,7 @@
             }
           ],
           "materia_prima_herdada": false,
+          "materia_prima_nao_aplica": false,
           "material_id": "ART_T_Assento",
           "configuravel": true,
           "entra_3d": true,
@@ -10380,6 +10535,7 @@
             }
           ],
           "materia_prima_herdada": false,
+          "materia_prima_nao_aplica": false,
           "material_id": "PD_Deslizador",
           "configuravel": false,
           "entra_3d": true,
@@ -10489,6 +10645,7 @@
             }
           ],
           "materia_prima_herdada": false,
+          "materia_prima_nao_aplica": false,
           "material_id": "ART_T_Assento",
           "configuravel": true,
           "entra_3d": true,
@@ -10529,6 +10686,7 @@
             }
           ],
           "materia_prima_herdada": false,
+          "materia_prima_nao_aplica": false,
           "material_id": "ART_T_Pe",
           "configuravel": true,
           "entra_3d": true,
@@ -10569,6 +10727,7 @@
             }
           ],
           "materia_prima_herdada": false,
+          "materia_prima_nao_aplica": false,
           "material_id": "PD_Deslizador",
           "configuravel": false,
           "entra_3d": true,
@@ -10692,6 +10851,7 @@
             }
           ],
           "materia_prima_herdada": false,
+          "materia_prima_nao_aplica": false,
           "material_id": "ART_C_Pe",
           "configuravel": true,
           "entra_3d": true,
@@ -10732,6 +10892,7 @@
             }
           ],
           "materia_prima_herdada": false,
+          "materia_prima_nao_aplica": false,
           "material_id": "ART_C_Bandeja",
           "configuravel": true,
           "entra_3d": true,
@@ -10772,6 +10933,7 @@
             }
           ],
           "materia_prima_herdada": false,
+          "materia_prima_nao_aplica": false,
           "material_id": "ART_T_Estrutura",
           "configuravel": true,
           "entra_3d": true,
@@ -10812,6 +10974,7 @@
             }
           ],
           "materia_prima_herdada": false,
+          "materia_prima_nao_aplica": false,
           "material_id": "PD_Deslizador",
           "configuravel": false,
           "entra_3d": true,
@@ -10918,6 +11081,7 @@
             }
           ],
           "materia_prima_herdada": false,
+          "materia_prima_nao_aplica": false,
           "material_id": "ART_T_Estrutura",
           "configuravel": true,
           "entra_3d": true,
@@ -10958,6 +11122,7 @@
             }
           ],
           "materia_prima_herdada": false,
+          "materia_prima_nao_aplica": false,
           "material_id": "PD_Deslizador",
           "configuravel": false,
           "entra_3d": true,
@@ -11078,6 +11243,7 @@
             }
           ],
           "materia_prima_herdada": false,
+          "materia_prima_nao_aplica": false,
           "material_id": "ART_C_Pe",
           "configuravel": true,
           "entra_3d": true,
@@ -11118,6 +11284,7 @@
             }
           ],
           "materia_prima_herdada": false,
+          "materia_prima_nao_aplica": false,
           "material_id": "ART_T_Estrutura",
           "configuravel": true,
           "entra_3d": true,
@@ -11158,6 +11325,7 @@
             }
           ],
           "materia_prima_herdada": false,
+          "materia_prima_nao_aplica": false,
           "material_id": "PD_Deslizador",
           "configuravel": false,
           "entra_3d": true,
@@ -11279,6 +11447,7 @@
             }
           ],
           "materia_prima_herdada": false,
+          "materia_prima_nao_aplica": false,
           "material_id": "ART_T_Assento",
           "configuravel": true,
           "entra_3d": true,
@@ -11321,6 +11490,7 @@
             }
           ],
           "materia_prima_herdada": false,
+          "materia_prima_nao_aplica": false,
           "material_id": "ART_P_Estrutura_Revestimento",
           "configuravel": true,
           "entra_3d": true,
@@ -11361,6 +11531,7 @@
             }
           ],
           "materia_prima_herdada": false,
+          "materia_prima_nao_aplica": false,
           "material_id": "ART_C_Pe",
           "configuravel": true,
           "entra_3d": true,
@@ -11401,6 +11572,7 @@
             }
           ],
           "materia_prima_herdada": false,
+          "materia_prima_nao_aplica": false,
           "material_id": "PD_Deslizador",
           "configuravel": false,
           "entra_3d": true,
@@ -11521,6 +11693,7 @@
             }
           ],
           "materia_prima_herdada": false,
+          "materia_prima_nao_aplica": false,
           "material_id": "ART_C_Base",
           "configuravel": true,
           "entra_3d": true,
@@ -11561,6 +11734,7 @@
             }
           ],
           "materia_prima_herdada": false,
+          "materia_prima_nao_aplica": false,
           "material_id": "ART_T_Assento",
           "configuravel": true,
           "entra_3d": true,
@@ -11601,6 +11775,7 @@
             }
           ],
           "materia_prima_herdada": false,
+          "materia_prima_nao_aplica": false,
           "material_id": "PD_Deslizador",
           "configuravel": false,
           "entra_3d": true,
@@ -11636,6 +11811,7 @@
           },
           "materias_primas": [],
           "materia_prima_herdada": false,
+          "materia_prima_nao_aplica": false,
           "material_id": "",
           "configuravel": false,
           "entra_3d": false,
@@ -11778,6 +11954,7 @@
             }
           ],
           "materia_prima_herdada": false,
+          "materia_prima_nao_aplica": false,
           "material_id": "ART_C_Base",
           "configuravel": true,
           "entra_3d": true,
@@ -11818,6 +11995,7 @@
             }
           ],
           "materia_prima_herdada": false,
+          "materia_prima_nao_aplica": false,
           "material_id": "ART_T_Assento",
           "configuravel": true,
           "entra_3d": true,
@@ -11858,6 +12036,7 @@
             }
           ],
           "materia_prima_herdada": false,
+          "materia_prima_nao_aplica": false,
           "material_id": "PD_Deslizador",
           "configuravel": false,
           "entra_3d": true,
@@ -11893,6 +12072,7 @@
           },
           "materias_primas": [],
           "materia_prima_herdada": false,
+          "materia_prima_nao_aplica": false,
           "material_id": "",
           "configuravel": false,
           "entra_3d": false,
@@ -12073,6 +12253,7 @@
             }
           ],
           "materia_prima_herdada": false,
+          "materia_prima_nao_aplica": false,
           "material_id": "ART_P_Base",
           "configuravel": true,
           "entra_3d": true,
@@ -12113,6 +12294,7 @@
             }
           ],
           "materia_prima_herdada": false,
+          "materia_prima_nao_aplica": false,
           "material_id": "ART_T_Assento",
           "configuravel": true,
           "entra_3d": true,
@@ -12155,6 +12337,7 @@
             }
           ],
           "materia_prima_herdada": false,
+          "materia_prima_nao_aplica": false,
           "material_id": "ART_C_Pino_Detalhe",
           "configuravel": true,
           "entra_3d": true,
@@ -12197,6 +12380,7 @@
             }
           ],
           "materia_prima_herdada": false,
+          "materia_prima_nao_aplica": false,
           "material_id": "ART_C_Faixa_Detalhe",
           "configuravel": true,
           "entra_3d": true,
@@ -12232,8 +12416,9 @@
           },
           "materias_primas": [],
           "materia_prima_herdada": false,
-          "material_id": "ART_A_Posicao",
-          "configuravel": true,
+          "materia_prima_nao_aplica": true,
+          "material_id": "",
+          "configuravel": false,
           "entra_3d": true,
           "mesh_final": "07132220",
           "tecido": false,
@@ -12272,6 +12457,7 @@
             }
           ],
           "materia_prima_herdada": false,
+          "materia_prima_nao_aplica": false,
           "material_id": "PD_Deslizador",
           "configuravel": false,
           "entra_3d": true,
@@ -12392,6 +12578,7 @@
             }
           ],
           "materia_prima_herdada": false,
+          "materia_prima_nao_aplica": false,
           "material_id": "ART_C_Base",
           "configuravel": true,
           "entra_3d": true,
@@ -12432,6 +12619,7 @@
             }
           ],
           "materia_prima_herdada": false,
+          "materia_prima_nao_aplica": false,
           "material_id": "ART_T_Assento",
           "configuravel": true,
           "entra_3d": true,
@@ -12472,6 +12660,7 @@
             }
           ],
           "materia_prima_herdada": false,
+          "materia_prima_nao_aplica": false,
           "material_id": "PD_Deslizador",
           "configuravel": false,
           "entra_3d": true,
@@ -12507,6 +12696,7 @@
           },
           "materias_primas": [],
           "materia_prima_herdada": false,
+          "materia_prima_nao_aplica": false,
           "material_id": "",
           "configuravel": false,
           "entra_3d": false,
@@ -12649,6 +12839,7 @@
             }
           ],
           "materia_prima_herdada": false,
+          "materia_prima_nao_aplica": false,
           "material_id": "ART_C_Base",
           "configuravel": true,
           "entra_3d": true,
@@ -12689,6 +12880,7 @@
             }
           ],
           "materia_prima_herdada": false,
+          "materia_prima_nao_aplica": false,
           "material_id": "ART_T_Assento",
           "configuravel": true,
           "entra_3d": true,
@@ -12729,6 +12921,7 @@
             }
           ],
           "materia_prima_herdada": false,
+          "materia_prima_nao_aplica": false,
           "material_id": "PD_Deslizador",
           "configuravel": false,
           "entra_3d": true,
@@ -12764,6 +12957,7 @@
           },
           "materias_primas": [],
           "materia_prima_herdada": false,
+          "materia_prima_nao_aplica": false,
           "material_id": "",
           "configuravel": false,
           "entra_3d": false,
@@ -12906,6 +13100,7 @@
             }
           ],
           "materia_prima_herdada": false,
+          "materia_prima_nao_aplica": false,
           "material_id": "ART_C_Base",
           "configuravel": true,
           "entra_3d": true,
@@ -12946,6 +13141,7 @@
             }
           ],
           "materia_prima_herdada": false,
+          "materia_prima_nao_aplica": false,
           "material_id": "ART_T_Assento",
           "configuravel": true,
           "entra_3d": true,
@@ -12986,6 +13182,7 @@
             }
           ],
           "materia_prima_herdada": false,
+          "materia_prima_nao_aplica": false,
           "material_id": "PD_Deslizador",
           "configuravel": false,
           "entra_3d": true,
@@ -13106,6 +13303,7 @@
             }
           ],
           "materia_prima_herdada": false,
+          "materia_prima_nao_aplica": false,
           "material_id": "ART_C_Base",
           "configuravel": true,
           "entra_3d": true,
@@ -13146,6 +13344,7 @@
             }
           ],
           "materia_prima_herdada": false,
+          "materia_prima_nao_aplica": false,
           "material_id": "ART_T_Assento",
           "configuravel": true,
           "entra_3d": true,
@@ -13186,6 +13385,7 @@
             }
           ],
           "materia_prima_herdada": false,
+          "materia_prima_nao_aplica": false,
           "material_id": "PD_Deslizador",
           "configuravel": false,
           "entra_3d": true,
@@ -13306,6 +13506,7 @@
             }
           ],
           "materia_prima_herdada": false,
+          "materia_prima_nao_aplica": false,
           "material_id": "ART_C_Base",
           "configuravel": true,
           "entra_3d": true,
@@ -13346,6 +13547,7 @@
             }
           ],
           "materia_prima_herdada": false,
+          "materia_prima_nao_aplica": false,
           "material_id": "ART_T_Assento",
           "configuravel": true,
           "entra_3d": true,
@@ -13386,6 +13588,7 @@
             }
           ],
           "materia_prima_herdada": false,
+          "materia_prima_nao_aplica": false,
           "material_id": "PD_Deslizador",
           "configuravel": false,
           "entra_3d": true,
@@ -13557,6 +13760,7 @@
             }
           ],
           "materia_prima_herdada": false,
+          "materia_prima_nao_aplica": false,
           "material_id": "ART_P_Base",
           "configuravel": true,
           "entra_3d": true,
@@ -13597,6 +13801,7 @@
             }
           ],
           "materia_prima_herdada": false,
+          "materia_prima_nao_aplica": false,
           "material_id": "ART_T_Assento",
           "configuravel": true,
           "entra_3d": true,
@@ -13639,6 +13844,7 @@
             }
           ],
           "materia_prima_herdada": false,
+          "materia_prima_nao_aplica": false,
           "material_id": "ART_C_Pino_Detalhe",
           "configuravel": true,
           "entra_3d": true,
@@ -13681,6 +13887,7 @@
             }
           ],
           "materia_prima_herdada": false,
+          "materia_prima_nao_aplica": false,
           "material_id": "ART_C_Faixa_Detalhe",
           "configuravel": true,
           "entra_3d": true,
@@ -13718,6 +13925,7 @@
           },
           "materias_primas": [],
           "materia_prima_herdada": false,
+          "materia_prima_nao_aplica": false,
           "material_id": "ART_A_Posicao_Detalhe",
           "configuravel": true,
           "entra_3d": true,
@@ -13758,6 +13966,7 @@
             }
           ],
           "materia_prima_herdada": false,
+          "materia_prima_nao_aplica": false,
           "material_id": "PD_Deslizador",
           "configuravel": false,
           "entra_3d": true,
@@ -13910,6 +14119,7 @@
             }
           ],
           "materia_prima_herdada": false,
+          "materia_prima_nao_aplica": false,
           "material_id": "ART_C_Pe",
           "configuravel": true,
           "entra_3d": true,
@@ -13950,6 +14160,7 @@
             }
           ],
           "materia_prima_herdada": false,
+          "materia_prima_nao_aplica": false,
           "material_id": "ART_T_Estrutura",
           "configuravel": true,
           "entra_3d": true,
@@ -13992,6 +14203,7 @@
             }
           ],
           "materia_prima_herdada": false,
+          "materia_prima_nao_aplica": false,
           "material_id": "ART_T_Encosto_Almofada",
           "configuravel": true,
           "entra_3d": true,
@@ -14034,6 +14246,7 @@
             }
           ],
           "materia_prima_herdada": false,
+          "materia_prima_nao_aplica": false,
           "material_id": "ART_T_Almofada_Decorativa",
           "configuravel": true,
           "entra_3d": true,
@@ -14076,6 +14289,7 @@
             }
           ],
           "materia_prima_herdada": false,
+          "materia_prima_nao_aplica": false,
           "material_id": "ART_T_Braco_Almofada",
           "configuravel": true,
           "entra_3d": true,
@@ -14116,6 +14330,7 @@
             }
           ],
           "materia_prima_herdada": false,
+          "materia_prima_nao_aplica": false,
           "material_id": "PD_Deslizador",
           "configuravel": false,
           "entra_3d": true,
@@ -14268,6 +14483,7 @@
             }
           ],
           "materia_prima_herdada": false,
+          "materia_prima_nao_aplica": false,
           "material_id": "ART_C_Pe",
           "configuravel": true,
           "entra_3d": true,
@@ -14308,6 +14524,7 @@
             }
           ],
           "materia_prima_herdada": false,
+          "materia_prima_nao_aplica": false,
           "material_id": "ART_T_Estrutura",
           "configuravel": true,
           "entra_3d": true,
@@ -14350,6 +14567,7 @@
             }
           ],
           "materia_prima_herdada": false,
+          "materia_prima_nao_aplica": false,
           "material_id": "ART_T_Encosto_Almofada",
           "configuravel": true,
           "entra_3d": true,
@@ -14392,6 +14610,7 @@
             }
           ],
           "materia_prima_herdada": false,
+          "materia_prima_nao_aplica": false,
           "material_id": "ART_T_Almofada_Decorativa",
           "configuravel": true,
           "entra_3d": true,
@@ -14434,6 +14653,7 @@
             }
           ],
           "materia_prima_herdada": false,
+          "materia_prima_nao_aplica": false,
           "material_id": "ART_T_Braco_Almofada",
           "configuravel": true,
           "entra_3d": true,
@@ -14474,6 +14694,7 @@
             }
           ],
           "materia_prima_herdada": false,
+          "materia_prima_nao_aplica": false,
           "material_id": "PD_Deslizador",
           "configuravel": false,
           "entra_3d": true,
@@ -14617,6 +14838,7 @@
             }
           ],
           "materia_prima_herdada": false,
+          "materia_prima_nao_aplica": false,
           "material_id": "ART_C_Pe",
           "configuravel": true,
           "entra_3d": true,
@@ -14657,6 +14879,7 @@
             }
           ],
           "materia_prima_herdada": false,
+          "materia_prima_nao_aplica": false,
           "material_id": "ART_T_Estrutura",
           "configuravel": true,
           "entra_3d": true,
@@ -14699,6 +14922,7 @@
             }
           ],
           "materia_prima_herdada": false,
+          "materia_prima_nao_aplica": false,
           "material_id": "ART_T_Encosto_Almofada",
           "configuravel": true,
           "entra_3d": true,
@@ -14741,6 +14965,7 @@
             }
           ],
           "materia_prima_herdada": false,
+          "materia_prima_nao_aplica": false,
           "material_id": "ART_T_Almofada_Decorativa",
           "configuravel": true,
           "entra_3d": true,
@@ -14781,6 +15006,7 @@
             }
           ],
           "materia_prima_herdada": false,
+          "materia_prima_nao_aplica": false,
           "material_id": "PD_Deslizador",
           "configuravel": false,
           "entra_3d": true,
