@@ -137,6 +137,8 @@
  GLB. Agora normal = amount do material × multiplier do CoronaNormal
  (InLab_IntensidadeBump), com log. #normal saiu da lista de candidatos do
  MAPA: no glTF Material é o float da intensidade (sondado no Max 2024).
+ Botão Bump Fix (Utilidades Rápidas, InLab_BumpFix): grava o valor do campo
+ Intensidade nos glTF com normal map, para bloco já convertido e salvo.
 ================================================================================
 */
 
@@ -1180,4 +1182,53 @@ fn InLab_ReverterConversao =
         InLab_Log ("Reversão de materiais concluída: " + revertidos as string + " objeto(s) · " +
                    bakesApagados as string + " bake(s) apagado(s).")
     )
+)
+
+--------------------------------------------------------------------------------
+-- BUMP FIX (29/10/2026, issue #214): grava `valor` na intensidade (normal) dos
+-- glTF Material COM normal map dos objetos (sem seleção, da cena inteira),
+-- descendo nos Multi/Sub. O valor vem sempre do campo: num bloco convertido e
+-- salvo, o Corona original só ficava na memória (InLab_UltimaConversao).
+-- Devolve o número de materiais alterados. Um passo do Ctrl+Z.
+--------------------------------------------------------------------------------
+fn InLab_BumpFix valor objs:undefined =
+(
+    if InLab_VerUV_Garantir != undefined do InLab_VerUV_Garantir()
+    if objs == undefined do
+    (
+        objs = selection as array
+        if objs.count == 0 do objs = objects as array
+    )
+    local cls = InLab_ResolverClasseGLTF()
+    -- Materiais únicos, descendo nos Multi/Sub (fila: fn local recursiva não
+    -- compila, "No outer local variable references permitted here").
+    local mats = #()
+    local fila = for o in objs where isValidNode o and o.material != undefined collect o.material
+    while fila.count > 0 do
+    (
+        local m = fila[fila.count]
+        deleteItem fila fila.count
+        if m != undefined and (findItem mats m) == 0 do
+        (
+            append mats m
+            if classof m == Multimaterial do join fila (m.materialList as array)
+        )
+    )
+    local alvos = for m in mats where cls != undefined and classof m == cls and m.normalMap != undefined collect m
+    if alvos.count == 0 then
+        InLab_Log "Bump Fix: nenhum glTF Material com normal map na seleção (converta antes)." tipo:#warn
+    else
+    (
+        undo "InLab Bump Fix" on
+        (
+            for m in alvos do
+            (
+                local antes = m.normal
+                m.normal = valor
+                InLab_Log (m.name + ": " + InLab_Num2 antes + " → " + InLab_Num2 valor) tipo:#ok
+            )
+        )
+        InLab_Log ("Bump Fix: intensidade " + InLab_Num2 valor + " em " + alvos.count as string + " material(is).") tipo:#ok
+    )
+    alvos.count
 )
