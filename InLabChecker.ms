@@ -109,6 +109,7 @@
             @"functions\fn_material_utils.ms",
             @"functions\fn_export_gltf.ms",
             @"functions\fn_utilidades.ms",
+            @"functions\fn_faces_duplicadas.ms",
             -- 4. VERIFICAÇÃO + relatório
             @"verifications\verif_peso_poly.ms",
             @"verifications\verif_pivot.ms",
