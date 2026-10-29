@@ -1,6 +1,6 @@
 {
   "versao_export": "nomenclatura-3D-v2",
-  "exportado_em": "2026-10-28T17:25:46.478Z",
+  "exportado_em": "2026-10-29T12:42:42.473Z",
   "produtos": [
     {
       "linha": "Artefacto & Beach",
@@ -7155,11 +7155,11 @@
       "ok_revisado": false,
       "animacao": false,
       "qt_meshes": 1,
-      "qt_materiais_art": 1,
+      "qt_materiais_art": 2,
       "qt_botoes_sem": 1,
       "qt_botoes_com": 1,
       "tecido_desmembravel": false,
-      "acabamento_resumo": "Principal: Estrutura | Pré-definido: Deslizador",
+      "acabamento_resumo": "Principal: Estrutura, Tampo | Pré-definido: Deslizador",
       "obs_cotas": "",
       "obs_restr_tecido": "",
       "obs_confeccao": "",
@@ -7172,15 +7172,17 @@
           "nome": "05125299",
           "partes": [
             "Estrutura",
+            "Tampo",
             "Deslizador"
           ]
         }
       ],
       "botoes_sem_desm": [
         {
-          "apelido": "Estrutura",
+          "apelido": "Estrutura e Tampo",
           "partes": [
-            "Estrutura"
+            "Estrutura",
+            "Tampo"
           ]
         }
       ],
@@ -7234,7 +7236,7 @@
           "entra_3d": true,
           "mesh_final": "05125299",
           "tecido": false,
-          "botao_sem_desm": "Estrutura",
+          "botao_sem_desm": "Estrutura e Tampo",
           "botao_com_desm": "Estrutura",
           "metragem_desm": "",
           "acessorio": false,
@@ -7247,6 +7249,47 @@
         },
         {
           "ordem": 2,
+          "nome_parte": "Tampo",
+          "termo": "Tampo",
+          "qualificador": "",
+          "qualificadores": [],
+          "numero": "sing",
+          "apelido_cliente": "Tampo",
+          "apelido_override": "",
+          "termo_novo": false,
+          "so3d": false,
+          "subparte_de": "",
+          "tipo": "P",
+          "materia_prima": {
+            "familia": "Metal",
+            "materia": "Aço Carbono"
+          },
+          "materias_primas": [
+            {
+              "familia": "Metal",
+              "materia": "Aço Carbono"
+            }
+          ],
+          "materia_prima_herdada": false,
+          "materia_prima_nao_aplica": false,
+          "material_id": "ART_P_Tampo",
+          "configuravel": true,
+          "entra_3d": true,
+          "mesh_final": "05125299",
+          "tecido": false,
+          "botao_sem_desm": "Estrutura e Tampo",
+          "botao_com_desm": "",
+          "metragem_desm": "",
+          "acessorio": false,
+          "acessorio_obrigatorio": null,
+          "acessorio_acabamentos": [],
+          "acessorio_fixo": false,
+          "acessorio_botao_pai": "",
+          "acessorio_opcoes": [],
+          "par_segue": null
+        },
+        {
+          "ordem": 3,
           "nome_parte": "Deslizador",
           "termo": "Deslizador",
           "qualificador": "",
