@@ -7,7 +7,7 @@
  (2023+), mapeando:
    baseColor/baseTexmap → base color · roughness (com inversão se o Corona
    estiver em modo glossiness) · metalness (modo metal/não-metal) · normal
-   (via CoronaNormal) · opacity → alphaMode BLEND · refração → transmission.
+   (via CoronaNormal) · opacity → AlphaMap + alphaMode BLEND · refração → transmission.
 
  CASOS ESPECIAIS DA SPEC (detectados por palavra-chave no nome do material):
    PALHA ("palha", "trama", "rattan") → alphaMode BLEND + doubleSided
@@ -132,6 +132,16 @@
  InLab_ReverterConversao chamam InLab_VerUV_Garantir() antes (fn_ver_uv.ms): com o
  Ver UV ligado, a conversão gravava as listras como material original e o Desfazer
  as punha de volta num nó que o Ver UV não rastreava.
+ 29/10/2026 (Mesa Lateral Schaf 05125299, chapa perfurada; vale para palha):
+ material com opacity ficava invisível no viewport depois da conversão, e o
+ GLB saía sem furo. Sondagem no Max 2024: o glTF Material lê a transparência
+ SÓ do slot AlphaMap (pela luminância), no viewport e no export; o alpha do
+ PNG da base color é descartado pelo exportador. A conversão compunha um PNG
+ RGBA (InLab_BakeBaseComAlpha) e deixava o AlphaMap vazio. Agora, como o
+ ArchToolz (comparado na mesma cena): a opacity vai para o AlphaMap e a base
+ segue o caminho normal. E o alphaMode: 1 = OPAQUE, 2 = MASK, 3 = BLEND; o
+ #blend era recusado (#err no log) e entrava o 2, que é MASK, com o log
+ dizendo BLEND. Agora grava 3. InLab_BakeBaseComAlpha ficou sem chamada.
 ================================================================================
 */
 
@@ -812,46 +822,24 @@ fn InLab_ConverterCoronaMtl mtl tamanho fazerBake especiais:#() =
             if usado == undefined do InLab_Log (mtl.name + ": propriedade de base color não encontrada no glTF Material.") tipo:#err
         )
 
-        if mapaOpac != undefined then
-        (
-            -- Caminho palha/opacity: composto RGBA único.
-            -- #163: base (ou cor) e opacity bitmaps com a MESMA transformação:
-            -- compõe um ladrilho e a transformação vai para o resultado. Senão
-            -- cada um é avaliado com a sua no 0–1 (renderMap), com aviso.
-            local trO = InLab_TransformDoBitmap mapaOpac
-            -- Base procedural sem bitmap na árvore (cor, falloff) não depende do
-            -- UV: compõe como ladrilho junto com a opacity.
-            local baseSemUV = mapaBase != undefined and (InLab_TransformDoBitmap mapaBase) == undefined and                               (for t in (InLab_ArvoreDeMapas mapaBase #()) where (InLab_TransformDoBitmap t) != undefined collect t).count == 0
-            local trB = if mapaBase == undefined or baseSemUV then trO else (InLab_TransformDoBitmap mapaBase)
-            local trComp = undefined
-            local baseComp = mapaBase, opacComp = mapaOpac
-            if trO != undefined and trB != undefined and not trO[6] and not trB[6] and not (InLab_TransformIdentidade trO) and \
-               (for k = 1 to 5 where (abs (trO[k] - trB[k])) > 1e-4 collect k).count == 0 then
-            (
-                trComp = trO
-                opacComp = InLab_BitmapSemTransform mapaOpac
-                if mapaBase != undefined and not baseSemUV do baseComp = InLab_BitmapSemTransform mapaBase
-            )
-            else
-            (
-                for tr in #(trB, trO) where tr != undefined and not (InLab_TransformIdentidade tr) do
-                    if (amax tr[1] tr[2]) > 8.0 do
-                        InLab_Log (mtl.name + ": base e opacity com tiling diferentes (até " + (formattedPrint (amax tr[1] tr[2]) format:".0f") + " repetições no 0–1): o composto respeita a escala, mas cada repetição fica com poucos pixels.") tipo:#warn
-            )
-            local arqRGBA = InLab_BakeBaseComAlpha baseComp corBase opacComp (mtl.name + "_basecolor_rgba") tamanho
-            if arqRGBA != undefined do
-            (
-                local bmp = InLab_AplicarTransform trComp (Bitmaptexture filename:arqRGBA)
-                if (InLab_SetPropSafe g #(#baseColorMap, #baseColorTexmap, #base_color_map) bmp) == undefined do
-                    InLab_Log (mtl.name + ": slot de base color map não encontrado.") tipo:#err
-            )
-        )
-        else if mapaBase != undefined do
+        -- 29/10/2026 (Schaf 05125299): a opacity vai para o AlphaMap e a base
+        -- segue o caminho normal, como o ArchToolz. O glTF Material lê a
+        -- transparência só do AlphaMap (viewport e export, sondado no Max
+        -- 2024): com o alpha num PNG RGBA da base e o AlphaMap vazio, a peça
+        -- sumia no viewport e o exportador descartava o alpha (GLB sem furo).
+        if mapaBase != undefined do
         (
             local bmp = InLab_TexmapParaGLTF mapaBase (mtl.name + "_basecolor") tamanho fazerBake
             if bmp != undefined do
                 if (InLab_SetPropSafe g #(#baseColorMap, #baseColorTexmap, #base_color_map) bmp) == undefined do
                     InLab_Log (mtl.name + ": slot de base color map não encontrado.") tipo:#err
+        )
+        if mapaOpac != undefined do
+        (
+            local bmpA = InLab_TexmapParaGLTF mapaOpac (mtl.name + "_opacity") tamanho fazerBake
+            if bmpA != undefined do
+                if (InLab_SetPropSafe g #(#AlphaMap, #alphaMap) bmpA) == undefined do
+                    InLab_Log (mtl.name + ": slot AlphaMap não encontrado no glTF Material — a opacidade não foi convertida.") tipo:#err
         )
 
         ------------------------------------------------------------------
@@ -931,8 +919,10 @@ fn InLab_ConverterCoronaMtl mtl tamanho fazerBake especiais:#() =
         ------------------------------------------------------------------
         if mapaOpac != undefined or especial == #palha do
         (
-            local usadoAM = InLab_SetPropSafe g #(#alphaMode) #blend
-            if usadoAM == undefined do usadoAM = InLab_SetPropSafe g #(#alphaMode) 2
+            -- 29/10/2026: no glTF Material do Max 2024, alphaMode 1 = OPAQUE,
+            -- 2 = MASK, 3 = BLEND (conferido no .gltf exportado). Antes o #blend
+            -- era recusado (#err no log) e entrava o 2, que é MASK.
+            local usadoAM = InLab_SetPropSafe g #(#alphaMode) 3
             if usadoAM == undefined do usadoAM = InLab_SetPropSafe g #(#alphaMode) "BLEND"
             if usadoAM == undefined then InLab_Log (mtl.name + ": alphaMode não aceito — reportar showProperties do glTF Material.") tipo:#err
             else InLab_Log (mtl.name + ": alphaMode = BLEND.") tipo:#ok
@@ -945,7 +935,7 @@ fn InLab_ConverterCoronaMtl mtl tamanho fazerBake especiais:#() =
                     InLab_Log (mtl.name + ": propriedade doubleSided não encontrada (V-35 em risco).") tipo:#err
             )
             if mapaOpac != undefined do
-                InLab_Log (mtl.name + ": opacity composto no alpha do base color (RGBA).") tipo:#ok
+                InLab_Log (mtl.name + ": opacity no AlphaMap.") tipo:#ok
         )
 
         ------------------------------------------------------------------
