@@ -77,6 +77,41 @@ global INLAB_TESTE_SAIDA, INLAB_TESTE_FALHAS, INLAB_TESTE_LOGS
         max create mode
         limparCena()
 
+        ---------------------------------------------------------------- DUPLICATA PARCIAL
+        -- Revisão final: com 100% duplicado qualquer mapeamento acerta. Aqui um
+        -- cilindro de 5 lados (tampas pentagonais, laterais quads) com uma face
+        -- apagada no meio, mais a cópia de UM polígono: só os dois polígonos
+        -- com esse centro podem sair selecionados.
+        local cil = convertToPoly (Cylinder radius:20 height:30 sides:5 heightsegs:1 capsegs:1)
+        polyop.deleteFaces cil #{3}
+        local copia = copy cil
+        local nc = polyop.getNumFaces copia
+        local manter = nc - 1 -- uma tampa, no fim da lista
+        polyop.deleteFaces copia (#{1..nc} - #{manter})
+        local cAlvo = polyop.getFaceCenter copia 1
+        polyop.attach cil copia
+        local esperado = #{}
+        for f = 1 to polyop.getNumFaces cil where (distance (polyop.getFaceCenter cil f) cAlvo) < 0.01 do esperado[f] = true
+        n = InLab_FacesDuplicadas objs:#(cil)
+        checar ("Parcial: dois polígonos esperados (" + esperado as string + ")") (esperado.numberSet == 2)
+        checar ("Parcial: seleção exata " + (polyop.getFaceSelection cil) as string) ((polyop.getFaceSelection cil) as string == esperado as string)
+        max create mode
+        limparCena()
+
+        ---------------------------------------------------------------- NURMS NA BASE
+        -- Malha avaliada difere da base: o mapeamento tri → poly não vale.
+        local bn = caixaDupla()
+        polyop.setFaceSelection bn #{}
+        bn.surfSubdivide = true
+        bn.iterations = 1
+        INLAB_TESTE_LOGS = #()
+        n = InLab_FacesDuplicadas objs:#(bn)
+        checar "NURMS: conta as duplicatas" (n > 0)
+        checar "NURMS: não seleciona faces erradas" ((polyop.getFaceSelection bn).numberSet == 0)
+        checar "NURMS: avisa (#warn) que a malha difere da base" (logou #warn "difere da base")
+        max create mode
+        limparCena()
+
         ---------------------------------------------------------------- MESH
         local bm = caixaDupla()
         convertToMesh bm
@@ -91,12 +126,14 @@ global INLAB_TESTE_SAIDA, INLAB_TESTE_FALHAS, INLAB_TESTE_LOGS
         local bb = caixaDupla()
         polyop.setFaceSelection bb #{}
         addModifier bb (Bend angle:0)
+        clearSelection()
         INLAB_TESTE_LOGS = #()
         n = InLab_FacesDuplicadas objs:#(bb)
         checar "Com modificador: devolve 24" (n == 24)
         checar "Com modificador: pede para colapsar (#warn)" (logou #warn "colapse")
         checar "Com modificador: seleção da base não muda" ((polyop.getFaceSelection bb.baseobject).numberSet == 0)
         checar "Com modificador: modificador continua" (bb.modifiers.count == 1)
+        checar "Com modificador: peça só contada não fica selecionada" (selection.count == 0)
         max create mode
         limparCena()
 

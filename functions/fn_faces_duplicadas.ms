@@ -22,6 +22,12 @@
    mais de um nó: as faces ficam marcadas em cada peça.
  - Grupo fechado acima da peça é aberto (select num membro de grupo fechado
    seleciona o grupo todo) e fica aberto para o desenhista editar.
+ REVISÃO FINAL (29/10/2026): o mapeamento só vale se o snapshot tiver
+ exatamente Σ(grau − 2) triângulos. Com NURMS ligado na própria base (ou
+ outra diferença entre a malha avaliada e a base) a conta não fecha: a peça
+ só é contada, com #warn, em vez de ganhar polígonos errados. Peça só
+ contada (modificador, primitiva, NURMS) não entra na seleção nem tem o
+ grupo aberto; o texto diz "colapse o stack" ou "converta para Editable Poly".
  Seleção de faces, grupo e painel ficam fora do Ctrl+Z (with undo off): não
  mudam a geometria.
 ================================================================================
@@ -31,7 +37,8 @@
 global InLab_Malha_FacesDuplicadasSet, InLab_Malha_Tolerancia
 
 -- Triângulos do snapshot → polígonos da base Editable Poly (grau − 2 cada).
-fn InLab_FacesDup_TriParaPoly o tris =
+-- Com nTris (triângulos do snapshot), devolve undefined se a conta não fecha.
+fn InLab_FacesDup_TriParaPoly o tris nTris:undefined =
 (
     local polys = #{}
     local t = 0
@@ -41,7 +48,7 @@ fn InLab_FacesDup_TriParaPoly o tris =
             t += 1
             if tris[t] do polys[f] = true
         )
-    polys
+    if nTris != undefined and t != nTris then undefined else polys
 )
 
 -- Devolve o total de faces duplicadas (em triângulos, como a V-09).
@@ -60,9 +67,11 @@ fn InLab_FacesDuplicadas objs:undefined =
     (
         local tris = undefined
         local m = undefined
+        local nTris = 0
         try
         (
             m = snapshotAsMesh o
+            nTris = m.numfaces
             tris = InLab_Malha_FacesDuplicadasSet m tol
         )
         catch ( InLab_Log (o.name + ": falha ao procurar faces duplicadas (" + getCurrentException() + ").") tipo:#err )
@@ -75,23 +84,33 @@ fn InLab_FacesDuplicadas objs:undefined =
             else
             (
                 total += n
-                append comDup o
                 local pilhaVazia = o.modifiers.count == 0
                 local cls = classof o.baseobject
+                local txt = o.name + ": " + n as string + " face(s) coincidente(s)"
                 with undo off
                 (
                     if pilhaVazia and cls == Editable_Poly then
                     (
-                        polyop.setFaceSelection o (InLab_FacesDup_TriParaPoly o tris)
-                        InLab_Log (o.name + ": " + n as string + " face(s) coincidente(s), selecionadas.") tipo:#err
+                        local polys = InLab_FacesDup_TriParaPoly o tris nTris:nTris
+                        if polys == undefined then
+                            InLab_Log (txt + ". A malha avaliada difere da base (NURMS ligado?): desligue para selecionar.") tipo:#warn
+                        else
+                        (
+                            polyop.setFaceSelection o polys
+                            append comDup o
+                            InLab_Log (txt + ", selecionadas.") tipo:#err
+                        )
                     )
                     else if pilhaVazia and cls == Editable_Mesh then
                     (
                         setFaceSelection o tris
-                        InLab_Log (o.name + ": " + n as string + " face(s) coincidente(s), selecionadas.") tipo:#err
+                        append comDup o
+                        InLab_Log (txt + ", selecionadas.") tipo:#err
                     )
+                    else if not pilhaVazia then
+                        InLab_Log (txt + ". Para selecionar, colapse o stack.") tipo:#warn
                     else
-                        InLab_Log (o.name + ": " + n as string + " face(s) coincidente(s). Para selecionar, colapse o stack.") tipo:#warn
+                        InLab_Log (txt + ". Para selecionar, converta para Editable Poly.") tipo:#warn
                 )
             )
         )
@@ -114,7 +133,7 @@ fn InLab_FacesDuplicadas objs:undefined =
     if total == 0 then
         InLab_Log ("Faces duplicadas: nenhuma em " + objs.count as string + " objeto(s).") tipo:#ok
     else
-        InLab_Log ("Faces duplicadas: " + total as string + " face(s) em " + comDup.count as string + " de " +
-                   objs.count as string + " objeto(s)" + (if comDup.count > 1 then "; selecione uma peça por vez para editar." else ".")) tipo:#warn
+        InLab_Log ("Faces duplicadas: " + total as string + " face(s); " + comDup.count as string + " de " +
+                   objs.count as string + " objeto(s) selecionado(s)" + (if comDup.count > 1 then "; edite uma peça por vez." else ".")) tipo:#warn
     total
 )

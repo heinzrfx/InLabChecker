@@ -166,7 +166,7 @@
  rótulo explicativo, porque o passo é esquecido antes de verificar.
 
  29/10/2026 (issue #214): linha nova no grupo Utilidades Rápidas com Faces
- duplicadas (InLab_FacesDuplicadas, functionsn_faces_duplicadas.ms), o
+ duplicadas (InLab_FacesDuplicadas, functions\fn_faces_duplicadas.ms), o
  campo Intensidade e o Bump Fix (InLab_BumpFix, fn_material_convert.ms). O
  grupo cresce 28px (122 → 150), subSecoes desce para pos:[4,216] e a janela
  vai de 704 para 732.
