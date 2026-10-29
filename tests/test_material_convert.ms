@@ -287,7 +287,9 @@ global InLab_CaminhoTextura, InLab_CheckTexture, InLab_BakeTexmap, InLab_BumpFix
                 local gT3 = InLab_ConverterCoronaMtl mT3 64 true
                 local cT3 = coordsDe (InLab_PropSafe gT3 #(#roughnessMap, #roughnessTexmap))
                 checar ("#163: roughness invertido leva o tiling 4 (" + cT3 + ")") (cT3 == "4.00x4.00 off 0.00,0.00 ch1")
-                -- Base e opacity com a mesma transformação: composto de um ladrilho + transformação
+                -- 29/10/2026 (opacidade no AlphaMap, como o ArchToolz): cada mapa leva a sua transformação.
+                fn alphaDe g = InLab_PropSafe g #(#AlphaMap)
+                -- Base e opacity com a mesma transformação
                 local mT4 = CoronaLegacyMtl()
                 mT4.name = "mat_t4"
                 local bT4a = Bitmaptexture filename:arqT
@@ -295,16 +297,21 @@ global InLab_CaminhoTextura, InLab_CheckTexture, InLab_BakeTexmap, InLab_BumpFix
                 local bT4b = Bitmaptexture filename:arqT
                 bT4b.coords.U_Tiling = 10 ; bT4b.coords.V_Tiling = 70
                 mT4.texmapDiffuse = bT4a ; mT4.texmapOpacity = bT4b
-                local cT4 = coordsDe (mapaBaseDe (InLab_ConverterCoronaMtl mT4 64 true))
-                checar ("#163: base+opacity com a mesma transformação levam tiling 10×70 (" + cT4 + ")") (cT4 == "10.00x70.00 off 0.00,0.00 ch1")
+                local gT4 = InLab_ConverterCoronaMtl mT4 64 true
+                local cT4 = coordsDe (mapaBaseDe gT4)
+                local aT4 = coordsDe (alphaDe gT4)
+                checar ("#163: base com tiling 10×70 (" + cT4 + ")") (cT4 == "10.00x70.00 off 0.00,0.00 ch1")
+                checar ("AlphaMap: opacity com tiling 10×70 (" + aT4 + ")") (aT4 == "10.00x70.00 off 0.00,0.00 ch1")
                 -- Só opacity com tiling (base é cor): idem
                 local mT5 = CoronaLegacyMtl()
                 mT5.name = "mat_t5"
                 local bT5 = Bitmaptexture filename:arqT
                 bT5.coords.U_Tiling = 20 ; bT5.coords.V_Tiling = 200
                 mT5.texmapOpacity = bT5
-                local cT5 = coordsDe (mapaBaseDe (InLab_ConverterCoronaMtl mT5 64 true))
-                checar ("#163: só opacity com tiling 20×200 leva a transformação (" + cT5 + ")") (cT5 == "20.00x200.00 off 0.00,0.00 ch1")
+                local gT5 = InLab_ConverterCoronaMtl mT5 64 true
+                local aT5 = coordsDe (alphaDe gT5)
+                checar ("AlphaMap: só opacity com tiling 20×200 leva a transformação (" + aT5 + ")") (aT5 == "20.00x200.00 off 0.00,0.00 ch1")
+                checar "AlphaMap: base só cor fica sem base color map" ((mapaBaseDe gT5) == undefined)
                 -- Base procedural sem bitmap (falloff) + opacity com tiling: ladrilho + transformação
                 local mT7 = CoronaLegacyMtl()
                 mT7.name = "mat_t7"
@@ -312,8 +319,8 @@ global InLab_CaminhoTextura, InLab_CheckTexture, InLab_BakeTexmap, InLab_BumpFix
                 local bT7 = Bitmaptexture filename:arqT
                 bT7.coords.U_Tiling = 20 ; bT7.coords.V_Tiling = 200
                 mT7.texmapOpacity = bT7
-                local cT7 = coordsDe (mapaBaseDe (InLab_ConverterCoronaMtl mT7 64 true))
-                checar ("#163: base falloff + opacity 20×200 leva a transformação (" + cT7 + ")") (cT7 == "20.00x200.00 off 0.00,0.00 ch1")
+                local aT7 = coordsDe (alphaDe (InLab_ConverterCoronaMtl mT7 64 true))
+                checar ("AlphaMap: base falloff + opacity 20×200 leva a transformação (" + aT7 + ")") (aT7 == "20.00x200.00 off 0.00,0.00 ch1")
                 -- Real-World ligado: não transfere e avisa
                 local mT6 = CoronaLegacyMtl()
                 mT6.name = "mat_t6"
@@ -558,6 +565,44 @@ global InLab_CaminhoTextura, InLab_CheckTexture, InLab_BakeTexmap, InLab_BumpFix
                 local avisouNada = false
                 for item in logsCapturados where item[1] == #warn do avisouNada = true
                 checar "Bump Fix: sem glTF com normal map → 0 e #warn" (nNada == 0 and avisouNada)
+
+                -- ===== 11. OPACIDADE NO AlphaMap (29/10/2026, Schaf 05125299) =====
+                -- O glTF Material lê a transparência só do AlphaMap (viewport e
+                -- export). Com o alpha no PNG da base e o AlphaMap vazio, a peça
+                -- sumia no viewport e o GLB saía sem furo. Igual ao ArchToolz:
+                -- AlphaMap = mapa de opacity, base color = mapa de base, BLEND (3).
+                local arqO = (getDir #temp) + "\inlab_t_opac.png"
+                local bmO = bitmap 16 16 color:white filename:arqO
+                save bmO ; close bmO
+                local arqB = (getDir #temp) + "\inlab_t_base.jpg"
+                local bmB = bitmap 16 16 color:(color 190 150 90) filename:arqB
+                save bmB ; close bmB
+                local mO1 = CoronaLegacyMtl()
+                mO1.name = "mat_furado"
+                mO1.colorDiffuse = color 200 60 60
+                mO1.texmapOpacity = Bitmaptexture filename:arqO
+                logsCapturados = #()
+                local gO1 = InLab_ConverterCoronaMtl mO1 64 false
+                checar ("Opacidade: alphaMode BLEND = 3 (" + gO1.alphaMode as string + ")") (gO1.alphaMode == 3)
+                checar "Opacidade: AlphaMap com o mapa de opacity" (gO1.AlphaMap != undefined and (findString (toLower gO1.AlphaMap.filename) "inlab_t_opac") != undefined)
+                checar "Opacidade: sem composto RGBA na base" (gO1.baseColorMap == undefined)
+                checar "Opacidade: base color = cor do Corona" (gO1.baseColor == (color 200 60 60))
+                local errAM = false
+                for item in logsCapturados where item[1] == #err do errAM = true
+                checar "Opacidade: sem #err no log (o #blend recusado logava erro)" (not errAM)
+                local mO2 = CoronaPhysicalMtl()
+                mO2.name = "mat_palha_t"
+                mO2.baseTexmap = Bitmaptexture filename:arqB
+                mO2.opacityTexmap = Bitmaptexture filename:arqO
+                local gO2 = InLab_ConverterCoronaMtl mO2 64 false especiais:#(#("mat_palha_t", #palha))
+                checar "Palha: base color com o mapa de base (não composto)" (gO2.baseColorMap != undefined and (findString (toLower gO2.baseColorMap.filename) "inlab_t_base") != undefined)
+                checar "Palha: AlphaMap com o mapa de opacity" (gO2.AlphaMap != undefined and (findString (toLower gO2.AlphaMap.filename) "inlab_t_opac") != undefined)
+                checar "Palha: BLEND (3) e doubleSided" (gO2.alphaMode == 3 and gO2.DoubleSided)
+                local mO3 = CoronaPhysicalMtl()
+                mO3.name = "mat_so_palha"
+                local gO3 = InLab_ConverterCoronaMtl mO3 64 false especiais:#(#("mat_so_palha", #palha))
+                checar "Palha sem mapa de opacity: BLEND (3) e AlphaMap vazio" (gO3.alphaMode == 3 and gO3.AlphaMap == undefined)
+                try ( deleteFile arqO ; deleteFile arqB ) catch ()
             )
 
             -- ===== 4. InLab_BakeBaseComAlpha (issue #51) =====
