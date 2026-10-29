@@ -493,6 +493,35 @@ global InLab_CaminhoTextura, InLab_CheckTexture, InLab_BakeTexmap
                 logsCapturados = #()
                 InLab_ConverterCoronaMtl mOk 64 false
                 checar "#110: tiling inteiro e bitmap direto com tiling 1 não avisam" (not (avisou "mat_ok ("))
+
+                -- ===== 9. INTENSIDADE DO BUMP (29/10/2026, #214) =====
+                -- glTF.normal = amount do material × multiplier do CoronaNormal.
+                local arqN = (getDir #temp) + "\\inlab_t214_normal.jpg"
+                local bmN = bitmap 16 16 color:(color 128 128 255) filename:arqN
+                save bmN ; close bmN
+                fn normalComMult mult = ( local cn = CoronaNormal() ; cn.normalMap = Bitmaptexture filename:arqN ; cn.multiplier = mult ; cn )
+                local mB1 = CoronaPhysicalMtl()
+                mB1.name = "mat_b1"
+                mB1.baseBumpTexmap = normalComMult 0.6
+                mB1.baseBumpMapAmount = 0.5
+                logsCapturados = #()
+                local gB1 = InLab_ConverterCoronaMtl mB1 64 false
+                checar ("#214: Physical 0,5 × 0,6 → normal 0,3 (" + gB1.normal as string + ")") ((abs (gB1.normal - 0.3)) < 1e-4)
+                checar "#214: Physical continua com o normal map" (gB1.normalMap != undefined)
+                local logouInt = false
+                for item in logsCapturados where (findString item[2] "intensidade do normal") != undefined and (findString item[2] "0,30") != undefined do logouInt = true
+                checar "#214: loga a intensidade aplicada (0,30)" logouInt
+                local mB2 = CoronaLegacyMtl()
+                mB2.name = "mat_b2"
+                mB2.texmapBump = normalComMult 1.0
+                mB2.mapamountBump = 0.4
+                local gB2 = InLab_ConverterCoronaMtl mB2 64 false
+                checar ("#214: Legacy 0,4 × 1 → normal 0,4 (" + gB2.normal as string + ")") ((abs (gB2.normal - 0.4)) < 1e-4)
+                local mB3 = CoronaPhysicalMtl()
+                mB3.name = "mat_b3"
+                local gB3 = InLab_ConverterCoronaMtl mB3 64 false
+                checar "#214: sem bump → normal 1,0" ((abs (gB3.normal - 1.0)) < 1e-4)
+                try ( deleteFile arqN ) catch ()
             )
 
             -- ===== 4. InLab_BakeBaseComAlpha (issue #51) =====
