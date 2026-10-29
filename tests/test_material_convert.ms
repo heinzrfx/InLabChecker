@@ -21,7 +21,7 @@ global InLab_SetPropSafe, InLab_BakeBaseComAlpha, InLab_BitmapDoTexmap, InLab_Pa
 global InLab_ConverterCoronaMtl, InLab_PropSafe, InLab_ResolverClasseGLTF, InLab_ConverterMaterialNode
 global INLAB_TESTE_SAIDA, INLAB_TESTE_FALHAS
 global InLab_ParseJSON, InLab_Produto_Lista, InLab_Produto_EspeciaisDoProduto, InLab_EspecialDoMaterial
-global InLab_CaminhoTextura, InLab_CheckTexture, InLab_BakeTexmap
+global InLab_CaminhoTextura, InLab_CheckTexture, InLab_BakeTexmap, InLab_BumpFix
 (
     local dirTeste = getFilenamePath (getSourceFileName())
     local raiz = substring dirTeste 1 (dirTeste.count - 6) -- tira "tests\"
@@ -500,6 +500,71 @@ global InLab_CaminhoTextura, InLab_CheckTexture, InLab_BakeTexmap
                 logsCapturados = #()
                 InLab_ConverterCoronaMtl mOk 64 false
                 checar "#110: tiling inteiro e bitmap direto com tiling 1 não avisam" (not (avisou "mat_ok ("))
+
+                -- ===== 9. INTENSIDADE DO BUMP (29/10/2026, #214) =====
+                -- glTF.normal = amount do material × multiplier do CoronaNormal.
+                local arqN = (getDir #temp) + "\\inlab_t214_normal.jpg"
+                local bmN = bitmap 16 16 color:(color 128 128 255) filename:arqN
+                save bmN ; close bmN
+                fn normalComMult mult = ( local cn = CoronaNormal() ; cn.normalMap = Bitmaptexture filename:arqN ; cn.multiplier = mult ; cn )
+                local mB1 = CoronaPhysicalMtl()
+                mB1.name = "mat_b1"
+                mB1.baseBumpTexmap = normalComMult 0.6
+                mB1.baseBumpMapAmount = 0.5
+                logsCapturados = #()
+                local gB1 = InLab_ConverterCoronaMtl mB1 64 false
+                checar ("#214: Physical 0,5 × 0,6 → normal 0,3 (" + gB1.normal as string + ")") ((abs (gB1.normal - 0.3)) < 1e-4)
+                checar "#214: Physical continua com o normal map" (gB1.normalMap != undefined)
+                local logouInt = false
+                for item in logsCapturados where (findString item[2] "intensidade do normal") != undefined and (findString item[2] "0,30") != undefined do logouInt = true
+                checar "#214: loga a intensidade aplicada (0,30)" logouInt
+                local mB2 = CoronaLegacyMtl()
+                mB2.name = "mat_b2"
+                mB2.texmapBump = normalComMult 1.0
+                mB2.mapamountBump = 0.4
+                local gB2 = InLab_ConverterCoronaMtl mB2 64 false
+                checar ("#214: Legacy 0,4 × 1 → normal 0,4 (" + gB2.normal as string + ")") ((abs (gB2.normal - 0.4)) < 1e-4)
+                local mB3 = CoronaPhysicalMtl()
+                mB3.name = "mat_b3"
+                local gB3 = InLab_ConverterCoronaMtl mB3 64 false
+                checar "#214: sem bump → normal 1,0" ((abs (gB3.normal - 1.0)) < 1e-4)
+                try ( deleteFile arqN ) catch ()
+
+                -- ===== 10. BUMP FIX (29/10/2026, #214) =====
+                -- Só glTF com normal map; Multi/Sub desce; material compartilhado conta 1; Ctrl+Z.
+                local clsG = InLab_ResolverClasseGLTF()
+                fn gltfCom nome cls comNormal = ( local g = cls() ; g.name = nome ; if comNormal do g.normalMap = Bitmaptexture() ; g )
+                local gF1 = gltfCom "gF1" clsG true
+                local gF2 = gltfCom "gF2" clsG true
+                local gSem = gltfCom "gSem" clsG false
+                local gSub = gltfCom "gSub" clsG true
+                local multi = Multimaterial numsubs:2
+                multi.materialList[1] = gSub
+                multi.materialList[2] = gltfCom "gSub2" clsG false
+                local corF = CoronaPhysicalMtl name:"corF"
+                local oF1 = Box name:"obj_f1" material:gF1 pos:[0, 300, 0]
+                local oF1b = Box name:"obj_f1b" material:gF1 pos:[60, 300, 0]
+                local oF2 = Box name:"obj_f2" material:gF2 pos:[120, 300, 0]
+                local oSem = Box name:"obj_fsem" material:gSem pos:[180, 300, 0]
+                local oMulti = Box name:"obj_fmulti" material:multi pos:[240, 300, 0]
+                local oCor = Box name:"obj_fcor" material:corF pos:[300, 300, 0]
+                join criados #(oF1, oF1b, oF2, oSem, oMulti, oCor)
+                logsCapturados = #()
+                local nFix = InLab_BumpFix 0.3 objs:#(oF1, oF1b, oF2, oSem, oMulti, oCor)
+                checar ("Bump Fix: 3 materiais alterados (" + nFix as string + ")") (nFix == 3)
+                checar "Bump Fix: glTF com normal map vai para 0,3" ((abs (gF1.normal - 0.3)) < 1e-4 and (abs (gF2.normal - 0.3)) < 1e-4)
+                checar "Bump Fix: sub do Multi/Sub com normal map vai para 0,3" ((abs (gSub.normal - 0.3)) < 1e-4)
+                checar "Bump Fix: glTF sem normal map fica 1,0" ((abs (gSem.normal - 1.0)) < 1e-4)
+                local logouFix = false
+                for item in logsCapturados where (findString item[2] "gF1: 1,00 → 0,30") != undefined do logouFix = true
+                checar "Bump Fix: loga 'gF1: 1,00 → 0,30'" logouFix
+                max undo
+                checar ("Bump Fix: Ctrl+Z volta para 1,0 (" + gF1.normal as string + ")") ((abs (gF1.normal - 1.0)) < 1e-4 and (abs (gSub.normal - 1.0)) < 1e-4)
+                logsCapturados = #()
+                local nNada = InLab_BumpFix 0.3 objs:#(oSem, oCor)
+                local avisouNada = false
+                for item in logsCapturados where item[1] == #warn do avisouNada = true
+                checar "Bump Fix: sem glTF com normal map → 0 e #warn" (nNada == 0 and avisouNada)
 
                 -- ===== 11. OPACIDADE NO AlphaMap (29/10/2026, Schaf 05125299) =====
                 -- O glTF Material lê a transparência só do AlphaMap (viewport e

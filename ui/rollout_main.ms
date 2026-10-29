@@ -164,6 +164,12 @@
  usa a lista embutida). Verificações ganhou um lembrete fixo no topo,
  acima do tampo acessório (lblLembreteVerif): exceção pedida à regra de 30/09 de não pôr
  rótulo explicativo, porque o passo é esquecido antes de verificar.
+
+ 29/10/2026 (issue #214): linha nova no grupo Utilidades Rápidas com Faces
+ duplicadas (InLab_FacesDuplicadas, functions\fn_faces_duplicadas.ms), o
+ campo Intensidade e o Bump Fix (InLab_BumpFix, fn_material_convert.ms). O
+ grupo cresce 28px (122 → 150), subSecoes desce para pos:[4,216] e a janela
+ vai de 704 para 732.
 ================================================================================
 */
 
@@ -922,7 +928,9 @@ rollout InLabChecker_Rollout ("InLabChecker · InLab Artefacto · v" + INLAB_VER
     -- InLabSecUtil e o ProOptimizer (30% por clique, functions\
     -- fn_otim_reduzir.ms), que substitui a seção Otimização inteira.
     -- subSecoes desce de pos:[4,64] para pos:[4,188].
-    groupBox grpUtil "Utilidades Rápidas" pos:[4,60] width:438 height:122
+    -- 29/10/2026 (#214): + linha Faces duplicadas / Intensidade / Bump Fix;
+    -- grupo com 150 e subSecoes em pos:[4,216].
+    groupBox grpUtil "Utilidades Rápidas" pos:[4,60] width:438 height:150
     button btnUResetX "Reset XForm" pos:[12,78] width:136 height:24
     button btnUCenter "Center Pivot" pos:[154,78] width:136 height:24
     button btnUBase "Base Pivot" pos:[296,78] width:138 height:24
@@ -935,9 +943,12 @@ rollout InLabChecker_Rollout ("InLabChecker · InLab Artefacto · v" + INLAB_VER
         "% do máximo de triângulos da família. Sem família: os " +
         INLAB_FIND_TOP_N as string + " objetos mais pesados da cena.")
     button btnUDetach "Separar por material" pos:[226,134] width:208 height:24 tooltip:"Divide cada objeto selecionado em um objeto por material."
-    label lblFindLimite "limite: escolha a família" pos:[12,162] width:422
+    button btnUFacesDup "Faces duplicadas" pos:[12,162] width:200 height:24 tooltip:"Seleciona as faces coincidentes que a V-09 reprova. Sem seleção, procura na cena toda. Não apaga nada."
+    spinner spnUBump "Intensidade" pos:[238,166] width:90 range:[0, 5, 0.3] scale:0.05 type:#float fieldWidth:40 tooltip:"Intensidade do normal map no GLB."
+    button btnUBumpFix "Bump Fix" pos:[334,162] width:100 height:24 tooltip:"Grava a intensidade ao lado nos materiais glTF com normal map da seleção (sem seleção, da cena toda)."
+    label lblFindLimite "limite: escolha a família" pos:[12,190] width:422
 
-    subRollout subSecoes width:438 height:508 pos:[4,188]
+    subRollout subSecoes width:438 height:508 pos:[4,216]
 
     -- Rótulo do limite do Find Objects (issue #47) — mesma lógica do texto
     -- que InLab_FindObjectsPesados usa para decidir o critério
@@ -975,6 +986,8 @@ rollout InLabChecker_Rollout ("InLabChecker · InLab Artefacto · v" + INLAB_VER
     )
     on btnUOtimDesfazer pressed do InLab_OtimReduzir_Desfazer()
     on btnUFind pressed do InLab_FindObjectsPesados()
+    on btnUFacesDup pressed do InLab_FacesDuplicadas()
+    on btnUBumpFix pressed do InLab_BumpFix spnUBump.value
     on btnUDetach pressed do
     (
         local objs = InLab_SelecaoValida()
@@ -1114,5 +1127,7 @@ fn InLab_AbrirUI =
     -- canto" que existia dentro de on open.
     -- 08/10/2026 (issue #125): +124px do grupo fixo Utilidades Rápidas
     -- (subSecoes em pos:[4,188]): 188 + 508 + 8 de folga = 704.
-    createDialog InLabChecker_Rollout 446 704 pos:(InLab_PosicaoPainelLer())
+    -- 29/10/2026 (#214): +28px da linha Faces duplicadas / Bump Fix:
+    -- 216 + 508 + 8 = 732.
+    createDialog InLabChecker_Rollout 446 732 pos:(InLab_PosicaoPainelLer())
 )

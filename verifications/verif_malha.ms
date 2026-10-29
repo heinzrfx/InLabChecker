@@ -77,6 +77,11 @@
    No Teapot, as duas etapas foram de 7,5 s para 5,7 s, e a análise inteira
    levou 9,96 s; o teto do teste voltou a 15 s. Testado e descartado: chave
    double, bit.shift/bit.and, getElementsUsingFace (ver a função).
+ 29/10/2026 (issue #214) — InLab_Malha_FacesDuplicadasSet devolve o bitarray
+   das faces da V-09a, para o botão Faces duplicadas (functions\
+   fn_faces_duplicadas.ms) selecionar as mesmas faces que a V-09 conta.
+   InLab_Malha_FacesDuplicadas virou a contagem dele; regra e tolerância
+   não mudaram.
 ================================================================================
 */
 
@@ -282,10 +287,12 @@ fn InLab_Malha_AgruparPorEixo lista q eixo =
 -- Centro quantizado por eixo; agrupa por qx e depois, dentro de cada grupo, por
 -- qy (dois sorts nativos): painel de lado, com milhares de faces no mesmo qx,
 -- não vira k² comparações. Só dentro de (qx, qy) iguais confere qz e cantos.
-fn InLab_Malha_FacesDuplicadas m tol =
+-- 29/10/2026 (#214): devolve o bitarray das faces (o botão Faces duplicadas
+-- seleciona essas faces); InLab_Malha_FacesDuplicadas é a contagem.
+fn InLab_Malha_FacesDuplicadasSet m tol =
 (
     local nf = m.numfaces
-    if nf < 2 then 0
+    if nf < 2 then #{}
     else
     (
         local q = for f = 1 to nf collect
@@ -311,9 +318,11 @@ fn InLab_Malha_FacesDuplicadas m tol =
                         local fb = fs[y]
                         if q[fa][3] == q[fb][3] and (cantos m fa tol) == (cantos m fb tol) do ( dup[fa] = true; dup[fb] = true )
                     )
-        dup.numberSet
+        dup
     )
 )
+
+fn InLab_Malha_FacesDuplicadas m tol = (InLab_Malha_FacesDuplicadasSet m tol).numberSet
 
 -- V-13: ngons (5+ lados) do Editable Poly de stack vazio. Não plana = maior
 -- distância de um vértice ao plano da face ÷ maior distância ao centro >

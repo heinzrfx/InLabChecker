@@ -132,6 +132,13 @@
  InLab_ReverterConversao chamam InLab_VerUV_Garantir() antes (fn_ver_uv.ms): com o
  Ver UV ligado, a conversão gravava as listras como material original e o Desfazer
  as punha de volta num nó que o Ver UV não rastreava.
+ 29/10/2026 (issue #214): a conversão copiava só a imagem do normal map e
+ deixava glTFMaterial.normal (a intensidade) em 1,0: bump "muito saltado" no
+ GLB. Agora normal = amount do material × multiplier do CoronaNormal
+ (InLab_IntensidadeBump), com log. #normal saiu da lista de candidatos do
+ MAPA: no glTF Material é o float da intensidade (sondado no Max 2024).
+ Botão Bump Fix (Utilidades Rápidas, InLab_BumpFix): grava o valor do campo
+ Intensidade nos glTF com normal map, para bloco já convertido e salvo.
  29/10/2026 (Mesa Lateral Schaf 05125299, chapa perfurada; vale para palha):
  material com opacity ficava invisível no viewport depois da conversão, e o
  GLB saía sem furo. Sondagem no Max 2024: o glTF Material lê a transparência
@@ -691,14 +698,16 @@ fn InLab_AuditarGLTF g nomeOrigem =
     local vDouble    = InLab_PropSafe g #(#doubleSided, #twoSided)
     local vTransm    = InLab_PropSafe g #(#transmission, #transmissionFactor, #transmissionWeight)
     local vRough     = InLab_PropSafe g #(#roughness, #roughnessFactor)
-    local mapaN = InLab_PropSafe g #(#normalMap, #normalTexmap, #normal)
+    local mapaN = InLab_PropSafe g #(#normalMap, #normalTexmap)
+    local vNormal    = InLab_PropSafe g #(#normal)
     local temNormal  = mapaN != undefined and superclassof mapaN == textureMap
     InLab_Log ("AUDIT [" + nomeOrigem + "] baseColorMap:" + (if temBaseMap then "SIM" else "NÃO") +
                " · alphaMode:" + (vAlpha as string) +
                " · doubleSided:" + (vDouble as string) +
                " · roughness:" + (vRough as string) +
                " · transmission:" + (vTransm as string) +
-               " · normalMap:" + (if temNormal then "SIM" else "NÃO"))
+               " · normalMap:" + (if temNormal then "SIM" else "NÃO") +
+               " · normal:" + (vNormal as string))
 )
 
 --------------------------------------------------------------------------------
@@ -739,6 +748,26 @@ fn InLab_Material_PerfilSlots tipo =
             valGloss:#(#baseRoughness, #roughness) mapaGloss:#(#baseRoughnessTexmap, #roughnessTexmap) \
             bump:#(#baseBumpTexmap, #bumpTexmap) opacMapa:#(#opacityTexmap) refrVal:#(#refractionAmount, #refraction) ior:#(#ior)
     )
+)
+
+--------------------------------------------------------------------------------
+-- 29/10/2026 (issue #214): número com 2 casas e vírgula, para o log.
+--------------------------------------------------------------------------------
+fn InLab_Num2 x = substituteString (formattedPrint (x as float) format:".2f") "." ","
+
+--------------------------------------------------------------------------------
+-- 29/10/2026 (issue #214): intensidade do normal map no glTF = "Bump amount"
+-- do material × multiplier do CoronaNormal. Physical: baseBumpMapAmount;
+-- Legacy: mapamountBump; sem a propriedade (VRay), o amount vale 1. Suposição
+-- da issue: o amount do Corona e o normalTexture.scale do glTF são 1:1 (o
+-- exportador do Max grava glTFMaterial.normal nesse scale, testado). Se não
+-- forem, o Bump Fix ajusta depois.
+--------------------------------------------------------------------------------
+fn InLab_IntensidadeBump mtl mapaBump =
+(
+    local amount = InLab_PropSafe mtl #(#baseBumpMapAmount, #mapamountBump)
+    local mult = InLab_PropSafe mapaBump #(#multiplier)
+    (if amount != undefined then amount as float else 1.0) * (if mult != undefined then mult as float else 1.0)
 )
 
 --------------------------------------------------------------------------------
@@ -906,7 +935,18 @@ fn InLab_ConverterCoronaMtl mtl tamanho fazerBake especiais:#() =
                 if interno != undefined do
                 (
                     local bmp = InLab_TexmapParaGLTF interno (mtl.name + "_normal") tamanho fazerBake
-                    if bmp != undefined do InLab_SetPropSafe g #(#normalMap, #normalTexmap, #normal) bmp
+                    -- #214: #normal é a intensidade (float), não o mapa.
+                    if bmp != undefined do
+                    (
+                        InLab_SetPropSafe g #(#normalMap, #normalTexmap) bmp
+                        local amount = InLab_PropSafe mtl #(#baseBumpMapAmount, #mapamountBump)
+                        local mult = InLab_PropSafe mapaBump #(#multiplier)
+                        local intens = InLab_IntensidadeBump mtl mapaBump
+                        if (InLab_SetPropSafe g #(#normal) intens) != undefined do
+                            InLab_Log (mtl.name + ": intensidade do normal " + InLab_Num2 intens + " (amount " +
+                                       (if amount != undefined then InLab_Num2 amount else "1,00") + " × multiplier " +
+                                       (if mult != undefined then InLab_Num2 mult else "1,00") + ").") tipo:#info
+                    )
                 )
             )
             else
@@ -1132,4 +1172,53 @@ fn InLab_ReverterConversao =
         InLab_Log ("Reversão de materiais concluída: " + revertidos as string + " objeto(s) · " +
                    bakesApagados as string + " bake(s) apagado(s).")
     )
+)
+
+--------------------------------------------------------------------------------
+-- BUMP FIX (29/10/2026, issue #214): grava `valor` na intensidade (normal) dos
+-- glTF Material COM normal map dos objetos (sem seleção, da cena inteira),
+-- descendo nos Multi/Sub. O valor vem sempre do campo: num bloco convertido e
+-- salvo, o Corona original só ficava na memória (InLab_UltimaConversao).
+-- Devolve o número de materiais alterados. Um passo do Ctrl+Z.
+--------------------------------------------------------------------------------
+fn InLab_BumpFix valor objs:undefined =
+(
+    if InLab_VerUV_Garantir != undefined do InLab_VerUV_Garantir()
+    if objs == undefined do
+    (
+        objs = selection as array
+        if objs.count == 0 do objs = objects as array
+    )
+    local cls = InLab_ResolverClasseGLTF()
+    -- Materiais únicos, descendo nos Multi/Sub (fila: fn local recursiva não
+    -- compila, "No outer local variable references permitted here").
+    local mats = #()
+    local fila = for o in objs where isValidNode o and o.material != undefined collect o.material
+    while fila.count > 0 do
+    (
+        local m = fila[fila.count]
+        deleteItem fila fila.count
+        if m != undefined and (findItem mats m) == 0 do
+        (
+            append mats m
+            if classof m == Multimaterial do join fila (m.materialList as array)
+        )
+    )
+    local alvos = for m in mats where cls != undefined and classof m == cls and m.normalMap != undefined collect m
+    if alvos.count == 0 then
+        InLab_Log "Bump Fix: nenhum glTF Material com normal map na seleção (converta antes)." tipo:#warn
+    else
+    (
+        undo "InLab Bump Fix" on
+        (
+            for m in alvos do
+            (
+                local antes = m.normal
+                m.normal = valor
+                InLab_Log (m.name + ": " + InLab_Num2 antes + " → " + InLab_Num2 valor) tipo:#ok
+            )
+        )
+        InLab_Log ("Bump Fix: intensidade " + InLab_Num2 valor + " em " + alvos.count as string + " material(is).") tipo:#ok
+    )
+    alvos.count
 )
