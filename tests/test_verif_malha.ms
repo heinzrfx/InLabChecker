@@ -8,7 +8,7 @@
 global InLab_Log, InLab_VerifResults, InLab_ResetarResultados, INLAB_LIMITES_PROVISORIOS, InLab_ObterFamilia
 global MalhaAnalise, InLab_Malha_Analisar, InLab_Malha_AnalisarCena, InLab_V08_MalhaFechada, InLab_V10_Normais
 global InLab_V09_Duplicados, InLab_V13_Ngons, InLab_V07_RatioVT, InLab_ObjetosVerificacao
-global InLab_Malha_Tolerancia, InLab_Malha_FacesDuplicadas, InLab_VaiProGLB
+global InLab_Malha_Tolerancia, InLab_Malha_FacesDuplicadas, InLab_Malha_FacesDuplicadasSet, InLab_VaiProGLB
 global INLAB_TESTE_SAIDA, INLAB_TESTE_FALHAS
 (
     local dirTeste = getFilenamePath (getSourceFileName())
@@ -283,6 +283,26 @@ global INLAB_TESTE_SAIDA, INLAB_TESTE_FALHAS
         -- por aresta da V-10b. 09/10/2026 (#112): V-10a e V-10b numa ordenação
         -- só, ~10 s; o teto volta a 15 s.
         checar ("Desempenho: Teapot de 262 mil triângulos abaixo de 15 s (" + seg as string + " s)") (ab[1].tris == 262144 and seg < 15.0)
+        limparCena()
+
+        ---------------------------------------------------------------- V-09a (FACES) — #214
+        -- O botão Faces duplicadas usa o bitarray: dois Box atachados no mesmo
+        -- lugar têm as 24 faces marcadas; um Box só, nenhuma.
+        local tolF = InLab_Malha_Tolerancia()
+        local bd = caixaMesh()
+        local bd2 = caixaMesh()
+        meshop.attach bd bd2
+        local md = snapshotAsMesh bd
+        local setD = InLab_Malha_FacesDuplicadasSet md tolF
+        checar "FacesDuplicadasSet: devolve BitArray" (classof setD == BitArray)
+        checar ("FacesDuplicadasSet: 24 faces marcadas (" + setD.numberSet as string + ")") (setD.numberSet == 24)
+        checar "FacesDuplicadas: contagem igual ao bitarray" ((InLab_Malha_FacesDuplicadas md tolF) == 24)
+        delete md
+        limparCena()
+        local bs = caixaMesh()
+        local ms1 = snapshotAsMesh bs
+        checar "FacesDuplicadasSet: Box só, nenhuma face" ((InLab_Malha_FacesDuplicadasSet ms1 tolF).numberSet == 0)
+        delete ms1
         limparCena()
 
         -- CASOS DAS PRÓXIMAS TASKS ENTRAM AQUI
