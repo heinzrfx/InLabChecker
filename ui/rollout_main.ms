@@ -1072,7 +1072,7 @@ fn InLab_Util_Montar pecas =
         #("separar",  "Separar por material", 62, 72, 200, "Divide cada objeto selecionado em um objeto por material."),
         #("bumpfix",  "Bump Fix",            349, 72,  83, "Grava a intensidade ao lado nos materiais glTF com normal map da seleção (sem seleção, da cena toda)."),
         #("uvwclear", "UVW Clear",            62, 97, 200, "Limpa o canal ao lado nos objetos selecionados (UVW Mapping Clear) e colapsa o stack."),
-        #("uvwdesf",  "↶",                   349, 97,  83, "Desfaz o último UVW Clear: volta o canal e os modificadores das peças."))
+        #("uvwdesf",  "↶",                   349, 97,  24, "Desfaz o último UVW Clear: volta o canal e os modificadores das peças."))
     for b in botoes do
     (
         local btn = dotNetObject "System.Windows.Forms.Button"
