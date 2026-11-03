@@ -180,7 +180,8 @@
  do Panel: o print interno (PrintWindow) mostrava certo, mas na tela o Panel
  cobria os botões a cada repintura, e nem SetWindowPos HWND_BOTTOM no Panel
  resolveu. O rótulo do limite do Find Objects virou InLab_Util_LblLimite e
- os spinners viraram NumericUpDown. Linha UV nova: UVW Clear (InLab_UVWClear,
+ os spinners viraram campo de texto escuro com setas ▴▾ do kit (o
+ NumericUpDown tinha setas brancas do tema do Windows). Linha UV nova: UVW Clear (InLab_UVWClear,
  functions\fn_utilidades.ms) com o canal ao lado. Grupo de 150 para 124px,
  subSecoes em pos:[4,188], janela de 732 para 704.
  Minimizar: botão nativo na barra de título, ao lado do X, como no ArchToolz
@@ -943,15 +944,91 @@ fn InLab_PosicaoPainelGravar rlt =
 -- Handler de evento dotNet não enxerga local de rollout (ver ui\header.ms):
 -- os campos ficam em global e o clique passa por InLab_Util_Acao.
 global InLab_Util_LblLimite, InLab_Util_SpnBump, InLab_Util_SpnCanal, InLab_Util_Dica
-global InLab_Util_Montar, InLab_Util_Acao, InLab_Util_OnClique, InLab_Util_ValorCampo
+global InLab_Util_Montar, InLab_Util_Acao, InLab_Util_OnClique, InLab_Util_ValorCampo, InLab_Util_CfgCampo, InLab_Util_SepDecimal
 
--- Valor de um NumericUpDown como float do MaxScript. O MaxScript arredonda
--- System.Decimal para inteiro na passagem (spn.Value de 0,3 vira 0, e
--- dotNetObject "System.Decimal" 0.3 também): ler com asDotNetObject:true e
--- gravar com InLab_Util_Decimal (sondado no Max 2024, 03/11/2026).
-global InLab_Util_Decimal
-fn InLab_Util_Decimal v = dotNet.ValueToDotNetObject (v as float) (dotNetClass "System.Decimal")
-fn InLab_Util_ValorCampo spn = ((dotNetClass "System.Convert").ToDouble (getProperty spn #Value asDotNetObject:true)) as float
+-- CAMPOS NUMÉRICOS (03/11/2026): TextBox escuro + setas ▴▾ planas do kit.
+-- O NumericUpDown saiu: as setas dele são desenhadas pelo tema do Windows
+-- (brancas, não aceitam cor) e o MaxScript arredonda o System.Decimal dele
+-- para inteiro na passagem. Cada campo guarda a configuração em
+-- INLAB_UTIL_CAMPOS (o índice vai no .Tag do TextBox e das setas):
+--   #(textBox, mínimo, máximo, passo, casas, último valor válido)
+global INLAB_UTIL_CAMPOS = #()
+global InLab_Util_DefinirCampo, InLab_Util_OnSeta, InLab_Util_OnCampoSaiu, InLab_Util_OnCampoTecla
+
+-- Separador decimal do Windows ("," no pt-BR), para mostrar como o Max.
+fn InLab_Util_SepDecimal = ((dotNetClass "System.Globalization.CultureInfo").CurrentCulture).NumberFormat.NumberDecimalSeparator
+
+-- Configuração do campo pelo TextBox (ou undefined).
+fn InLab_Util_CfgCampo tb =
+(
+    local idx = try ( (tb.Tag as string) as integer ) catch ( undefined )
+    if idx != undefined and idx >= 1 and idx <= INLAB_UTIL_CAMPOS.count then INLAB_UTIL_CAMPOS[idx] else undefined
+)
+
+-- Valor do campo como float, dentro da faixa. Texto inválido devolve o
+-- último valor válido. Aceita vírgula ou ponto.
+fn InLab_Util_ValorCampo tb =
+(
+    local cfg = InLab_Util_CfgCampo tb
+    if cfg == undefined then 0.0
+    else
+    (
+        local v = (substituteString (trimLeft (trimRight tb.Text)) "," ".") as float
+        if v == undefined then cfg[6]
+        else amax cfg[2] (amin cfg[3] v)
+    )
+)
+
+-- Grava o valor (dentro da faixa) e reescreve o texto com as casas certas.
+fn InLab_Util_DefinirCampo tb v =
+(
+    local cfg = InLab_Util_CfgCampo tb
+    if cfg != undefined do
+    (
+        v = amax cfg[2] (amin cfg[3] (v as float))
+        cfg[6] = v
+        tb.Text = if cfg[5] == 0 then ((v + 0.5) as integer) as string
+                  else substituteString (formattedPrint v format:("." + cfg[5] as string + "f")) "." (InLab_Util_SepDecimal())
+    )
+    v
+)
+
+-- Seta ▴/▾: Tag "idx+" ou "idx-".
+fn InLab_Util_OnSeta sender arg =
+(
+    try
+    (
+        local tag = sender.Tag as string
+        local cfg = INLAB_UTIL_CAMPOS[(substring tag 1 (tag.count - 1)) as integer]
+        local sinal = if tag[tag.count] == "+" then 1 else -1
+        InLab_Util_DefinirCampo cfg[1] ((InLab_Util_ValorCampo cfg[1]) + sinal * cfg[4])
+    )
+    catch ( InLab_Log ("Utilidades: falha na seta do campo (" + getCurrentException() + ").") tipo:#err )
+)
+
+-- Saiu do campo: corrige o texto digitado (faixa e casas).
+fn InLab_Util_OnCampoSaiu sender arg =
+(
+    try ( InLab_Util_DefinirCampo sender (InLab_Util_ValorCampo sender) )
+    catch ( InLab_Log ("Utilidades: falha no campo (" + getCurrentException() + ").") tipo:#err )
+)
+
+-- Setas do teclado sobem e descem; Enter confirma.
+fn InLab_Util_OnCampoTecla sender arg =
+(
+    try
+    (
+        local K = dotNetClass "System.Windows.Forms.Keys"
+        local cfg = InLab_Util_CfgCampo sender
+        if cfg != undefined do
+        (
+            if arg.KeyCode == K.Up then ( InLab_Util_DefinirCampo sender ((InLab_Util_ValorCampo sender) + cfg[4]); arg.Handled = true )
+            else if arg.KeyCode == K.Down then ( InLab_Util_DefinirCampo sender ((InLab_Util_ValorCampo sender) - cfg[4]); arg.Handled = true )
+            else if arg.KeyCode == K.Enter do ( InLab_Util_DefinirCampo sender (InLab_Util_ValorCampo sender); arg.Handled = true )
+        )
+    )
+    catch ( InLab_Log ("Utilidades: falha no campo (" + getCurrentException() + ").") tipo:#err )
+)
 
 -- Ação de cada botão, pelo Tag (nome). Separada do clique para dar teste.
 fn InLab_Util_Acao acao =
@@ -1030,28 +1107,57 @@ fn InLab_Util_Montar pnl =
         pnl.Controls.Add btn
     )
 
-    -- Campos numéricos (no lugar do spinner nativo).
-    fn campo x y minimo maximo valor passo casas dica fundoCampo pnl dicaObj =
+    -- Campos numéricos no desenho do spinner do Max (referência do usuário,
+    -- 03/11/2026): uma caixa só, fundo um tom acima do painel, texto claro
+    -- sem borda à esquerda e as setas ▴▾ numa coluna estreita dentro da
+    -- caixa, sem contorno. Ver INLAB_UTIL_CAMPOS.
+    INLAB_UTIL_CAMPOS = #()
+    fn campo x y minimo maximo valor passo casas dica pnl dicaObj =
     (
-        local spn = dotNetObject "System.Windows.Forms.NumericUpDown"
-        spn.Location = dotNetObject "System.Drawing.Point" x (y + 1)
-        spn.Size = dotNetObject "System.Drawing.Size" 40 20
-        spn.DecimalPlaces = casas
-        spn.Minimum = InLab_Util_Decimal minimo
-        spn.Maximum = InLab_Util_Decimal maximo
-        spn.Increment = InLab_Util_Decimal passo
-        spn.Value = InLab_Util_Decimal valor
-        spn.BackColor = fundoCampo
-        spn.ForeColor = InLab_Kit_Cor #UTIL_BOTAO_TEXTO
-        spn.BorderStyle = (dotNetClass "System.Windows.Forms.BorderStyle").FixedSingle
-        spn.Font = InLab_Kit_Fonte 8.25
-        dicaObj.SetToolTip spn dica
-        pnl.Controls.Add spn
-        spn
+        local idx = INLAB_UTIL_CAMPOS.count + 1
+        local caixa = dotNetObject "System.Windows.Forms.Panel"
+        caixa.Location = dotNetObject "System.Drawing.Point" x (y + 2)
+        caixa.Size = dotNetObject "System.Drawing.Size" 42 18
+        caixa.BackColor = InLab_Kit_Cor #UTIL_CAMPO_FUNDO
+        local tb = dotNetObject "System.Windows.Forms.TextBox"
+        tb.Tag = idx as string
+        tb.Location = dotNetObject "System.Drawing.Point" 3 2
+        tb.Size = dotNetObject "System.Drawing.Size" 29 14
+        tb.BackColor = InLab_Kit_Cor #UTIL_CAMPO_FUNDO
+        tb.ForeColor = InLab_Kit_Cor #UTIL_BOTAO_TEXTO
+        tb.BorderStyle = (dotNetClass "System.Windows.Forms.BorderStyle").None
+        tb.Font = InLab_Kit_Fonte 8.25
+        append INLAB_UTIL_CAMPOS #(tb, minimo as float, maximo as float, passo as float, casas, valor as float)
+        InLab_Util_DefinirCampo tb valor
+        dotNet.addEventHandler tb "Leave" InLab_Util_OnCampoSaiu
+        dotNet.addEventHandler tb "KeyDown" InLab_Util_OnCampoTecla
+        dicaObj.SetToolTip tb dica
+        caixa.Controls.Add tb
+        -- Setas: coluna de 9px à direita, ▴ em cima e ▾ embaixo.
+        for s in #(#("+", "▴", 0), #("-", "▾", 9)) do
+        (
+            -- Label, não Button: o Button de 9px corta a seta pela margem interna.
+            local b = dotNetObject "System.Windows.Forms.Label"
+            b.Tag = idx as string + s[1]
+            b.Text = s[2]
+            b.AutoSize = false
+            b.Location = dotNetObject "System.Drawing.Point" 32 s[3]
+            b.Size = dotNetObject "System.Drawing.Size" 10 9
+            b.BackColor = InLab_Kit_Cor #UTIL_CAMPO_FUNDO
+            b.ForeColor = InLab_Kit_Cor #UTIL_SETA
+            b.Font = InLab_Kit_Fonte 6
+            b.Padding = dotNetObject "System.Windows.Forms.Padding" 0
+            b.TextAlign = (dotNetClass "System.Drawing.ContentAlignment").MiddleCenter
+            b.Cursor = (dotNetClass "System.Windows.Forms.Cursors").Hand
+            dotNet.addEventHandler b "Click" InLab_Util_OnSeta
+            caixa.Controls.Add b
+        )
+        dicaObj.SetToolTip caixa dica
+        pnl.Controls.Add caixa
+        tb
     )
-    local fundoCampo = InLab_Kit_Cor #UTIL_CAMPO_FUNDO
-    InLab_Util_SpnBump = campo 322 72 0.0 5.0 0.3 0.05 2 "Intensidade do normal map no GLB." fundoCampo pnl InLab_Util_Dica
-    InLab_Util_SpnCanal = campo 322 97 1 99 INLAB_UVWCLEAR_CANAL_PADRAO 1 0 "Canal de mapeamento a limpar. 1 = UV do material, 3 = UV de bake." fundoCampo pnl InLab_Util_Dica
+    InLab_Util_SpnBump = campo 322 72 0.0 5.0 0.3 0.05 2 "Intensidade do normal map no GLB. Setas do teclado sobem e descem." pnl InLab_Util_Dica
+    InLab_Util_SpnCanal = campo 322 97 1 99 INLAB_UVWCLEAR_CANAL_PADRAO 1 0 "Canal de mapeamento a limpar. 1 = UV do material, 3 = UV de bake." pnl InLab_Util_Dica
     local alinhaDir = (dotNetClass "System.Drawing.ContentAlignment").MiddleRight
     local alinhaEsq = (dotNetClass "System.Drawing.ContentAlignment").MiddleLeft
     -- #(texto, x, y, largura, altura, alinhamento, fonte, cor)

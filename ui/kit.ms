@@ -77,7 +77,10 @@ INLAB_KIT_CORES = #(
     #(#UTIL_BOTAO_HOVER, #(106, 106, 106)),
     #(#UTIL_BOTAO_DOWN,  #( 74,  74,  74)),
     #(#UTIL_BOTAO_TEXTO, #(228, 228, 228)),
-    #(#UTIL_CAMPO_FUNDO, #( 47,  47,  47)),
+    -- campo numérico no desenho do spinner do Max (referência do usuário):
+    -- um tom acima do fundo do painel, setas cinza médio
+    #(#UTIL_CAMPO_FUNDO, #( 66,  66,  66)),
+    #(#UTIL_SETA,        #(175, 175, 175)),
     -- status: acento espelha core\log.ms; fundo/borda/texto sao do painel
     #(#OK_ACENTO,        #(120, 220, 120)),
     #(#OK_FUNDO,         #( 49,  58,  46)),

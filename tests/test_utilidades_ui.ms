@@ -10,7 +10,7 @@
  Resultado: <pasta temp do Max>\inlab_test_utilidades_ui.txt
 */
 global InLab_Log, INLAB_ROOT
-global InLab_Util_Montar, InLab_Util_Acao, InLab_Util_ValorCampo, InLab_Util_Decimal
+global InLab_Util_Montar, InLab_Util_Acao, InLab_Util_ValorCampo, InLab_Util_DefinirCampo, InLab_Util_OnSeta
 global InLab_Util_SpnBump, InLab_Util_SpnCanal, InLab_Util_LblLimite
 global InLab_FindObjectsPesados, InLab_BumpFix, InLab_UVWClear, InLab_ResetXFormSelecao
 global INLAB_UVWCLEAR_CANAL_PADRAO
@@ -65,13 +65,42 @@ global INLAB_TESTE_SAIDA, INLAB_TESTE_FALHAS, INLAB_TESTE_CHAMADAS
         pnl.Size = dotNetObject "System.Drawing.Size" 438 124
         InLab_Util_Montar pnl
         checar "10 botões" ((contar pnl "Button") == 10)
-        checar "2 campos numéricos" ((contar pnl "NumericUpDown") == 2)
+        checar "2 campos numéricos (caixa com texto e setas)" ((contar pnl "Panel") == 2)
         checar "8 rótulos (título, limite, 4 linhas, Bump, canal)" ((contar pnl "Label") == 8)
         local total = pnl.Controls.Count
         InLab_Util_Montar pnl
         checar "Montar 2x não duplica" (pnl.Controls.Count == total)
-        checar "Bump abre em 0,3 (Decimal não arredonda)" ((abs ((InLab_Util_ValorCampo InLab_Util_SpnBump) - 0.3)) < 0.001)
+        checar "Bump abre em 0,3" ((abs ((InLab_Util_ValorCampo InLab_Util_SpnBump) - 0.3)) < 0.001)
         checar "Canal abre no padrão" ((InLab_Util_ValorCampo InLab_Util_SpnCanal) == INLAB_UVWCLEAR_CANAL_PADRAO)
+        checar "Canal aparece sem casas decimais" (InLab_Util_SpnCanal.Text == (INLAB_UVWCLEAR_CANAL_PADRAO as string))
+
+        -- CAMPO: setas, faixa e texto digitado
+        fn seta tb sinal =
+        (
+            local caixaCampo = tb.Parent
+            local alvo = undefined
+            for i = 0 to caixaCampo.Controls.Count - 1 where (caixaCampo.Controls.Item[i]).Tag == ((tb.Tag as string) + sinal) do alvo = caixaCampo.Controls.Item[i]
+            InLab_Util_OnSeta alvo undefined
+        )
+        seta InLab_Util_SpnBump "+"
+        checar "Seta ▴ soma o passo (0,30 → 0,35)" ((abs ((InLab_Util_ValorCampo InLab_Util_SpnBump) - 0.35)) < 0.001)
+        seta InLab_Util_SpnBump "-"
+        seta InLab_Util_SpnBump "-"
+        checar "Seta ▾ tira o passo (0,35 → 0,25)" ((abs ((InLab_Util_ValorCampo InLab_Util_SpnBump) - 0.25)) < 0.001)
+        InLab_Util_DefinirCampo InLab_Util_SpnBump 9
+        checar "Acima do máximo fica no máximo (5)" ((InLab_Util_ValorCampo InLab_Util_SpnBump) == 5.0)
+        InLab_Util_DefinirCampo InLab_Util_SpnCanal 0
+        seta InLab_Util_SpnCanal "-"
+        checar "Abaixo do mínimo fica no mínimo (canal 1)" ((InLab_Util_ValorCampo InLab_Util_SpnCanal) == 1.0)
+        InLab_Util_SpnBump.Text = "0.8"
+        checar "Aceita ponto" ((abs ((InLab_Util_ValorCampo InLab_Util_SpnBump) - 0.8)) < 0.001)
+        InLab_Util_SpnBump.Text = "1,5"
+        checar "Aceita vírgula" ((abs ((InLab_Util_ValorCampo InLab_Util_SpnBump) - 1.5)) < 0.001)
+        InLab_Util_DefinirCampo InLab_Util_SpnBump 0.6
+        InLab_Util_SpnBump.Text = "abc"
+        checar "Texto inválido volta ao último válido (0,6)" ((abs ((InLab_Util_ValorCampo InLab_Util_SpnBump) - 0.6)) < 0.001)
+        InLab_Util_DefinirCampo InLab_Util_SpnBump 0.3
+        InLab_Util_DefinirCampo InLab_Util_SpnCanal INLAB_UVWCLEAR_CANAL_PADRAO
         checar "Rótulo do limite existe" (InLab_Util_LblLimite != undefined)
         checar "Todos os controles cabem no Panel (438x124)" (
             (for i = 0 to pnl.Controls.Count - 1 where (pnl.Controls.Item[i]).Right > 438 or (pnl.Controls.Item[i]).Bottom > 124 collect i).count == 0)
@@ -87,7 +116,7 @@ global INLAB_TESTE_SAIDA, INLAB_TESTE_FALHAS, INLAB_TESTE_CHAMADAS
         (botao pnl "find").PerformClick()
         checar "Find Objects chama InLab_FindObjectsPesados" (INLAB_TESTE_CHAMADAS.count == 1 and INLAB_TESTE_CHAMADAS[1][1] == #find)
 
-        InLab_Util_SpnBump.Value = InLab_Util_Decimal 1.25
+        InLab_Util_DefinirCampo InLab_Util_SpnBump 1.25
         (botao pnl "bumpfix").PerformClick()
         local ult = INLAB_TESTE_CHAMADAS[INLAB_TESTE_CHAMADAS.count]
         checar "Bump Fix passa o valor do campo (1,25)" (ult[1] == #bump and (abs (ult[2] - 1.25)) < 0.001)
@@ -99,7 +128,7 @@ global INLAB_TESTE_SAIDA, INLAB_TESTE_FALHAS, INLAB_TESTE_CHAMADAS
 
         caixa = Box()
         select caixa
-        InLab_Util_SpnCanal.Value = InLab_Util_Decimal 4
+        InLab_Util_DefinirCampo InLab_Util_SpnCanal 4
         (botao pnl "uvwclear").PerformClick()
         ult = INLAB_TESTE_CHAMADAS[INLAB_TESTE_CHAMADAS.count]
         checar "UVW Clear passa a seleção e o canal do campo (4)" (ult[1] == #uvw and ult[2] == 1 and ult[3] == 4)
