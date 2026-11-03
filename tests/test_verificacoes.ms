@@ -342,6 +342,50 @@ global INLAB_TESTE_SAIDA, INLAB_TESTE_FALHAS
         checar "V-20: o orquestrador repassa o produto (mensagem cita o código)" ((findString (mensagemDe "V-20") "0020") != undefined)
         limparCena()
 
+        ---------------------------------------------------------------- V-20 · MATERIAL × OBJETO (03/11/2026)
+        -- A plataforma recusa material de parte que não fica naquele objeto
+        -- (Banqueta Kami II 00112048, lista v8: PD_Apoio_de_Pes sem mesh_final).
+        local jsMo = "{\"produtos\": [{\"cod_est\": \"0030\", \"nome\": \"DOIS OBJETOS\", \"partes\": [" +
+            "{\"nome_parte\": \"Base\", \"qualificador\": \"\", \"tipo\": \"P\", \"so3d\": false, \"material_id\": \"ART_P_Base\", \"mesh_final\": \"0030_Base\"}, " +
+            "{\"nome_parte\": \"Tampo\", \"qualificador\": \"\", \"tipo\": \"P\", \"so3d\": false, \"material_id\": \"ART_P_Tampo\", \"mesh_final\": \"0030_Tampo\"}, " +
+            "{\"nome_parte\": \"Apoio de Pés\", \"qualificador\": \"\", \"tipo\": \"PD\", \"so3d\": false, \"material_id\": \"PD_Apoio_de_Pes\", \"mesh_final\": \"\"}, " +
+            "{\"nome_parte\": \"Porta\", \"qualificador\": \"\", \"tipo\": \"P\", \"so3d\": false, \"material_id\": \"ART_P_Porta\", \"mesh_final\": \"\"}, " +
+            "{\"nome_parte\": \"Porta_1\", \"qualificador\": \"\", \"tipo\": \"\", \"so3d\": true, \"subparte_de\": \"Porta\", \"material_id\": \"ART_Porta_1\", \"mesh_final\": \"0030_Porta\"}]}]}"
+        local pMo = (InLab_Produto_Lista (InLab_ParseJSON jsMo))[1]
+        local mBase = StandardMaterial name:"ART_P_Base"
+        local mTampoM = StandardMaterial name:"ART_P_Tampo"
+        local mApoio = StandardMaterial name:"PD_Apoio_de_Pes"
+        local mPorta = StandardMaterial name:"ART_P_Porta"
+        -- Peça com 2 materiais: faces 1-6 no ID 1, 7-12 no ID 2.
+        fn pecaDuas nome m1 m2 posX =
+        (
+            local b = Box name:nome pos:[posX, 0, 0]
+            convertToMesh b
+            for f = 1 to b.numfaces do setFaceMatID b f (if f <= 6 then 1 else 2)
+            local ms = MultiMaterial numsubs:2
+            ms[1] = m1; ms[2] = m2
+            b.material = ms
+            b
+        )
+        local oBase = Box name:"0030_Base" material:mBase
+        local oTampoM = pecaDuas "0030_Tampo" mTampoM mApoio 60
+        local oPorta = Box name:"0030_Porta" material:mPorta pos:[120, 0, 0]
+        local objsMo = #(oBase, oTampoM, oPorta)
+        checar "V-20 mat×obj: parte sem mesh_final no objeto reprova" ((rodar20 cfgEst pMo objsMo "0030") == #fail)
+        checar ("V-20 mat×obj: a mensagem manda corrigir o cadastro (" + mensagemDe "V-20" + ")") (
+            (findString (mensagemDe "V-20") "PD_Apoio_de_Pes") != undefined and (findString (mensagemDe "V-20") "corrija na plataforma") != undefined)
+        oTampoM.material[2] = mBase
+        checar "V-20 mat×obj: material de parte de OUTRO objeto reprova" ((rodar20 cfgEst pMo objsMo "0030") == #fail)
+        checar ("V-20 mat×obj: a mensagem diz em que objeto a parte fica (" + mensagemDe "V-20" + ")") ((findString (mensagemDe "V-20") "fica no objeto '0030_Base'") != undefined)
+        -- Sub-material sem nenhuma face não vai para o GLB: não conta.
+        oTampoM.material[2] = mApoio
+        for f = 1 to oTampoM.numfaces do setFaceMatID oTampoM f 1
+        update oTampoM
+        checar ("V-20 mat×obj: sub-material sem faces não conta (" + mensagemDe "V-20" + ")") ((rodar20 cfgEst pMo objsMo "0030") == #pass)
+        checar "V-20 mat×obj: material da parte-mãe vale no objeto da subparte so3d" ((findString (mensagemDe "V-20") "0030_Porta") == undefined)
+        -- Cada objeto com o material das próprias partes passa (mesma rodada acima).
+        limparCena()
+
         ---------------------------------------------------------------- RODADA COMPLETA
         local c1 = Box name:"Corpo_01" length:40 width:40 height:40
         for cfg in #(cfgEst, cfgAnim, InLab_ObterFamilia "giro_assento") do
