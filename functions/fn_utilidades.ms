@@ -63,6 +63,9 @@
  intacto. Sondado no Max 2024: collapseStack numa instância a torna única e
  o modificador continua nas outras instâncias, por isso a instância vira
  objeto única antes.
+ Botão ↶ ao lado do canal (InLab_UVWClear_Desfazer): cada clique
+ guarda uma cópia da base e dos modificadores (UVWClearRecord), até os
+ últimos INLAB_UVWCLEAR_HIST_MAX cliques.
 ================================================================================
 */
 
@@ -274,16 +277,28 @@ fn InLab_TemCanalUV o canal =
     tem
 )
 
+-- Registro de cada clique do UVW Clear, para o botão Desfazer (↶) ao lado
+-- do canal (03/11/2026, como no mockup). O collapse apaga o stack: guarda
+-- uma CÓPIA da base e de cada modificador (de baixo para cima) antes de
+-- mexer, e o objeto base que sobrou do collapse, para saber se a peça mudou
+-- depois. Um item por clique: array de UVWClearRecord.
+struct UVWClearRecord ( no, base, mods = #(), baseDepois, canal, eraInstancia = false )
+global InLab_UVWClearHistorico
+global INLAB_UVWCLEAR_HIST_MAX = 10
+if InLab_UVWClearHistorico == undefined do InLab_UVWClearHistorico = #()
+
 -- Põe um UVW Mapping Clear no canal `canal` de cada geometria de `objs` e
 -- colapsa o stack (decisão do humano em 03/11/2026: o canal fica limpo na
 -- base, sem modificador sobrando). Mesmo caminho do ResetXForm: instância vira
 -- objeto única antes, porque o modificador num stack compartilhado apareceria
 -- nas outras instâncias e o collapse só tornaria esta única (sondado no Max
--- 2024). Objeto sem o canal fica como está (nem colapsa). Desfaz com Ctrl+Z.
+-- 2024). Objeto sem o canal fica como está (nem colapsa). Desfaz pelo botão
+-- (InLab_UVWClear_Desfazer) ou com Ctrl+Z.
 -- Devolve quantos objetos tiveram o canal limpo.
 fn InLab_UVWClear objs canal =
 (
     local n = 0
+    local clique = #()
     undo "InLab UVW Clear" on
     (
         for o in objs where InLab_EhGeometria o do
@@ -294,14 +309,21 @@ fn InLab_UVWClear objs canal =
                     InLab_Log (o.name + ": não tem o canal " + canal as string + ", nada a limpar.") tipo:#info
                 else
                 (
+                    local r = UVWClearRecord no:o canal:canal
                     if (InLab_InstanciasDoNo o).count > 1 do
                     (
                         InstanceMgr.MakeObjectsUnique o #individual
+                        r.eraInstancia = true
                         InLab_Log (o.name + ": era instância. Ficou único para colapsar.") tipo:#warn
                     )
+                    r.base = copy o.baseObject
+                    -- o.modifiers[1] é o do topo: guarda de baixo para cima.
+                    r.mods = for i = o.modifiers.count to 1 by -1 collect (copy o.modifiers[i])
                     local nMods = o.modifiers.count
                     addModifier o (UVW_Mapping_Clear mapID:canal)
                     collapseStack o
+                    r.baseDepois = o.baseObject
+                    append clique r
                     n += 1
                     InLab_Log (o.name + ": canal " + canal as string + " limpo e stack colapsado (" +
                                (nMods + 1) as string + " modificador(es)) → " + (classof o.baseObject) as string + ".") tipo:#ok
@@ -311,6 +333,49 @@ fn InLab_UVWClear objs canal =
                 InLab_Log (o.name + ": UVW Clear falhou (" + getCurrentException() + ").") tipo:#err
         )
     )
+    if clique.count > 0 do append InLab_UVWClearHistorico clique
+    -- Cada registro guarda uma cópia da malha: só os últimos cliques.
+    while InLab_UVWClearHistorico.count > INLAB_UVWCLEAR_HIST_MAX do deleteItem InLab_UVWClearHistorico 1
     InLab_Log ("UVW Clear: canal " + canal as string + " limpo em " + n as string + " objeto(s).")
+    n
+)
+
+-- Desfaz o último clique do UVW Clear: devolve a base e os modificadores
+-- guardados. Peça que mudou depois (Ctrl+Z, outro colapso, apagada) é pulada
+-- com aviso. Instância que virou única não volta a ser instância. Devolve
+-- quantas peças voltaram.
+global InLab_UVWClear_Desfazer
+fn InLab_UVWClear_Desfazer =
+(
+    local n = 0
+    if InLab_UVWClearHistorico.count == 0 then
+        InLab_Log "UVW Clear: nada para desfazer nesta sessão." tipo:#warn
+    else
+    (
+        local clique = InLab_UVWClearHistorico[InLab_UVWClearHistorico.count]
+        deleteItem InLab_UVWClearHistorico InLab_UVWClearHistorico.count
+        undo "InLab Desfazer UVW Clear" on
+        (
+            for r in clique do
+            (
+                if not isValidNode r.no then InLab_Log "UVW Clear: peça do registro não existe mais na cena." tipo:#warn
+                else if r.no.baseObject != r.baseDepois or r.no.modifiers.count > 0 then
+                    InLab_Log (r.no.name + ": mudou depois do UVW Clear (Ctrl+Z ou edição) — pulada.") tipo:#warn
+                else
+                (
+                    try
+                    (
+                        r.no.baseObject = r.base
+                        for m in r.mods do addModifier r.no m
+                        n += 1
+                        InLab_Log (r.no.name + ": canal " + r.canal as string + " de volta (" + r.mods.count as string + " modificador(es)).") tipo:#ok
+                        if r.eraInstancia do InLab_Log (r.no.name + ": era instância e continua única.") tipo:#info
+                    )
+                    catch ( InLab_Log (r.no.name + ": não desfiz o UVW Clear (" + getCurrentException() + ").") tipo:#err )
+                )
+            )
+        )
+        InLab_Log ("Desfazer UVW Clear: " + n as string + " peça(s).")
+    )
     n
 )
