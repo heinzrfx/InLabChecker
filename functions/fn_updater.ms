@@ -119,6 +119,12 @@
 
  PONTO DE TROCA PARA TESTE: InLab_Update_Disparar é global e o teste a troca
  por um stub, para nunca tocar a rede (tests\test_updater_checagem.ms).
+
+ 03/11/2026: a resposta do GitHub grava a versão da release em
+ "ultimaVersaoRemota" nas preferências. A V-44 (verif_orquestrador.ms)
+ reprova a verificação com o plugin desatualizado e precisa dessa versão
+ mesmo quando a sessão ainda não consultou (o intervalo de 4 h vale entre
+ sessões do Max).
 ================================================================================
 */
 
@@ -284,6 +290,9 @@ fn InLab_UpdateProcessar tok texto status:0 erro:undefined =
             (
                 local u = InLab_Update
                 u.versaoRemota = InLab_UpdateSemV tag
+                -- 03/11/2026: a V-44 (verif_orquestrador.ms) lê esta versão
+                -- quando a sessão ainda não consultou o GitHub (intervalo de 4 h).
+                InLab_PrefGravar "ultimaVersaoRemota" u.versaoRemota
                 u.urlZip = InLab_JSON_Obter zip "browser_download_url"
                 u.tamanhoZip = InLab_JSON_Obter zip "size"
                 u.notasUrl = InLab_JSON_Obter json "html_url"

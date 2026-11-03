@@ -17,6 +17,7 @@
                               V-41 (peça sem material/fallback)  [14/10/2026 — ajustes do Rafa, item 1]
                               V-42 (Real World Fix aplicado)     [22/10/2026 — Auto UV opcional, RWF obrigatório]
                               V-43 (materiais convertidos glTF)  [22/10/2026 — produto sem converter era aprovado]
+   Antes do grupo 1          → V-44 (plugin na versão mais recente) [03/11/2026 — mesa verificada na v1.2.3 saiu aprovada]
 
  REVISÃO DO GRUPO 3 (auditoria pós-entrega, corrigindo divergências da spec):
    V-03  → agora é UMA verificação só: total de polígonos dentro da faixa
@@ -143,6 +144,32 @@ fn InLab_SalvarAntesDeVerificar produto:undefined resposta:unsupplied caminho:un
     )
 )
 
+-- V-44 · Plugin na versão mais recente (crítica). 03/11/2026, bug do time:
+-- a mesa 00124145 foi verificada na v1.2.3 (sem a V-43, que entrou na
+-- 1.2.4) e saiu aprovada com um Standardmaterial, que vira o "fallback
+-- Material" preto no GLB. Reprova quando a versão instalada é menor que a
+-- última que o GitHub informou: a da consulta desta sessão (InLab_Update)
+-- ou, se esta sessão ainda não consultou, a gravada na última consulta
+-- ("ultimaVersaoRemota" nas preferências, fn_updater.ms). Reprova mesmo com
+-- a versão ignorada pelo desenhista. Sem nenhuma consulta que tenha dado
+-- certo, não dá para saber: só avisa.
+global InLab_Update            -- functions\fn_updater.ms
+global InLab_V44_PluginAtualizado
+fn InLab_V44_PluginAtualizado versaoInstalada:INLAB_VERSAO =
+(
+    local titulo = "Plugin na versão mais recente"
+    local remota = ""
+    if InLab_Update != undefined and InLab_Update.versaoRemota != "" do remota = InLab_Update.versaoRemota
+    local daSessao = remota != ""
+    if not daSessao do remota = InLab_PrefLer "ultimaVersaoRemota" ""
+    if remota == "" then
+        InLab_RegistrarVerif "V-44" titulo false ("v" + versaoInstalada + " · não foi possível saber se há versão nova (sem resposta do GitHub)") critico:false
+    else if (InLab_CompararVersao versaoInstalada remota) == -1 then
+        InLab_RegistrarVerif "V-44" titulo false ("v" + versaoInstalada + " instalada, a v" + remota + " já saiu · atualize pela pastilha do header e verifique de novo") critico:true
+    else
+        InLab_RegistrarVerif "V-44" titulo true ("v" + versaoInstalada + " · é a mais recente" + (if daSessao then "" else " (última consulta)")) critico:true
+)
+
 fn InLab_RodarVerificacoes cfg tampoAcessorio:false codEst:"" nomeProduto:"" produto:undefined =
 (
     -- Ver UV ligado: o relatório leria o material das listras. 26/10/2026: o Garantir
@@ -166,6 +193,7 @@ fn InLab_RodarVerificacoes cfg tampoAcessorio:false codEst:"" nomeProduto:"" pro
     else
     (
         -- ===== Grupo 1 · Rápidas =====
+        InLab_V44_PluginAtualizado()
         InLab_RegistrarVerif "V-19" "Unidade do sistema" (units.SystemType == INLAB_UNIDADE_PADRAO) ((units.SystemType as string) + " · padrão InLab: " + INLAB_UNIDADE_PADRAO as string) critico:true
         InLab_V01_PesoMax cfg
         InLab_V02_PesoSKP cfg
