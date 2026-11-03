@@ -10,7 +10,7 @@
  Resultado: <pasta temp do Max>\inlab_test_utilidades_ui.txt
 */
 global InLab_Log, INLAB_ROOT
-global InLab_Util_Montar, InLab_Util_Acao, InLab_Util_ValorCampo, InLab_Util_DefinirCampo, InLab_Util_OnSeta
+global InLab_Util_Montar, InLab_Util_Acao, InLab_Util_ValorCampo, InLab_Util_DefinirCampo, InLab_Util_SetaApertou, InLab_Util_SetaMoveu, InLab_Util_SetaSoltou, INLAB_UTIL_ARRASTO
 global InLab_Util_SpnBump, InLab_Util_SpnCanal, InLab_Util_LblLimite
 global InLab_FindObjectsPesados, InLab_BumpFix, InLab_UVWClear, InLab_ResetXFormSelecao
 global INLAB_UVWCLEAR_CANAL_PADRAO
@@ -75,12 +75,21 @@ global INLAB_TESTE_SAIDA, INLAB_TESTE_FALHAS, INLAB_TESTE_CHAMADAS
         checar "Canal aparece sem casas decimais" (InLab_Util_SpnCanal.Text == (INLAB_UVWCLEAR_CANAL_PADRAO as string))
 
         -- CAMPO: setas, faixa e texto digitado
-        fn seta tb sinal =
+        -- Seta do campo e evento de mouse de verdade (botão esquerdo em y).
+        fn achaSeta tb sinal =
         (
             local caixaCampo = tb.Parent
             local alvo = undefined
             for i = 0 to caixaCampo.Controls.Count - 1 where (caixaCampo.Controls.Item[i]).Tag == ((tb.Tag as string) + sinal) do alvo = caixaCampo.Controls.Item[i]
-            InLab_Util_OnSeta alvo undefined
+            alvo
+        )
+        fn evMouse y = dotNetObject "System.Windows.Forms.MouseEventArgs" (dotNetClass "System.Windows.Forms.MouseButtons").Left 1 4 y 0
+        -- Clique: aperta e solta sem mexer.
+        fn seta tb sinal =
+        (
+            local s = achaSeta tb sinal
+            InLab_Util_SetaApertou s (evMouse 4)
+            InLab_Util_SetaSoltou s (evMouse 4)
         )
         seta InLab_Util_SpnBump "+"
         checar "Seta ▴ soma o passo (0,30 → 0,35)" ((abs ((InLab_Util_ValorCampo InLab_Util_SpnBump) - 0.35)) < 0.001)
@@ -99,6 +108,32 @@ global INLAB_TESTE_SAIDA, INLAB_TESTE_FALHAS, INLAB_TESTE_CHAMADAS
         InLab_Util_DefinirCampo InLab_Util_SpnBump 0.6
         InLab_Util_SpnBump.Text = "abc"
         checar "Texto inválido volta ao último válido (0,6)" ((abs ((InLab_Util_ValorCampo InLab_Util_SpnBump) - 0.6)) < 0.001)
+        -- ARRASTO: um passo por pixel a partir do valor de quando apertou.
+        InLab_Util_DefinirCampo InLab_Util_SpnBump 1.0
+        local sMais = achaSeta InLab_Util_SpnBump "+"
+        InLab_Util_SetaApertou sMais (evMouse 4)
+        InLab_Util_SetaMoveu sMais (evMouse -16)
+        checar "Arrastar 20 px para cima soma 20 passos (1,0 → 2,0)" ((abs ((InLab_Util_ValorCampo InLab_Util_SpnBump) - 2.0)) < 0.001)
+        InLab_Util_SetaMoveu sMais (evMouse 24)
+        checar "Arrastar para baixo na mesma pegada tira (→ 0,0)" ((abs ((InLab_Util_ValorCampo InLab_Util_SpnBump) - 0.0)) < 0.001)
+        InLab_Util_SetaMoveu sMais (evMouse -6)
+        InLab_Util_SetaSoltou sMais (evMouse -6)
+        checar "Soltar depois de arrastar 10 px não soma o passo do clique (1,0 → 1,5)" ((abs ((InLab_Util_ValorCampo InLab_Util_SpnBump) - 1.5)) < 0.001)
+        checar "Soltar encerra o arrasto" (INLAB_UTIL_ARRASTO == undefined)
+        InLab_Util_SetaMoveu sMais (evMouse -50)
+        checar "Mexer o mouse sem apertar não muda o valor" ((abs ((InLab_Util_ValorCampo InLab_Util_SpnBump) - 1.5)) < 0.001)
+        local sMenos = achaSeta InLab_Util_SpnBump "-"
+        InLab_Util_SetaApertou sMenos (evMouse 4)
+        InLab_Util_SetaMoveu sMenos (evMouse -496)
+        InLab_Util_SetaSoltou sMenos (evMouse -496)
+        checar "Arrasto longo para cima para no máximo (5), mesmo pela seta ▾" ((InLab_Util_ValorCampo InLab_Util_SpnBump) == 5.0)
+        InLab_Util_DefinirCampo InLab_Util_SpnCanal 2
+        local sCanal = achaSeta InLab_Util_SpnCanal "+"
+        InLab_Util_SetaApertou sCanal (evMouse 4)
+        InLab_Util_SetaMoveu sCanal (evMouse -6)
+        InLab_Util_SetaSoltou sCanal (evMouse -6)
+        checar "Canal: arrastar 10 px sobe 10 (2 → 12), inteiro" (InLab_Util_SpnCanal.Text == "12")
+
         InLab_Util_DefinirCampo InLab_Util_SpnBump 0.3
         InLab_Util_DefinirCampo InLab_Util_SpnCanal INLAB_UVWCLEAR_CANAL_PADRAO
         checar "Rótulo do limite existe" (InLab_Util_LblLimite != undefined)

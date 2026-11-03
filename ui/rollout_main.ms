@@ -953,7 +953,7 @@ global InLab_Util_Montar, InLab_Util_Acao, InLab_Util_OnClique, InLab_Util_Valor
 -- INLAB_UTIL_CAMPOS (o índice vai no .Tag do TextBox e das setas):
 --   #(textBox, mínimo, máximo, passo, casas, último valor válido)
 global INLAB_UTIL_CAMPOS = #()
-global InLab_Util_DefinirCampo, InLab_Util_OnSeta, InLab_Util_OnCampoSaiu, InLab_Util_OnCampoTecla
+global InLab_Util_DefinirCampo, InLab_Util_OnCampoSaiu, InLab_Util_OnCampoTecla, InLab_Util_CfgDaSeta
 
 -- Separador decimal do Windows ("," no pt-BR), para mostrar como o Max.
 fn InLab_Util_SepDecimal = ((dotNetClass "System.Globalization.CultureInfo").CurrentCulture).NumberFormat.NumberDecimalSeparator
@@ -993,15 +993,69 @@ fn InLab_Util_DefinirCampo tb v =
     v
 )
 
--- Seta ▴/▾: Tag "idx+" ou "idx-".
-fn InLab_Util_OnSeta sender arg =
+-- Setas ▴/▾ como no spinner do Max (pedido do usuário, 03/11/2026):
+-- clicar e soltar sem mexer = um passo (▴ soma, ▾ tira); apertar e
+-- arrastar = um passo por pixel (para cima soma, para baixo tira), a
+-- partir do valor de quando apertou. Tag da seta: "idx+" ou "idx-".
+-- O Label fica com o mouse capturado enquanto o botão está apertado, então
+-- o MouseMove continua chegando fora dele; arg.Y é relativo à seta, que não
+-- se mexe, e serve de régua.
+-- INLAB_UTIL_ARRASTO: #(cfg, yInicial, valorInicial, moveu) ou undefined.
+global INLAB_UTIL_ARRASTO
+global INLAB_UTIL_ARRASTO_PX = 1   -- pixels por passo no arrasto
+global InLab_Util_SetaApertou, InLab_Util_SetaMoveu, InLab_Util_SetaSoltou
+
+fn InLab_Util_CfgDaSeta seta =
+(
+    local tag = seta.Tag as string
+    INLAB_UTIL_CAMPOS[(substring tag 1 (tag.count - 1)) as integer]
+)
+
+fn InLab_Util_SetaApertou sender arg =
 (
     try
     (
-        local tag = sender.Tag as string
-        local cfg = INLAB_UTIL_CAMPOS[(substring tag 1 (tag.count - 1)) as integer]
-        local sinal = if tag[tag.count] == "+" then 1 else -1
-        InLab_Util_DefinirCampo cfg[1] ((InLab_Util_ValorCampo cfg[1]) + sinal * cfg[4])
+        if arg.Button == (dotNetClass "System.Windows.Forms.MouseButtons").Left do
+        (
+            local cfg = InLab_Util_CfgDaSeta sender
+            INLAB_UTIL_ARRASTO = #(cfg, arg.Y, InLab_Util_ValorCampo cfg[1], false)
+            -- Label (STATIC) não captura o mouse sozinho: sem isto o arrasto
+            -- pararia ao sair dos 9px da seta.
+            sender.Capture = true
+        )
+    )
+    catch ( InLab_Log ("Utilidades: falha na seta do campo (" + getCurrentException() + ").") tipo:#err )
+)
+
+fn InLab_Util_SetaMoveu sender arg =
+(
+    try
+    (
+        local a = INLAB_UTIL_ARRASTO
+        if a != undefined do
+        (
+            local passos = ((a[2] - arg.Y) / INLAB_UTIL_ARRASTO_PX) as integer
+            if passos != 0 do a[4] = true
+            if a[4] do InLab_Util_DefinirCampo a[1][1] (a[3] + passos * a[1][4])
+        )
+    )
+    catch ( InLab_Log ("Utilidades: falha ao arrastar o campo (" + getCurrentException() + ").") tipo:#err )
+)
+
+fn InLab_Util_SetaSoltou sender arg =
+(
+    try
+    (
+        local a = INLAB_UTIL_ARRASTO
+        INLAB_UTIL_ARRASTO = undefined
+        sender.Capture = false
+        -- Sem arrasto: é um clique, um passo na direção da seta.
+        if a != undefined and not a[4] do
+        (
+            local tag = sender.Tag as string
+            local sinal = if tag[tag.count] == "+" then 1 else -1
+            InLab_Util_DefinirCampo a[1][1] (a[3] + sinal * a[1][4])
+        )
     )
     catch ( InLab_Log ("Utilidades: falha na seta do campo (" + getCurrentException() + ").") tipo:#err )
 )
@@ -1148,8 +1202,10 @@ fn InLab_Util_Montar pnl =
             b.Font = InLab_Kit_Fonte 6
             b.Padding = dotNetObject "System.Windows.Forms.Padding" 0
             b.TextAlign = (dotNetClass "System.Drawing.ContentAlignment").MiddleCenter
-            b.Cursor = (dotNetClass "System.Windows.Forms.Cursors").Hand
-            dotNet.addEventHandler b "Click" InLab_Util_OnSeta
+            b.Cursor = (dotNetClass "System.Windows.Forms.Cursors").SizeNS
+            dotNet.addEventHandler b "MouseDown" InLab_Util_SetaApertou
+            dotNet.addEventHandler b "MouseMove" InLab_Util_SetaMoveu
+            dotNet.addEventHandler b "MouseUp" InLab_Util_SetaSoltou
             caixa.Controls.Add b
         )
         dicaObj.SetToolTip caixa dica
