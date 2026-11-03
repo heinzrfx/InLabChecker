@@ -182,9 +182,11 @@
  spinners não têm legenda. Linha UV nova: UVW Clear (InLab_UVWClear,
  functions\fn_utilidades.ms) com o canal ao lado. Grupo de 150 para 124px,
  subSecoes em pos:[4,188], janela de 732 para 704.
- Botão minimizar no header (▁/▢, ui\header.ms): InLab_PainelMinimizar
- encolhe a janela para os 56px do header e grava "minimizado" nas
- preferências; a janela reabre como ficou.
+ Minimizar: botão nativo na barra de título, ao lado do X, como no ArchToolz
+ (createDialog com #style_minimizebox, InLab_AbrirUI). Minimizada, a janela
+ vira uma barra de 160px no canto da tela, e InLab_PosicaoPainelGravar não
+ grava essa posição. (Antes houve um botão ▁ no header, que só encolhia a
+ janela até o header; trocado a pedido do usuário no mesmo dia.)
 ================================================================================
 */
 
@@ -912,9 +914,19 @@ fn InLab_PosicaoPainelGravar rlt =
     try
     (
         local caixa = windows.getWindowPos (InLab_RolloutHWND rlt)
-        InLab_PrefGravar "painelX" (caixa.x as integer)
-        InLab_PrefGravar "painelY" (caixa.y as integer)
-        ok = true
+        -- 03/11/2026: minimizada (botão da barra de título), a janela vira
+        -- uma barra de 160px no canto da tela. Gravar essa posição reabriria o
+        -- painel lá: fica a última posição boa. Minimizada, GetDialogSize
+        -- devolve [0,0] (sondado no Max 2024; rlt.width dá 0 depois do
+        -- createDialog com largura, não serve de referência).
+        if (GetDialogSize rlt).x == 0 then
+            InLab_Log "Painel fechado minimizado: a posição gravada continua a anterior." tipo:#info
+        else
+        (
+            InLab_PrefGravar "painelX" (caixa.x as integer)
+            InLab_PrefGravar "painelY" (caixa.y as integer)
+            ok = true
+        )
     )
     catch ( InLab_Log ("Preferências: falha ao gravar a posição do painel (" + getCurrentException() + ").") tipo:#warn )
     ok
@@ -966,13 +978,8 @@ fn InLab_Util_Montar pnl =
     true
 )
 
--- MINIMIZAR (03/11/2026): altura da janela inteira e minimizada (só o
--- header, 56px). 704 = subSecoes em y=188 + 508 + 8 de folga.
+-- Altura da janela: subSecoes em y=188 + 508 + 8 de folga.
 global INLAB_PAINEL_ALTURA = 704
-global INLAB_PAINEL_ALTURA_MIN = 56
-global InLab_PainelMinimizado
-global InLab_PainelMinimizar
-global InLab_Header_SimboloMin -- ui\header.ms
 
 rollout InLabChecker_Rollout ("InLabChecker · InLab Artefacto · v" + INLAB_VERSAO) width:446
 (
@@ -1163,7 +1170,6 @@ rollout InLabChecker_Rollout ("InLabChecker · InLab Artefacto · v" + INLAB_VER
         InLab_Header_BtnReload = undefined
         InLab_Header_Pastilha = undefined
         InLab_Header_Dica = undefined
-        InLab_Header_BtnMin = undefined
         InLab_Util_LblLimite = undefined
     )
 )
@@ -1173,18 +1179,6 @@ rollout InLabChecker_Rollout ("InLabChecker · InLab Artefacto · v" + INLAB_VER
 fn InLab_UtilUI_AtualizarLimite =
     try ( InLabChecker_Rollout.atualizarLimite() )
     catch ( InLab_Log ("Utilidades: rótulo do limite não atualizou (" + getCurrentException() + ").") tipo:#warn )
-
--- Encolhe a janela para só o header (minimizado:true) ou volta à altura
--- inteira, e lembra o estado nas preferências (a janela reabre como ficou).
-fn InLab_PainelMinimizar minimizado =
-(
-    InLab_PainelMinimizado = minimizado
-    try ( InLabChecker_Rollout.height = if minimizado then INLAB_PAINEL_ALTURA_MIN else INLAB_PAINEL_ALTURA )
-    catch ( InLab_Log ("Painel: não mudou a altura da janela (" + getCurrentException() + ").") tipo:#warn )
-    if InLab_Header_SimboloMin != undefined do InLab_Header_SimboloMin minimizado
-    InLab_PrefGravar "minimizado" (if minimizado then "1" else "0")
-    minimizado
-)
 
 -- Fecha instância anterior (se existir) e abre a janela já posicionada
 -- conforme a última posição lembrada (padrão: topo à direita).
@@ -1237,10 +1231,9 @@ fn InLab_AbrirUI =
     -- 29/10/2026 (#214): +28px da linha Faces duplicadas / Bump Fix:
     -- 216 + 508 + 8 = 732.
     -- 03/11/2026: Utilidades em 124px (subSecoes em y=188): 704
-    -- (INLAB_PAINEL_ALTURA). Abre minimizada se ficou assim da última vez.
-    -- O estado é lido ANTES do createDialog: o header pinta o símbolo ▁/▢
-    -- dentro do on open.
-    InLab_PainelMinimizado = (InLab_PrefLer "minimizado" "0") == "1"
-    local altura = if InLab_PainelMinimizado then INLAB_PAINEL_ALTURA_MIN else INLAB_PAINEL_ALTURA
-    createDialog InLabChecker_Rollout 446 altura pos:(InLab_PosicaoPainelLer())
+    -- (INLAB_PAINEL_ALTURA). Botão de minimizar nativo na barra de título,
+    -- ao lado do X, como no ArchToolz (#style_minimizebox; o maximizar fica
+    -- cinza). Minimizada, a janela vira uma barra no canto da tela.
+    createDialog InLabChecker_Rollout 446 INLAB_PAINEL_ALTURA pos:(InLab_PosicaoPainelLer()) \
+        style:#(#style_titlebar, #style_border, #style_sysmenu, #style_minimizebox)
 )

@@ -195,6 +195,25 @@ rollout _rTesteFake "" width:100 height:60
         local cicloLer = InLab_PosicaoPainelLer()
         checar "Ciclo gravar->ler devolve a mesma posicao" (cicloLer.x == 321 and cicloLer.y == 45)
 
+        -- 4d. 03/11/2026: minimizada pelo botão da barra de título, a janela
+        -- vira uma barra no canto da tela. Não grava essa posição.
+        try
+        (
+            createDialog _rTesteFake 300 60 pos:[500, 200] style:#(#style_titlebar, #style_border, #style_sysmenu, #style_minimizebox)
+            aberto = true
+            windows.sendMessage (InLab_RolloutHWND _rTesteFake) 0x0112 0xF020 0  -- WM_SYSCOMMAND, SC_MINIMIZE
+            local okMin = InLab_PosicaoPainelGravar _rTesteFake
+            checar "Minimizada: não grava (devolve false)" (okMin == false)
+            checar "Minimizada: painelX continua o anterior" ((InLab_PrefLer "painelX" "") == "321")
+            destroyDialog _rTesteFake
+            aberto = false
+        )
+        catch
+        (
+            INLAB_TESTE_FALHAS += 1
+            linha ("FAIL  EXCECAO no bloco minimizado: " + getCurrentException())
+        )
+
         -- 4c. Gravar com rollout invalido (sem .pos) nao lanca excecao
         local okInvalido = #naoRodou
         try ( okInvalido = InLab_PosicaoPainelGravar undefined ) catch ( okInvalido = #excecao )

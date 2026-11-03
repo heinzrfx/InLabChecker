@@ -96,11 +96,6 @@
  + 16` dentro de InLab_Header_Montar e devolver esse valor pro pnlHeader.Height
  (e pro InLabChecker_Rollout ajustar o layout abaixo, ja que rdoLado e
  subSecoes tem pos: fixo hoje).
-
- MINIMIZAR (03/11/2026): botao ▁ a esquerda do Reload, mesmo estilo
- (InLab_Kit_BotaoIcone). O clique chama InLab_PainelMinimizar (ui\
- rollout_main.ms), que encolhe a janela para so o header e lembra o estado
- nas preferencias. O botao vira ▢ minimizado (InLab_Header_SimboloMin).
 ================================================================================
 */
 
@@ -127,34 +122,11 @@ if InLab_Header_Versao == undefined do InLab_Header_Versao = INLAB_VERSAO
 global InLab_Header_Estado, InLab_Header_OnPastilha
 global InLab_UpdateCliquePastilha -- functions\fn_updater.ms (#133)
 global InLab_Header_Dica          -- ToolTip da pastilha (#133)
-global InLab_Header_BtnMin, InLab_Header_OnMinimizar, InLab_Header_SimboloMin
-global InLab_PainelMinimizar      -- ui\rollout_main.ms (03/11/2026)
-global InLab_PainelMinimizado     -- idem: true com a janela encolhida
-
 -- Handler de nivel superior: so le global.
 fn InLab_Header_OnReload sender arg =
 (
     try ( InLab_RecarregarPlugin() )
     catch ( InLab_Log ("Header: falha no Reload — " + getCurrentException()) tipo:#err )
-)
-
--- Clique no ▁/▢: alterna o painel minimizado (03/11/2026).
-fn InLab_Header_OnMinimizar sender arg =
-(
-    try ( InLab_PainelMinimizar (not (InLab_PainelMinimizado == true)) )
-    catch ( InLab_Log ("Header: falha ao minimizar — " + getCurrentException()) tipo:#err )
-)
-
--- Repinta o símbolo e a dica do botão conforme o estado.
-fn InLab_Header_SimboloMin minimizado =
-(
-    if InLab_Header_BtnMin != undefined do
-    (
-        InLab_Header_BtnMin.Text = if minimizado then "▢" else "▁"
-        if InLab_Header_Dica != undefined do
-            InLab_Header_Dica.SetToolTip InLab_Header_BtnMin \
-                (if minimizado then "Restaurar: volta o painel inteiro." else "Minimizar: deixa só o header.")
-    )
 )
 
 -- Carrega o PNG sem deixar o arquivo travado. Devolve a imagem ou undefined.
@@ -241,16 +213,6 @@ fn InLab_Header_Montar pnl =
     InLab_Header_BtnReload.Font = InLab_Kit_Fonte 12
     dotNet.addEventHandler InLab_Header_BtnReload "Click" InLab_Header_OnReload
     pnl.Controls.Add InLab_Header_BtnReload
-
-    -- MINIMIZAR (03/11/2026), à esquerda do Reload
-    InLab_Header_BtnMin = dotNetObject "System.Windows.Forms.Button"
-    InLab_Header_BtnMin.Size = dotNetObject "System.Drawing.Size" 28 28
-    InLab_Header_BtnMin.Location = dotNetObject "System.Drawing.Point" (pnl.Width - 152) 14
-    InLab_Kit_BotaoIcone InLab_Header_BtnMin
-    InLab_Header_BtnMin.Font = InLab_Kit_Fonte 10
-    dotNet.addEventHandler InLab_Header_BtnMin "Click" InLab_Header_OnMinimizar
-    pnl.Controls.Add InLab_Header_BtnMin
-    InLab_Header_SimboloMin (InLab_PainelMinimizado == true)
 
     -- Repinta a partir do ESTADO CORRENTE, nao de um #INFO fixo: depois de um
     -- Reload disparado pelo proprio header, InLab_Header_EstadoAtual pode ser
