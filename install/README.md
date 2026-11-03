@@ -69,6 +69,8 @@ Toda segunda:
    ```
    O script copia a lista para `dados\produtos.json`, sobe a versão (último número + 1, ou `-Versao 1.2.0`), faz o commit e o push na `main` e publica a release com o zip, o mzp e o boot. As notas listam a lista de produtos e os commits desde a última versão. Com `-Teste`, ele só confere a lista e a versão, sem gravar nada.
 
+**Atalho: arrastar o JSON em cima de `install\atualizar_lista.bat`.** Ele roda antes o `install\comparar_lista.ps1`, que compara o JSON com a lista publicada na `origin/main` e mostra os produtos novos, removidos e alterados (com os campos que mudaram). Também aponta o que pede atenção: produto removido, campo que a lista publicada não tinha, cópia de `bloco_3d` com `base_codest` fora da lista e parte com mais de uma matéria-prima ou herdada (#207). Depois pergunta se publica. Com S, roda o `publicar_semana.ps1`; com N, não grava nada. Precisa da `main` sem mudança local e do `git` e do `gh` logados na máquina.
+
 A lista vai junto no zip público da release: qualquer pessoa pode baixá-la.
 
 ### Release manual
