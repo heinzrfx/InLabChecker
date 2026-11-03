@@ -56,6 +56,13 @@
  carregado depois deste módulo: sem o `global` antes de
  InLab_FindObjectsPesados, o Find Objects sem argumento chamava undefined num
  Max recém-aberto (ver tests\test_globais_adiantados.ms).
+
+ 03/11/2026 (pedido do usuário): InLab_UVWClear — botão UVW Clear das
+ Utilidades Rápidas. Põe um UVW_Mapping_Clear (propriedade .mapID) no canal
+ escolhido e colapsa o stack, como o ResetXForm. Objeto sem o canal fica
+ intacto. Sondado no Max 2024: collapseStack numa instância a torna única e
+ o modificador continua nas outras instâncias, por isso a instância vira
+ objeto única antes.
 ================================================================================
 */
 
@@ -247,4 +254,63 @@ fn InLab_FindObjectsPesados objs:undefined =
     )
     InLab_Log ("Find Objects: " + achados.count as string + " objeto(s) pesado(s).")
     achados.count
+)
+
+--------------------------------------------------------------------------------
+-- UVW CLEAR (03/11/2026)
+--------------------------------------------------------------------------------
+
+-- Canal padrão do campo ao lado do botão. O 1 é o UV do material (a UI pede
+-- confirmação) e o 3 é o UV de bake, que já tem o "Limpar UV" da seção UV.
+global INLAB_UVWCLEAR_CANAL_PADRAO = 2
+
+-- true se a malha avaliada do nó tem o canal `canal`. meshop.getMapSupport dá
+-- erro com canal >= getNumMaps, por isso a guarda antes.
+fn InLab_TemCanalUV o canal =
+(
+    local m = snapshotAsMesh o
+    local tem = (canal < meshop.getNumMaps m) and (meshop.getMapSupport m canal)
+    delete m
+    tem
+)
+
+-- Põe um UVW Mapping Clear no canal `canal` de cada geometria de `objs` e
+-- colapsa o stack (decisão do humano em 03/11/2026: o canal fica limpo na
+-- base, sem modificador sobrando). Mesmo caminho do ResetXForm: instância vira
+-- objeto única antes, porque o modificador num stack compartilhado apareceria
+-- nas outras instâncias e o collapse só tornaria esta única (sondado no Max
+-- 2024). Objeto sem o canal fica como está (nem colapsa). Desfaz com Ctrl+Z.
+-- Devolve quantos objetos tiveram o canal limpo.
+fn InLab_UVWClear objs canal =
+(
+    local n = 0
+    undo "InLab UVW Clear" on
+    (
+        for o in objs where InLab_EhGeometria o do
+        (
+            try
+            (
+                if not (InLab_TemCanalUV o canal) then
+                    InLab_Log (o.name + ": não tem o canal " + canal as string + ", nada a limpar.") tipo:#info
+                else
+                (
+                    if (InLab_InstanciasDoNo o).count > 1 do
+                    (
+                        InstanceMgr.MakeObjectsUnique o #individual
+                        InLab_Log (o.name + ": era instância. Ficou único para colapsar.") tipo:#warn
+                    )
+                    local nMods = o.modifiers.count
+                    addModifier o (UVW_Mapping_Clear mapID:canal)
+                    collapseStack o
+                    n += 1
+                    InLab_Log (o.name + ": canal " + canal as string + " limpo e stack colapsado (" +
+                               (nMods + 1) as string + " modificador(es)) → " + (classof o.baseObject) as string + ".") tipo:#ok
+                )
+            )
+            catch
+                InLab_Log (o.name + ": UVW Clear falhou (" + getCurrentException() + ").") tipo:#err
+        )
+    )
+    InLab_Log ("UVW Clear: canal " + canal as string + " limpo em " + n as string + " objeto(s).")
+    n
 )

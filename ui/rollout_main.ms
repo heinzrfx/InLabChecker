@@ -170,6 +170,21 @@
  campo Intensidade e o Bump Fix (InLab_BumpFix, fn_material_convert.ms). O
  grupo cresce 28px (122 → 150), subSecoes desce para pos:[4,216] e a janela
  vai de 704 para 732.
+
+ 03/11/2026 (pedido do usuário, mockup aprovado: proposta A + fundo escuro da
+ B): Utilidades Rápidas reorganizada em 4 linhas com rótulo (Pivot, Malha,
+ Material, UV), botões de 21px, sobre um Panel dotNet escuro (pnlUtil, cor
+ #FUNDO_PAINEL do kit). Os botões continuam nativos, declarados DEPOIS do
+ pnlUtil para ficarem por cima (sondado no Max 2024, inclusive depois de
+ repintar o Panel). Os rótulos são Labels dotNet filhos do pnlUtil: o label
+ nativo e o rótulo do spinner pintam um retângulo cinza sobre o fundo escuro.
+ Por isso o rótulo do limite do Find Objects virou InLab_Util_LblLimite e os
+ spinners não têm legenda. Linha UV nova: UVW Clear (InLab_UVWClear,
+ functions\fn_utilidades.ms) com o canal ao lado. Grupo de 150 para 124px,
+ subSecoes em pos:[4,188], janela de 732 para 704.
+ Botão minimizar no header (▁/▢, ui\header.ms): InLab_PainelMinimizar
+ encolhe a janela para os 56px do header e grava "minimizado" nas
+ preferências; a janela reabre como ficou.
 ================================================================================
 */
 
@@ -905,6 +920,60 @@ fn InLab_PosicaoPainelGravar rlt =
     ok
 )
 
+-- UTILIDADES RÁPIDAS: fundo escuro e rótulos (03/11/2026). Os botões são
+-- nativos e ficam por cima do pnlUtil; o que é texto é Label dotNet filho
+-- dele (o label nativo pinta um retângulo cinza no fundo escuro).
+-- Coordenadas em relação ao pnlUtil, que está em pos:[4,60] do painel.
+global InLab_Util_LblLimite
+global InLab_Util_Montar
+fn InLab_Util_Montar pnl =
+(
+    pnl.Controls.Clear()   -- idempotente
+    local fundo = InLab_Kit_Cor #FUNDO_PAINEL
+    pnl.BackColor = fundo
+    local alinhaDir = (dotNetClass "System.Drawing.ContentAlignment").MiddleRight
+    local alinhaEsq = (dotNetClass "System.Drawing.ContentAlignment").MiddleLeft
+    -- #(texto, x, y, largura, altura, alinhamento, fonte, cor)
+    local itens = #(
+        #("UTILIDADES RÁPIDAS", 6, 3, 150, 16, alinhaEsq, InLab_Kit_Fonte 7.5 bold:true, #TEXTO_FORTE),
+        #("Pivot",    2, 22, 56, 21, alinhaDir, InLab_Kit_Fonte 8, #TEXTO_FRACO),
+        #("Malha",    2, 47, 56, 21, alinhaDir, InLab_Kit_Fonte 8, #TEXTO_FRACO),
+        #("Material", 2, 72, 56, 21, alinhaDir, InLab_Kit_Fonte 8, #TEXTO_FRACO),
+        #("UV",       2, 97, 56, 21, alinhaDir, InLab_Kit_Fonte 8, #TEXTO_FRACO),
+        #("Bump",   286, 72, 36, 21, alinhaEsq, InLab_Kit_Fonte 8, #TEXTO_FRACO),
+        #("canal",  286, 97, 36, 21, alinhaEsq, InLab_Kit_Fonte 8, #TEXTO_FRACO))
+    for it in itens do
+    (
+        local lb = dotNetObject "System.Windows.Forms.Label"
+        lb.Text = it[1]
+        lb.Location = dotNetObject "System.Drawing.Point" it[2] it[3]
+        lb.Size = dotNetObject "System.Drawing.Size" it[4] it[5]
+        lb.TextAlign = it[6]
+        lb.Font = it[7]
+        lb.ForeColor = InLab_Kit_Cor it[8]
+        lb.BackColor = fundo
+        pnl.Controls.Add lb
+    )
+    -- Limite do Find Objects, à direita do título (texto em atualizarLimite).
+    InLab_Util_LblLimite = dotNetObject "System.Windows.Forms.Label"
+    InLab_Util_LblLimite.Location = dotNetObject "System.Drawing.Point" 156 3
+    InLab_Util_LblLimite.Size = dotNetObject "System.Drawing.Size" 276 16
+    InLab_Util_LblLimite.TextAlign = alinhaDir
+    InLab_Util_LblLimite.Font = InLab_Kit_Fonte 7.5
+    InLab_Util_LblLimite.ForeColor = InLab_Kit_Cor #TEXTO_FRACO
+    InLab_Util_LblLimite.BackColor = fundo
+    pnl.Controls.Add InLab_Util_LblLimite
+    true
+)
+
+-- MINIMIZAR (03/11/2026): altura da janela inteira e minimizada (só o
+-- header, 56px). 704 = subSecoes em y=188 + 508 + 8 de folga.
+global INLAB_PAINEL_ALTURA = 704
+global INLAB_PAINEL_ALTURA_MIN = 56
+global InLab_PainelMinimizado
+global InLab_PainelMinimizar
+global InLab_Header_SimboloMin -- ui\header.ms
+
 rollout InLabChecker_Rollout ("InLabChecker · InLab Artefacto · v" + INLAB_VERSAO) width:446
 (
     ------------------------------------------------------------------
@@ -930,38 +999,50 @@ rollout InLabChecker_Rollout ("InLabChecker · InLab Artefacto · v" + INLAB_VER
     -- subSecoes desce de pos:[4,64] para pos:[4,188].
     -- 29/10/2026 (#214): + linha Faces duplicadas / Intensidade / Bump Fix;
     -- grupo com 150 e subSecoes em pos:[4,216].
-    groupBox grpUtil "Utilidades Rápidas" pos:[4,60] width:438 height:150
-    button btnUResetX "Reset XForm" pos:[12,78] width:136 height:24
-    button btnUCenter "Center Pivot" pos:[154,78] width:136 height:24
-    button btnUBase "Base Pivot" pos:[296,78] width:138 height:24
-    button btnUOtimizar "ProOptimizer" pos:[12,106] width:208 height:24 tooltip:(
+    -- 03/11/2026: 4 linhas com rótulo sobre o Panel escuro pnlUtil (ver o
+    -- cabeçalho). O pnlUtil TEM que vir antes dos botões: o controle
+    -- declarado depois fica por cima. Rótulos e título: InLab_Util_Montar.
+    -- Colunas: rótulo da linha até x=62, botões de x=66 a x=436.
+    dotNetControl pnlUtil "System.Windows.Forms.Panel" pos:[4,60] width:438 height:124
+    -- Pivot (y=82)
+    button btnUResetX "Reset XForm" pos:[66,82] width:120 height:21 tooltip:"ResetXForm e colapsa o stack dos objetos selecionados."
+    button btnUCenter "Center" pos:[190,82] width:121 height:21 tooltip:"Pivot no centro do bounding box do produto."
+    button btnUBase "Base" pos:[315,82] width:121 height:21 tooltip:"Pivot na base do produto (centro XY, fundo em Z)."
+    -- Malha (y=107)
+    button btnUOtimizar "ProOptimizer −30%" pos:[66,107] width:118 height:21 tooltip:(
         "Tira " + ((100 - INLAB_REDUZIR_FATOR * 100 + 0.5) as integer) as string +
         "% dos vértices de cada peça selecionada. Cada clique é um passo do Ctrl+Z.")
-    button btnUOtimDesfazer "Desfazer" pos:[226,106] width:208 height:24 tooltip:"Volta o último clique do ProOptimizer."
-    button btnUFind "Find Objects" pos:[12,134] width:208 height:24 tooltip:(
+    button btnUOtimDesfazer "↶" pos:[188,107] width:24 height:21 tooltip:"Desfaz o último clique do ProOptimizer."
+    button btnUFind "Find Objects" pos:[220,107] width:110 height:21 tooltip:(
         "Seleciona os objetos acima de " + ((INLAB_FIND_FRACAO_POLYMAX * 100) as integer) as string +
         "% do máximo de triângulos da família. Sem família: os " +
         INLAB_FIND_TOP_N as string + " objetos mais pesados da cena.")
-    button btnUDetach "Separar por material" pos:[226,134] width:208 height:24 tooltip:"Divide cada objeto selecionado em um objeto por material."
-    button btnUFacesDup "Faces duplicadas" pos:[12,162] width:200 height:24 tooltip:"Seleciona as faces coincidentes que a V-09 reprova. Sem seleção, procura na cena toda. Não apaga nada."
-    spinner spnUBump "Intensidade" pos:[238,166] width:90 range:[0, 5, 0.3] scale:0.05 type:#float fieldWidth:40 tooltip:"Intensidade do normal map no GLB."
-    button btnUBumpFix "Bump Fix" pos:[334,162] width:100 height:24 tooltip:"Grava a intensidade ao lado nos materiais glTF com normal map da seleção (sem seleção, da cena toda)."
-    label lblFindLimite "limite: escolha a família" pos:[12,190] width:422
+    button btnUFacesDup "Faces dup." pos:[334,107] width:102 height:21 tooltip:"Seleciona as faces coincidentes que a V-09 reprova. Sem seleção, procura na cena toda. Não apaga nada."
+    -- Material (y=132)
+    button btnUDetach "Separar por material" pos:[66,132] width:220 height:21 tooltip:"Divide cada objeto selecionado em um objeto por material."
+    spinner spnUBump "" pos:[326,135] width:40 fieldWidth:36 range:[0, 5, 0.3] scale:0.05 type:#float tooltip:"Intensidade do normal map no GLB."
+    button btnUBumpFix "Bump Fix" pos:[370,132] width:66 height:21 tooltip:"Grava a intensidade ao lado nos materiais glTF com normal map da seleção (sem seleção, da cena toda)."
+    -- UV (y=157)
+    button btnUUVWClear "UVW Clear" pos:[66,157] width:220 height:21 tooltip:"Limpa o canal ao lado nos objetos selecionados (UVW Mapping Clear) e colapsa o stack. Ctrl+Z desfaz."
+    spinner spnUCanal "" pos:[326,160] width:40 fieldWidth:36 range:[1, 99, INLAB_UVWCLEAR_CANAL_PADRAO] type:#integer tooltip:"Canal de mapeamento a limpar. 1 = UV do material, 3 = UV de bake."
 
-    subRollout subSecoes width:438 height:508 pos:[4,216]
+    subRollout subSecoes width:438 height:508 pos:[4,188]
 
     -- Rótulo do limite do Find Objects (issue #47) — mesma lógica do texto
     -- que InLab_FindObjectsPesados usa para decidir o critério
     -- (functions\fn_utilidades.ms), só para exibição. Chamada no open e pela
     -- seção Produto quando a família muda (InLab_UtilUI_AtualizarLimite).
+    -- 03/11/2026: o rótulo é o Label dotNet InLab_Util_LblLimite, na linha
+    -- do título, e o texto ficou mais curto.
     fn atualizarLimite =
     (
-        lblFindLimite.text = if InLab_FamiliaAtiva != undefined then
-            ("limite do Find Objects: " + ((InLab_FamiliaAtiva.polyMax * INLAB_FIND_FRACAO_POLYMAX) as integer) as string +
-             " triângulos (" + ((INLAB_FIND_FRACAO_POLYMAX * 100) as integer) as string +
-             "% do máximo da família '" + InLab_FamiliaAtiva.nome + "')")
-        else
-            ("limite do Find Objects: sem família ativa — os " + INLAB_FIND_TOP_N as string + " objetos mais pesados da cena")
+        if InLab_Util_LblLimite != undefined do
+            InLab_Util_LblLimite.Text = if InLab_FamiliaAtiva != undefined then
+                ("Find Objects: acima de " + ((InLab_FamiliaAtiva.polyMax * INLAB_FIND_FRACAO_POLYMAX) as integer) as string +
+                 " triângulos (" + ((INLAB_FIND_FRACAO_POLYMAX * 100) as integer) as string +
+                 "% da família '" + InLab_FamiliaAtiva.nome + "')")
+            else
+                ("Find Objects: sem família, os " + INLAB_FIND_TOP_N as string + " mais pesados da cena")
     )
 
     on btnUResetX pressed do
@@ -988,6 +1069,14 @@ rollout InLabChecker_Rollout ("InLabChecker · InLab Artefacto · v" + INLAB_VER
     on btnUFind pressed do InLab_FindObjectsPesados()
     on btnUFacesDup pressed do InLab_FacesDuplicadas()
     on btnUBumpFix pressed do InLab_BumpFix spnUBump.value
+    on btnUUVWClear pressed do
+    (
+        local objs = InLab_SelecaoValida()
+        local canal = spnUCanal.value
+        -- Canal 1 é o UV do material: limpar sem querer apaga o mapeamento.
+        if objs.count > 0 and (canal != 1 or (queryBox "O canal 1 é o UV do material (texturas). Limpar mesmo assim?" title:"UVW Clear")) do
+            InLab_UVWClear objs canal
+    )
     on btnUDetach pressed do
     (
         local objs = InLab_SelecaoValida()
@@ -1015,6 +1104,10 @@ rollout InLabChecker_Rollout ("InLabChecker · InLab Artefacto · v" + INLAB_VER
         (
             InLab_Log ("Falha ao montar o header — o painel abre sem a faixa. " + getCurrentException()) tipo:#err
         )
+        -- Mesma guarda do header: sem o fundo e os rótulos, os botões das
+        -- Utilidades continuam funcionando.
+        try ( InLab_Util_Montar pnlUtil )
+        catch ( InLab_Log ("Utilidades: falha ao montar o fundo e os rótulos (" + getCurrentException() + ").") tipo:#err )
 
         AddSubRollout subSecoes InLabSecProduto
         AddSubRollout subSecoes InLabSecUV rolledUp:true
@@ -1070,6 +1163,8 @@ rollout InLabChecker_Rollout ("InLabChecker · InLab Artefacto · v" + INLAB_VER
         InLab_Header_BtnReload = undefined
         InLab_Header_Pastilha = undefined
         InLab_Header_Dica = undefined
+        InLab_Header_BtnMin = undefined
+        InLab_Util_LblLimite = undefined
     )
 )
 
@@ -1078,6 +1173,18 @@ rollout InLabChecker_Rollout ("InLabChecker · InLab Artefacto · v" + INLAB_VER
 fn InLab_UtilUI_AtualizarLimite =
     try ( InLabChecker_Rollout.atualizarLimite() )
     catch ( InLab_Log ("Utilidades: rótulo do limite não atualizou (" + getCurrentException() + ").") tipo:#warn )
+
+-- Encolhe a janela para só o header (minimizado:true) ou volta à altura
+-- inteira, e lembra o estado nas preferências (a janela reabre como ficou).
+fn InLab_PainelMinimizar minimizado =
+(
+    InLab_PainelMinimizado = minimizado
+    try ( InLabChecker_Rollout.height = if minimizado then INLAB_PAINEL_ALTURA_MIN else INLAB_PAINEL_ALTURA )
+    catch ( InLab_Log ("Painel: não mudou a altura da janela (" + getCurrentException() + ").") tipo:#warn )
+    if InLab_Header_SimboloMin != undefined do InLab_Header_SimboloMin minimizado
+    InLab_PrefGravar "minimizado" (if minimizado then "1" else "0")
+    minimizado
+)
 
 -- Fecha instância anterior (se existir) e abre a janela já posicionada
 -- conforme a última posição lembrada (padrão: topo à direita).
@@ -1129,5 +1236,11 @@ fn InLab_AbrirUI =
     -- (subSecoes em pos:[4,188]): 188 + 508 + 8 de folga = 704.
     -- 29/10/2026 (#214): +28px da linha Faces duplicadas / Bump Fix:
     -- 216 + 508 + 8 = 732.
-    createDialog InLabChecker_Rollout 446 732 pos:(InLab_PosicaoPainelLer())
+    -- 03/11/2026: Utilidades em 124px (subSecoes em y=188): 704
+    -- (INLAB_PAINEL_ALTURA). Abre minimizada se ficou assim da última vez.
+    -- O estado é lido ANTES do createDialog: o header pinta o símbolo ▁/▢
+    -- dentro do on open.
+    InLab_PainelMinimizado = (InLab_PrefLer "minimizado" "0") == "1"
+    local altura = if InLab_PainelMinimizado then INLAB_PAINEL_ALTURA_MIN else INLAB_PAINEL_ALTURA
+    createDialog InLabChecker_Rollout 446 altura pos:(InLab_PosicaoPainelLer())
 )
