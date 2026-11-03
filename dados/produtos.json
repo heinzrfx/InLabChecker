@@ -1,6 +1,6 @@
 {
   "versao_export": "nomenclatura-3D-v2",
-  "exportado_em": "2026-11-03T19:03:05.259Z",
+  "exportado_em": "2026-11-03T20:36:38.161Z",
   "produtos": [
     {
       "linha": "Artefacto & Beach",
@@ -1106,7 +1106,8 @@
           "nome": "00112048",
           "partes": [
             "Estrutura",
-            "Deslizador"
+            "Deslizador",
+            "Apoio de Pés"
           ]
         }
       ],
@@ -1248,7 +1249,7 @@
           "material_id": "PD_Apoio_de_Pes",
           "configuravel": false,
           "entra_3d": true,
-          "mesh_final": "",
+          "mesh_final": "00112048",
           "tecido": false,
           "botao_sem_desm": "",
           "botao_com_desm": "",
@@ -1295,7 +1296,8 @@
           "nome": "00112056",
           "partes": [
             "Estrutura",
-            "Deslizador"
+            "Deslizador",
+            "Apoio de Pés"
           ]
         }
       ],
@@ -1437,7 +1439,7 @@
           "material_id": "PD_Apoio_de_Pes",
           "configuravel": false,
           "entra_3d": true,
-          "mesh_final": "",
+          "mesh_final": "00112056",
           "tecido": false,
           "botao_sem_desm": "",
           "botao_com_desm": "",
