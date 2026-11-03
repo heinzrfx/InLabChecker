@@ -174,14 +174,17 @@
  03/11/2026 (pedido do usuário, mockup aprovado: proposta A + fundo escuro da
  B): Utilidades Rápidas reorganizada em 4 linhas com rótulo (Pivot, Malha,
  Material, UV), botões de 21px, sobre um Panel dotNet escuro (pnlUtil, cor
- #FUNDO_PAINEL do kit). Rótulos, botões e campos são controles dotNet filhos
- do pnlUtil (InLab_Util_Montar), com as cores #UTIL_* do kit; o clique vai
- por InLab_Util_Acao. A 1ª versão do mesmo dia punha botões NATIVOS por cima
- do Panel: o print interno (PrintWindow) mostrava certo, mas na tela o Panel
- cobria os botões a cada repintura, e nem SetWindowPos HWND_BOTTOM no Panel
- resolveu. O rótulo do limite do Find Objects virou InLab_Util_LblLimite e
- os spinners viraram campo de texto escuro com setas ▴▾ do kit (o
- NumericUpDown tinha setas brancas do tema do Windows). Linha UV nova: UVW Clear (InLab_UVWClear,
+ #FUNDO_PAINEL do kit). Rótulos e botões são controles dotNet filhos das
+ peças do fundo (InLab_Util_Montar, INLAB_UTIL_PECAS), com as cores #UTIL_*
+ do kit; o clique vai por InLab_Util_Acao. Os campos Bump e canal são
+ spinners NATIVOS do Max (comportamento todo do Max, como no ArchToolz),
+ ENTRE as peças. Tentativas do mesmo dia que saíram: botões nativos por
+ cima de um Panel (o PrintWindow mostrava certo, mas na tela o Panel cobria
+ os botões a cada repintura; nem SetWindowPos HWND_BOTTOM nem Region no
+ Panel resolveram, porque a janela hospedeira "Afx:..." do dotNetControl
+ continua por cima), NumericUpDown (setas brancas do tema do Windows) e
+ TextBox com setas próprias (não era o spinner do Max). O rótulo do limite
+ do Find Objects virou InLab_Util_LblLimite. Linha UV nova: UVW Clear (InLab_UVWClear,
  functions\fn_utilidades.ms) com o canal ao lado. Grupo de 150 para 124px,
  subSecoes em pos:[4,188], janela de 732 para 704.
  Minimizar: botão nativo na barra de título, ao lado do X, como no ArchToolz
@@ -944,144 +947,52 @@ fn InLab_PosicaoPainelGravar rlt =
 -- Handler de evento dotNet não enxerga local de rollout (ver ui\header.ms):
 -- os campos ficam em global e o clique passa por InLab_Util_Acao.
 global InLab_Util_LblLimite, InLab_Util_SpnBump, InLab_Util_SpnCanal, InLab_Util_Dica
-global InLab_Util_Montar, InLab_Util_Acao, InLab_Util_OnClique, InLab_Util_ValorCampo, InLab_Util_CfgCampo, InLab_Util_SepDecimal
+global InLab_Util_Montar, InLab_Util_Acao, InLab_Util_OnClique, InLab_Util_ValorCampo
 
--- CAMPOS NUMÉRICOS (03/11/2026): TextBox escuro + setas ▴▾ planas do kit.
--- O NumericUpDown saiu: as setas dele são desenhadas pelo tema do Windows
--- (brancas, não aceitam cor) e o MaxScript arredonda o System.Decimal dele
--- para inteiro na passagem. Cada campo guarda a configuração em
--- INLAB_UTIL_CAMPOS (o índice vai no .Tag do TextBox e das setas):
---   #(textBox, mínimo, máximo, passo, casas, último valor válido)
-global INLAB_UTIL_CAMPOS = #()
-global InLab_Util_DefinirCampo, InLab_Util_OnCampoSaiu, InLab_Util_OnCampoTecla, InLab_Util_CfgDaSeta
+-- CAMPOS NUMÉRICOS (03/11/2026): spinner NATIVO do Max (spnUBump,
+-- spnUCanal no rollout), com o comportamento todo do Max (arrastar com o
+-- cursor escondido, aceleração, botão direito zera), como no ArchToolz.
+-- Saíram no mesmo dia: NumericUpDown (setas brancas do tema do Windows,
+-- System.Decimal arredondado pelo MaxScript) e TextBox com setas próprias
+-- (não é o spinner do Max).
+-- O FUNDO É FEITO DE PEÇAS (INLAB_UTIL_PECAS): controle nativo por cima de
+-- um dotNetControl some a cada repintura dele, e recortar o Panel (Region)
+-- não basta, porque o MaxScript hospeda o dotNet numa janela "Afx:..." que
+-- continua cobrindo o spinner (sondado no Max 2024). As peças só encostam
+-- nos spinners, sem cobrir. InLab_Util_SpnBump/SpnCanal apontam para os
+-- spinners (on open).
+global INLAB_UTIL_PECAS, InLab_Util_ConferirCampos
 
--- Separador decimal do Windows ("," no pt-BR), para mostrar como o Max.
-fn InLab_Util_SepDecimal = ((dotNetClass "System.Globalization.CultureInfo").CurrentCulture).NumberFormat.NumberDecimalSeparator
+-- Peças do fundo, em coordenadas do grupo (canto em pos:[4,60] do painel):
+-- #(nome do dotNetControl, x, y, largura, altura). Os spinners ficam em
+-- x 321..366, y 74..90 (Bump) e 99..115 (canal), medidos no Max 2024.
+INLAB_UTIL_PECAS = #(
+    #(#pnlUtil,     0,   0, 438, 71),   -- título, Pivot, Malha
+    #(#pnlUtilEsq,  0,  71, 321, 53),   -- Material, UV (botões e rótulos)
+    #(#pnlUtilDir, 366,  71,  72, 53),  -- Bump Fix
+    #(#pnlUtilS1,  321,  71,  45,  3),  -- acima do Bump
+    #(#pnlUtilS2,  321,  90,  45,  9),  -- entre Bump e canal
+    #(#pnlUtilS3,  321, 115,  45,  9))  -- abaixo do canal
 
--- Configuração do campo pelo TextBox (ou undefined).
-fn InLab_Util_CfgCampo tb =
+-- Valor de um spinner (nativo ou qualquer coisa com .value).
+fn InLab_Util_ValorCampo spn = spn.value
+
+-- Quantos pedaços de spinner (CustEdit, SpinnerControl) encostam por cima
+-- de alguma peça do fundo. 0 = tudo certo. pecas: #(#(pnl, x, y)) com o
+-- Panel já posicionado; dlg: HWND do diálogo.
+fn InLab_Util_ConferirCampos pecas dlg =
 (
-    local idx = try ( (tb.Tag as string) as integer ) catch ( undefined )
-    if idx != undefined and idx >= 1 and idx <= INLAB_UTIL_CAMPOS.count then INLAB_UTIL_CAMPOS[idx] else undefined
-)
-
--- Valor do campo como float, dentro da faixa. Texto inválido devolve o
--- último valor válido. Aceita vírgula ou ponto.
-fn InLab_Util_ValorCampo tb =
-(
-    local cfg = InLab_Util_CfgCampo tb
-    if cfg == undefined then 0.0
-    else
+    local n = 0
+    for c in (windows.getChildrenHWND dlg) where c[2] == dlg and (c[4] == "CustEdit" or c[4] == "SpinnerControl") do
     (
-        local v = (substituteString (trimLeft (trimRight tb.Text)) "," ".") as float
-        if v == undefined then cfg[6]
-        else amax cfg[2] (amin cfg[3] v)
-    )
-)
-
--- Grava o valor (dentro da faixa) e reescreve o texto com as casas certas.
-fn InLab_Util_DefinirCampo tb v =
-(
-    local cfg = InLab_Util_CfgCampo tb
-    if cfg != undefined do
-    (
-        v = amax cfg[2] (amin cfg[3] (v as float))
-        cfg[6] = v
-        tb.Text = if cfg[5] == 0 then ((v + 0.5) as integer) as string
-                  else substituteString (formattedPrint v format:("." + cfg[5] as string + "f")) "." (InLab_Util_SepDecimal())
-    )
-    v
-)
-
--- Setas ▴/▾ como no spinner do Max (pedido do usuário, 03/11/2026):
--- clicar e soltar sem mexer = um passo (▴ soma, ▾ tira); apertar e
--- arrastar = um passo por pixel (para cima soma, para baixo tira), a
--- partir do valor de quando apertou. Tag da seta: "idx+" ou "idx-".
--- O Label fica com o mouse capturado enquanto o botão está apertado, então
--- o MouseMove continua chegando fora dele; arg.Y é relativo à seta, que não
--- se mexe, e serve de régua.
--- INLAB_UTIL_ARRASTO: #(cfg, yInicial, valorInicial, moveu) ou undefined.
-global INLAB_UTIL_ARRASTO
-global INLAB_UTIL_ARRASTO_PX = 1   -- pixels por passo no arrasto
-global InLab_Util_SetaApertou, InLab_Util_SetaMoveu, InLab_Util_SetaSoltou
-
-fn InLab_Util_CfgDaSeta seta =
-(
-    local tag = seta.Tag as string
-    INLAB_UTIL_CAMPOS[(substring tag 1 (tag.count - 1)) as integer]
-)
-
-fn InLab_Util_SetaApertou sender arg =
-(
-    try
-    (
-        if arg.Button == (dotNetClass "System.Windows.Forms.MouseButtons").Left do
+        local s = windows.getWindowPos c[1]
+        for pc in pecas do
         (
-            local cfg = InLab_Util_CfgDaSeta sender
-            INLAB_UTIL_ARRASTO = #(cfg, arg.Y, InLab_Util_ValorCampo cfg[1], false)
-            -- Label (STATIC) não captura o mouse sozinho: sem isto o arrasto
-            -- pararia ao sair dos 9px da seta.
-            sender.Capture = true
+            local o = pc[1].PointToScreen (dotNetObject "System.Drawing.Point" 0 0)
+            if s.x < o.X + pc[1].Width and o.X < s.x + s.w and s.y < o.Y + pc[1].Height and o.Y < s.y + s.h do n += 1
         )
     )
-    catch ( InLab_Log ("Utilidades: falha na seta do campo (" + getCurrentException() + ").") tipo:#err )
-)
-
-fn InLab_Util_SetaMoveu sender arg =
-(
-    try
-    (
-        local a = INLAB_UTIL_ARRASTO
-        if a != undefined do
-        (
-            local passos = ((a[2] - arg.Y) / INLAB_UTIL_ARRASTO_PX) as integer
-            if passos != 0 do a[4] = true
-            if a[4] do InLab_Util_DefinirCampo a[1][1] (a[3] + passos * a[1][4])
-        )
-    )
-    catch ( InLab_Log ("Utilidades: falha ao arrastar o campo (" + getCurrentException() + ").") tipo:#err )
-)
-
-fn InLab_Util_SetaSoltou sender arg =
-(
-    try
-    (
-        local a = INLAB_UTIL_ARRASTO
-        INLAB_UTIL_ARRASTO = undefined
-        sender.Capture = false
-        -- Sem arrasto: é um clique, um passo na direção da seta.
-        if a != undefined and not a[4] do
-        (
-            local tag = sender.Tag as string
-            local sinal = if tag[tag.count] == "+" then 1 else -1
-            InLab_Util_DefinirCampo a[1][1] (a[3] + sinal * a[1][4])
-        )
-    )
-    catch ( InLab_Log ("Utilidades: falha na seta do campo (" + getCurrentException() + ").") tipo:#err )
-)
-
--- Saiu do campo: corrige o texto digitado (faixa e casas).
-fn InLab_Util_OnCampoSaiu sender arg =
-(
-    try ( InLab_Util_DefinirCampo sender (InLab_Util_ValorCampo sender) )
-    catch ( InLab_Log ("Utilidades: falha no campo (" + getCurrentException() + ").") tipo:#err )
-)
-
--- Setas do teclado sobem e descem; Enter confirma.
-fn InLab_Util_OnCampoTecla sender arg =
-(
-    try
-    (
-        local K = dotNetClass "System.Windows.Forms.Keys"
-        local cfg = InLab_Util_CfgCampo sender
-        if cfg != undefined do
-        (
-            if arg.KeyCode == K.Up then ( InLab_Util_DefinirCampo sender ((InLab_Util_ValorCampo sender) + cfg[4]); arg.Handled = true )
-            else if arg.KeyCode == K.Down then ( InLab_Util_DefinirCampo sender ((InLab_Util_ValorCampo sender) - cfg[4]); arg.Handled = true )
-            else if arg.KeyCode == K.Enter do ( InLab_Util_DefinirCampo sender (InLab_Util_ValorCampo sender); arg.Handled = true )
-        )
-    )
-    catch ( InLab_Log ("Utilidades: falha no campo (" + getCurrentException() + ").") tipo:#err )
+    n
 )
 
 -- Ação de cada botão, pelo Tag (nome). Separada do clique para dar teste.
@@ -1117,11 +1028,30 @@ fn InLab_Util_OnClique sender arg =
     catch ( InLab_Log ("Utilidades: falha no botão '" + sender.Text + "' (" + getCurrentException() + ").") tipo:#err )
 )
 
-fn InLab_Util_Montar pnl =
+-- pecas: #(#(Panel, x, y)), x/y do canto da peça em coordenadas do grupo.
+-- Cada controle vai para a peça que o contém inteiro (coordenadas abaixo
+-- também do grupo). Um Panel só de 438x124 em #(#(pnl, 0, 0)) também serve
+-- (é o que o teste usa).
+global InLab_Util_PorNaPeca
+fn InLab_Util_PorNaPeca pecas ctrl x y w h =
 (
-    pnl.Controls.Clear()   -- idempotente
+    local alvo = undefined
+    for pc in pecas where alvo == undefined and x >= pc[2] and y >= pc[3] and         x + w <= pc[2] + pc[1].Width and y + h <= pc[3] + pc[1].Height do alvo = pc
+    if alvo == undefined then
+        InLab_Log ("Utilidades: '" + ctrl.Text + "' não cabe em nenhuma peça do fundo.") tipo:#err
+    else
+    (
+        ctrl.Location = dotNetObject "System.Drawing.Point" (x - alvo[2]) (y - alvo[3])
+        ctrl.Size = dotNetObject "System.Drawing.Size" w h
+        alvo[1].Controls.Add ctrl
+    )
+    alvo != undefined
+)
+
+fn InLab_Util_Montar pecas =
+(
     local fundo = InLab_Kit_Cor #FUNDO_PAINEL
-    pnl.BackColor = fundo
+    for pc in pecas do ( pc[1].Controls.Clear(); pc[1].BackColor = fundo )   -- idempotente
     InLab_Util_Dica = dotNetObject "System.Windows.Forms.ToolTip"
     local fonteBotao = InLab_Kit_Fonte 8.25
 
@@ -1145,8 +1075,6 @@ fn InLab_Util_Montar pnl =
         local btn = dotNetObject "System.Windows.Forms.Button"
         btn.Tag = b[1]
         btn.Text = b[2]
-        btn.Location = dotNetObject "System.Drawing.Point" b[3] b[4]
-        btn.Size = dotNetObject "System.Drawing.Size" b[5] 21
         btn.FlatStyle = (dotNetClass "System.Windows.Forms.FlatStyle").Flat
         btn.FlatAppearance.BorderColor = InLab_Kit_Cor #UTIL_BOTAO_BORDA
         btn.FlatAppearance.BorderSize = 1
@@ -1158,62 +1086,9 @@ fn InLab_Util_Montar pnl =
         btn.UseVisualStyleBackColor = false
         dotNet.addEventHandler btn "Click" InLab_Util_OnClique
         InLab_Util_Dica.SetToolTip btn b[6]
-        pnl.Controls.Add btn
+        InLab_Util_PorNaPeca pecas btn b[3] b[4] b[5] 21
     )
 
-    -- Campos numéricos no desenho do spinner do Max (referência do usuário,
-    -- 03/11/2026): uma caixa só, fundo um tom acima do painel, texto claro
-    -- sem borda à esquerda e as setas ▴▾ numa coluna estreita dentro da
-    -- caixa, sem contorno. Ver INLAB_UTIL_CAMPOS.
-    INLAB_UTIL_CAMPOS = #()
-    fn campo x y minimo maximo valor passo casas dica pnl dicaObj =
-    (
-        local idx = INLAB_UTIL_CAMPOS.count + 1
-        local caixa = dotNetObject "System.Windows.Forms.Panel"
-        caixa.Location = dotNetObject "System.Drawing.Point" x (y + 2)
-        caixa.Size = dotNetObject "System.Drawing.Size" 42 18
-        caixa.BackColor = InLab_Kit_Cor #UTIL_CAMPO_FUNDO
-        local tb = dotNetObject "System.Windows.Forms.TextBox"
-        tb.Tag = idx as string
-        tb.Location = dotNetObject "System.Drawing.Point" 3 2
-        tb.Size = dotNetObject "System.Drawing.Size" 29 14
-        tb.BackColor = InLab_Kit_Cor #UTIL_CAMPO_FUNDO
-        tb.ForeColor = InLab_Kit_Cor #UTIL_BOTAO_TEXTO
-        tb.BorderStyle = (dotNetClass "System.Windows.Forms.BorderStyle").None
-        tb.Font = InLab_Kit_Fonte 8.25
-        append INLAB_UTIL_CAMPOS #(tb, minimo as float, maximo as float, passo as float, casas, valor as float)
-        InLab_Util_DefinirCampo tb valor
-        dotNet.addEventHandler tb "Leave" InLab_Util_OnCampoSaiu
-        dotNet.addEventHandler tb "KeyDown" InLab_Util_OnCampoTecla
-        dicaObj.SetToolTip tb dica
-        caixa.Controls.Add tb
-        -- Setas: coluna de 9px à direita, ▴ em cima e ▾ embaixo.
-        for s in #(#("+", "▴", 0), #("-", "▾", 9)) do
-        (
-            -- Label, não Button: o Button de 9px corta a seta pela margem interna.
-            local b = dotNetObject "System.Windows.Forms.Label"
-            b.Tag = idx as string + s[1]
-            b.Text = s[2]
-            b.AutoSize = false
-            b.Location = dotNetObject "System.Drawing.Point" 32 s[3]
-            b.Size = dotNetObject "System.Drawing.Size" 10 9
-            b.BackColor = InLab_Kit_Cor #UTIL_CAMPO_FUNDO
-            b.ForeColor = InLab_Kit_Cor #UTIL_SETA
-            b.Font = InLab_Kit_Fonte 6
-            b.Padding = dotNetObject "System.Windows.Forms.Padding" 0
-            b.TextAlign = (dotNetClass "System.Drawing.ContentAlignment").MiddleCenter
-            b.Cursor = (dotNetClass "System.Windows.Forms.Cursors").SizeNS
-            dotNet.addEventHandler b "MouseDown" InLab_Util_SetaApertou
-            dotNet.addEventHandler b "MouseMove" InLab_Util_SetaMoveu
-            dotNet.addEventHandler b "MouseUp" InLab_Util_SetaSoltou
-            caixa.Controls.Add b
-        )
-        dicaObj.SetToolTip caixa dica
-        pnl.Controls.Add caixa
-        tb
-    )
-    InLab_Util_SpnBump = campo 322 72 0.0 5.0 0.3 0.05 2 "Intensidade do normal map no GLB. Setas do teclado sobem e descem." pnl InLab_Util_Dica
-    InLab_Util_SpnCanal = campo 322 97 1 99 INLAB_UVWCLEAR_CANAL_PADRAO 1 0 "Canal de mapeamento a limpar. 1 = UV do material, 3 = UV de bake." pnl InLab_Util_Dica
     local alinhaDir = (dotNetClass "System.Drawing.ContentAlignment").MiddleRight
     local alinhaEsq = (dotNetClass "System.Drawing.ContentAlignment").MiddleLeft
     -- #(texto, x, y, largura, altura, alinhamento, fonte, cor)
@@ -1223,29 +1098,25 @@ fn InLab_Util_Montar pnl =
         #("Malha",    2, 47, 56, 21, alinhaDir, InLab_Kit_Fonte 8, #TEXTO_FRACO),
         #("Material", 2, 72, 56, 21, alinhaDir, InLab_Kit_Fonte 8, #TEXTO_FRACO),
         #("UV",       2, 97, 56, 21, alinhaDir, InLab_Kit_Fonte 8, #TEXTO_FRACO),
-        #("Bump",   286, 72, 36, 21, alinhaEsq, InLab_Kit_Fonte 8, #TEXTO_FRACO),
-        #("canal",  286, 97, 36, 21, alinhaEsq, InLab_Kit_Fonte 8, #TEXTO_FRACO))
+        #("Bump",   286, 72, 34, 21, alinhaEsq, InLab_Kit_Fonte 8, #TEXTO_FRACO),
+        #("canal",  286, 97, 34, 21, alinhaEsq, InLab_Kit_Fonte 8, #TEXTO_FRACO))
     for it in itens do
     (
         local lb = dotNetObject "System.Windows.Forms.Label"
         lb.Text = it[1]
-        lb.Location = dotNetObject "System.Drawing.Point" it[2] it[3]
-        lb.Size = dotNetObject "System.Drawing.Size" it[4] it[5]
         lb.TextAlign = it[6]
         lb.Font = it[7]
         lb.ForeColor = InLab_Kit_Cor it[8]
         lb.BackColor = fundo
-        pnl.Controls.Add lb
+        InLab_Util_PorNaPeca pecas lb it[2] it[3] it[4] it[5]
     )
     -- Limite do Find Objects, à direita do título (texto em atualizarLimite).
     InLab_Util_LblLimite = dotNetObject "System.Windows.Forms.Label"
-    InLab_Util_LblLimite.Location = dotNetObject "System.Drawing.Point" 156 3
-    InLab_Util_LblLimite.Size = dotNetObject "System.Drawing.Size" 276 16
     InLab_Util_LblLimite.TextAlign = alinhaDir
     InLab_Util_LblLimite.Font = InLab_Kit_Fonte 7.5
     InLab_Util_LblLimite.ForeColor = InLab_Kit_Cor #TEXTO_FRACO
     InLab_Util_LblLimite.BackColor = fundo
-    pnl.Controls.Add InLab_Util_LblLimite
+    InLab_Util_PorNaPeca pecas InLab_Util_LblLimite 156 3 276 16
     true
 )
 
@@ -1281,7 +1152,17 @@ rollout InLabChecker_Rollout ("InLabChecker · InLab Artefacto · v" + INLAB_VER
     -- escuro. Rótulos, botões e campos são filhos dele, montados por
     -- InLab_Util_Montar (ver o comentário lá: botão nativo por cima do Panel
     -- sumia na tela a cada repintura).
-    dotNetControl pnlUtil "System.Windows.Forms.Panel" pos:[4,60] width:438 height:124
+    -- Peças do fundo escuro (INLAB_UTIL_PECAS: pos = [4,60] + x/y de lá).
+    -- Nenhuma cobre os spinners nativos logo abaixo.
+    dotNetControl pnlUtil "System.Windows.Forms.Panel" pos:[4,60] width:438 height:71
+    dotNetControl pnlUtilEsq "System.Windows.Forms.Panel" pos:[4,131] width:321 height:53
+    dotNetControl pnlUtilDir "System.Windows.Forms.Panel" pos:[370,131] width:72 height:53
+    dotNetControl pnlUtilS1 "System.Windows.Forms.Panel" pos:[325,131] width:45 height:3
+    dotNetControl pnlUtilS2 "System.Windows.Forms.Panel" pos:[325,150] width:45 height:9
+    dotNetControl pnlUtilS3 "System.Windows.Forms.Panel" pos:[325,175] width:45 height:9
+    -- Spinners nativos do Max, entre as peças.
+    spinner spnUBump "" pos:[326,134] width:44 fieldWidth:36 range:[0, 5, 0.3] scale:0.05 type:#float tooltip:"Intensidade do normal map no GLB."
+    spinner spnUCanal "" pos:[326,159] width:44 fieldWidth:36 range:[1, 99, INLAB_UVWCLEAR_CANAL_PADRAO] type:#integer tooltip:"Canal de mapeamento a limpar. 1 = UV do material, 3 = UV de bake."
 
     subRollout subSecoes width:438 height:508 pos:[4,188]
 
@@ -1325,7 +1206,16 @@ rollout InLabChecker_Rollout ("InLabChecker · InLab Artefacto · v" + INLAB_VER
         )
         -- Mesma guarda do header: sem o fundo e os rótulos, os botões das
         -- Utilidades continuam funcionando.
-        try ( InLab_Util_Montar pnlUtil )
+        InLab_Util_SpnBump = spnUBump
+        InLab_Util_SpnCanal = spnUCanal
+        try
+        (
+            local pecas = for pc in INLAB_UTIL_PECAS collect #((getProperty InLabChecker_Rollout pc[1]), pc[2], pc[3])
+            InLab_Util_Montar pecas
+            local dlg = InLab_RolloutHWND InLabChecker_Rollout
+            local n = if dlg == undefined then 0 else InLab_Util_ConferirCampos pecas dlg
+            if n > 0 do InLab_Log ("Utilidades: " + n as string + " pedaço(s) dos campos Bump/canal encostam no fundo escuro (escala do Windows?) e podem sumir ao repintar.") tipo:#warn
+        )
         catch ( InLab_Log ("Utilidades: falha ao montar o fundo e os rótulos (" + getCurrentException() + ").") tipo:#err )
 
         AddSubRollout subSecoes InLabSecProduto

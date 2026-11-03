@@ -1,20 +1,23 @@
 /*
  tests\test_utilidades_ui.ms — botões e campos das Utilidades Rápidas
  (InLab_Util_Montar / InLab_Util_Acao, ui\rollout_main.ms, 03/11/2026).
- Os botões são dotNet filhos de um Panel (botão nativo por cima do Panel
- sumia da tela). Monta num Panel solto, sem abrir o painel, e clica de
- verdade (PerformClick) com as funções das ações trocadas por stubs.
+ Os botões são dotNet filhos das peças do fundo (botão nativo por cima de
+ um Panel sumia da tela); os campos Bump/canal são spinners nativos ENTRE as
+ peças (INLAB_UTIL_PECAS). Monta num Panel solto e nas 6 peças, sem abrir o
+ painel, e clica de verdade (PerformClick) com as ações trocadas por stubs.
+ O spinner nativo não existe fora de rollout: aqui é um struct com .value.
  Carrega os módulos na ordem do manifesto (INLAB_MODULOS lido do
  InLabChecker.ms), até ui\rollout_main.ms, sem chamar InLab_AbrirUI.
  RODAR NUMA CENA VAZIA (cria e apaga uma Box).
  Resultado: <pasta temp do Max>\inlab_test_utilidades_ui.txt
 */
 global InLab_Log, INLAB_ROOT
-global InLab_Util_Montar, InLab_Util_Acao, InLab_Util_ValorCampo, InLab_Util_DefinirCampo, InLab_Util_SetaApertou, InLab_Util_SetaMoveu, InLab_Util_SetaSoltou, INLAB_UTIL_ARRASTO
+global InLab_Util_Montar, InLab_Util_Acao, InLab_Util_ValorCampo, INLAB_UTIL_PECAS
 global InLab_Util_SpnBump, InLab_Util_SpnCanal, InLab_Util_LblLimite
 global InLab_FindObjectsPesados, InLab_BumpFix, InLab_UVWClear, InLab_ResetXFormSelecao
 global INLAB_UVWCLEAR_CANAL_PADRAO
-global INLAB_TESTE_SAIDA, INLAB_TESTE_FALHAS, INLAB_TESTE_CHAMADAS
+global INLAB_TESTE_SAIDA, INLAB_TESTE_FALHAS, INLAB_TESTE_CHAMADAS, INLAB_TESTE_ERROS
+struct TesteSpinner ( value = 0 )
 (
     local dirTeste = getFilenamePath (getSourceFileName())
     local raiz = substring dirTeste 1 (dirTeste.count - 6) -- tira "tests\"
@@ -60,82 +63,55 @@ global INLAB_TESTE_SAIDA, INLAB_TESTE_FALHAS, INLAB_TESTE_CHAMADAS
         for m in mods do fileIn (raiz + m)
         InLab_Log = fn _logTeste msg tipo:#info = ( format "      [LOG %] %\n" tipo msg to:INLAB_TESTE_SAIDA; flush INLAB_TESTE_SAIDA )
 
-        -- MONTAGEM
+        -- MONTAGEM num Panel só, do tamanho do grupo
+        local spnB = TesteSpinner value:0.3
+        local spnC = TesteSpinner value:INLAB_UVWCLEAR_CANAL_PADRAO
+        InLab_Util_SpnBump = spnB
+        InLab_Util_SpnCanal = spnC
         local pnl = dotNetObject "System.Windows.Forms.Panel"
         pnl.Size = dotNetObject "System.Drawing.Size" 438 124
-        InLab_Util_Montar pnl
+        InLab_Util_Montar #(#(pnl, 0, 0))
         checar "10 botões" ((contar pnl "Button") == 10)
-        checar "2 campos numéricos (caixa com texto e setas)" ((contar pnl "Panel") == 2)
         checar "8 rótulos (título, limite, 4 linhas, Bump, canal)" ((contar pnl "Label") == 8)
         local total = pnl.Controls.Count
-        InLab_Util_Montar pnl
+        InLab_Util_Montar #(#(pnl, 0, 0))
         checar "Montar 2x não duplica" (pnl.Controls.Count == total)
-        checar "Bump abre em 0,3" ((abs ((InLab_Util_ValorCampo InLab_Util_SpnBump) - 0.3)) < 0.001)
-        checar "Canal abre no padrão" ((InLab_Util_ValorCampo InLab_Util_SpnCanal) == INLAB_UVWCLEAR_CANAL_PADRAO)
-        checar "Canal aparece sem casas decimais" (InLab_Util_SpnCanal.Text == (INLAB_UVWCLEAR_CANAL_PADRAO as string))
 
-        -- CAMPO: setas, faixa e texto digitado
-        -- Seta do campo e evento de mouse de verdade (botão esquerdo em y).
-        fn achaSeta tb sinal =
+        -- PEÇAS DO FUNDO: não se sobrepõem e cobrem o grupo todo menos os
+        -- dois spinners (x 321..366, y 74..90 e 99..115).
+        fn dentro pc x y = (x >= pc[2] and x < pc[2] + pc[4] and y >= pc[3] and y < pc[3] + pc[5])
+        local sobra = 0
+        local dupla = 0
+        for x = 0 to 437 do for y = 0 to 123 do
         (
-            local caixaCampo = tb.Parent
-            local alvo = undefined
-            for i = 0 to caixaCampo.Controls.Count - 1 where (caixaCampo.Controls.Item[i]).Tag == ((tb.Tag as string) + sinal) do alvo = caixaCampo.Controls.Item[i]
-            alvo
+            local n = 0
+            for pc in INLAB_UTIL_PECAS where dentro pc x y do n += 1
+            local spin = x >= 321 and x < 366 and ((y >= 74 and y < 90) or (y >= 99 and y < 115))
+            if n > 1 do dupla += 1
+            if spin and n > 0 do dupla += 1
+            if not spin and n == 0 do sobra += 1
         )
-        fn evMouse y = dotNetObject "System.Windows.Forms.MouseEventArgs" (dotNetClass "System.Windows.Forms.MouseButtons").Left 1 4 y 0
-        -- Clique: aperta e solta sem mexer.
-        fn seta tb sinal =
-        (
-            local s = achaSeta tb sinal
-            InLab_Util_SetaApertou s (evMouse 4)
-            InLab_Util_SetaSoltou s (evMouse 4)
-        )
-        seta InLab_Util_SpnBump "+"
-        checar "Seta ▴ soma o passo (0,30 → 0,35)" ((abs ((InLab_Util_ValorCampo InLab_Util_SpnBump) - 0.35)) < 0.001)
-        seta InLab_Util_SpnBump "-"
-        seta InLab_Util_SpnBump "-"
-        checar "Seta ▾ tira o passo (0,35 → 0,25)" ((abs ((InLab_Util_ValorCampo InLab_Util_SpnBump) - 0.25)) < 0.001)
-        InLab_Util_DefinirCampo InLab_Util_SpnBump 9
-        checar "Acima do máximo fica no máximo (5)" ((InLab_Util_ValorCampo InLab_Util_SpnBump) == 5.0)
-        InLab_Util_DefinirCampo InLab_Util_SpnCanal 0
-        seta InLab_Util_SpnCanal "-"
-        checar "Abaixo do mínimo fica no mínimo (canal 1)" ((InLab_Util_ValorCampo InLab_Util_SpnCanal) == 1.0)
-        InLab_Util_SpnBump.Text = "0.8"
-        checar "Aceita ponto" ((abs ((InLab_Util_ValorCampo InLab_Util_SpnBump) - 0.8)) < 0.001)
-        InLab_Util_SpnBump.Text = "1,5"
-        checar "Aceita vírgula" ((abs ((InLab_Util_ValorCampo InLab_Util_SpnBump) - 1.5)) < 0.001)
-        InLab_Util_DefinirCampo InLab_Util_SpnBump 0.6
-        InLab_Util_SpnBump.Text = "abc"
-        checar "Texto inválido volta ao último válido (0,6)" ((abs ((InLab_Util_ValorCampo InLab_Util_SpnBump) - 0.6)) < 0.001)
-        -- ARRASTO: um passo por pixel a partir do valor de quando apertou.
-        InLab_Util_DefinirCampo InLab_Util_SpnBump 1.0
-        local sMais = achaSeta InLab_Util_SpnBump "+"
-        InLab_Util_SetaApertou sMais (evMouse 4)
-        InLab_Util_SetaMoveu sMais (evMouse -16)
-        checar "Arrastar 20 px para cima soma 20 passos (1,0 → 2,0)" ((abs ((InLab_Util_ValorCampo InLab_Util_SpnBump) - 2.0)) < 0.001)
-        InLab_Util_SetaMoveu sMais (evMouse 24)
-        checar "Arrastar para baixo na mesma pegada tira (→ 0,0)" ((abs ((InLab_Util_ValorCampo InLab_Util_SpnBump) - 0.0)) < 0.001)
-        InLab_Util_SetaMoveu sMais (evMouse -6)
-        InLab_Util_SetaSoltou sMais (evMouse -6)
-        checar "Soltar depois de arrastar 10 px não soma o passo do clique (1,0 → 1,5)" ((abs ((InLab_Util_ValorCampo InLab_Util_SpnBump) - 1.5)) < 0.001)
-        checar "Soltar encerra o arrasto" (INLAB_UTIL_ARRASTO == undefined)
-        InLab_Util_SetaMoveu sMais (evMouse -50)
-        checar "Mexer o mouse sem apertar não muda o valor" ((abs ((InLab_Util_ValorCampo InLab_Util_SpnBump) - 1.5)) < 0.001)
-        local sMenos = achaSeta InLab_Util_SpnBump "-"
-        InLab_Util_SetaApertou sMenos (evMouse 4)
-        InLab_Util_SetaMoveu sMenos (evMouse -496)
-        InLab_Util_SetaSoltou sMenos (evMouse -496)
-        checar "Arrasto longo para cima para no máximo (5), mesmo pela seta ▾" ((InLab_Util_ValorCampo InLab_Util_SpnBump) == 5.0)
-        InLab_Util_DefinirCampo InLab_Util_SpnCanal 2
-        local sCanal = achaSeta InLab_Util_SpnCanal "+"
-        InLab_Util_SetaApertou sCanal (evMouse 4)
-        InLab_Util_SetaMoveu sCanal (evMouse -6)
-        InLab_Util_SetaSoltou sCanal (evMouse -6)
-        checar "Canal: arrastar 10 px sobe 10 (2 → 12), inteiro" (InLab_Util_SpnCanal.Text == "12")
+        checar "Peças não se sobrepõem nem cobrem os spinners" (dupla == 0)
+        checar ("Peças cobrem o grupo todo fora dos spinners (" + sobra as string + " px de buraco)") (sobra == 0)
 
-        InLab_Util_DefinirCampo InLab_Util_SpnBump 0.3
-        InLab_Util_DefinirCampo InLab_Util_SpnCanal INLAB_UVWCLEAR_CANAL_PADRAO
+        -- Montar nas 6 peças de verdade: todo controle cabe numa peça.
+        INLAB_TESTE_ERROS = 0
+        local logAntes = InLab_Log
+        InLab_Log = fn _logConta msg tipo:#info = ( if tipo == #err do INLAB_TESTE_ERROS += 1 )
+        local pecas = for pc in INLAB_UTIL_PECAS collect
+        (
+            local pp = dotNetObject "System.Windows.Forms.Panel"
+            pp.Size = dotNetObject "System.Drawing.Size" pc[4] pc[5]
+            #(pp, pc[2], pc[3])
+        )
+        InLab_Util_Montar pecas
+        InLab_Log = logAntes
+        local nCtrl = 0
+        for pc in pecas do nCtrl += pc[1].Controls.Count
+        checar "Nas 6 peças: todo botão e rótulo cabe numa peça (nenhum #err)" (INLAB_TESTE_ERROS == 0)
+        checar "Nas 6 peças: os 18 controles foram distribuídos" (nCtrl == 18)
+        InLab_Util_Montar #(#(pnl, 0, 0))
+
         checar "Rótulo do limite existe" (InLab_Util_LblLimite != undefined)
         checar "Todos os controles cabem no Panel (438x124)" (
             (for i = 0 to pnl.Controls.Count - 1 where (pnl.Controls.Item[i]).Right > 438 or (pnl.Controls.Item[i]).Bottom > 124 collect i).count == 0)
@@ -151,7 +127,7 @@ global INLAB_TESTE_SAIDA, INLAB_TESTE_FALHAS, INLAB_TESTE_CHAMADAS
         (botao pnl "find").PerformClick()
         checar "Find Objects chama InLab_FindObjectsPesados" (INLAB_TESTE_CHAMADAS.count == 1 and INLAB_TESTE_CHAMADAS[1][1] == #find)
 
-        InLab_Util_DefinirCampo InLab_Util_SpnBump 1.25
+        spnB.value = 1.25
         (botao pnl "bumpfix").PerformClick()
         local ult = INLAB_TESTE_CHAMADAS[INLAB_TESTE_CHAMADAS.count]
         checar "Bump Fix passa o valor do campo (1,25)" (ult[1] == #bump and (abs (ult[2] - 1.25)) < 0.001)
@@ -163,7 +139,7 @@ global INLAB_TESTE_SAIDA, INLAB_TESTE_FALHAS, INLAB_TESTE_CHAMADAS
 
         caixa = Box()
         select caixa
-        InLab_Util_DefinirCampo InLab_Util_SpnCanal 4
+        spnC.value = 4
         (botao pnl "uvwclear").PerformClick()
         ult = INLAB_TESTE_CHAMADAS[INLAB_TESTE_CHAMADAS.count]
         checar "UVW Clear passa a seleção e o canal do campo (4)" (ult[1] == #uvw and ult[2] == 1 and ult[3] == 4)
