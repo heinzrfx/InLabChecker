@@ -73,7 +73,6 @@ INLAB_KIT_CORES = #(
     -- botao das Utilidades Rapidas (03/11/2026): cinza do botao nativo do
     -- Max 2024 sobre o fundo escuro (proposta A aprovada no mockup)
     #(#UTIL_BOTAO_FUNDO, #( 93,  93,  93)),
-    #(#UTIL_BOTAO_BORDA, #(112, 112, 112)),
     #(#UTIL_BOTAO_HOVER, #(106, 106, 106)),
     #(#UTIL_BOTAO_DOWN,  #( 74,  74,  74)),
     #(#UTIL_BOTAO_TEXTO, #(228, 228, 228)),
@@ -132,6 +131,28 @@ fn InLab_Kit_BotaoIcone btn =
     btn.Font = InLab_Kit_Fonte 9
     btn.Cursor = (dotNetClass "System.Windows.Forms.Cursors").Hand
     btn
+)
+
+-- Cantos arredondados num controle dotNet (03/11/2026, botões das
+-- Utilidades no jeito do ArchToolz): recorta o controle por um retângulo de
+-- cantos com raio `raio`. Chamar DEPOIS de definir o Size: a Region não
+-- acompanha mudança de tamanho. Sem antisserrilhado (é Region); use com
+-- botão sem contorno (FlatAppearance.BorderSize = 0), senão a borda some
+-- nos cantos.
+global InLab_Kit_Arredondar
+fn InLab_Kit_Arredondar ctrl raio =
+(
+    local w = ctrl.Width
+    local h = ctrl.Height
+    local d = amin (raio * 2) (amin w h)
+    local p = dotNetObject "System.Drawing.Drawing2D.GraphicsPath"
+    p.AddArc 0 0 d d 180 90
+    p.AddArc (w - d) 0 d d 270 90
+    p.AddArc (w - d) (h - d) d d 0 90
+    p.AddArc 0 (h - d) d d 90 90
+    p.CloseFigure()
+    ctrl.Region = dotNetObject "System.Drawing.Region" p
+    ctrl
 )
 
 -- tipo: #OK | #WARN | #ERR | #INFO | #PROGRESSO

@@ -1079,8 +1079,9 @@ fn InLab_Util_Montar pecas =
         btn.Tag = b[1]
         btn.Text = b[2]
         btn.FlatStyle = (dotNetClass "System.Windows.Forms.FlatStyle").Flat
-        btn.FlatAppearance.BorderColor = InLab_Kit_Cor #UTIL_BOTAO_BORDA
-        btn.FlatAppearance.BorderSize = 1
+        -- Sem contorno e de cantos arredondados, como no ArchToolz (pedido do
+        -- usuário, 03/11/2026); 18px de altura, quase a do spinner (16px).
+        btn.FlatAppearance.BorderSize = 0
         btn.FlatAppearance.MouseOverBackColor = InLab_Kit_Cor #UTIL_BOTAO_HOVER
         btn.FlatAppearance.MouseDownBackColor = InLab_Kit_Cor #UTIL_BOTAO_DOWN
         btn.BackColor = InLab_Kit_Cor #UTIL_BOTAO_FUNDO
@@ -1090,7 +1091,8 @@ fn InLab_Util_Montar pecas =
         dotNet.addEventHandler btn "Click" InLab_Util_OnClique
         InLab_Util_Dica.SetToolTip btn b[6]
         if b[1] == "find" do InLab_Util_BtnFind = btn
-        InLab_Util_PorNaPeca pecas btn b[3] b[4] b[5] 21
+        -- y + 1: centra os 18px na linha de 21 (o spinner fica em y+2..y+18).
+        if InLab_Util_PorNaPeca pecas btn b[3] (b[4] + 1) b[5] 18 do InLab_Kit_Arredondar btn 3
     )
 
     local alinhaDir = (dotNetClass "System.Drawing.ContentAlignment").MiddleRight
