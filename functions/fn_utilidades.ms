@@ -63,7 +63,7 @@
  intacto. Sondado no Max 2024: collapseStack numa instância a torna única e
  o modificador continua nas outras instâncias, por isso a instância vira
  objeto única antes.
- Botão ↶ Desfazer ao lado do canal (InLab_UVWClear_Desfazer): cada clique
+ Botão ↶ ao lado do canal (InLab_UVWClear_Desfazer): cada clique
  guarda uma cópia da base e dos modificadores (UVWClearRecord), até os
  últimos INLAB_UVWCLEAR_HIST_MAX cliques.
 ================================================================================

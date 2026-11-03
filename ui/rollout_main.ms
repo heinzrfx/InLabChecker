@@ -185,7 +185,7 @@
  continua por cima), NumericUpDown (setas brancas do tema do Windows) e
  TextBox com setas próprias (não era o spinner do Max). O limite do Find
  Objects saiu do topo e foi para a dica do botão (atualizarLimite). Botão
- "↶ Desfazer" ao lado do canal (InLab_UVWClear_Desfazer), como no mockup. Linha UV nova: UVW Clear (InLab_UVWClear,
+ "↶" (só a flecha) ao lado do canal, que desfaz o UVW Clear (InLab_UVWClear_Desfazer). Linha UV nova: UVW Clear (InLab_UVWClear,
  functions\fn_utilidades.ms) com o canal ao lado. Grupo de 150 para 124px,
  subSecoes em pos:[4,188], janela de 732 para 704.
  Minimizar: botão nativo na barra de título, ao lado do X, como no ArchToolz
@@ -970,7 +970,7 @@ global INLAB_UTIL_PECAS, InLab_Util_ConferirCampos
 INLAB_UTIL_PECAS = #(
     #(#pnlUtil,     0,   0, 438, 71),   -- título, Pivot, Malha
     #(#pnlUtilEsq,  0,  71, 301, 53),   -- Material, UV (botões e rótulos)
-    #(#pnlUtilDir, 346,  71,  92, 53),  -- Bump Fix, ↶ Desfazer
+    #(#pnlUtilDir, 346,  71,  92, 53),  -- Bump Fix, ↶ (desfaz o UVW Clear)
     #(#pnlUtilS1,  301,  71,  45,  3),  -- acima do Bump
     #(#pnlUtilS2,  301,  90,  45,  9),  -- entre Bump e canal
     #(#pnlUtilS3,  301, 115,  45,  9))  -- abaixo do canal
@@ -1072,7 +1072,7 @@ fn InLab_Util_Montar pecas =
         #("separar",  "Separar por material", 62, 72, 200, "Divide cada objeto selecionado em um objeto por material."),
         #("bumpfix",  "Bump Fix",            349, 72,  83, "Grava a intensidade ao lado nos materiais glTF com normal map da seleção (sem seleção, da cena toda)."),
         #("uvwclear", "UVW Clear",            62, 97, 200, "Limpa o canal ao lado nos objetos selecionados (UVW Mapping Clear) e colapsa o stack."),
-        #("uvwdesf",  "↶ Desfazer",          349, 97,  83, "Desfaz o último UVW Clear: volta o canal e os modificadores das peças."))
+        #("uvwdesf",  "↶",                   349, 97,  83, "Desfaz o último UVW Clear: volta o canal e os modificadores das peças."))
     for b in botoes do
     (
         local btn = dotNetObject "System.Windows.Forms.Button"

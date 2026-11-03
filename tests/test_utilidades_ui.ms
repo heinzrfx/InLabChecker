@@ -71,7 +71,7 @@ struct TesteSpinner ( value = 0 )
         local pnl = dotNetObject "System.Windows.Forms.Panel"
         pnl.Size = dotNetObject "System.Drawing.Size" 438 124
         InLab_Util_Montar #(#(pnl, 0, 0))
-        checar "11 botões (com o ↶ Desfazer do UVW Clear)" ((contar pnl "Button") == 11)
+        checar "11 botões (com o ↶ do UVW Clear)" ((contar pnl "Button") == 11)
         checar "7 rótulos (título, 4 linhas, Bump, canal; o limite saiu do topo)" ((contar pnl "Label") == 7)
         local total = pnl.Controls.Count
         InLab_Util_Montar #(#(pnl, 0, 0))
@@ -151,7 +151,7 @@ struct TesteSpinner ( value = 0 )
 
         (botao pnl "uvwdesf").PerformClick()
         ult = INLAB_TESTE_CHAMADAS[INLAB_TESTE_CHAMADAS.count]
-        checar "↶ Desfazer chama InLab_UVWClear_Desfazer" (ult[1] == #uvwdesf)
+        checar "↶ do UVW Clear chama InLab_UVWClear_Desfazer" (ult[1] == #uvwdesf)
 
         -- Ação desconhecida não lança exceção (loga #err).
         local ok = true
