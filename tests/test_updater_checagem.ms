@@ -38,7 +38,7 @@ global INLAB_TESTE_DIALOGOS, INLAB_TESTE_RESPOSTA, INLAB_TESTE_APLICOU
     local disparoOriginal = undefined
     local updateOriginal = InLab_Update
     local histOriginal = INLAB_UPDATE_HIST
-    local chaves = #("autoCheck", "ultimaChecagem", "versaoIgnorada")
+    local chaves = #("autoCheck", "ultimaChecagem", "versaoIgnorada", "ultimaVersaoRemota")
     local ausente = "__ausente__"
     local prefsAntes = #()
 
@@ -88,6 +88,7 @@ global INLAB_TESTE_DIALOGOS, INLAB_TESTE_RESPOSTA, INLAB_TESTE_APLICOU
         checar "Processar aceita o token atual" ((InLab_UpdateProcessar tok jsonMaior) == true)
         checar "Tag maior vira #disponivel" (InLab_Update.estado == #disponivel)
         checar "versaoRemota sem o v" (InLab_Update.versaoRemota == "99.0")
+        checar "Resposta grava ultimaVersaoRemota no ini (V-44)" ((InLab_PrefLer "ultimaVersaoRemota" "") == "99.0")
         checar "urlZip do asset .zip" (InLab_Update.urlZip == "https://github.com/heinzrfx/InLabChecker/releases/download/v0.12/InLabChecker-v0.12.zip")
         checar "tamanhoZip do asset" (InLab_Update.tamanhoZip == 123193)
         checar "notasUrl da release" (InLab_Update.notasUrl == "https://github.com/heinzrfx/InLabChecker/releases/tag/v0.12")

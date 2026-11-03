@@ -22,6 +22,7 @@ global InLab_RaizDoNo, InLab_GeometriasDescendentes, InLab_BBoxGeometrias, InLab
 global InLab_RegistrarVerif, InLab_ResetarResultados, InLab_VerifResults, InLab_V17_PivotRaiz
 global FamiliaConfig, InLab_FamiliaAtiva, InLab_Otim_Triangulos
 global InLab_FindObjectsPesados, InLab_FindCompararPeso, INLAB_FIND_FRACAO_POLYMAX, INLAB_FIND_TOP_N
+global InLab_UVWClear, InLab_TemCanalUV, InLab_InstanciasDoNo, INLAB_UVWCLEAR_CANAL_PADRAO
 global INLAB_TESTE_SAIDA, INLAB_TESTE_FALHAS
 (
     local dirTeste = getFilenamePath (getSourceFileName())
@@ -203,6 +204,41 @@ global INLAB_TESTE_SAIDA, INLAB_TESTE_FALHAS
         local nHelper = InLab_FindObjectsPesados objs:#(ptFind)
         checar "Find Objects: helper sozinho não conta como geometria, retorna 0" (nHelper == 0)
         checar "Find Objects: helper sozinho não fica selecionado" (selection.count == 0)
+        limparCena()
+
+        ---------------------------------------------------------- UVW CLEAR (03/11/2026)
+        -- Peça Editable Poly com os canais 1 e 2.
+        fn pecaComCanal2 =
+        (
+            local p = Box length:20 width:20 height:20 mapcoords:true
+            convertToPoly p
+            polyop.setMapSupport p 2 true
+            polyop.setNumMapVerts p 2 8
+            p
+        )
+        local uv1 = pecaComCanal2()
+        addModifier uv1 (Bend())
+        checar "UVW Clear: peça de teste tem o canal 2" (InLab_TemCanalUV uv1 2)
+        checar "UVW Clear: 1 objeto limpo" ((InLab_UVWClear #(uv1) 2) == 1)
+        checar "UVW Clear: canal 2 sumiu" (not (InLab_TemCanalUV uv1 2))
+        checar "UVW Clear: canal 1 continua" (InLab_TemCanalUV uv1 1)
+        checar "UVW Clear: stack colapsado (sem modificador)" (uv1.modifiers.count == 0)
+
+        -- Sem o canal: nada muda, nem o stack.
+        local uv2 = pecaComCanal2()
+        addModifier uv2 (Bend())
+        checar "UVW Clear: sem o canal 5, 0 objeto" ((InLab_UVWClear #(uv2) 5) == 0)
+        checar "UVW Clear: sem o canal, o stack fica como estava" (uv2.modifiers.count == 1)
+
+        -- Instância: só a peça escolhida é limpa, a outra fica intacta.
+        local uv3 = pecaComCanal2()
+        local uv3b = instance uv3
+        InLab_UVWClear #(uv3) 2
+        checar "UVW Clear: instância limpa" (not (InLab_TemCanalUV uv3 2))
+        checar "UVW Clear: a outra instância continua com o canal" (InLab_TemCanalUV uv3b 2)
+        checar "UVW Clear: a outra instância fica sem modificador" (uv3b.modifiers.count == 0)
+
+        checar "UVW Clear: helper não é geometria, 0 objeto" ((InLab_UVWClear #(Point()) 2) == 0)
         limparCena()
     )
     catch

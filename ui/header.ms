@@ -122,7 +122,6 @@ if InLab_Header_Versao == undefined do InLab_Header_Versao = INLAB_VERSAO
 global InLab_Header_Estado, InLab_Header_OnPastilha
 global InLab_UpdateCliquePastilha -- functions\fn_updater.ms (#133)
 global InLab_Header_Dica          -- ToolTip da pastilha (#133)
-
 -- Handler de nivel superior: so le global.
 fn InLab_Header_OnReload sender arg =
 (

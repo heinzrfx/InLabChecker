@@ -32,6 +32,9 @@
      ui\rollout_main.ms (rtbLog.BackColor). Divergia do log de verdade.
    - InLab_Kit_Pastilha parou de criar um System.Drawing.Font por chamada.
      Ver o comentario de INLAB_KIT_FONTE_PASTILHA abaixo.
+
+ 03/11/2026: cores #UTIL_* dos botoes e campos das Utilidades Rapidas, que
+ viraram controles dotNet dentro de um Panel (ui\rollout_main.ms).
 ================================================================================
 */
 
@@ -67,6 +70,14 @@ INLAB_KIT_CORES = #(
     #(#BOTAO_FUNDO,      #( 58,  58,  58)),
     #(#BOTAO_BORDA,      #( 74,  74,  74)),
     #(#BOTAO_ICONE,      #(208, 208, 208)),
+    -- botao das Utilidades Rapidas (03/11/2026): cinza do botao nativo do
+    -- Max 2024 sobre o fundo escuro (proposta A aprovada no mockup)
+    #(#UTIL_BOTAO_FUNDO, #( 93,  93,  93)),
+    #(#UTIL_BOTAO_BORDA, #(112, 112, 112)),
+    #(#UTIL_BOTAO_HOVER, #(106, 106, 106)),
+    #(#UTIL_BOTAO_DOWN,  #( 74,  74,  74)),
+    #(#UTIL_BOTAO_TEXTO, #(228, 228, 228)),
+    #(#UTIL_CAMPO_FUNDO, #( 47,  47,  47)),
     -- status: acento espelha core\log.ms; fundo/borda/texto sao do painel
     #(#OK_ACENTO,        #(120, 220, 120)),
     #(#OK_FUNDO,         #( 49,  58,  46)),
