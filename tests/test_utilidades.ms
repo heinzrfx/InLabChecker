@@ -23,6 +23,7 @@ global InLab_RegistrarVerif, InLab_ResetarResultados, InLab_VerifResults, InLab_
 global FamiliaConfig, InLab_FamiliaAtiva, InLab_Otim_Triangulos
 global InLab_FindObjectsPesados, InLab_FindCompararPeso, INLAB_FIND_FRACAO_POLYMAX, INLAB_FIND_TOP_N
 global InLab_UVWClear, InLab_TemCanalUV, InLab_InstanciasDoNo, INLAB_UVWCLEAR_CANAL_PADRAO
+global InLab_UVWClear_Desfazer, InLab_UVWClearHistorico
 global INLAB_TESTE_SAIDA, INLAB_TESTE_FALHAS
 (
     local dirTeste = getFilenamePath (getSourceFileName())
@@ -239,6 +240,27 @@ global INLAB_TESTE_SAIDA, INLAB_TESTE_FALHAS
         checar "UVW Clear: a outra instância fica sem modificador" (uv3b.modifiers.count == 0)
 
         checar "UVW Clear: helper não é geometria, 0 objeto" ((InLab_UVWClear #(Point()) 2) == 0)
+
+        -- DESFAZER (botão ↶): volta o canal e os modificadores, na ordem.
+        InLab_UVWClearHistorico = #()
+        local ud = pecaComCanal2()
+        addModifier ud (Bend angle:10)
+        addModifier ud (Taper amount:0.5)
+        InLab_UVWClear #(ud) 2
+        checar "Desfazer: setup limpou o canal" (not (InLab_TemCanalUV ud 2) and ud.modifiers.count == 0)
+        checar "Desfazer: 1 peça volta" ((InLab_UVWClear_Desfazer()) == 1)
+        checar "Desfazer: canal 2 voltou" (InLab_TemCanalUV ud 2)
+        checar "Desfazer: os 2 modificadores voltaram na ordem (Taper em cima)" (ud.modifiers.count == 2 and classof ud.modifiers[1] == Taper and classof ud.modifiers[2] == Bend)
+        checar "Desfazer: valores dos modificadores preservados" ((abs (ud.modifiers[2].angle - 10)) < 0.001)
+        checar "Desfazer: histórico vazio depois" (InLab_UVWClearHistorico.count == 0)
+        checar "Desfazer sem nada no histórico devolve 0" ((InLab_UVWClear_Desfazer()) == 0)
+
+        -- Peça mexida depois do UVW Clear: pula, não estraga.
+        local ud2 = pecaComCanal2()
+        InLab_UVWClear #(ud2) 2
+        addModifier ud2 (Bend())
+        checar "Desfazer: peça mexida depois é pulada (0)" ((InLab_UVWClear_Desfazer()) == 0)
+        checar "Desfazer: peça mexida fica como estava (1 modificador)" (ud2.modifiers.count == 1)
         limparCena()
     )
     catch

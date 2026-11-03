@@ -183,8 +183,9 @@
  os botões a cada repintura; nem SetWindowPos HWND_BOTTOM nem Region no
  Panel resolveram, porque a janela hospedeira "Afx:..." do dotNetControl
  continua por cima), NumericUpDown (setas brancas do tema do Windows) e
- TextBox com setas próprias (não era o spinner do Max). O rótulo do limite
- do Find Objects virou InLab_Util_LblLimite. Linha UV nova: UVW Clear (InLab_UVWClear,
+ TextBox com setas próprias (não era o spinner do Max). O limite do Find
+ Objects saiu do topo e foi para a dica do botão (atualizarLimite). Botão
+ "↶ Desfazer" ao lado do canal (InLab_UVWClear_Desfazer), como no mockup. Linha UV nova: UVW Clear (InLab_UVWClear,
  functions\fn_utilidades.ms) com o canal ao lado. Grupo de 150 para 124px,
  subSecoes em pos:[4,188], janela de 732 para 704.
  Minimizar: botão nativo na barra de título, ao lado do X, como no ArchToolz
@@ -946,7 +947,7 @@ fn InLab_PosicaoPainelGravar rlt =
 -- Coordenadas em relação ao pnlUtil, que está em pos:[4,60] do painel.
 -- Handler de evento dotNet não enxerga local de rollout (ver ui\header.ms):
 -- os campos ficam em global e o clique passa por InLab_Util_Acao.
-global InLab_Util_LblLimite, InLab_Util_SpnBump, InLab_Util_SpnCanal, InLab_Util_Dica
+global InLab_Util_BtnFind, InLab_Util_SpnBump, InLab_Util_SpnCanal, InLab_Util_Dica
 global InLab_Util_Montar, InLab_Util_Acao, InLab_Util_OnClique, InLab_Util_ValorCampo
 
 -- CAMPOS NUMÉRICOS (03/11/2026): spinner NATIVO do Max (spnUBump,
@@ -965,14 +966,14 @@ global INLAB_UTIL_PECAS, InLab_Util_ConferirCampos
 
 -- Peças do fundo, em coordenadas do grupo (canto em pos:[4,60] do painel):
 -- #(nome do dotNetControl, x, y, largura, altura). Os spinners ficam em
--- x 321..366, y 74..90 (Bump) e 99..115 (canal), medidos no Max 2024.
+-- x 301..346, y 74..90 (Bump) e 99..115 (canal), medidos no Max 2024.
 INLAB_UTIL_PECAS = #(
     #(#pnlUtil,     0,   0, 438, 71),   -- título, Pivot, Malha
-    #(#pnlUtilEsq,  0,  71, 321, 53),   -- Material, UV (botões e rótulos)
-    #(#pnlUtilDir, 366,  71,  72, 53),  -- Bump Fix
-    #(#pnlUtilS1,  321,  71,  45,  3),  -- acima do Bump
-    #(#pnlUtilS2,  321,  90,  45,  9),  -- entre Bump e canal
-    #(#pnlUtilS3,  321, 115,  45,  9))  -- abaixo do canal
+    #(#pnlUtilEsq,  0,  71, 301, 53),   -- Material, UV (botões e rótulos)
+    #(#pnlUtilDir, 346,  71,  92, 53),  -- Bump Fix, ↶ Desfazer
+    #(#pnlUtilS1,  301,  71,  45,  3),  -- acima do Bump
+    #(#pnlUtilS2,  301,  90,  45,  9),  -- entre Bump e canal
+    #(#pnlUtilS3,  301, 115,  45,  9))  -- abaixo do canal
 
 -- Valor de um spinner (nativo ou qualquer coisa com .value).
 fn InLab_Util_ValorCampo spn = spn.value
@@ -1011,6 +1012,7 @@ fn InLab_Util_Acao acao =
         #facesdup: InLab_FacesDuplicadas()
         #separar:  if objs.count > 0 do InLab_DetachPorMaterialSelecao objs
         #bumpfix:  InLab_BumpFix (InLab_Util_ValorCampo InLab_Util_SpnBump)
+        #uvwdesf:  InLab_UVWClear_Desfazer()
         #uvwclear:
         (
             local canal = (InLab_Util_ValorCampo InLab_Util_SpnCanal) as integer
@@ -1067,9 +1069,10 @@ fn InLab_Util_Montar pecas =
                                                              "% do máximo de triângulos da família. Sem família: os " +
                                                              INLAB_FIND_TOP_N as string + " objetos mais pesados da cena.")),
         #("facesdup", "Faces dup.",          330, 47, 102, "Seleciona as faces coincidentes que a V-09 reprova. Sem seleção, procura na cena toda. Não apaga nada."),
-        #("separar",  "Separar por material", 62, 72, 220, "Divide cada objeto selecionado em um objeto por material."),
-        #("bumpfix",  "Bump Fix",            366, 72,  66, "Grava a intensidade ao lado nos materiais glTF com normal map da seleção (sem seleção, da cena toda)."),
-        #("uvwclear", "UVW Clear",            62, 97, 220, "Limpa o canal ao lado nos objetos selecionados (UVW Mapping Clear) e colapsa o stack. Ctrl+Z desfaz."))
+        #("separar",  "Separar por material", 62, 72, 200, "Divide cada objeto selecionado em um objeto por material."),
+        #("bumpfix",  "Bump Fix",            349, 72,  83, "Grava a intensidade ao lado nos materiais glTF com normal map da seleção (sem seleção, da cena toda)."),
+        #("uvwclear", "UVW Clear",            62, 97, 200, "Limpa o canal ao lado nos objetos selecionados (UVW Mapping Clear) e colapsa o stack."),
+        #("uvwdesf",  "↶ Desfazer",          349, 97,  83, "Desfaz o último UVW Clear: volta o canal e os modificadores das peças."))
     for b in botoes do
     (
         local btn = dotNetObject "System.Windows.Forms.Button"
@@ -1086,6 +1089,7 @@ fn InLab_Util_Montar pecas =
         btn.UseVisualStyleBackColor = false
         dotNet.addEventHandler btn "Click" InLab_Util_OnClique
         InLab_Util_Dica.SetToolTip btn b[6]
+        if b[1] == "find" do InLab_Util_BtnFind = btn
         InLab_Util_PorNaPeca pecas btn b[3] b[4] b[5] 21
     )
 
@@ -1098,8 +1102,8 @@ fn InLab_Util_Montar pecas =
         #("Malha",    2, 47, 56, 21, alinhaDir, InLab_Kit_Fonte 8, #TEXTO_FRACO),
         #("Material", 2, 72, 56, 21, alinhaDir, InLab_Kit_Fonte 8, #TEXTO_FRACO),
         #("UV",       2, 97, 56, 21, alinhaDir, InLab_Kit_Fonte 8, #TEXTO_FRACO),
-        #("Bump",   286, 72, 34, 21, alinhaEsq, InLab_Kit_Fonte 8, #TEXTO_FRACO),
-        #("canal",  286, 97, 34, 21, alinhaEsq, InLab_Kit_Fonte 8, #TEXTO_FRACO))
+        #("Bump",   266, 72, 34, 21, alinhaEsq, InLab_Kit_Fonte 8, #TEXTO_FRACO),
+        #("canal",  266, 97, 34, 21, alinhaEsq, InLab_Kit_Fonte 8, #TEXTO_FRACO))
     for it in itens do
     (
         local lb = dotNetObject "System.Windows.Forms.Label"
@@ -1110,13 +1114,6 @@ fn InLab_Util_Montar pecas =
         lb.BackColor = fundo
         InLab_Util_PorNaPeca pecas lb it[2] it[3] it[4] it[5]
     )
-    -- Limite do Find Objects, à direita do título (texto em atualizarLimite).
-    InLab_Util_LblLimite = dotNetObject "System.Windows.Forms.Label"
-    InLab_Util_LblLimite.TextAlign = alinhaDir
-    InLab_Util_LblLimite.Font = InLab_Kit_Fonte 7.5
-    InLab_Util_LblLimite.ForeColor = InLab_Kit_Cor #TEXTO_FRACO
-    InLab_Util_LblLimite.BackColor = fundo
-    InLab_Util_PorNaPeca pecas InLab_Util_LblLimite 156 3 276 16
     true
 )
 
@@ -1155,14 +1152,14 @@ rollout InLabChecker_Rollout ("InLabChecker · InLab Artefacto · v" + INLAB_VER
     -- Peças do fundo escuro (INLAB_UTIL_PECAS: pos = [4,60] + x/y de lá).
     -- Nenhuma cobre os spinners nativos logo abaixo.
     dotNetControl pnlUtil "System.Windows.Forms.Panel" pos:[4,60] width:438 height:71
-    dotNetControl pnlUtilEsq "System.Windows.Forms.Panel" pos:[4,131] width:321 height:53
-    dotNetControl pnlUtilDir "System.Windows.Forms.Panel" pos:[370,131] width:72 height:53
-    dotNetControl pnlUtilS1 "System.Windows.Forms.Panel" pos:[325,131] width:45 height:3
-    dotNetControl pnlUtilS2 "System.Windows.Forms.Panel" pos:[325,150] width:45 height:9
-    dotNetControl pnlUtilS3 "System.Windows.Forms.Panel" pos:[325,175] width:45 height:9
+    dotNetControl pnlUtilEsq "System.Windows.Forms.Panel" pos:[4,131] width:301 height:53
+    dotNetControl pnlUtilDir "System.Windows.Forms.Panel" pos:[350,131] width:92 height:53
+    dotNetControl pnlUtilS1 "System.Windows.Forms.Panel" pos:[305,131] width:45 height:3
+    dotNetControl pnlUtilS2 "System.Windows.Forms.Panel" pos:[305,150] width:45 height:9
+    dotNetControl pnlUtilS3 "System.Windows.Forms.Panel" pos:[305,175] width:45 height:9
     -- Spinners nativos do Max, entre as peças.
-    spinner spnUBump "" pos:[326,134] width:44 fieldWidth:36 range:[0, 5, 0.3] scale:0.05 type:#float tooltip:"Intensidade do normal map no GLB."
-    spinner spnUCanal "" pos:[326,159] width:44 fieldWidth:36 range:[1, 99, INLAB_UVWCLEAR_CANAL_PADRAO] type:#integer tooltip:"Canal de mapeamento a limpar. 1 = UV do material, 3 = UV de bake."
+    spinner spnUBump "" pos:[306,134] width:44 fieldWidth:36 range:[0, 5, 0.3] scale:0.05 type:#float tooltip:"Intensidade do normal map no GLB."
+    spinner spnUCanal "" pos:[306,159] width:44 fieldWidth:36 range:[1, 99, INLAB_UVWCLEAR_CANAL_PADRAO] type:#integer tooltip:"Canal de mapeamento a limpar. 1 = UV do material, 3 = UV de bake."
 
     subRollout subSecoes width:438 height:508 pos:[4,188]
 
@@ -1170,17 +1167,17 @@ rollout InLabChecker_Rollout ("InLabChecker · InLab Artefacto · v" + INLAB_VER
     -- que InLab_FindObjectsPesados usa para decidir o critério
     -- (functions\fn_utilidades.ms), só para exibição. Chamada no open e pela
     -- seção Produto quando a família muda (InLab_UtilUI_AtualizarLimite).
-    -- 03/11/2026: o rótulo é o Label dotNet InLab_Util_LblLimite, na linha
-    -- do título, e o texto ficou mais curto.
+    -- 03/11/2026: o texto saiu do topo das Utilidades (pedido do usuário) e
+    -- foi para a dica do botão Find Objects.
     fn atualizarLimite =
     (
-        if InLab_Util_LblLimite != undefined do
-            InLab_Util_LblLimite.Text = if InLab_FamiliaAtiva != undefined then
-                ("Find Objects: acima de " + ((InLab_FamiliaAtiva.polyMax * INLAB_FIND_FRACAO_POLYMAX) as integer) as string +
+        if InLab_Util_BtnFind != undefined and InLab_Util_Dica != undefined do
+            InLab_Util_Dica.SetToolTip InLab_Util_BtnFind (if InLab_FamiliaAtiva != undefined then
+                ("Seleciona os objetos acima de " + ((InLab_FamiliaAtiva.polyMax * INLAB_FIND_FRACAO_POLYMAX) as integer) as string +
                  " triângulos (" + ((INLAB_FIND_FRACAO_POLYMAX * 100) as integer) as string +
-                 "% da família '" + InLab_FamiliaAtiva.nome + "')")
+                 "% do máximo da família '" + InLab_FamiliaAtiva.nome + "').")
             else
-                ("Find Objects: sem família, os " + INLAB_FIND_TOP_N as string + " mais pesados da cena")
+                ("Sem família escolhida: seleciona os " + INLAB_FIND_TOP_N as string + " objetos mais pesados da cena."))
     )
 
     ------------------------------------------------------------------
@@ -1272,7 +1269,7 @@ rollout InLabChecker_Rollout ("InLabChecker · InLab Artefacto · v" + INLAB_VER
         InLab_Header_BtnReload = undefined
         InLab_Header_Pastilha = undefined
         InLab_Header_Dica = undefined
-        InLab_Util_LblLimite = undefined
+        InLab_Util_BtnFind = undefined
         InLab_Util_SpnBump = undefined
         InLab_Util_SpnCanal = undefined
         InLab_Util_Dica = undefined
