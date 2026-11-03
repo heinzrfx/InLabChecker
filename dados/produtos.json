@@ -1,6 +1,6 @@
 {
   "versao_export": "nomenclatura-3D-v2",
-  "exportado_em": "2026-10-30T19:53:18.226Z",
+  "exportado_em": "2026-11-03T19:03:05.259Z",
   "produtos": [
     {
       "linha": "Artefacto & Beach",
@@ -1093,7 +1093,7 @@
       "qt_botoes_sem": 1,
       "qt_botoes_com": 1,
       "tecido_desmembravel": false,
-      "acabamento_resumo": "Principal: Estrutura | Pré-definido: Deslizador",
+      "acabamento_resumo": "Principal: Estrutura | Pré-definido: Deslizador, Apoio de Pés",
       "obs_cotas": "",
       "obs_restr_tecido": "",
       "obs_confeccao": "",
@@ -1219,6 +1219,47 @@
           "acessorio_botao_pai": "",
           "acessorio_opcoes": [],
           "par_segue": null
+        },
+        {
+          "ordem": 3,
+          "nome_parte": "Apoio de Pés",
+          "termo": "Apoio de Pés",
+          "qualificador": "",
+          "qualificadores": [],
+          "numero": "sing",
+          "apelido_cliente": "Apoio de Pés",
+          "apelido_override": "",
+          "termo_novo": false,
+          "so3d": false,
+          "subparte_de": "",
+          "tipo": "PD",
+          "materia_prima": {
+            "familia": "Metal",
+            "materia": "Aço Inox"
+          },
+          "materias_primas": [
+            {
+              "familia": "Metal",
+              "materia": "Aço Inox"
+            }
+          ],
+          "materia_prima_herdada": false,
+          "materia_prima_nao_aplica": false,
+          "material_id": "PD_Apoio_de_Pes",
+          "configuravel": false,
+          "entra_3d": true,
+          "mesh_final": "",
+          "tecido": false,
+          "botao_sem_desm": "",
+          "botao_com_desm": "",
+          "metragem_desm": "",
+          "acessorio": false,
+          "acessorio_obrigatorio": null,
+          "acessorio_acabamentos": [],
+          "acessorio_fixo": false,
+          "acessorio_botao_pai": "",
+          "acessorio_opcoes": [],
+          "par_segue": null
         }
       ]
     },
@@ -1241,7 +1282,7 @@
       "qt_botoes_sem": 1,
       "qt_botoes_com": 1,
       "tecido_desmembravel": false,
-      "acabamento_resumo": "Principal: Estrutura | Pré-definido: Deslizador",
+      "acabamento_resumo": "Principal: Estrutura | Pré-definido: Deslizador, Apoio de Pés",
       "obs_cotas": "",
       "obs_restr_tecido": "",
       "obs_confeccao": "",
@@ -1356,6 +1397,47 @@
           "configuravel": false,
           "entra_3d": true,
           "mesh_final": "00112056",
+          "tecido": false,
+          "botao_sem_desm": "",
+          "botao_com_desm": "",
+          "metragem_desm": "",
+          "acessorio": false,
+          "acessorio_obrigatorio": null,
+          "acessorio_acabamentos": [],
+          "acessorio_fixo": false,
+          "acessorio_botao_pai": "",
+          "acessorio_opcoes": [],
+          "par_segue": null
+        },
+        {
+          "ordem": 3,
+          "nome_parte": "Apoio de Pés",
+          "termo": "Apoio de Pés",
+          "qualificador": "",
+          "qualificadores": [],
+          "numero": "sing",
+          "apelido_cliente": "Apoio de Pés",
+          "apelido_override": "",
+          "termo_novo": false,
+          "so3d": false,
+          "subparte_de": "",
+          "tipo": "PD",
+          "materia_prima": {
+            "familia": "Metal",
+            "materia": "Aço Inox"
+          },
+          "materias_primas": [
+            {
+              "familia": "Metal",
+              "materia": "Aço Inox"
+            }
+          ],
+          "materia_prima_herdada": false,
+          "materia_prima_nao_aplica": false,
+          "material_id": "PD_Apoio_de_Pes",
+          "configuravel": false,
+          "entra_3d": true,
+          "mesh_final": "",
           "tecido": false,
           "botao_sem_desm": "",
           "botao_com_desm": "",
