@@ -1,6 +1,6 @@
 {
   "versao_export": "nomenclatura-3D-v2",
-  "exportado_em": "2026-10-29T12:42:42.473Z",
+  "exportado_em": "2026-10-30T19:53:18.226Z",
   "produtos": [
     {
       "linha": "Artefacto & Beach",
@@ -1076,6 +1076,302 @@
     },
     {
       "linha": "Artefacto & Beach",
+      "cod_est": "00112048",
+      "id": "",
+      "nome": "BANQUETA KAMI II - (ALTA) - 045 X 046 X 076 H",
+      "familia": "KAMI II",
+      "classe": "BANQUETA",
+      "marca": "BEACH",
+      "natureza": "corpo_unico",
+      "ref": true,
+      "ok_fd": true,
+      "ok_3d": true,
+      "ok_revisado": false,
+      "animacao": false,
+      "qt_meshes": 1,
+      "qt_materiais_art": 1,
+      "qt_botoes_sem": 1,
+      "qt_botoes_com": 1,
+      "tecido_desmembravel": false,
+      "acabamento_resumo": "Principal: Estrutura | Pré-definido: Deslizador",
+      "obs_cotas": "",
+      "obs_restr_tecido": "",
+      "obs_confeccao": "",
+      "obs_nao_acompanha": "",
+      "obs_outras": "",
+      "obs_custom": "",
+      "obs_original": "",
+      "meshes": [
+        {
+          "nome": "00112048",
+          "partes": [
+            "Estrutura",
+            "Deslizador"
+          ]
+        }
+      ],
+      "botoes_sem_desm": [
+        {
+          "apelido": "Estrutura",
+          "partes": [
+            "Estrutura"
+          ]
+        }
+      ],
+      "botoes_com_desm": [
+        {
+          "apelido": "Estrutura",
+          "metragem": "",
+          "partes": [
+            "Estrutura"
+          ]
+        }
+      ],
+      "bloco_3d": {
+        "papel": "master",
+        "base_codest": "00112048",
+        "duplicar_renomear": false,
+        "obs": ""
+      },
+      "glb_multiplos": {
+        "qtd": 1,
+        "variantes": []
+      },
+      "partes": [
+        {
+          "ordem": 1,
+          "nome_parte": "Estrutura",
+          "termo": "Estrutura",
+          "qualificador": "",
+          "qualificadores": [],
+          "numero": "sing",
+          "apelido_cliente": "Estrutura",
+          "apelido_override": "Estrutura",
+          "termo_novo": false,
+          "so3d": false,
+          "subparte_de": "",
+          "tipo": "P",
+          "materia_prima": {
+            "familia": "Madeira",
+            "materia": "Cedro"
+          },
+          "materias_primas": [
+            {
+              "familia": "Madeira",
+              "materia": "Cedro"
+            }
+          ],
+          "materia_prima_herdada": false,
+          "materia_prima_nao_aplica": false,
+          "material_id": "ART_P_Estrutura",
+          "configuravel": true,
+          "entra_3d": true,
+          "mesh_final": "00112048",
+          "tecido": false,
+          "botao_sem_desm": "Estrutura",
+          "botao_com_desm": "Estrutura",
+          "metragem_desm": "",
+          "acessorio": false,
+          "acessorio_obrigatorio": null,
+          "acessorio_acabamentos": [],
+          "acessorio_fixo": false,
+          "acessorio_botao_pai": "",
+          "acessorio_opcoes": [],
+          "par_segue": null
+        },
+        {
+          "ordem": 2,
+          "nome_parte": "Deslizador",
+          "termo": "Deslizador",
+          "qualificador": "",
+          "qualificadores": [],
+          "numero": "plur",
+          "apelido_cliente": "Deslizadores",
+          "apelido_override": "",
+          "termo_novo": false,
+          "so3d": false,
+          "subparte_de": "",
+          "tipo": "PD",
+          "materia_prima": {
+            "familia": "Metal",
+            "materia": "Aço Inox"
+          },
+          "materias_primas": [
+            {
+              "familia": "Metal",
+              "materia": "Aço Inox"
+            }
+          ],
+          "materia_prima_herdada": false,
+          "materia_prima_nao_aplica": false,
+          "material_id": "PD_Deslizador",
+          "configuravel": false,
+          "entra_3d": true,
+          "mesh_final": "00112048",
+          "tecido": false,
+          "botao_sem_desm": "",
+          "botao_com_desm": "",
+          "metragem_desm": "",
+          "acessorio": false,
+          "acessorio_obrigatorio": null,
+          "acessorio_acabamentos": [],
+          "acessorio_fixo": false,
+          "acessorio_botao_pai": "",
+          "acessorio_opcoes": [],
+          "par_segue": null
+        }
+      ]
+    },
+    {
+      "linha": "Artefacto & Beach",
+      "cod_est": "00112056",
+      "id": "",
+      "nome": "BANQUETA KAMI II - (BAIXA) - 045 X 046 X 065 H",
+      "familia": "KAMI II",
+      "classe": "BANQUETA",
+      "marca": "BEACH",
+      "natureza": "corpo_unico",
+      "ref": false,
+      "ok_fd": true,
+      "ok_3d": true,
+      "ok_revisado": false,
+      "animacao": false,
+      "qt_meshes": 1,
+      "qt_materiais_art": 1,
+      "qt_botoes_sem": 1,
+      "qt_botoes_com": 1,
+      "tecido_desmembravel": false,
+      "acabamento_resumo": "Principal: Estrutura | Pré-definido: Deslizador",
+      "obs_cotas": "",
+      "obs_restr_tecido": "",
+      "obs_confeccao": "",
+      "obs_nao_acompanha": "",
+      "obs_outras": "",
+      "obs_custom": "",
+      "obs_original": "",
+      "meshes": [
+        {
+          "nome": "00112056",
+          "partes": [
+            "Estrutura",
+            "Deslizador"
+          ]
+        }
+      ],
+      "botoes_sem_desm": [
+        {
+          "apelido": "Estrutura",
+          "partes": [
+            "Estrutura"
+          ]
+        }
+      ],
+      "botoes_com_desm": [
+        {
+          "apelido": "Estrutura",
+          "metragem": "",
+          "partes": [
+            "Estrutura"
+          ]
+        }
+      ],
+      "bloco_3d": {
+        "papel": "copia",
+        "base_codest": "00112055",
+        "duplicar_renomear": true,
+        "obs": ""
+      },
+      "glb_multiplos": {
+        "qtd": 1,
+        "variantes": []
+      },
+      "partes": [
+        {
+          "ordem": 1,
+          "nome_parte": "Estrutura",
+          "termo": "Estrutura",
+          "qualificador": "",
+          "qualificadores": [],
+          "numero": "sing",
+          "apelido_cliente": "Estrutura",
+          "apelido_override": "Estrutura",
+          "termo_novo": false,
+          "so3d": false,
+          "subparte_de": "",
+          "tipo": "P",
+          "materia_prima": {
+            "familia": "Madeira",
+            "materia": "Cedro"
+          },
+          "materias_primas": [
+            {
+              "familia": "Madeira",
+              "materia": "Cedro"
+            }
+          ],
+          "materia_prima_herdada": false,
+          "materia_prima_nao_aplica": false,
+          "material_id": "ART_P_Estrutura",
+          "configuravel": true,
+          "entra_3d": true,
+          "mesh_final": "00112056",
+          "tecido": false,
+          "botao_sem_desm": "Estrutura",
+          "botao_com_desm": "Estrutura",
+          "metragem_desm": "",
+          "acessorio": false,
+          "acessorio_obrigatorio": null,
+          "acessorio_acabamentos": [],
+          "acessorio_fixo": false,
+          "acessorio_botao_pai": "",
+          "acessorio_opcoes": [],
+          "par_segue": null
+        },
+        {
+          "ordem": 2,
+          "nome_parte": "Deslizador",
+          "termo": "Deslizador",
+          "qualificador": "",
+          "qualificadores": [],
+          "numero": "plur",
+          "apelido_cliente": "Deslizadores",
+          "apelido_override": "",
+          "termo_novo": false,
+          "so3d": false,
+          "subparte_de": "",
+          "tipo": "PD",
+          "materia_prima": {
+            "familia": "Metal",
+            "materia": "Aço Inox"
+          },
+          "materias_primas": [
+            {
+              "familia": "Metal",
+              "materia": "Aço Inox"
+            }
+          ],
+          "materia_prima_herdada": false,
+          "materia_prima_nao_aplica": false,
+          "material_id": "PD_Deslizador",
+          "configuravel": false,
+          "entra_3d": true,
+          "mesh_final": "00112056",
+          "tecido": false,
+          "botao_sem_desm": "",
+          "botao_com_desm": "",
+          "metragem_desm": "",
+          "acessorio": false,
+          "acessorio_obrigatorio": null,
+          "acessorio_acabamentos": [],
+          "acessorio_fixo": false,
+          "acessorio_botao_pai": "",
+          "acessorio_opcoes": [],
+          "par_segue": null
+        }
+      ]
+    },
+    {
+      "linha": "Artefacto & Beach",
       "cod_est": "07112079",
       "id": "",
       "nome": "BANQUETA LUANG - BAIXA - 048.5 X 055 X 085 H",
@@ -1842,6 +2138,842 @@
           "configuravel": false,
           "entra_3d": true,
           "mesh_final": "07112080",
+          "tecido": false,
+          "botao_sem_desm": "",
+          "botao_com_desm": "",
+          "metragem_desm": "",
+          "acessorio": false,
+          "acessorio_obrigatorio": null,
+          "acessorio_acabamentos": [],
+          "acessorio_fixo": false,
+          "acessorio_botao_pai": "",
+          "acessorio_opcoes": [],
+          "par_segue": null
+        }
+      ]
+    },
+    {
+      "linha": "Artefacto & Beach",
+      "cod_est": "05112025",
+      "id": "",
+      "nome": "BANQUETA SUMBA - (ALTA) - 049.5 X 056 X 103 H",
+      "familia": "SUMBA",
+      "classe": "BANQUETA",
+      "marca": "BEACH",
+      "natureza": "estrutura_estofado",
+      "ref": true,
+      "ok_fd": true,
+      "ok_3d": true,
+      "ok_revisado": false,
+      "animacao": false,
+      "qt_meshes": 1,
+      "qt_materiais_art": 6,
+      "qt_botoes_sem": 3,
+      "qt_botoes_com": 6,
+      "tecido_desmembravel": true,
+      "acabamento_resumo": "Principal: Base | Complementar: Encosto Cinto | Tecido: Assento, Encosto Interno, Encosto Externo Superior, Encosto Externo Inferior | Pré-definido: Deslizador",
+      "obs_cotas": "",
+      "obs_restr_tecido": "",
+      "obs_confeccao": "",
+      "obs_nao_acompanha": "",
+      "obs_outras": "",
+      "obs_custom": "",
+      "obs_original": "",
+      "meshes": [
+        {
+          "nome": "05112025",
+          "partes": [
+            "Base",
+            "Encosto Cinto",
+            "Assento",
+            "Encosto Interno",
+            "Encosto Externo Superior",
+            "Encosto Externo Inferior",
+            "Deslizador"
+          ]
+        }
+      ],
+      "botoes_sem_desm": [
+        {
+          "apelido": "Base",
+          "partes": [
+            "Base"
+          ]
+        },
+        {
+          "apelido": "Cintos do Encosto",
+          "partes": [
+            "Encosto Cinto"
+          ]
+        },
+        {
+          "apelido": "Assento e Encosto",
+          "partes": [
+            "Assento",
+            "Encosto Interno",
+            "Encosto Externo Superior",
+            "Encosto Externo Inferior"
+          ]
+        }
+      ],
+      "botoes_com_desm": [
+        {
+          "apelido": "Base",
+          "metragem": "",
+          "partes": [
+            "Base"
+          ]
+        },
+        {
+          "apelido": "Cintos",
+          "metragem": "",
+          "partes": [
+            "Encosto Cinto"
+          ]
+        },
+        {
+          "apelido": "Assento",
+          "metragem": "",
+          "partes": [
+            "Assento"
+          ]
+        },
+        {
+          "apelido": "Encosto Interno",
+          "metragem": "",
+          "partes": [
+            "Encosto Interno"
+          ]
+        },
+        {
+          "apelido": "Encosto Superior Externo",
+          "metragem": "",
+          "partes": [
+            "Encosto Externo Superior"
+          ]
+        },
+        {
+          "apelido": "Encosto Inferior Externo",
+          "metragem": "",
+          "partes": [
+            "Encosto Externo Inferior"
+          ]
+        }
+      ],
+      "bloco_3d": {
+        "papel": "master",
+        "base_codest": "05112025",
+        "duplicar_renomear": false,
+        "obs": ""
+      },
+      "glb_multiplos": {
+        "qtd": 1,
+        "variantes": []
+      },
+      "partes": [
+        {
+          "ordem": 1,
+          "nome_parte": "Base",
+          "termo": "Base",
+          "qualificador": "",
+          "qualificadores": [],
+          "numero": "sing",
+          "apelido_cliente": "Base",
+          "apelido_override": "Base",
+          "termo_novo": false,
+          "so3d": false,
+          "subparte_de": "",
+          "tipo": "P",
+          "materia_prima": {
+            "familia": "Metal",
+            "materia": "Aço Carbono"
+          },
+          "materias_primas": [
+            {
+              "familia": "Metal",
+              "materia": "Aço Carbono"
+            }
+          ],
+          "materia_prima_herdada": false,
+          "materia_prima_nao_aplica": false,
+          "material_id": "ART_P_Base",
+          "configuravel": true,
+          "entra_3d": true,
+          "mesh_final": "05112025",
+          "tecido": false,
+          "botao_sem_desm": "Base",
+          "botao_com_desm": "Base",
+          "metragem_desm": "",
+          "acessorio": false,
+          "acessorio_obrigatorio": null,
+          "acessorio_acabamentos": [],
+          "acessorio_fixo": false,
+          "acessorio_botao_pai": "",
+          "acessorio_opcoes": [],
+          "par_segue": null
+        },
+        {
+          "ordem": 2,
+          "nome_parte": "Encosto",
+          "termo": "Encosto",
+          "qualificador": "Cinto",
+          "qualificadores": [
+            "Cinto"
+          ],
+          "numero": "sing",
+          "apelido_cliente": "Cintos",
+          "apelido_override": "Cintos",
+          "termo_novo": false,
+          "so3d": false,
+          "subparte_de": "",
+          "tipo": "C",
+          "materia_prima": {
+            "familia": "Couro",
+            "materia": "Couro"
+          },
+          "materias_primas": [
+            {
+              "familia": "Couro",
+              "materia": "Couro"
+            }
+          ],
+          "materia_prima_herdada": false,
+          "materia_prima_nao_aplica": false,
+          "material_id": "ART_C_Encosto_Cinto",
+          "configuravel": true,
+          "entra_3d": true,
+          "mesh_final": "05112025",
+          "tecido": false,
+          "botao_sem_desm": "Cintos do Encosto",
+          "botao_com_desm": "Cintos",
+          "metragem_desm": "",
+          "acessorio": false,
+          "acessorio_obrigatorio": null,
+          "acessorio_acabamentos": [],
+          "acessorio_fixo": false,
+          "acessorio_botao_pai": "",
+          "acessorio_opcoes": [],
+          "par_segue": null
+        },
+        {
+          "ordem": 3,
+          "nome_parte": "Assento",
+          "termo": "Assento",
+          "qualificador": "",
+          "qualificadores": [],
+          "numero": "sing",
+          "apelido_cliente": "Assento",
+          "apelido_override": "Assento",
+          "termo_novo": false,
+          "so3d": false,
+          "subparte_de": "",
+          "tipo": "T",
+          "materia_prima": {
+            "familia": "Tecido",
+            "materia": ""
+          },
+          "materias_primas": [
+            {
+              "familia": "Tecido",
+              "materia": ""
+            }
+          ],
+          "materia_prima_herdada": false,
+          "materia_prima_nao_aplica": false,
+          "material_id": "ART_T_Assento",
+          "configuravel": true,
+          "entra_3d": true,
+          "mesh_final": "05112025",
+          "tecido": true,
+          "botao_sem_desm": "Assento e Encosto",
+          "botao_com_desm": "Assento",
+          "metragem_desm": "",
+          "acessorio": false,
+          "acessorio_obrigatorio": null,
+          "acessorio_acabamentos": [],
+          "acessorio_fixo": false,
+          "acessorio_botao_pai": "",
+          "acessorio_opcoes": [],
+          "par_segue": null
+        },
+        {
+          "ordem": 4,
+          "nome_parte": "Encosto",
+          "termo": "Encosto",
+          "qualificador": "Interno",
+          "qualificadores": [
+            "Interno"
+          ],
+          "numero": "sing",
+          "apelido_cliente": "Encosto Interno",
+          "apelido_override": "Encosto Interno",
+          "termo_novo": false,
+          "so3d": false,
+          "subparte_de": "",
+          "tipo": "T",
+          "materia_prima": {
+            "familia": "Tecido",
+            "materia": ""
+          },
+          "materias_primas": [
+            {
+              "familia": "Tecido",
+              "materia": ""
+            }
+          ],
+          "materia_prima_herdada": false,
+          "materia_prima_nao_aplica": false,
+          "material_id": "ART_T_Encosto_Interno",
+          "configuravel": true,
+          "entra_3d": true,
+          "mesh_final": "05112025",
+          "tecido": true,
+          "botao_sem_desm": "Assento e Encosto",
+          "botao_com_desm": "Encosto Interno",
+          "metragem_desm": "",
+          "acessorio": false,
+          "acessorio_obrigatorio": null,
+          "acessorio_acabamentos": [],
+          "acessorio_fixo": false,
+          "acessorio_botao_pai": "",
+          "acessorio_opcoes": [],
+          "par_segue": null
+        },
+        {
+          "ordem": 5,
+          "nome_parte": "Encosto",
+          "termo": "Encosto",
+          "qualificador": "Externo Superior",
+          "qualificadores": [
+            "Externo",
+            "Superior"
+          ],
+          "numero": "sing",
+          "apelido_cliente": "Encosto Superior Externo",
+          "apelido_override": "Encosto Superior Externo",
+          "termo_novo": false,
+          "so3d": false,
+          "subparte_de": "",
+          "tipo": "T",
+          "materia_prima": {
+            "familia": "Tecido",
+            "materia": ""
+          },
+          "materias_primas": [
+            {
+              "familia": "Tecido",
+              "materia": ""
+            }
+          ],
+          "materia_prima_herdada": false,
+          "materia_prima_nao_aplica": false,
+          "material_id": "ART_T_Encosto_Externo_Superior",
+          "configuravel": true,
+          "entra_3d": true,
+          "mesh_final": "05112025",
+          "tecido": true,
+          "botao_sem_desm": "Assento e Encosto",
+          "botao_com_desm": "Encosto Superior Externo",
+          "metragem_desm": "",
+          "acessorio": false,
+          "acessorio_obrigatorio": null,
+          "acessorio_acabamentos": [],
+          "acessorio_fixo": false,
+          "acessorio_botao_pai": "",
+          "acessorio_opcoes": [],
+          "par_segue": null
+        },
+        {
+          "ordem": 6,
+          "nome_parte": "Encosto",
+          "termo": "Encosto",
+          "qualificador": "Externo Inferior",
+          "qualificadores": [
+            "Externo",
+            "Inferior"
+          ],
+          "numero": "sing",
+          "apelido_cliente": "Encosto Inferior Externo",
+          "apelido_override": "Encosto Inferior Externo",
+          "termo_novo": false,
+          "so3d": false,
+          "subparte_de": "",
+          "tipo": "T",
+          "materia_prima": {
+            "familia": "Tecido",
+            "materia": ""
+          },
+          "materias_primas": [
+            {
+              "familia": "Tecido",
+              "materia": ""
+            }
+          ],
+          "materia_prima_herdada": false,
+          "materia_prima_nao_aplica": false,
+          "material_id": "ART_T_Encosto_Externo_Inferior",
+          "configuravel": true,
+          "entra_3d": true,
+          "mesh_final": "05112025",
+          "tecido": true,
+          "botao_sem_desm": "Assento e Encosto",
+          "botao_com_desm": "Encosto Inferior Externo",
+          "metragem_desm": "",
+          "acessorio": false,
+          "acessorio_obrigatorio": null,
+          "acessorio_acabamentos": [],
+          "acessorio_fixo": false,
+          "acessorio_botao_pai": "",
+          "acessorio_opcoes": [],
+          "par_segue": null
+        },
+        {
+          "ordem": 7,
+          "nome_parte": "Deslizador",
+          "termo": "Deslizador",
+          "qualificador": "",
+          "qualificadores": [],
+          "numero": "plur",
+          "apelido_cliente": "Deslizadores",
+          "apelido_override": "",
+          "termo_novo": false,
+          "so3d": false,
+          "subparte_de": "",
+          "tipo": "PD",
+          "materia_prima": {
+            "familia": "Metal",
+            "materia": "Aço Inox"
+          },
+          "materias_primas": [
+            {
+              "familia": "Metal",
+              "materia": "Aço Inox"
+            }
+          ],
+          "materia_prima_herdada": false,
+          "materia_prima_nao_aplica": false,
+          "material_id": "PD_Deslizador",
+          "configuravel": false,
+          "entra_3d": true,
+          "mesh_final": "05112025",
+          "tecido": false,
+          "botao_sem_desm": "",
+          "botao_com_desm": "",
+          "metragem_desm": "",
+          "acessorio": false,
+          "acessorio_obrigatorio": null,
+          "acessorio_acabamentos": [],
+          "acessorio_fixo": false,
+          "acessorio_botao_pai": "",
+          "acessorio_opcoes": [],
+          "par_segue": null
+        }
+      ]
+    },
+    {
+      "linha": "Artefacto & Beach",
+      "cod_est": "05112030",
+      "id": "",
+      "nome": "BANQUETA SUMBA - (BAIXA) - 049.5 X 056 X 081.5 H",
+      "familia": "SUMBA",
+      "classe": "BANQUETA",
+      "marca": "BEACH",
+      "natureza": "corpo_unico",
+      "ref": false,
+      "ok_fd": true,
+      "ok_3d": true,
+      "ok_revisado": false,
+      "animacao": false,
+      "qt_meshes": 1,
+      "qt_materiais_art": 6,
+      "qt_botoes_sem": 3,
+      "qt_botoes_com": 6,
+      "tecido_desmembravel": true,
+      "acabamento_resumo": "Principal: Base | Complementar: Encosto Cinto | Tecido: Assento, Encosto Interno, Encosto Externo Superior, Encosto Externo Inferior | Pré-definido: Deslizador",
+      "obs_cotas": "",
+      "obs_restr_tecido": "",
+      "obs_confeccao": "",
+      "obs_nao_acompanha": "",
+      "obs_outras": "",
+      "obs_custom": "",
+      "obs_original": "",
+      "meshes": [
+        {
+          "nome": "05112030",
+          "partes": [
+            "Base",
+            "Encosto Cinto",
+            "Assento",
+            "Encosto Interno",
+            "Encosto Externo Superior",
+            "Encosto Externo Inferior",
+            "Deslizador"
+          ]
+        }
+      ],
+      "botoes_sem_desm": [
+        {
+          "apelido": "Base",
+          "partes": [
+            "Base"
+          ]
+        },
+        {
+          "apelido": "Cintos do Encosto",
+          "partes": [
+            "Encosto Cinto"
+          ]
+        },
+        {
+          "apelido": "Assento e Encosto",
+          "partes": [
+            "Assento",
+            "Encosto Interno",
+            "Encosto Externo Superior",
+            "Encosto Externo Inferior"
+          ]
+        }
+      ],
+      "botoes_com_desm": [
+        {
+          "apelido": "Base",
+          "metragem": "",
+          "partes": [
+            "Base"
+          ]
+        },
+        {
+          "apelido": "Cintos",
+          "metragem": "",
+          "partes": [
+            "Encosto Cinto"
+          ]
+        },
+        {
+          "apelido": "Assento",
+          "metragem": "",
+          "partes": [
+            "Assento"
+          ]
+        },
+        {
+          "apelido": "Encosto Interno",
+          "metragem": "",
+          "partes": [
+            "Encosto Interno"
+          ]
+        },
+        {
+          "apelido": "Encosto Superior Externo",
+          "metragem": "",
+          "partes": [
+            "Encosto Externo Superior"
+          ]
+        },
+        {
+          "apelido": "Encosto Inferior Externo",
+          "metragem": "",
+          "partes": [
+            "Encosto Externo Inferior"
+          ]
+        }
+      ],
+      "bloco_3d": {
+        "papel": "master",
+        "base_codest": "05112030",
+        "duplicar_renomear": false,
+        "obs": ""
+      },
+      "glb_multiplos": {
+        "qtd": 1,
+        "variantes": []
+      },
+      "partes": [
+        {
+          "ordem": 1,
+          "nome_parte": "Base",
+          "termo": "Base",
+          "qualificador": "",
+          "qualificadores": [],
+          "numero": "sing",
+          "apelido_cliente": "Base",
+          "apelido_override": "Base",
+          "termo_novo": false,
+          "so3d": false,
+          "subparte_de": "",
+          "tipo": "P",
+          "materia_prima": {
+            "familia": "Metal",
+            "materia": "Aço Carbono"
+          },
+          "materias_primas": [
+            {
+              "familia": "Metal",
+              "materia": "Aço Carbono"
+            }
+          ],
+          "materia_prima_herdada": false,
+          "materia_prima_nao_aplica": false,
+          "material_id": "ART_P_Base",
+          "configuravel": true,
+          "entra_3d": true,
+          "mesh_final": "05112030",
+          "tecido": false,
+          "botao_sem_desm": "Base",
+          "botao_com_desm": "Base",
+          "metragem_desm": "",
+          "acessorio": false,
+          "acessorio_obrigatorio": null,
+          "acessorio_acabamentos": [],
+          "acessorio_fixo": false,
+          "acessorio_botao_pai": "",
+          "acessorio_opcoes": [],
+          "par_segue": null
+        },
+        {
+          "ordem": 2,
+          "nome_parte": "Encosto",
+          "termo": "Encosto",
+          "qualificador": "Cinto",
+          "qualificadores": [
+            "Cinto"
+          ],
+          "numero": "sing",
+          "apelido_cliente": "Cintos",
+          "apelido_override": "Cintos",
+          "termo_novo": false,
+          "so3d": false,
+          "subparte_de": "",
+          "tipo": "C",
+          "materia_prima": {
+            "familia": "Couro",
+            "materia": "Couro"
+          },
+          "materias_primas": [
+            {
+              "familia": "Couro",
+              "materia": "Couro"
+            }
+          ],
+          "materia_prima_herdada": false,
+          "materia_prima_nao_aplica": false,
+          "material_id": "ART_C_Encosto_Cinto",
+          "configuravel": true,
+          "entra_3d": true,
+          "mesh_final": "05112030",
+          "tecido": false,
+          "botao_sem_desm": "Cintos do Encosto",
+          "botao_com_desm": "Cintos",
+          "metragem_desm": "",
+          "acessorio": false,
+          "acessorio_obrigatorio": null,
+          "acessorio_acabamentos": [],
+          "acessorio_fixo": false,
+          "acessorio_botao_pai": "",
+          "acessorio_opcoes": [],
+          "par_segue": null
+        },
+        {
+          "ordem": 3,
+          "nome_parte": "Assento",
+          "termo": "Assento",
+          "qualificador": "",
+          "qualificadores": [],
+          "numero": "sing",
+          "apelido_cliente": "Assento",
+          "apelido_override": "Assento",
+          "termo_novo": false,
+          "so3d": false,
+          "subparte_de": "",
+          "tipo": "T",
+          "materia_prima": {
+            "familia": "Tecido",
+            "materia": ""
+          },
+          "materias_primas": [
+            {
+              "familia": "Tecido",
+              "materia": ""
+            }
+          ],
+          "materia_prima_herdada": false,
+          "materia_prima_nao_aplica": false,
+          "material_id": "ART_T_Assento",
+          "configuravel": true,
+          "entra_3d": true,
+          "mesh_final": "05112030",
+          "tecido": true,
+          "botao_sem_desm": "Assento e Encosto",
+          "botao_com_desm": "Assento",
+          "metragem_desm": "",
+          "acessorio": false,
+          "acessorio_obrigatorio": null,
+          "acessorio_acabamentos": [],
+          "acessorio_fixo": false,
+          "acessorio_botao_pai": "",
+          "acessorio_opcoes": [],
+          "par_segue": null
+        },
+        {
+          "ordem": 4,
+          "nome_parte": "Encosto",
+          "termo": "Encosto",
+          "qualificador": "Interno",
+          "qualificadores": [
+            "Interno"
+          ],
+          "numero": "sing",
+          "apelido_cliente": "Encosto Interno",
+          "apelido_override": "Encosto Interno",
+          "termo_novo": false,
+          "so3d": false,
+          "subparte_de": "",
+          "tipo": "T",
+          "materia_prima": {
+            "familia": "Tecido",
+            "materia": ""
+          },
+          "materias_primas": [
+            {
+              "familia": "Tecido",
+              "materia": ""
+            }
+          ],
+          "materia_prima_herdada": false,
+          "materia_prima_nao_aplica": false,
+          "material_id": "ART_T_Encosto_Interno",
+          "configuravel": true,
+          "entra_3d": true,
+          "mesh_final": "05112030",
+          "tecido": true,
+          "botao_sem_desm": "Assento e Encosto",
+          "botao_com_desm": "Encosto Interno",
+          "metragem_desm": "",
+          "acessorio": false,
+          "acessorio_obrigatorio": null,
+          "acessorio_acabamentos": [],
+          "acessorio_fixo": false,
+          "acessorio_botao_pai": "",
+          "acessorio_opcoes": [],
+          "par_segue": null
+        },
+        {
+          "ordem": 5,
+          "nome_parte": "Encosto",
+          "termo": "Encosto",
+          "qualificador": "Externo Superior",
+          "qualificadores": [
+            "Externo",
+            "Superior"
+          ],
+          "numero": "sing",
+          "apelido_cliente": "Encosto Superior Externo",
+          "apelido_override": "Encosto Superior Externo",
+          "termo_novo": false,
+          "so3d": false,
+          "subparte_de": "",
+          "tipo": "T",
+          "materia_prima": {
+            "familia": "Tecido",
+            "materia": ""
+          },
+          "materias_primas": [
+            {
+              "familia": "Tecido",
+              "materia": ""
+            }
+          ],
+          "materia_prima_herdada": false,
+          "materia_prima_nao_aplica": false,
+          "material_id": "ART_T_Encosto_Externo_Superior",
+          "configuravel": true,
+          "entra_3d": true,
+          "mesh_final": "05112030",
+          "tecido": true,
+          "botao_sem_desm": "Assento e Encosto",
+          "botao_com_desm": "Encosto Superior Externo",
+          "metragem_desm": "",
+          "acessorio": false,
+          "acessorio_obrigatorio": null,
+          "acessorio_acabamentos": [],
+          "acessorio_fixo": false,
+          "acessorio_botao_pai": "",
+          "acessorio_opcoes": [],
+          "par_segue": null
+        },
+        {
+          "ordem": 6,
+          "nome_parte": "Encosto",
+          "termo": "Encosto",
+          "qualificador": "Externo Inferior",
+          "qualificadores": [
+            "Externo",
+            "Inferior"
+          ],
+          "numero": "sing",
+          "apelido_cliente": "Encosto Inferior Externo",
+          "apelido_override": "Encosto Inferior Externo",
+          "termo_novo": false,
+          "so3d": false,
+          "subparte_de": "",
+          "tipo": "T",
+          "materia_prima": {
+            "familia": "Tecido",
+            "materia": ""
+          },
+          "materias_primas": [
+            {
+              "familia": "Tecido",
+              "materia": ""
+            }
+          ],
+          "materia_prima_herdada": false,
+          "materia_prima_nao_aplica": false,
+          "material_id": "ART_T_Encosto_Externo_Inferior",
+          "configuravel": true,
+          "entra_3d": true,
+          "mesh_final": "05112030",
+          "tecido": true,
+          "botao_sem_desm": "Assento e Encosto",
+          "botao_com_desm": "Encosto Inferior Externo",
+          "metragem_desm": "",
+          "acessorio": false,
+          "acessorio_obrigatorio": null,
+          "acessorio_acabamentos": [],
+          "acessorio_fixo": false,
+          "acessorio_botao_pai": "",
+          "acessorio_opcoes": [],
+          "par_segue": null
+        },
+        {
+          "ordem": 7,
+          "nome_parte": "Deslizador",
+          "termo": "Deslizador",
+          "qualificador": "",
+          "qualificadores": [],
+          "numero": "plur",
+          "apelido_cliente": "Deslizadores",
+          "apelido_override": "",
+          "termo_novo": false,
+          "so3d": false,
+          "subparte_de": "",
+          "tipo": "PD",
+          "materia_prima": {
+            "familia": "Metal",
+            "materia": "Aço Inox"
+          },
+          "materias_primas": [
+            {
+              "familia": "Metal",
+              "materia": "Aço Inox"
+            }
+          ],
+          "materia_prima_herdada": false,
+          "materia_prima_nao_aplica": false,
+          "material_id": "PD_Deslizador",
+          "configuravel": false,
+          "entra_3d": true,
+          "mesh_final": "05112030",
           "tecido": false,
           "botao_sem_desm": "",
           "botao_com_desm": "",
@@ -3709,6 +4841,303 @@
           "acessorio_botao_pai": "",
           "acessorio_opcoes": [],
           "par_segue": null
+        }
+      ]
+    },
+    {
+      "linha": "Artefacto & Beach",
+      "cod_est": "05113008",
+      "id": "",
+      "nome": "CARRO CHA ARUGAM - FREIJO OUTDOOR - 113 X 055 X 076.5 H",
+      "familia": "ARUGAM",
+      "classe": "CARRO CHA",
+      "marca": "BEACH",
+      "natureza": "estrutura_modular",
+      "ref": true,
+      "ok_fd": false,
+      "ok_3d": true,
+      "ok_revisado": false,
+      "animacao": false,
+      "qt_meshes": 1,
+      "qt_materiais_art": 5,
+      "qt_botoes_sem": 2,
+      "qt_botoes_com": 2,
+      "tecido_desmembravel": false,
+      "acabamento_resumo": "Principal: Estrutura, Tampo Inferior, Roda | Complementar: Tampo Superior, Puxador",
+      "obs_cotas": "",
+      "obs_restr_tecido": "",
+      "obs_confeccao": "",
+      "obs_nao_acompanha": "",
+      "obs_outras": "",
+      "obs_custom": "",
+      "obs_original": "",
+      "meshes": [
+        {
+          "nome": "05113008",
+          "partes": [
+            "Estrutura",
+            "Tampo Inferior",
+            "Roda",
+            "Tampo Superior",
+            "Puxador"
+          ]
+        }
+      ],
+      "botoes_sem_desm": [
+        {
+          "apelido": "Estrutura e Tampo Inferior",
+          "partes": [
+            "Estrutura",
+            "Tampo Inferior",
+            "Roda"
+          ]
+        },
+        {
+          "apelido": "Tampo e Puxador",
+          "partes": [
+            "Tampo Superior",
+            "Puxador"
+          ]
+        }
+      ],
+      "botoes_com_desm": [
+        {
+          "apelido": "Estrutura e Tampo Inferior e Rodas",
+          "metragem": "",
+          "partes": [
+            "Estrutura",
+            "Tampo Inferior",
+            "Roda"
+          ]
+        },
+        {
+          "apelido": "Tampo Superior e Puxador",
+          "metragem": "",
+          "partes": [
+            "Tampo Superior",
+            "Puxador"
+          ]
+        }
+      ],
+      "bloco_3d": {
+        "papel": "master",
+        "base_codest": "05113008",
+        "duplicar_renomear": false,
+        "obs": ""
+      },
+      "glb_multiplos": {
+        "qtd": 1,
+        "variantes": []
+      },
+      "partes": [
+        {
+          "ordem": 1,
+          "nome_parte": "Estrutura",
+          "termo": "Estrutura",
+          "qualificador": "",
+          "qualificadores": [],
+          "numero": "sing",
+          "apelido_cliente": "Estrutura",
+          "apelido_override": "Estrutura",
+          "termo_novo": false,
+          "so3d": false,
+          "subparte_de": "",
+          "tipo": "P",
+          "materia_prima": {
+            "familia": "Metal",
+            "materia": "Aço Carbono"
+          },
+          "materias_primas": [
+            {
+              "familia": "Metal",
+              "materia": "Aço Carbono"
+            }
+          ],
+          "materia_prima_herdada": false,
+          "materia_prima_nao_aplica": false,
+          "material_id": "ART_P_Estrutura",
+          "configuravel": true,
+          "entra_3d": true,
+          "mesh_final": "05113008",
+          "tecido": false,
+          "botao_sem_desm": "Estrutura e Tampo Inferior",
+          "botao_com_desm": "Estrutura e Tampo Inferior e Rodas",
+          "metragem_desm": "",
+          "acessorio": false,
+          "acessorio_obrigatorio": null,
+          "acessorio_acabamentos": [],
+          "acessorio_fixo": false,
+          "acessorio_botao_pai": "",
+          "acessorio_opcoes": [],
+          "par_segue": null
+        },
+        {
+          "ordem": 2,
+          "nome_parte": "Tampo",
+          "termo": "Tampo",
+          "qualificador": "Inferior",
+          "qualificadores": [
+            "Inferior"
+          ],
+          "numero": "sing",
+          "apelido_cliente": "Tampo Inferior",
+          "apelido_override": "Tampo Inferior",
+          "termo_novo": false,
+          "so3d": false,
+          "subparte_de": "",
+          "tipo": "P",
+          "materia_prima": {
+            "familia": "Metal",
+            "materia": "Aço Carbono"
+          },
+          "materias_primas": [
+            {
+              "familia": "Metal",
+              "materia": "Aço Carbono"
+            }
+          ],
+          "materia_prima_herdada": false,
+          "materia_prima_nao_aplica": false,
+          "material_id": "ART_P_Tampo_Inferior",
+          "configuravel": true,
+          "entra_3d": true,
+          "mesh_final": "05113008",
+          "tecido": false,
+          "botao_sem_desm": "Estrutura e Tampo Inferior",
+          "botao_com_desm": "Estrutura e Tampo Inferior e Rodas",
+          "metragem_desm": "",
+          "acessorio": false,
+          "acessorio_obrigatorio": null,
+          "acessorio_acabamentos": [],
+          "acessorio_fixo": false,
+          "acessorio_botao_pai": "",
+          "acessorio_opcoes": [],
+          "par_segue": "Estrutura"
+        },
+        {
+          "ordem": 3,
+          "nome_parte": "Roda",
+          "termo": "Roda",
+          "qualificador": "",
+          "qualificadores": [],
+          "numero": "plur",
+          "apelido_cliente": "Rodas",
+          "apelido_override": "Rodas",
+          "termo_novo": false,
+          "so3d": false,
+          "subparte_de": "",
+          "tipo": "P",
+          "materia_prima": {
+            "familia": "Metal",
+            "materia": "Aço Carbono"
+          },
+          "materias_primas": [
+            {
+              "familia": "Metal",
+              "materia": "Aço Carbono"
+            }
+          ],
+          "materia_prima_herdada": false,
+          "materia_prima_nao_aplica": false,
+          "material_id": "ART_P_Roda",
+          "configuravel": true,
+          "entra_3d": true,
+          "mesh_final": "05113008",
+          "tecido": false,
+          "botao_sem_desm": "Estrutura e Tampo Inferior",
+          "botao_com_desm": "Estrutura e Tampo Inferior e Rodas",
+          "metragem_desm": "",
+          "acessorio": false,
+          "acessorio_obrigatorio": null,
+          "acessorio_acabamentos": [],
+          "acessorio_fixo": false,
+          "acessorio_botao_pai": "",
+          "acessorio_opcoes": [],
+          "par_segue": "Estrutura"
+        },
+        {
+          "ordem": 4,
+          "nome_parte": "Tampo",
+          "termo": "Tampo",
+          "qualificador": "Superior",
+          "qualificadores": [
+            "Superior"
+          ],
+          "numero": "sing",
+          "apelido_cliente": "Tampo Superior",
+          "apelido_override": "Tampo Superior",
+          "termo_novo": false,
+          "so3d": false,
+          "subparte_de": "",
+          "tipo": "C",
+          "materia_prima": {
+            "familia": "Madeira",
+            "materia": "Freijó Outdoor"
+          },
+          "materias_primas": [
+            {
+              "familia": "Madeira",
+              "materia": "Freijó Outdoor"
+            }
+          ],
+          "materia_prima_herdada": false,
+          "materia_prima_nao_aplica": false,
+          "material_id": "ART_C_Tampo_Superior",
+          "configuravel": true,
+          "entra_3d": true,
+          "mesh_final": "05113008",
+          "tecido": false,
+          "botao_sem_desm": "Tampo e Puxador",
+          "botao_com_desm": "Tampo Superior e Puxador",
+          "metragem_desm": "",
+          "acessorio": false,
+          "acessorio_obrigatorio": null,
+          "acessorio_acabamentos": [],
+          "acessorio_fixo": false,
+          "acessorio_botao_pai": "",
+          "acessorio_opcoes": [],
+          "par_segue": null
+        },
+        {
+          "ordem": 5,
+          "nome_parte": "Puxador",
+          "termo": "Puxador",
+          "qualificador": "",
+          "qualificadores": [],
+          "numero": "sing",
+          "apelido_cliente": "Puxador",
+          "apelido_override": "Puxador",
+          "termo_novo": false,
+          "so3d": false,
+          "subparte_de": "",
+          "tipo": "C",
+          "materia_prima": {
+            "familia": "Madeira",
+            "materia": "Freijó Outdoor"
+          },
+          "materias_primas": [
+            {
+              "familia": "Madeira",
+              "materia": "Freijó Outdoor"
+            }
+          ],
+          "materia_prima_herdada": false,
+          "materia_prima_nao_aplica": false,
+          "material_id": "ART_C_Puxador",
+          "configuravel": true,
+          "entra_3d": true,
+          "mesh_final": "05113008",
+          "tecido": false,
+          "botao_sem_desm": "Tampo e Puxador",
+          "botao_com_desm": "Tampo Superior e Puxador",
+          "metragem_desm": "",
+          "acessorio": false,
+          "acessorio_obrigatorio": null,
+          "acessorio_acabamentos": [],
+          "acessorio_fixo": false,
+          "acessorio_botao_pai": "",
+          "acessorio_opcoes": [],
+          "par_segue": "Tampo | Superior"
         }
       ]
     },
