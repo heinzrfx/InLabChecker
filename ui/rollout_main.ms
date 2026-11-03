@@ -174,12 +174,13 @@
  03/11/2026 (pedido do usuário, mockup aprovado: proposta A + fundo escuro da
  B): Utilidades Rápidas reorganizada em 4 linhas com rótulo (Pivot, Malha,
  Material, UV), botões de 21px, sobre um Panel dotNet escuro (pnlUtil, cor
- #FUNDO_PAINEL do kit). Os botões continuam nativos, declarados DEPOIS do
- pnlUtil para ficarem por cima (sondado no Max 2024, inclusive depois de
- repintar o Panel). Os rótulos são Labels dotNet filhos do pnlUtil: o label
- nativo e o rótulo do spinner pintam um retângulo cinza sobre o fundo escuro.
- Por isso o rótulo do limite do Find Objects virou InLab_Util_LblLimite e os
- spinners não têm legenda. Linha UV nova: UVW Clear (InLab_UVWClear,
+ #FUNDO_PAINEL do kit). Rótulos, botões e campos são controles dotNet filhos
+ do pnlUtil (InLab_Util_Montar), com as cores #UTIL_* do kit; o clique vai
+ por InLab_Util_Acao. A 1ª versão do mesmo dia punha botões NATIVOS por cima
+ do Panel: o print interno (PrintWindow) mostrava certo, mas na tela o Panel
+ cobria os botões a cada repintura, e nem SetWindowPos HWND_BOTTOM no Panel
+ resolveu. O rótulo do limite do Find Objects virou InLab_Util_LblLimite e
+ os spinners viraram NumericUpDown. Linha UV nova: UVW Clear (InLab_UVWClear,
  functions\fn_utilidades.ms) com o canal ao lado. Grupo de 150 para 124px,
  subSecoes em pos:[4,188], janela de 732 para 704.
  Minimizar: botão nativo na barra de título, ao lado do X, como no ArchToolz
@@ -932,17 +933,125 @@ fn InLab_PosicaoPainelGravar rlt =
     ok
 )
 
--- UTILIDADES RÁPIDAS: fundo escuro e rótulos (03/11/2026). Os botões são
--- nativos e ficam por cima do pnlUtil; o que é texto é Label dotNet filho
--- dele (o label nativo pinta um retângulo cinza no fundo escuro).
+-- UTILIDADES RÁPIDAS (03/11/2026): tudo é controle dotNet filho do pnlUtil
+-- (rótulos, botões e os dois campos). Primeira versão punha botões NATIVOS
+-- por cima do Panel: no print interno (PrintWindow) aparecia certo, mas na
+-- tela o Panel cobria os botões a cada repintura (mouse por cima, janela na
+-- frente); mandar o Panel para o fundo da pilha (SetWindowPos HWND_BOTTOM)
+-- não resolveu. Filho de Panel não briga com ninguém, como no header.
 -- Coordenadas em relação ao pnlUtil, que está em pos:[4,60] do painel.
-global InLab_Util_LblLimite
-global InLab_Util_Montar
+-- Handler de evento dotNet não enxerga local de rollout (ver ui\header.ms):
+-- os campos ficam em global e o clique passa por InLab_Util_Acao.
+global InLab_Util_LblLimite, InLab_Util_SpnBump, InLab_Util_SpnCanal, InLab_Util_Dica
+global InLab_Util_Montar, InLab_Util_Acao, InLab_Util_OnClique, InLab_Util_ValorCampo
+
+-- Valor de um NumericUpDown como float do MaxScript. O MaxScript arredonda
+-- System.Decimal para inteiro na passagem (spn.Value de 0,3 vira 0, e
+-- dotNetObject "System.Decimal" 0.3 também): ler com asDotNetObject:true e
+-- gravar com InLab_Util_Decimal (sondado no Max 2024, 03/11/2026).
+global InLab_Util_Decimal
+fn InLab_Util_Decimal v = dotNet.ValueToDotNetObject (v as float) (dotNetClass "System.Decimal")
+fn InLab_Util_ValorCampo spn = ((dotNetClass "System.Convert").ToDouble (getProperty spn #Value asDotNetObject:true)) as float
+
+-- Ação de cada botão, pelo Tag (nome). Separada do clique para dar teste.
+fn InLab_Util_Acao acao =
+(
+    local comSelecao = #(#resetx, #center, #base, #otimizar, #separar, #uvwclear)
+    local objs = if findItem comSelecao acao > 0 then InLab_SelecaoValida() else #()
+    case acao of
+    (
+        #resetx:   if objs.count > 0 do InLab_ResetXFormSelecao objs
+        #center:   if objs.count > 0 do InLab_CentralizarPivot objs
+        #base:     if objs.count > 0 do InLab_BasePivot objs
+        #otimizar: if objs.count > 0 do InLab_OtimReduzir objs
+        #otimdesf: InLab_OtimReduzir_Desfazer()
+        #find:     InLab_FindObjectsPesados()
+        #facesdup: InLab_FacesDuplicadas()
+        #separar:  if objs.count > 0 do InLab_DetachPorMaterialSelecao objs
+        #bumpfix:  InLab_BumpFix (InLab_Util_ValorCampo InLab_Util_SpnBump)
+        #uvwclear:
+        (
+            local canal = (InLab_Util_ValorCampo InLab_Util_SpnCanal) as integer
+            -- Canal 1 é o UV do material: limpar sem querer apaga o mapeamento.
+            if objs.count > 0 and (canal != 1 or (queryBox "O canal 1 é o UV do material (texturas). Limpar mesmo assim?" title:"UVW Clear")) do
+                InLab_UVWClear objs canal
+        )
+        default: InLab_Log ("Utilidades: ação desconhecida '" + acao as string + "'.") tipo:#err
+    )
+)
+
+fn InLab_Util_OnClique sender arg =
+(
+    try ( InLab_Util_Acao (sender.Tag as name) )
+    catch ( InLab_Log ("Utilidades: falha no botão '" + sender.Text + "' (" + getCurrentException() + ").") tipo:#err )
+)
+
 fn InLab_Util_Montar pnl =
 (
     pnl.Controls.Clear()   -- idempotente
     local fundo = InLab_Kit_Cor #FUNDO_PAINEL
     pnl.BackColor = fundo
+    InLab_Util_Dica = dotNetObject "System.Windows.Forms.ToolTip"
+    local fonteBotao = InLab_Kit_Fonte 8.25
+
+    -- #(acao, texto, x, y, largura, dica)
+    local botoes = #(
+        #("resetx",   "Reset XForm",          62, 22, 120, "ResetXForm e colapsa o stack dos objetos selecionados."),
+        #("center",   "Center",              186, 22, 121, "Pivot no centro do bounding box do produto."),
+        #("base",     "Base",                311, 22, 121, "Pivot na base do produto (centro XY, fundo em Z)."),
+        #("otimizar", "ProOptimizer −30%",    62, 47, 118, ("Tira " + ((100 - INLAB_REDUZIR_FATOR * 100 + 0.5) as integer) as string +
+                                                             "% dos vértices de cada peça selecionada. Cada clique é um passo do Ctrl+Z.")),
+        #("otimdesf", "↶",                   184, 47,  24, "Desfaz o último clique do ProOptimizer."),
+        #("find",     "Find Objects",        216, 47, 110, ("Seleciona os objetos acima de " + ((INLAB_FIND_FRACAO_POLYMAX * 100) as integer) as string +
+                                                             "% do máximo de triângulos da família. Sem família: os " +
+                                                             INLAB_FIND_TOP_N as string + " objetos mais pesados da cena.")),
+        #("facesdup", "Faces dup.",          330, 47, 102, "Seleciona as faces coincidentes que a V-09 reprova. Sem seleção, procura na cena toda. Não apaga nada."),
+        #("separar",  "Separar por material", 62, 72, 220, "Divide cada objeto selecionado em um objeto por material."),
+        #("bumpfix",  "Bump Fix",            366, 72,  66, "Grava a intensidade ao lado nos materiais glTF com normal map da seleção (sem seleção, da cena toda)."),
+        #("uvwclear", "UVW Clear",            62, 97, 220, "Limpa o canal ao lado nos objetos selecionados (UVW Mapping Clear) e colapsa o stack. Ctrl+Z desfaz."))
+    for b in botoes do
+    (
+        local btn = dotNetObject "System.Windows.Forms.Button"
+        btn.Tag = b[1]
+        btn.Text = b[2]
+        btn.Location = dotNetObject "System.Drawing.Point" b[3] b[4]
+        btn.Size = dotNetObject "System.Drawing.Size" b[5] 21
+        btn.FlatStyle = (dotNetClass "System.Windows.Forms.FlatStyle").Flat
+        btn.FlatAppearance.BorderColor = InLab_Kit_Cor #UTIL_BOTAO_BORDA
+        btn.FlatAppearance.BorderSize = 1
+        btn.FlatAppearance.MouseOverBackColor = InLab_Kit_Cor #UTIL_BOTAO_HOVER
+        btn.FlatAppearance.MouseDownBackColor = InLab_Kit_Cor #UTIL_BOTAO_DOWN
+        btn.BackColor = InLab_Kit_Cor #UTIL_BOTAO_FUNDO
+        btn.ForeColor = InLab_Kit_Cor #UTIL_BOTAO_TEXTO
+        btn.Font = fonteBotao
+        btn.UseVisualStyleBackColor = false
+        dotNet.addEventHandler btn "Click" InLab_Util_OnClique
+        InLab_Util_Dica.SetToolTip btn b[6]
+        pnl.Controls.Add btn
+    )
+
+    -- Campos numéricos (no lugar do spinner nativo).
+    fn campo x y minimo maximo valor passo casas dica fundoCampo pnl dicaObj =
+    (
+        local spn = dotNetObject "System.Windows.Forms.NumericUpDown"
+        spn.Location = dotNetObject "System.Drawing.Point" x (y + 1)
+        spn.Size = dotNetObject "System.Drawing.Size" 40 20
+        spn.DecimalPlaces = casas
+        spn.Minimum = InLab_Util_Decimal minimo
+        spn.Maximum = InLab_Util_Decimal maximo
+        spn.Increment = InLab_Util_Decimal passo
+        spn.Value = InLab_Util_Decimal valor
+        spn.BackColor = fundoCampo
+        spn.ForeColor = InLab_Kit_Cor #UTIL_BOTAO_TEXTO
+        spn.BorderStyle = (dotNetClass "System.Windows.Forms.BorderStyle").FixedSingle
+        spn.Font = InLab_Kit_Fonte 8.25
+        dicaObj.SetToolTip spn dica
+        pnl.Controls.Add spn
+        spn
+    )
+    local fundoCampo = InLab_Kit_Cor #UTIL_CAMPO_FUNDO
+    InLab_Util_SpnBump = campo 322 72 0.0 5.0 0.3 0.05 2 "Intensidade do normal map no GLB." fundoCampo pnl InLab_Util_Dica
+    InLab_Util_SpnCanal = campo 322 97 1 99 INLAB_UVWCLEAR_CANAL_PADRAO 1 0 "Canal de mapeamento a limpar. 1 = UV do material, 3 = UV de bake." fundoCampo pnl InLab_Util_Dica
     local alinhaDir = (dotNetClass "System.Drawing.ContentAlignment").MiddleRight
     local alinhaEsq = (dotNetClass "System.Drawing.ContentAlignment").MiddleLeft
     -- #(texto, x, y, largura, altura, alinhamento, fonte, cor)
@@ -1006,32 +1115,11 @@ rollout InLabChecker_Rollout ("InLabChecker · InLab Artefacto · v" + INLAB_VER
     -- subSecoes desce de pos:[4,64] para pos:[4,188].
     -- 29/10/2026 (#214): + linha Faces duplicadas / Intensidade / Bump Fix;
     -- grupo com 150 e subSecoes em pos:[4,216].
-    -- 03/11/2026: 4 linhas com rótulo sobre o Panel escuro pnlUtil (ver o
-    -- cabeçalho). O pnlUtil TEM que vir antes dos botões: o controle
-    -- declarado depois fica por cima. Rótulos e título: InLab_Util_Montar.
-    -- Colunas: rótulo da linha até x=62, botões de x=66 a x=436.
+    -- 03/11/2026: 4 linhas com rótulo (Pivot, Malha, Material, UV) num Panel
+    -- escuro. Rótulos, botões e campos são filhos dele, montados por
+    -- InLab_Util_Montar (ver o comentário lá: botão nativo por cima do Panel
+    -- sumia na tela a cada repintura).
     dotNetControl pnlUtil "System.Windows.Forms.Panel" pos:[4,60] width:438 height:124
-    -- Pivot (y=82)
-    button btnUResetX "Reset XForm" pos:[66,82] width:120 height:21 tooltip:"ResetXForm e colapsa o stack dos objetos selecionados."
-    button btnUCenter "Center" pos:[190,82] width:121 height:21 tooltip:"Pivot no centro do bounding box do produto."
-    button btnUBase "Base" pos:[315,82] width:121 height:21 tooltip:"Pivot na base do produto (centro XY, fundo em Z)."
-    -- Malha (y=107)
-    button btnUOtimizar "ProOptimizer −30%" pos:[66,107] width:118 height:21 tooltip:(
-        "Tira " + ((100 - INLAB_REDUZIR_FATOR * 100 + 0.5) as integer) as string +
-        "% dos vértices de cada peça selecionada. Cada clique é um passo do Ctrl+Z.")
-    button btnUOtimDesfazer "↶" pos:[188,107] width:24 height:21 tooltip:"Desfaz o último clique do ProOptimizer."
-    button btnUFind "Find Objects" pos:[220,107] width:110 height:21 tooltip:(
-        "Seleciona os objetos acima de " + ((INLAB_FIND_FRACAO_POLYMAX * 100) as integer) as string +
-        "% do máximo de triângulos da família. Sem família: os " +
-        INLAB_FIND_TOP_N as string + " objetos mais pesados da cena.")
-    button btnUFacesDup "Faces dup." pos:[334,107] width:102 height:21 tooltip:"Seleciona as faces coincidentes que a V-09 reprova. Sem seleção, procura na cena toda. Não apaga nada."
-    -- Material (y=132)
-    button btnUDetach "Separar por material" pos:[66,132] width:220 height:21 tooltip:"Divide cada objeto selecionado em um objeto por material."
-    spinner spnUBump "" pos:[326,135] width:40 fieldWidth:36 range:[0, 5, 0.3] scale:0.05 type:#float tooltip:"Intensidade do normal map no GLB."
-    button btnUBumpFix "Bump Fix" pos:[370,132] width:66 height:21 tooltip:"Grava a intensidade ao lado nos materiais glTF com normal map da seleção (sem seleção, da cena toda)."
-    -- UV (y=157)
-    button btnUUVWClear "UVW Clear" pos:[66,157] width:220 height:21 tooltip:"Limpa o canal ao lado nos objetos selecionados (UVW Mapping Clear) e colapsa o stack. Ctrl+Z desfaz."
-    spinner spnUCanal "" pos:[326,160] width:40 fieldWidth:36 range:[1, 99, INLAB_UVWCLEAR_CANAL_PADRAO] type:#integer tooltip:"Canal de mapeamento a limpar. 1 = UV do material, 3 = UV de bake."
 
     subRollout subSecoes width:438 height:508 pos:[4,188]
 
@@ -1050,44 +1138,6 @@ rollout InLabChecker_Rollout ("InLabChecker · InLab Artefacto · v" + INLAB_VER
                  "% da família '" + InLab_FamiliaAtiva.nome + "')")
             else
                 ("Find Objects: sem família, os " + INLAB_FIND_TOP_N as string + " mais pesados da cena")
-    )
-
-    on btnUResetX pressed do
-    (
-        local objs = InLab_SelecaoValida()
-        if objs.count > 0 do InLab_ResetXFormSelecao objs
-    )
-    on btnUCenter pressed do
-    (
-        local objs = InLab_SelecaoValida()
-        if objs.count > 0 do InLab_CentralizarPivot objs
-    )
-    on btnUBase pressed do
-    (
-        local objs = InLab_SelecaoValida()
-        if objs.count > 0 do InLab_BasePivot objs
-    )
-    on btnUOtimizar pressed do
-    (
-        local objs = InLab_SelecaoValida()
-        if objs.count > 0 do InLab_OtimReduzir objs
-    )
-    on btnUOtimDesfazer pressed do InLab_OtimReduzir_Desfazer()
-    on btnUFind pressed do InLab_FindObjectsPesados()
-    on btnUFacesDup pressed do InLab_FacesDuplicadas()
-    on btnUBumpFix pressed do InLab_BumpFix spnUBump.value
-    on btnUUVWClear pressed do
-    (
-        local objs = InLab_SelecaoValida()
-        local canal = spnUCanal.value
-        -- Canal 1 é o UV do material: limpar sem querer apaga o mapeamento.
-        if objs.count > 0 and (canal != 1 or (queryBox "O canal 1 é o UV do material (texturas). Limpar mesmo assim?" title:"UVW Clear")) do
-            InLab_UVWClear objs canal
-    )
-    on btnUDetach pressed do
-    (
-        local objs = InLab_SelecaoValida()
-        if objs.count > 0 do InLab_DetachPorMaterialSelecao objs
     )
 
     ------------------------------------------------------------------
@@ -1171,6 +1221,9 @@ rollout InLabChecker_Rollout ("InLabChecker · InLab Artefacto · v" + INLAB_VER
         InLab_Header_Pastilha = undefined
         InLab_Header_Dica = undefined
         InLab_Util_LblLimite = undefined
+        InLab_Util_SpnBump = undefined
+        InLab_Util_SpnCanal = undefined
+        InLab_Util_Dica = undefined
     )
 )
 
