@@ -1092,7 +1092,7 @@ fn InLab_Util_Montar pecas =
         InLab_Util_Dica.SetToolTip btn b[6]
         if b[1] == "find" do InLab_Util_BtnFind = btn
         -- y + 1: centra os 18px na linha de 21 (o spinner fica em y+2..y+18).
-        if InLab_Util_PorNaPeca pecas btn b[3] (b[4] + 1) b[5] 18 do InLab_Kit_Arredondar btn 3
+        if InLab_Util_PorNaPeca pecas btn b[3] (b[4] + 1) b[5] 18 do InLab_Kit_BotaoArredondado btn
     )
 
     local alinhaDir = (dotNetClass "System.Drawing.ContentAlignment").MiddleRight

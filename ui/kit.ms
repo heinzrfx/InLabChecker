@@ -133,26 +133,64 @@ fn InLab_Kit_BotaoIcone btn =
     btn
 )
 
--- Cantos arredondados num controle dotNet (03/11/2026, botões das
--- Utilidades no jeito do ArchToolz): recorta o controle por um retângulo de
--- cantos com raio `raio`. Chamar DEPOIS de definir o Size: a Region não
--- acompanha mudança de tamanho. Sem antisserrilhado (é Region); use com
--- botão sem contorno (FlatAppearance.BorderSize = 0), senão a borda some
--- nos cantos.
-global InLab_Kit_Arredondar
-fn InLab_Kit_Arredondar ctrl raio =
+-- BOTÃO DE CANTOS ARREDONDADOS, SUAVIZADO (03/11/2026, botões das
+-- Utilidades no jeito do ArchToolz). O botão é desenhado por nós no Paint:
+-- fundo da peça (Parent.BackColor), retângulo de cantos com raio
+-- INLAB_KIT_RAIO_BOTAO em SmoothingMode.AntiAlias e o texto centrado. A 1ª
+-- versão recortava o botão por Region, que não suaviza: os cantos ficavam
+-- serrilhados. Mouse em cima e apertado são lidos na hora do desenho (sem
+-- guardar estado); entrar, sair, apertar e soltar só mandam redesenhar.
+-- Cores #UTIL_BOTAO_FUNDO/HOVER/DOWN/TEXTO.
+global INLAB_KIT_RAIO_BOTAO = 3
+global InLab_Kit_BotaoArredondado, InLab_Kit_PintarBotao, InLab_Kit_RedesenharBotao
+
+fn InLab_Kit_RedesenharBotao sender arg = ( try ( sender.Invalidate() ) catch () )
+
+fn InLab_Kit_PintarBotao sender arg =
 (
-    local w = ctrl.Width
-    local h = ctrl.Height
-    local d = amin (raio * 2) (amin w h)
-    local p = dotNetObject "System.Drawing.Drawing2D.GraphicsPath"
-    p.AddArc 0 0 d d 180 90
-    p.AddArc (w - d) 0 d d 270 90
-    p.AddArc (w - d) (h - d) d d 0 90
-    p.AddArc 0 (h - d) d d 90 90
-    p.CloseFigure()
-    ctrl.Region = dotNetObject "System.Drawing.Region" p
-    ctrl
+    try
+    (
+        local g = arg.Graphics
+        local w = sender.Width
+        local h = sender.Height
+        g.SmoothingMode = (dotNetClass "System.Drawing.Drawing2D.SmoothingMode").AntiAlias
+        g.Clear sender.Parent.BackColor
+        local Ctl = dotNetClass "System.Windows.Forms.Control"
+        local emCima = sender.ClientRectangle.Contains (sender.PointToClient Ctl.MousePosition)
+        local apertado = emCima and Ctl.MouseButtons == (dotNetClass "System.Windows.Forms.MouseButtons").Left
+        local cor = InLab_Kit_Cor (if apertado then #UTIL_BOTAO_DOWN else if emCima then #UTIL_BOTAO_HOVER else #UTIL_BOTAO_FUNDO)
+        -- Meio pixel para dentro: a borda suavizada cai inteira no controle.
+        local d = (amin (INLAB_KIT_RAIO_BOTAO * 2) (amin w h)) as float
+        local x1 = 0.5
+        local y1 = 0.5
+        local x2 = w - 0.5 - d
+        local y2 = h - 0.5 - d
+        local p = dotNetObject "System.Drawing.Drawing2D.GraphicsPath"
+        p.AddArc x1 y1 d d 180 90
+        p.AddArc x2 y1 d d 270 90
+        p.AddArc x2 y2 d d 0 90
+        p.AddArc x1 y2 d d 90 90
+        p.CloseFigure()
+        local pincel = dotNetObject "System.Drawing.SolidBrush" cor
+        g.FillPath pincel p
+        pincel.Dispose()
+        p.Dispose()
+        local TF = dotNetClass "System.Windows.Forms.TextFormatFlags"
+        (dotNetClass "System.Windows.Forms.TextRenderer").DrawText g sender.Text sender.Font             (dotNetObject "System.Drawing.Rectangle" 0 0 w h) (InLab_Kit_Cor #UTIL_BOTAO_TEXTO)             (dotNet.combineEnums TF.HorizontalCenter TF.VerticalCenter TF.SingleLine TF.NoPadding)
+    )
+    catch ( InLab_Log ("Kit: falha ao desenhar o botão '" + sender.Text + "' (" + getCurrentException() + ").") tipo:#err )
+)
+
+-- Liga o desenho arredondado num Button já com Text, Font e Size.
+fn InLab_Kit_BotaoArredondado btn =
+(
+    btn.FlatStyle = (dotNetClass "System.Windows.Forms.FlatStyle").Flat
+    btn.FlatAppearance.BorderSize = 0
+    btn.UseVisualStyleBackColor = false
+    dotNet.addEventHandler btn "Paint" InLab_Kit_PintarBotao
+    for ev in #("MouseEnter", "MouseLeave", "MouseDown", "MouseUp") do
+        dotNet.addEventHandler btn ev InLab_Kit_RedesenharBotao
+    btn
 )
 
 -- tipo: #OK | #WARN | #ERR | #INFO | #PROGRESSO
