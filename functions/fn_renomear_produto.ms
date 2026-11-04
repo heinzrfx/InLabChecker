@@ -139,6 +139,11 @@
  só com o material dela, ficava "(não renomear)": a sugestão pelo material
  exigia um mesh_final só. Agora vale o comum a todas as partes do objeto e,
  se sobra mais de um, o com menos partes no produto (a mesh própria da peça).
+ 04/11/2026 (lista v10, mesma mesa): o export passou a mandar o nome com acento,
+ "00124600_Prato_Giratório", e a V-21 (só [A-Za-z0-9_]) reprovava. O plugin
+ tira o acento dos nomes de objeto ao carregar a lista (InLab_Produto_Lista →
+ InLab_Produto_LimparNomesDeObjeto: mesh_final, meshes[].nome, variantes). A
+ plataforma aceita o nome sem acento. material_id e apelidos ficam como vieram.
 ================================================================================
 */
 
@@ -162,10 +167,42 @@ fn InLab_Produto_Texto obj chave =
 -- Produtos do export. #() se o JSON não tiver "produtos" (ex.: foi importado
 -- o nomenclatura_projeto.json, que é o arquivo de trabalho do app).
 global InLab_Produto_Lista
+-- 04/11/2026 (lista v10, mesa Berriz): os nomes de objeto do export saem
+-- sem acento já aqui ("00124600_Prato_Giratório" → "..._Giratorio"): a V-21
+-- só aceita [A-Za-z0-9_] e a plataforma aceita o nome sem acento. Vale para
+-- mesh_final das partes e das variantes e para meshes[].nome; material_id,
+-- apelidos e qualificadores ficam como vieram. Altera os dados no lugar.
+global InLab_Produto_SemAcento, InLab_Produto_LimparNomesDeObjeto
 fn InLab_Produto_Lista dados =
 (
     local produtos = InLab_JSON_Obter dados "produtos"
-    if isKindOf produtos Array then produtos else #()
+    if isKindOf produtos Array then
+    (
+        for p in produtos do InLab_Produto_LimparNomesDeObjeto p
+        produtos
+    )
+    else #()
+)
+
+-- Troca o valor de `chave` no objeto (pares) pelo texto sem acento.
+fn InLab_Produto_LimparCampo obj chave =
+(
+    if isKindOf obj Array do
+        for par in obj where (isKindOf par Array and par.count == 2 and par[1] == chave and isKindOf par[2] String) do
+            par[2] = InLab_Produto_SemAcento par[2]
+)
+
+fn InLab_Produto_LimparNomesDeObjeto produto =
+(
+    local partes = InLab_JSON_Obter produto "partes"
+    if isKindOf partes Array do
+        for pt in partes do InLab_Produto_LimparCampo pt "mesh_final"
+    local meshes = InLab_JSON_Obter produto "meshes"
+    if isKindOf meshes Array do
+        for m in meshes do InLab_Produto_LimparCampo m "nome"
+    local vs = InLab_JSON_Obter (InLab_JSON_Obter produto "glb_multiplos") "variantes"
+    if isKindOf vs Array do
+        for v in vs do InLab_Produto_LimparCampo v "mesh_final"
 )
 
 -- Parte com `campo` vazio ou null é inválida p/ renomear (o export usa ""
@@ -564,6 +601,21 @@ fn InLab_Produto_Normalizar s =
         saida += c
     )
     toLower saida
+)
+
+-- 04/11/2026: tira o acento e mantém maiúscula/minúscula ("AÇÃO" → "ACAO").
+-- Para os NOMES de objeto que vêm do export (InLab_Produto_Lista).
+global INLAB_REN_COM_ACENTO = "áàâãäéèêëíìîïóòôõöúùûüçñÁÀÂÃÄÉÈÊËÍÌÎÏÓÒÔÕÖÚÙÛÜÇÑ"
+global INLAB_REN_SEM_ACENTO = "aaaaaeeeeiiiiooooouuuucnAAAAAEEEEIIIIOOOOOUUUUCN"
+fn InLab_Produto_SemAcento s =
+(
+    local saida = ""
+    for i = 1 to s.count do
+    (
+        local k = findString INLAB_REN_COM_ACENTO s[i]
+        saida += if k == undefined then s[i] else INLAB_REN_SEM_ACENTO[k]
+    )
+    saida
 )
 
 -- Nome de slot do Max ("Diffuse Color") → sufixo de mapa ("DiffuseColor").

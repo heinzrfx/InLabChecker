@@ -318,6 +318,30 @@ global INLAB_TESTE_SAIDA, INLAB_TESTE_FALHAS
         local sugG = InLab_Produto_SugerirMeshes produtos3[1] #(mEst, mPorta, mPrato) #(bGira, bMix)
         checar ("Sugestão: parte em 2 meshes, objeto só dela → mesh própria (veio '" + sugG[1] + "')") (sugG[1] == "0003_Prato")
         checar ("Sugestão: objeto com parte de 1 mesh + parte de 2 → a mesh comum (veio '" + sugG[2] + "')") (sugG[2] == "0003")
+
+        -- 04/11/2026 (lista v10, mesa Berriz): nome de objeto com acento no
+        -- export ("00124600_Prato_Giratório"). O plugin tira o acento dos nomes
+        -- de objeto ao carregar a lista (V-21: só [A-Za-z0-9_]); o resto fica.
+        local js5 = "{\"produtos\": [{\"cod_est\": \"0005\", \"nome\": \"MESA\", \"ok_3d\": true, " +
+            "\"meshes\": [{\"nome\": \"0005\", \"partes\": [\"Tampo\"]}, {\"nome\": \"0005_Prato_Giratório\", \"partes\": [\"Prato Giratória\"]}], " +
+            "\"glb_multiplos\": {\"qtd\": 1, \"variantes\": [{\"id\": \"L1\", \"mesh_final\": \"0005_AÇÃO_Lâmina\"}]}, \"partes\": [" +
+            "{\"nome_parte\": \"Tampo\", \"qualificador\": \"\", \"tipo\": \"P\", \"so3d\": false, \"subparte_de\": \"\", \"material_id\": \"ART_P_Tampo\", \"mesh_final\": \"0005\"}, " +
+            "{\"nome_parte\": \"Prato\", \"qualificador\": \"Giratória\", \"apelido_cliente\": \"Prato Giratório\", \"tipo\": \"P\", \"so3d\": false, \"subparte_de\": \"\", \"material_id\": \"ART_P_Prato_Giratoria\", \"mesh_final\": \"0005_Prato_Giratório | 0005\"}]}]}"
+        local produtos5 = InLab_Produto_Lista (InLab_ParseJSON js5)
+        local partes5 = InLab_JSON_Obter produtos5[1] "partes"
+        local mp5 = InLab_Produto_MeshesDaParte partes5[2]
+        checar ("Sem acento: mesh_final da parte (" + mp5 as string + ")") (mp5.count == 2 and mp5[1] == "0005_Prato_Giratorio" and mp5[2] == "0005")
+        local var5 = InLab_Produto_Variantes produtos5[1]
+        checar ("Sem acento: variante, maiúscula mantida (" + var5 as string + ")") (var5.count == 1 and var5[1] == "0005_ACAO_Lamina")
+        local meshes5 = InLab_JSON_Obter produtos5[1] "meshes"
+        checar "Sem acento: meshes[].nome" ((InLab_JSON_Obter meshes5[2] "nome") == "0005_Prato_Giratorio")
+        checar "Sem acento: apelido e qualificador continuam com acento" ((InLab_Produto_Texto partes5[2] "apelido_cliente") == "Prato Giratório" and (InLab_Produto_Texto partes5[2] "qualificador") == "Giratória")
+        local produtos5b = InLab_Produto_Lista (InLab_ParseJSON js5)
+        checar "Sem acento: carregar 2x dá o mesmo nome" ((InLab_Produto_MeshesDaParte (InLab_JSON_Obter produtos5b[1] "partes")[2])[1] == "0005_Prato_Giratorio")
+        local bGira5 = Box name:"GIRATORIO" material:mPrato pos:[480,180,0]
+        append criados bGira5
+        local sug5 = InLab_Produto_SugerirMeshes produtos5[1] #(StandardMaterial(), mPrato) #(bGira5)
+        checar ("Sem acento: sugestão do prato sem acento (veio '" + sug5[1] + "')") (sug5[1] == "0005_Prato_Giratorio")
         logsCapturados = #()
         checar "Aplicar em produto com so3d devolve true" ((InLab_Produto_Aplicar produtos3[1] #(mEst, mPorta, mPrato)) == true)
         checar "so3d: o material da parte-mãe ganha o nome dela" (mPorta.name == "ART_P_Porta" and mPrato.name == "ART_P_Prato")
