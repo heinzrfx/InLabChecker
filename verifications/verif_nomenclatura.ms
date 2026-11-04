@@ -49,7 +49,7 @@
 global InLab_Produto_Texto, InLab_Produto_MeshesDoProduto, InLab_Produto_PartesDeMaterial
 global InLab_Produto_MateriaisDaSelecao, InLab_Produto_BaseDaCopia, InLab_Produto_Variantes
 global InLab_Produto_MeshesDaParte, InLab_Produto_Booleano, InLab_Produto_Rotulo
-global InLab_Mat_Uso   -- verificationserif_materiais.ms, carregado depois
+global InLab_Mat_Uso   -- verifications/verif_materiais.ms, carregado depois
 global InLab_V20_ObjetosDaParte, InLab_V20_MaterialPorObjeto, InLab_JSON_Obter
 
 -- "a, b, c" com no máximo `maximo` nomes e "… (+N)" no fim.
