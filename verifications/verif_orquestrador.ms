@@ -197,7 +197,7 @@ fn InLab_RodarVerificacoes cfg tampoAcessorio:false codEst:"" nomeProduto:"" pro
         InLab_RegistrarVerif "V-19" "Unidade do sistema" (units.SystemType == INLAB_UNIDADE_PADRAO) ((units.SystemType as string) + " · padrão InLab: " + INLAB_UNIDADE_PADRAO as string) critico:true
         InLab_V01_PesoMax cfg
         InLab_V02_PesoSKP cfg
-        InLab_V17_PivotRaiz objetos
+        InLab_V17_PivotRaiz objetos produto:produto
         InLab_V18_EixosPivot objetos
 
         -- ===== Grupo 2 · Config/família =====

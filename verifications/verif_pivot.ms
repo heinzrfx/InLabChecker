@@ -9,6 +9,10 @@
  23/09/2026: raiz = nó do topo da hierarquia (issue #30: produto agrupado
  passava sem checar nada) e tolerância de ±1 mm de verdade (issue #31: era
  ±1 unidade do sistema = ±1 cm). Sem raiz nenhuma, V-17/V-18 não dão PASS.
+ 04/11/2026 (mesa Berriz 00124600): com "animacao": true no JSON, a raiz que
+ é uma mesh animada (toda mesh do produto fora a do cod_est e as variantes,
+ ex.: 00124600_Prato_Giratorio) fica fora da V-17: o pivot dela é o do
+ movimento. A V-18 continua valendo para ela.
 ================================================================================
 */
 
@@ -54,19 +58,75 @@ fn InLab_BBoxDaRaiz raiz objetos =
     #(bMin, bMax)
 )
 
+-- 04/11/2026 (mesa Berriz 00124600, prato giratório): fn_renomear_produto.ms.
+global InLab_Produto_Booleano, InLab_Produto_MeshesDoProduto, InLab_Produto_Variantes
+global InLab_Produto_Texto
+
+-- Nomes (minúsculos) das meshes ANIMADAS do produto: com "animacao": true no
+-- JSON, toda mesh do produto que não é a principal (cod_est) nem variante de
+-- posição. É a peça que a spec manda separar para animar (prato giratório,
+-- codEst_Porta_1...). Sem produto ou sem animação: vazio.
+fn InLab_Pivot_MeshesAnimadas produto =
+(
+    local nomes = #()
+    if produto != undefined and InLab_Produto_Booleano != undefined and (InLab_Produto_Booleano produto "animacao") do
+    (
+        local principais = #(toLower (InLab_Produto_Texto produto "cod_est"))
+        for v in (InLab_Produto_Variantes produto) do append principais (toLower v)
+        for n in (InLab_Produto_MeshesDoProduto produto) where (findItem principais (toLower n)) == 0 do
+            appendIfUnique nomes (toLower n)
+    )
+    nomes
+)
+
+-- true se a raiz é uma peça animada: ela mesma, ou todas as geometrias embaixo
+-- dela, têm o nome de uma mesh animada.
+fn InLab_Pivot_RaizAnimada raiz objetos animadas =
+(
+    if animadas.count == 0 then false
+    else if (findItem animadas (toLower raiz.name)) > 0 then true
+    else
+    (
+        local nGeos = 0
+        local todas = true
+        for o in objetos do
+        (
+            local topo = o
+            while topo.parent != undefined do topo = topo.parent
+            if topo == raiz do
+            (
+                nGeos += 1
+                if (findItem animadas (toLower o.name)) == 0 do todas = false
+            )
+        )
+        nGeos > 0 and todas
+    )
+)
+
 -- V-17 · Pivot da raiz em Z=0 do MUNDO e centrado em XY no bbox do produto.
 -- Tolerância: ±1 mm FIXO (spec), convertido para a unidade do sistema.
 -- 23/09/2026 (issue #31): era `tol = 1.0` em UNIDADES DO SISTEMA — com a cena
 -- em cm (a V-19 exige), ±1 cm. Pivot 5 mm acima passava. A mensagem também
 -- dizia "mm" num valor em unidade do sistema.
-fn InLab_V17_PivotRaiz objetos =
+-- 04/11/2026 (mesa Berriz 00124600): a peça animada fica separada (raiz
+-- própria) e o pivot dela é o do movimento, fora do chão: o prato giratório
+-- reprovava com "Z +701.0 mm do chão". Com o produto do JSON marcado
+-- "animacao": true, raiz que é mesh animada (InLab_Pivot_MeshesAnimadas) fica
+-- fora da V-17 (Z e XY: a porta gira na dobradiça, fora do centro) e é citada
+-- na mensagem. O pivot de animação é do Grupo 4 (#117). A raiz principal
+-- continua conferida. Sem produto carregado, tudo é conferido como antes.
+fn InLab_V17_PivotRaiz objetos produto:undefined =
 (
     local raizes = InLab_RaizesGeometria objetos
+    local animadas = InLab_Pivot_MeshesAnimadas produto
+    local puladas = #()
     local problemas = #()
     local mm = units.decodeValue "1mm"   -- 1 mm na unidade do sistema (cm → 0.1)
     local tol = mm
     fn emMM v mm = (if v >= 0 then "+" else "") + (formattedPrint (v / mm) format:".1f") + " mm"
     for o in raizes do
+    if InLab_Pivot_RaizAnimada o objetos animadas then append puladas o.name
+    else
     (
         local bb = InLab_BBoxDaRaiz o objetos
         local cx = (bb[1].x + bb[2].x) / 2.0
@@ -89,8 +149,13 @@ fn InLab_V17_PivotRaiz objetos =
     )
 
     local msg = if raizes.count == 0 then "nenhuma raiz encontrada — nada verificado"
-                else if problemas.count == 0 then (raizes.count as string + " raiz(es) OK")
+                else if problemas.count == 0 then ((raizes.count - puladas.count) as string + " raiz(es) OK")
                 else (problemas as string)
+    if puladas.count > 0 do
+    (
+        msg += " · peça animada fora (pivot de animação):"
+        for n in puladas do msg += " " + n
+    )
     InLab_RegistrarVerif "V-17" "Pivot raiz em Z=0 (mundo), centrado em XY" (raizes.count > 0 and problemas.count == 0) msg critico:true
 )
 

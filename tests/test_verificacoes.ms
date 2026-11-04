@@ -110,6 +110,33 @@ global INLAB_TESTE_SAIDA, INLAB_TESTE_FALHAS
         checar "V-18: objeto solto girado 10° reprova" ((rodar InLab_V18_EixosPivot #(r1) "V-18") == #fail)
         limparCena()
 
+        -- 04/11/2026 (mesa Berriz 00124600): peça animada separada, com o pivot
+        -- do movimento fora do chão, fica fora da V-17 quando o JSON diz
+        -- "animacao": true. A raiz principal continua conferida.
+        local jsAnim = "{\"produtos\": [" +
+            "{\"cod_est\": \"0017\", \"nome\": \"MESA GIRATORIA\", \"animacao\": true, \"partes\": [" +
+            "{\"nome_parte\": \"Tampo\", \"qualificador\": \"\", \"tipo\": \"P\", \"so3d\": false, \"material_id\": \"ART_P_Tampo\", \"mesh_final\": \"0017\"}, " +
+            "{\"nome_parte\": \"Prato\", \"qualificador\": \"Giratória\", \"tipo\": \"P\", \"so3d\": false, \"material_id\": \"ART_P_Prato_Giratoria\", \"mesh_final\": \"0017_Prato_Giratório\"}]}, " +
+            "{\"cod_est\": \"0018\", \"nome\": \"MESA PARADA\", \"animacao\": false, \"partes\": [" +
+            "{\"nome_parte\": \"Tampo\", \"qualificador\": \"\", \"tipo\": \"P\", \"so3d\": false, \"material_id\": \"ART_P_Tampo\", \"mesh_final\": \"0018\"}, " +
+            "{\"nome_parte\": \"Prato\", \"qualificador\": \"\", \"tipo\": \"P\", \"so3d\": false, \"material_id\": \"ART_P_Prato\", \"mesh_final\": \"0018_Prato\"}]}]}"
+        local prodsAnim = InLab_Produto_Lista (InLab_ParseJSON jsAnim)
+        limparCena()
+        local aMesa = Box length:100 width:100 height:70 name:"0017"
+        local aPrato = Cylinder radius:30 height:3 pos:[0, 0, 70] name:"0017_Prato_Giratorio"
+        fn rodar17 objs p = ( InLab_ResetarResultados(); InLab_V17_PivotRaiz objs produto:p; statusDe "V-17" )
+        checar "V-17: sem produto, prato a 70 cm reprova (como antes)" ((rodar17 #(aMesa, aPrato) undefined) == #fail)
+        checar ("V-17: produto animado, prato giratório fica fora e passa (" + mensagemDe "V-17" + ")") ((rodar17 #(aMesa, aPrato) prodsAnim[1]) == #pass and (findString (mensagemDe "V-17") "0017_Prato_Giratorio") != undefined)
+        aPrato.pivot = [20, 0, 70]
+        checar "V-17: produto animado, pivot do prato fora do centro também fica fora" ((rodar17 #(aMesa, aPrato) prodsAnim[1]) == #pass)
+        aMesa.pivot = [0, 0, 5]
+        checar "V-17: produto animado, raiz principal flutuando ainda reprova" ((rodar17 #(aMesa, aPrato) prodsAnim[1]) == #fail and (findString (mensagemDe "V-17") "0017:") != undefined)
+        aMesa.pivot = [0, 0, 0]
+        aMesa.name = "0018"
+        aPrato.name = "0018_Prato"
+        checar "V-17: produto SEM animação, prato separado a 70 cm reprova" ((rodar17 #(aMesa, aPrato) prodsAnim[2]) == #fail)
+        limparCena()
+
         ---------------------------------------------------------------- V-11 / V-12
         local m1 = Box length:40 width:40 height:40
         checar "V-11: stack vazio passa" ((rodar InLab_V11_Modificadores #(m1) "V-11") == #pass)
