@@ -35,6 +35,12 @@
 
  23/09/2026 (issue #35): V-22 com uma mensagem por grupo, grupo de 1 item
  checado e sufixo repetido separado de lacuna.
+
+ 03/11/2026: V-20 também cruza material e objeto (InLab_V20_MaterialPorObjeto):
+ o material de cada objeto tem que ser de uma parte cujo mesh_final inclui
+ esse objeto, como a plataforma confere. Parte sem mesh_final no cadastro
+ sai com mensagem própria (corrigir na plataforma). Caso: Banqueta Kami II
+ (00112048) na lista v8, GLB recusado 3x.
 ================================================================================
 */
 
@@ -42,6 +48,9 @@
 -- antes pelo manifesto; os testes que não usam produto não o carregam).
 global InLab_Produto_Texto, InLab_Produto_MeshesDoProduto, InLab_Produto_PartesDeMaterial
 global InLab_Produto_MateriaisDaSelecao, InLab_Produto_BaseDaCopia, InLab_Produto_Variantes
+global InLab_Produto_MeshesDaParte, InLab_Produto_Booleano, InLab_Produto_Rotulo
+global InLab_Mat_Uso   -- verifications/verif_materiais.ms, carregado depois
+global InLab_V20_ObjetosDaParte, InLab_V20_MaterialPorObjeto, InLab_JSON_Obter
 
 -- "a, b, c" com no máximo `maximo` nomes e "… (+N)" no fim.
 fn InLab_V20_Lista nomes maximo:5 =
@@ -62,6 +71,60 @@ fn InLab_V20_ArquivoValido produto nomeArquivo =
     nomeArquivo != "" and \
         ((findItem (InLab_Produto_Variantes produto) nomeArquivo) > 0 or (toLower nomeArquivo) == (toLower cod) or \
          (base != "" and (toLower nomeArquivo) == (toLower base)))
+)
+
+-- 03/11/2026: objetos em que a parte pode estar, pelo mesh_final ("|"
+-- divide). Parte-mãe de subparte só de 3D (so3d) vem sem mesh_final de
+-- propósito: o objeto é o das subpartes, que usam o material dela.
+fn InLab_V20_ObjetosDaParte produto parte =
+(
+    local objs = InLab_Produto_MeshesDaParte parte
+    local nome = InLab_Produto_Texto parte "nome_parte"
+    local partes = InLab_JSON_Obter produto "partes"
+    if objs.count == 0 and nome != "" and isKindOf partes Array do
+        for s in partes where (InLab_Produto_Booleano s "so3d") and (InLab_Produto_Texto s "subparte_de") == nome do
+            for n in (InLab_Produto_MeshesDaParte s) do appendIfUnique objs n
+    objs
+)
+
+-- 03/11/2026 (bloco 00112048 recusado pela plataforma): o material de cada
+-- objeto tem que ser de uma parte cujo mesh_final inclui ESSE objeto. A
+-- plataforma confere assim, e a V-20 só conferia os nomes soltos (objeto
+-- entre os mesh_final, material entre os material_id). Na lista v8 a parte
+-- PD_Apoio_de_Pes da Banqueta Kami II veio sem mesh_final e o GLB voltou 3x
+-- com "nome não é um material_id do produto". Conta só sub-material com
+-- faces (InLab_Mat_Uso). Na variante (07132220_L11) o objeto tem o nome dela
+-- e as partes apontam para o cod_est: compara como cod_est. Material com
+-- nome fora do produto já é acusado antes e fica de fora aqui. Devolve as
+-- frases de problema.
+fn InLab_V20_MaterialPorObjeto produto objetos ehVariante =
+(
+    local cod = InLab_Produto_Texto produto "cod_est"
+    local partes = InLab_Produto_PartesDeMaterial produto
+    local problemas = #()
+    for o in objetos where o.material != undefined do
+    (
+        local nomeObj = if ehVariante then cod else o.name
+        for m in (InLab_Mat_Uso #(o)).usados do
+        (
+            local daParte = for pt in partes where (InLab_Produto_Texto pt "material_id") == m.name collect pt
+            if daParte.count > 0 do
+            (
+                local ondePode = #()
+                for pt in daParte do for n in (InLab_V20_ObjetosDaParte produto pt) do appendIfUnique ondePode n
+                if (findItem ondePode nomeObj) == 0 do
+                (
+                    local rotulo = InLab_Produto_Rotulo daParte[1]
+                    append problemas (if ondePode.count == 0 then
+                        (o.name + ": o material '" + m.name + "' não é de nenhuma parte deste objeto. A parte '" + rotulo +
+                         "' está sem mesh_final no cadastro do produto: corrija na plataforma e exporte a lista de novo")
+                    else
+                        (o.name + ": o material '" + m.name + "' é da parte '" + rotulo + "', que fica no objeto " + (InLab_V20_Lista ondePode)))
+                )
+            )
+        )
+    )
+    problemas
 )
 
 -- produto: o produto escolhido na seção Produto (formato de InLab_ParseJSON).
@@ -102,6 +165,7 @@ fn InLab_V20_Nomenclatura cfg produto:undefined objetos:#() nomeArquivo:unsuppli
         local foraMat = for m in (InLab_Produto_MateriaisDaSelecao objetos) where (findItem ids m.name) == 0 collect m.name
         if foraMat.count > 0 do
             append problemas (foraMat.count as string + " material(is) com nome fora do produto: " + (InLab_V20_Lista foraMat))
+        join problemas (InLab_V20_MaterialPorObjeto produto objetos ehVariante)
 
         local msg = "produto " + cod + ": "
         if problemas.count == 0 then msg += "arquivo, " + objetos.count as string + " objeto(s) e materiais com os nomes oficiais"
