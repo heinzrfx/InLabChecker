@@ -105,6 +105,7 @@
             @"functions\fn_mapear.ms",
             @"functions\fn_ver_uv.ms",
             @"functions\fn_mapear_paineis.ms",
+            @"functions\fn_mapear_cortar.ms",
             @"functions\fn_material_convert.ms",
             @"functions\fn_material_utils.ms",
             @"functions\fn_export_gltf.ms",
