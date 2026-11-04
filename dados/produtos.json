@@ -1,6 +1,6 @@
 {
   "versao_export": "nomenclatura-3D-v2",
-  "exportado_em": "2026-11-03T20:36:38.161Z",
+  "exportado_em": "2026-11-04T13:13:02.174Z",
   "produtos": [
     {
       "linha": "Artefacto & Beach",
@@ -5870,13 +5870,12 @@
           "nome": "00124600",
           "partes": [
             "Tampo",
-            "Prato Giratória",
             "Base",
             "Deslizador"
           ]
         },
         {
-          "nome": "00124600_Prato_Giratoria",
+          "nome": "00124600_Prato_Giratório",
           "partes": [
             "Prato Giratória"
           ]
@@ -5996,7 +5995,7 @@
           "material_id": "ART_P_Prato_Giratoria",
           "configuravel": true,
           "entra_3d": true,
-          "mesh_final": "00124600|00124600_Prato_Giratoria",
+          "mesh_final": "00124600_Prato_Giratório",
           "tecido": false,
           "botao_sem_desm": "Tampo e Prato Giratório",
           "botao_com_desm": "Tampo e Prato Giratório",
