@@ -134,6 +134,11 @@
  (InLab_Produto_MateriaNaoAplica) é posição/geometria, não material: sai da lista
  de materiais (PartesDeMaterial: seção Produto, renomeação, V-20/V-25/V-38) e do
  aviso de matéria-prima. Continua nos nomes de objeto (a mesh existe).
+ 04/11/2026 (mesa Berriz 00124600, prato giratório animado): a parte Prato
+ vem com mesh_final "00124600|00124600_Prato_Giratoria". O objeto GIRATORIO,
+ só com o material dela, ficava "(não renomear)": a sugestão pelo material
+ exigia um mesh_final só. Agora vale o comum a todas as partes do objeto e,
+ se sobra mais de um, o com menos partes no produto (a mesh própria da peça).
 ================================================================================
 */
 
@@ -864,8 +869,10 @@ fn InLab_Produto_NomeLembraMesh nomeObj mesh =
 
 -- Array paralelo a `objs`: mesh_final sugerido ou "" (sem sugestão).
 --   1º o objeto já se chama exatamente um mesh_final (plugin já rodou);
---   2º pelo material ligado: o objeto usa materiais de partes com UM só
---      mesh_final (a lógica que o Aplicar usava até 24/09/2026);
+--   2º pelo material ligado: o mesh_final comum a todas as partes que o
+--      objeto usa (a lógica que o Aplicar usava até 24/09/2026); se sobra
+--      mais de um (parte com "A|B"), o que tem menos partes no produto
+--      (04/11/2026, prato giratório da mesa Berriz 00124600);
 --   3º por semelhança de nome (InLab_Produto_NomeLembraMesh);
 --   4º (02/10/2026) o produto tem UM nome de objeto só: é esse. Nos assets
 --      reais do piloto os nomes são genéricos (Cylinder002, Shape019) e os
@@ -889,10 +896,39 @@ fn InLab_Produto_SugerirMeshes produto ligacoes objs nomeArquivo:"" =
             else if variante != "" then sug = variante
             else
             (
-                local porMat = #()
+                -- 04/11/2026: meshes que têm TODAS as partes usadas pelo objeto;
+                -- empate → a mais específica (menos partes no produto).
+                local porMat = undefined
                 for i = 1 to partes.count where i <= ligacoes.count and ligacoes[i] != undefined and
                     (InLab_Produto_ObjUsaMaterial o ligacoes[i]) do
-                    for n in (InLab_Produto_MeshesDaParte partes[i]) do appendIfUnique porMat n
+                (
+                    local daParte = InLab_Produto_MeshesDaParte partes[i]
+                    if daParte.count > 0 do
+                    (
+                        if porMat == undefined then porMat = daParte
+                        else
+                        (
+                            local comuns = #()
+                            for n in porMat where (findItem daParte n) > 0 do append comuns n
+                            porMat = comuns
+                        )
+                    )
+                )
+                if porMat == undefined do porMat = #()
+                if porMat.count > 1 do
+                (
+                    local qts = #()
+                    for n in porMat do
+                    (
+                        local q = 0
+                        for pt in partes where (findItem (InLab_Produto_MeshesDaParte pt) n) > 0 do q += 1
+                        append qts q
+                    )
+                    local menor = amin qts
+                    local comMenor = #()
+                    for k = 1 to porMat.count where qts[k] == menor do append comMenor porMat[k]
+                    porMat = comMenor
+                )
                 if porMat.count == 1 then sug = porMat[1]
                 else
                     for m in meshes where sug == "" and (InLab_Produto_NomeLembraMesh o.name m) do sug = m

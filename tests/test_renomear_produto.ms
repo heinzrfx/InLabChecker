@@ -302,6 +302,22 @@ global INLAB_TESTE_SAIDA, INLAB_TESTE_FALHAS
         append criados bPrato
         local sug3 = InLab_Produto_SugerirMeshes produtos3[1] #(mEst, mPorta, mPrato) #(bPrato)
         checar ("Sugestão: parte em 2 meshes não sugere pelo material (veio '" + sug3[1] + "')") (sug3[1] == "0003_Prato")
+        -- 04/11/2026 (mesa Berriz 00124600, prato giratório): nome do objeto
+        -- sem pista ("GIRATORIO") e a parte em 2 meshes → a mesh própria dela.
+        -- Objeto com outra parte junto → a mesh que tem as duas.
+        local bGira = Box name:"GIRATORIO" material:mPrato pos:[480,60,0]
+        append criados bGira
+        local mMix = Multimaterial numsubs:2
+        mMix[1] = mEst
+        mMix[2] = mPrato
+        local bMix = convertToPoly (Box name:"PECA_MISTA" pos:[480,120,0])
+        bMix.material = mMix
+        polyop.setFaceMatID bMix #{1..3} 1
+        polyop.setFaceMatID bMix #{4..6} 2
+        append criados bMix
+        local sugG = InLab_Produto_SugerirMeshes produtos3[1] #(mEst, mPorta, mPrato) #(bGira, bMix)
+        checar ("Sugestão: parte em 2 meshes, objeto só dela → mesh própria (veio '" + sugG[1] + "')") (sugG[1] == "0003_Prato")
+        checar ("Sugestão: objeto com parte de 1 mesh + parte de 2 → a mesh comum (veio '" + sugG[2] + "')") (sugG[2] == "0003")
         logsCapturados = #()
         checar "Aplicar em produto com so3d devolve true" ((InLab_Produto_Aplicar produtos3[1] #(mEst, mPorta, mPrato)) == true)
         checar "so3d: o material da parte-mãe ganha o nome dela" (mPorta.name == "ART_P_Porta" and mPrato.name == "ART_P_Prato")
