@@ -1,6 +1,6 @@
 {
   "versao_export": "nomenclatura-3D-v2",
-  "exportado_em": "2026-11-24T11:38:01.886Z",
+  "exportado_em": "2026-11-24T14:20:02.785Z",
   "produtos": [
     {
       "linha": "Artefacto & Beach",
@@ -6851,13 +6851,13 @@
           "subparte_de": "",
           "tipo": "E",
           "materia_prima": {
-            "familia": "Louise",
-            "materia": "Transparente"
+            "familia": "Vidro",
+            "materia": "Transparente Louise"
           },
           "materias_primas": [
             {
-              "familia": "Louise",
-              "materia": "Transparente"
+              "familia": "Vidro",
+              "materia": "Transparente Louise"
             }
           ],
           "materia_prima_herdada": false,
@@ -7018,13 +7018,13 @@
           "subparte_de": "",
           "tipo": "E",
           "materia_prima": {
-            "familia": "Louise",
-            "materia": "Transparente"
+            "familia": "Vidro",
+            "materia": "Transparente Louise"
           },
           "materias_primas": [
             {
-              "familia": "Louise",
-              "materia": "Transparente"
+              "familia": "Vidro",
+              "materia": "Transparente Louise"
             }
           ],
           "materia_prima_herdada": false,
@@ -7061,12 +7061,12 @@
           "subparte_de": "",
           "tipo": "E",
           "materia_prima": {
-            "familia": "Louise",
+            "familia": "Vidro",
             "materia": "Jateado"
           },
           "materias_primas": [
             {
-              "familia": "Louise",
+              "familia": "Vidro",
               "materia": "Jateado"
             }
           ],
@@ -7228,13 +7228,13 @@
           "subparte_de": "",
           "tipo": "E",
           "materia_prima": {
-            "familia": "Louise",
-            "materia": "Transparente"
+            "familia": "Vidro",
+            "materia": "Transparente Louise"
           },
           "materias_primas": [
             {
-              "familia": "Louise",
-              "materia": "Transparente"
+              "familia": "Vidro",
+              "materia": "Transparente Louise"
             }
           ],
           "materia_prima_herdada": false,
@@ -7271,13 +7271,13 @@
           "subparte_de": "",
           "tipo": "E",
           "materia_prima": {
-            "familia": "Louise",
-            "materia": "Preto"
+            "familia": "Vidro",
+            "materia": "Preto Louise"
           },
           "materias_primas": [
             {
-              "familia": "Louise",
-              "materia": "Preto"
+              "familia": "Vidro",
+              "materia": "Preto Louise"
             }
           ],
           "materia_prima_herdada": false,
@@ -7435,13 +7435,13 @@
           "subparte_de": "",
           "tipo": "E",
           "materia_prima": {
-            "familia": "Louise",
-            "materia": "Transparente"
+            "familia": "Vidro",
+            "materia": "Transparente Louise"
           },
           "materias_primas": [
             {
-              "familia": "Louise",
-              "materia": "Transparente"
+              "familia": "Vidro",
+              "materia": "Transparente Louise"
             }
           ],
           "materia_prima_herdada": false,
@@ -7602,13 +7602,13 @@
           "subparte_de": "",
           "tipo": "E",
           "materia_prima": {
-            "familia": "Louise",
-            "materia": "Transparente"
+            "familia": "Vidro",
+            "materia": "Transparente Louise"
           },
           "materias_primas": [
             {
-              "familia": "Louise",
-              "materia": "Transparente"
+              "familia": "Vidro",
+              "materia": "Transparente Louise"
             }
           ],
           "materia_prima_herdada": false,
@@ -7645,12 +7645,12 @@
           "subparte_de": "",
           "tipo": "E",
           "materia_prima": {
-            "familia": "Louise",
+            "familia": "Vidro",
             "materia": "Jateado"
           },
           "materias_primas": [
             {
-              "familia": "Louise",
+              "familia": "Vidro",
               "materia": "Jateado"
             }
           ],
@@ -7812,13 +7812,13 @@
           "subparte_de": "",
           "tipo": "E",
           "materia_prima": {
-            "familia": "Louise",
-            "materia": "Transparente"
+            "familia": "Vidro",
+            "materia": "Transparente Louise"
           },
           "materias_primas": [
             {
-              "familia": "Louise",
-              "materia": "Transparente"
+              "familia": "Vidro",
+              "materia": "Transparente Louise"
             }
           ],
           "materia_prima_herdada": false,
@@ -7855,13 +7855,13 @@
           "subparte_de": "",
           "tipo": "E",
           "materia_prima": {
-            "familia": "Louise",
-            "materia": "Preto"
+            "familia": "Vidro",
+            "materia": "Preto Louise"
           },
           "materias_primas": [
             {
-              "familia": "Louise",
-              "materia": "Preto"
+              "familia": "Vidro",
+              "materia": "Preto Louise"
             }
           ],
           "materia_prima_herdada": false,
@@ -15708,11 +15708,11 @@
       "ok_revisado": false,
       "animacao": false,
       "qt_meshes": 1,
-      "qt_materiais_art": 5,
-      "qt_botoes_sem": 3,
+      "qt_materiais_art": 6,
+      "qt_botoes_sem": 2,
       "qt_botoes_com": 5,
       "tecido_desmembravel": true,
-      "acabamento_resumo": "Complementar: Pé | Tecido: Assento, Encosto Almofada, Almofada Decorativa, Braço Almofada | Pré-definido: Deslizador",
+      "acabamento_resumo": "Complementar: Pé | Tecido: Assento, Encosto, Encosto Almofada, Almofada Decorativa, Braço Almofada | Pré-definido: Deslizador",
       "obs_cotas": "",
       "obs_restr_tecido": "",
       "obs_confeccao": "",
@@ -15726,6 +15726,7 @@
           "partes": [
             "Pé",
             "Assento",
+            "Encosto",
             "Encosto Almofada",
             "Almofada Decorativa",
             "Braço Almofada",
@@ -15741,16 +15742,12 @@
           ]
         },
         {
-          "apelido": "Almofada Decorativa",
-          "partes": [
-            "Almofada Decorativa"
-          ]
-        },
-        {
-          "apelido": "Assento e  Encosto",
+          "apelido": "Assento, Encosto e Almofadas",
           "partes": [
             "Assento",
+            "Encosto",
             "Encosto Almofada",
+            "Almofada Decorativa",
             "Braço Almofada"
           ]
         }
@@ -15785,10 +15782,11 @@
           ]
         },
         {
-          "apelido": "Assento",
-          "metragem": "",
+          "apelido": "Assento e Encosto",
+          "metragem": "8,80",
           "partes": [
-            "Assento"
+            "Assento",
+            "Encosto"
           ]
         }
       ],
@@ -15874,9 +15872,9 @@
           "entra_3d": true,
           "mesh_final": "07131A30",
           "tecido": true,
-          "botao_sem_desm": "Assento e  Encosto",
-          "botao_com_desm": "Assento",
-          "metragem_desm": "",
+          "botao_sem_desm": "Assento, Encosto e Almofadas",
+          "botao_com_desm": "Assento e Encosto",
+          "metragem_desm": "8,80",
           "acessorio": false,
           "acessorio_obrigatorio": null,
           "acessorio_acabamentos": [],
@@ -15887,6 +15885,47 @@
         },
         {
           "ordem": 3,
+          "nome_parte": "Encosto",
+          "termo": "Encosto",
+          "qualificador": "",
+          "qualificadores": [],
+          "numero": "sing",
+          "apelido_cliente": "Encosto",
+          "apelido_override": "",
+          "termo_novo": false,
+          "so3d": false,
+          "subparte_de": "",
+          "tipo": "T",
+          "materia_prima": {
+            "familia": "Tecido",
+            "materia": ""
+          },
+          "materias_primas": [
+            {
+              "familia": "Tecido",
+              "materia": ""
+            }
+          ],
+          "materia_prima_herdada": false,
+          "materia_prima_nao_aplica": false,
+          "material_id": "ART_T_Encosto",
+          "configuravel": true,
+          "entra_3d": true,
+          "mesh_final": "07131A30",
+          "tecido": true,
+          "botao_sem_desm": "Assento, Encosto e Almofadas",
+          "botao_com_desm": "Assento e Encosto",
+          "metragem_desm": "8,80",
+          "acessorio": false,
+          "acessorio_obrigatorio": null,
+          "acessorio_acabamentos": [],
+          "acessorio_fixo": false,
+          "acessorio_botao_pai": "",
+          "acessorio_opcoes": [],
+          "par_segue": null
+        },
+        {
+          "ordem": 4,
           "nome_parte": "Encosto",
           "termo": "Encosto",
           "qualificador": "Almofada",
@@ -15917,7 +15956,7 @@
           "entra_3d": true,
           "mesh_final": "07131A30",
           "tecido": true,
-          "botao_sem_desm": "Assento e  Encosto",
+          "botao_sem_desm": "Assento, Encosto e Almofadas",
           "botao_com_desm": "Almofada do Encosto",
           "metragem_desm": "1,05",
           "acessorio": false,
@@ -15929,7 +15968,7 @@
           "par_segue": null
         },
         {
-          "ordem": 4,
+          "ordem": 5,
           "nome_parte": "Almofada",
           "termo": "Almofada",
           "qualificador": "Decorativa",
@@ -15960,7 +15999,7 @@
           "entra_3d": true,
           "mesh_final": "07131A30",
           "tecido": true,
-          "botao_sem_desm": "Almofada Decorativa",
+          "botao_sem_desm": "Assento, Encosto e Almofadas",
           "botao_com_desm": "Almofada Decorativa",
           "metragem_desm": "1,05",
           "acessorio": false,
@@ -15972,7 +16011,7 @@
           "par_segue": null
         },
         {
-          "ordem": 5,
+          "ordem": 6,
           "nome_parte": "Braço",
           "termo": "Braço",
           "qualificador": "Almofada",
@@ -16003,7 +16042,7 @@
           "entra_3d": true,
           "mesh_final": "07131A30",
           "tecido": true,
-          "botao_sem_desm": "Assento e  Encosto",
+          "botao_sem_desm": "Assento, Encosto e Almofadas",
           "botao_com_desm": "Almofada do Braço",
           "metragem_desm": "1,05",
           "acessorio": false,
@@ -16015,7 +16054,7 @@
           "par_segue": null
         },
         {
-          "ordem": 6,
+          "ordem": 7,
           "nome_parte": "Deslizador",
           "termo": "Deslizador",
           "qualificador": "",
@@ -16073,11 +16112,11 @@
       "ok_revisado": false,
       "animacao": false,
       "qt_meshes": 1,
-      "qt_materiais_art": 5,
-      "qt_botoes_sem": 3,
+      "qt_materiais_art": 6,
+      "qt_botoes_sem": 2,
       "qt_botoes_com": 5,
       "tecido_desmembravel": true,
-      "acabamento_resumo": "Complementar: Pé | Tecido: Assento, Encosto Almofada, Almofada Decorativa, Braço Almofada | Pré-definido: Deslizador",
+      "acabamento_resumo": "Complementar: Pé | Tecido: Assento, Encosto, Encosto Almofada, Almofada Decorativa, Braço Almofada | Pré-definido: Deslizador",
       "obs_cotas": "",
       "obs_restr_tecido": "",
       "obs_confeccao": "",
@@ -16091,6 +16130,7 @@
           "partes": [
             "Pé",
             "Assento",
+            "Encosto",
             "Encosto Almofada",
             "Almofada Decorativa",
             "Braço Almofada",
@@ -16106,16 +16146,12 @@
           ]
         },
         {
-          "apelido": "Almofada Decorativa",
-          "partes": [
-            "Almofada Decorativa"
-          ]
-        },
-        {
-          "apelido": "Assento e  Encosto",
+          "apelido": "Assento, Encosto e Almofadas",
           "partes": [
             "Assento",
+            "Encosto",
             "Encosto Almofada",
+            "Almofada Decorativa",
             "Braço Almofada"
           ]
         }
@@ -16150,10 +16186,11 @@
           ]
         },
         {
-          "apelido": "Assento",
-          "metragem": "",
+          "apelido": "Assento e Encosto",
+          "metragem": "8,80",
           "partes": [
-            "Assento"
+            "Assento",
+            "Encosto"
           ]
         }
       ],
@@ -16239,9 +16276,9 @@
           "entra_3d": true,
           "mesh_final": "07131A31",
           "tecido": true,
-          "botao_sem_desm": "Assento e  Encosto",
-          "botao_com_desm": "Assento",
-          "metragem_desm": "",
+          "botao_sem_desm": "Assento, Encosto e Almofadas",
+          "botao_com_desm": "Assento e Encosto",
+          "metragem_desm": "8,80",
           "acessorio": false,
           "acessorio_obrigatorio": null,
           "acessorio_acabamentos": [],
@@ -16252,6 +16289,47 @@
         },
         {
           "ordem": 3,
+          "nome_parte": "Encosto",
+          "termo": "Encosto",
+          "qualificador": "",
+          "qualificadores": [],
+          "numero": "sing",
+          "apelido_cliente": "Encosto",
+          "apelido_override": "",
+          "termo_novo": false,
+          "so3d": false,
+          "subparte_de": "",
+          "tipo": "T",
+          "materia_prima": {
+            "familia": "Tecido",
+            "materia": ""
+          },
+          "materias_primas": [
+            {
+              "familia": "Tecido",
+              "materia": ""
+            }
+          ],
+          "materia_prima_herdada": false,
+          "materia_prima_nao_aplica": false,
+          "material_id": "ART_T_Encosto",
+          "configuravel": true,
+          "entra_3d": true,
+          "mesh_final": "07131A31",
+          "tecido": true,
+          "botao_sem_desm": "Assento, Encosto e Almofadas",
+          "botao_com_desm": "Assento e Encosto",
+          "metragem_desm": "8,80",
+          "acessorio": false,
+          "acessorio_obrigatorio": null,
+          "acessorio_acabamentos": [],
+          "acessorio_fixo": false,
+          "acessorio_botao_pai": "",
+          "acessorio_opcoes": [],
+          "par_segue": null
+        },
+        {
+          "ordem": 4,
           "nome_parte": "Encosto",
           "termo": "Encosto",
           "qualificador": "Almofada",
@@ -16282,7 +16360,7 @@
           "entra_3d": true,
           "mesh_final": "07131A31",
           "tecido": true,
-          "botao_sem_desm": "Assento e  Encosto",
+          "botao_sem_desm": "Assento, Encosto e Almofadas",
           "botao_com_desm": "Almofada do Encosto",
           "metragem_desm": "1,05",
           "acessorio": false,
@@ -16294,7 +16372,7 @@
           "par_segue": null
         },
         {
-          "ordem": 4,
+          "ordem": 5,
           "nome_parte": "Almofada",
           "termo": "Almofada",
           "qualificador": "Decorativa",
@@ -16325,7 +16403,7 @@
           "entra_3d": true,
           "mesh_final": "07131A31",
           "tecido": true,
-          "botao_sem_desm": "Almofada Decorativa",
+          "botao_sem_desm": "Assento, Encosto e Almofadas",
           "botao_com_desm": "Almofada Decorativa",
           "metragem_desm": "1,05",
           "acessorio": false,
@@ -16337,7 +16415,7 @@
           "par_segue": null
         },
         {
-          "ordem": 5,
+          "ordem": 6,
           "nome_parte": "Braço",
           "termo": "Braço",
           "qualificador": "Almofada",
@@ -16368,7 +16446,7 @@
           "entra_3d": true,
           "mesh_final": "07131A31",
           "tecido": true,
-          "botao_sem_desm": "Assento e  Encosto",
+          "botao_sem_desm": "Assento, Encosto e Almofadas",
           "botao_com_desm": "Almofada do Braço",
           "metragem_desm": "1,05",
           "acessorio": false,
@@ -16380,7 +16458,7 @@
           "par_segue": null
         },
         {
-          "ordem": 6,
+          "ordem": 7,
           "nome_parte": "Deslizador",
           "termo": "Deslizador",
           "qualificador": "",
@@ -16438,11 +16516,11 @@
       "ok_revisado": false,
       "animacao": false,
       "qt_meshes": 1,
-      "qt_materiais_art": 4,
-      "qt_botoes_sem": 3,
+      "qt_materiais_art": 5,
+      "qt_botoes_sem": 2,
       "qt_botoes_com": 4,
       "tecido_desmembravel": true,
-      "acabamento_resumo": "Complementar: Pé | Tecido: Assento, Encosto Almofada, Almofada Decorativa | Pré-definido: Deslizador",
+      "acabamento_resumo": "Complementar: Pé | Tecido: Assento, Encosto, Encosto Almofada, Almofada Decorativa | Pré-definido: Deslizador",
       "obs_cotas": "",
       "obs_restr_tecido": "",
       "obs_confeccao": "",
@@ -16456,6 +16534,7 @@
           "partes": [
             "Pé",
             "Assento",
+            "Encosto",
             "Encosto Almofada",
             "Almofada Decorativa",
             "Deslizador"
@@ -16470,16 +16549,12 @@
           ]
         },
         {
-          "apelido": "Almofada Decorativa",
-          "partes": [
-            "Almofada Decorativa"
-          ]
-        },
-        {
-          "apelido": "Assento e Almofada do Encosto",
+          "apelido": "Assento e Encosto e Almofada do Encosto e Almofada Decorativa",
           "partes": [
             "Assento",
-            "Encosto Almofada"
+            "Encosto",
+            "Encosto Almofada",
+            "Almofada Decorativa"
           ]
         }
       ],
@@ -16493,23 +16568,24 @@
         },
         {
           "apelido": "Almofada do Encosto",
-          "metragem": "",
+          "metragem": "1,05",
           "partes": [
             "Encosto Almofada"
           ]
         },
         {
           "apelido": "Almofada Decorativa",
-          "metragem": "",
+          "metragem": "1,05",
           "partes": [
             "Almofada Decorativa"
           ]
         },
         {
-          "apelido": "Assento",
-          "metragem": "",
+          "apelido": "Assento e Encosto",
+          "metragem": "7,20",
           "partes": [
-            "Assento"
+            "Assento",
+            "Encosto"
           ]
         }
       ],
@@ -16595,9 +16671,9 @@
           "entra_3d": true,
           "mesh_final": "07131A32",
           "tecido": true,
-          "botao_sem_desm": "Assento e Almofada do Encosto",
-          "botao_com_desm": "Assento",
-          "metragem_desm": "",
+          "botao_sem_desm": "Assento e Encosto e Almofada do Encosto e Almofada Decorativa",
+          "botao_com_desm": "Assento e Encosto",
+          "metragem_desm": "7,20",
           "acessorio": false,
           "acessorio_obrigatorio": null,
           "acessorio_acabamentos": [],
@@ -16608,6 +16684,47 @@
         },
         {
           "ordem": 3,
+          "nome_parte": "Encosto",
+          "termo": "Encosto",
+          "qualificador": "",
+          "qualificadores": [],
+          "numero": "sing",
+          "apelido_cliente": "Encosto",
+          "apelido_override": "",
+          "termo_novo": false,
+          "so3d": false,
+          "subparte_de": "",
+          "tipo": "T",
+          "materia_prima": {
+            "familia": "Tecido",
+            "materia": ""
+          },
+          "materias_primas": [
+            {
+              "familia": "Tecido",
+              "materia": ""
+            }
+          ],
+          "materia_prima_herdada": false,
+          "materia_prima_nao_aplica": false,
+          "material_id": "ART_T_Encosto",
+          "configuravel": true,
+          "entra_3d": true,
+          "mesh_final": "07131A32",
+          "tecido": true,
+          "botao_sem_desm": "Assento e Encosto e Almofada do Encosto e Almofada Decorativa",
+          "botao_com_desm": "Assento e Encosto",
+          "metragem_desm": "7,20",
+          "acessorio": false,
+          "acessorio_obrigatorio": null,
+          "acessorio_acabamentos": [],
+          "acessorio_fixo": false,
+          "acessorio_botao_pai": "",
+          "acessorio_opcoes": [],
+          "par_segue": null
+        },
+        {
+          "ordem": 4,
           "nome_parte": "Encosto",
           "termo": "Encosto",
           "qualificador": "Almofada",
@@ -16638,9 +16755,9 @@
           "entra_3d": true,
           "mesh_final": "07131A32",
           "tecido": true,
-          "botao_sem_desm": "Assento e Almofada do Encosto",
+          "botao_sem_desm": "Assento e Encosto e Almofada do Encosto e Almofada Decorativa",
           "botao_com_desm": "Almofada do Encosto",
-          "metragem_desm": "",
+          "metragem_desm": "1,05",
           "acessorio": false,
           "acessorio_obrigatorio": null,
           "acessorio_acabamentos": [],
@@ -16650,7 +16767,7 @@
           "par_segue": null
         },
         {
-          "ordem": 4,
+          "ordem": 5,
           "nome_parte": "Almofada",
           "termo": "Almofada",
           "qualificador": "Decorativa",
@@ -16681,9 +16798,9 @@
           "entra_3d": true,
           "mesh_final": "07131A32",
           "tecido": true,
-          "botao_sem_desm": "Almofada Decorativa",
+          "botao_sem_desm": "Assento e Encosto e Almofada do Encosto e Almofada Decorativa",
           "botao_com_desm": "Almofada Decorativa",
-          "metragem_desm": "",
+          "metragem_desm": "1,05",
           "acessorio": false,
           "acessorio_obrigatorio": null,
           "acessorio_acabamentos": [],
@@ -16693,7 +16810,7 @@
           "par_segue": null
         },
         {
-          "ordem": 5,
+          "ordem": 6,
           "nome_parte": "Deslizador",
           "termo": "Deslizador",
           "qualificador": "",
