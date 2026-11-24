@@ -1,6 +1,6 @@
 {
   "versao_export": "nomenclatura-3D-v2",
-  "exportado_em": "2026-11-04T13:13:02.174Z",
+  "exportado_em": "2026-11-24T11:38:01.886Z",
   "produtos": [
     {
       "linha": "Artefacto & Beach",
@@ -10,6 +10,7 @@
       "familia": "ZUCCHI",
       "classe": "APARADOR",
       "marca": "ARTEFACTO",
+      "designer": "",
       "natureza": "corpo_unico",
       "ref": true,
       "ok_fd": true,
@@ -158,6 +159,7 @@
       "familia": "KALAO",
       "classe": "BANCO",
       "marca": "BEACH",
+      "designer": "",
       "natureza": "corpo_unico",
       "ref": true,
       "ok_fd": true,
@@ -264,6 +266,7 @@
       "familia": "KALAO",
       "classe": "BANCO",
       "marca": "BEACH",
+      "designer": "",
       "natureza": "corpo_unico",
       "ref": false,
       "ok_fd": true,
@@ -371,6 +374,7 @@
       "familia": "KAWE",
       "classe": "BANCO",
       "marca": "BEACH",
+      "designer": "",
       "natureza": "corpo_unico",
       "ref": true,
       "ok_fd": true,
@@ -477,6 +481,7 @@
       "familia": "KAWE",
       "classe": "BANCO",
       "marca": "BEACH",
+      "designer": "",
       "natureza": "corpo_unico",
       "ref": false,
       "ok_fd": true,
@@ -583,6 +588,7 @@
       "familia": "MONZON",
       "classe": "BANCO",
       "marca": "BEACH",
+      "designer": "",
       "natureza": "estrutura_estofado",
       "ref": true,
       "ok_fd": true,
@@ -786,6 +792,7 @@
       "familia": "PORTER",
       "classe": "BANCO",
       "marca": "BEACH",
+      "designer": "",
       "natureza": "corpo_unico",
       "ref": true,
       "ok_fd": true,
@@ -934,6 +941,7 @@
       "familia": "PORTER",
       "classe": "BANCO",
       "marca": "BEACH",
+      "designer": "",
       "natureza": "corpo_unico",
       "ref": false,
       "ok_fd": true,
@@ -1082,6 +1090,7 @@
       "familia": "KAMI II",
       "classe": "BANQUETA",
       "marca": "BEACH",
+      "designer": "",
       "natureza": "corpo_unico",
       "ref": true,
       "ok_fd": true,
@@ -1272,6 +1281,7 @@
       "familia": "KAMI II",
       "classe": "BANQUETA",
       "marca": "BEACH",
+      "designer": "",
       "natureza": "corpo_unico",
       "ref": false,
       "ok_fd": true,
@@ -1462,6 +1472,7 @@
       "familia": "LUANG",
       "classe": "BANQUETA",
       "marca": "BEACH",
+      "designer": "",
       "natureza": "estrutura_estofado",
       "ref": true,
       "ok_fd": true,
@@ -1853,6 +1864,7 @@
       "familia": "LUANG",
       "classe": "BANQUETA",
       "marca": "BEACH",
+      "designer": "",
       "natureza": "estrutura_estofado",
       "ref": false,
       "ok_fd": true,
@@ -2244,6 +2256,7 @@
       "familia": "SUMBA",
       "classe": "BANQUETA",
       "marca": "BEACH",
+      "designer": "",
       "natureza": "estrutura_estofado",
       "ref": true,
       "ok_fd": true,
@@ -2255,7 +2268,7 @@
       "qt_botoes_sem": 3,
       "qt_botoes_com": 6,
       "tecido_desmembravel": true,
-      "acabamento_resumo": "Principal: Base | Complementar: Encosto Cinto | Tecido: Assento, Encosto Interno, Encosto Externo Superior, Encosto Externo Inferior | Pré-definido: Deslizador",
+      "acabamento_resumo": "Principal: Base | Complementar: Encosto Cinto | Tecido: Assento, Encosto Interno, Encosto Externo Superior, Encosto Externo Inferior | Pré-definido: Deslizador, Apoio de Pés",
       "obs_cotas": "",
       "obs_restr_tecido": "",
       "obs_confeccao": "",
@@ -2273,7 +2286,8 @@
             "Encosto Interno",
             "Encosto Externo Superior",
             "Encosto Externo Inferior",
-            "Deslizador"
+            "Deslizador",
+            "Apoio de Pés"
           ]
         }
       ],
@@ -2651,6 +2665,47 @@
           "acessorio_botao_pai": "",
           "acessorio_opcoes": [],
           "par_segue": null
+        },
+        {
+          "ordem": 8,
+          "nome_parte": "Apoio de Pés",
+          "termo": "Apoio de Pés",
+          "qualificador": "",
+          "qualificadores": [],
+          "numero": "sing",
+          "apelido_cliente": "Apoio de Pés",
+          "apelido_override": "",
+          "termo_novo": false,
+          "so3d": false,
+          "subparte_de": "",
+          "tipo": "PD",
+          "materia_prima": {
+            "familia": "Metal",
+            "materia": "Aço Inox"
+          },
+          "materias_primas": [
+            {
+              "familia": "Metal",
+              "materia": "Aço Inox"
+            }
+          ],
+          "materia_prima_herdada": false,
+          "materia_prima_nao_aplica": false,
+          "material_id": "PD_Apoio_de_Pes",
+          "configuravel": false,
+          "entra_3d": true,
+          "mesh_final": "05112025",
+          "tecido": false,
+          "botao_sem_desm": "",
+          "botao_com_desm": "",
+          "metragem_desm": "",
+          "acessorio": false,
+          "acessorio_obrigatorio": null,
+          "acessorio_acabamentos": [],
+          "acessorio_fixo": false,
+          "acessorio_botao_pai": "",
+          "acessorio_opcoes": [],
+          "par_segue": null
         }
       ]
     },
@@ -2662,6 +2717,7 @@
       "familia": "SUMBA",
       "classe": "BANQUETA",
       "marca": "BEACH",
+      "designer": "",
       "natureza": "corpo_unico",
       "ref": false,
       "ok_fd": true,
@@ -2673,7 +2729,7 @@
       "qt_botoes_sem": 3,
       "qt_botoes_com": 6,
       "tecido_desmembravel": true,
-      "acabamento_resumo": "Principal: Base | Complementar: Encosto Cinto | Tecido: Assento, Encosto Interno, Encosto Externo Superior, Encosto Externo Inferior | Pré-definido: Deslizador",
+      "acabamento_resumo": "Principal: Base | Complementar: Encosto Cinto | Tecido: Assento, Encosto Interno, Encosto Externo Superior, Encosto Externo Inferior | Pré-definido: Deslizador, Apoio de Pés",
       "obs_cotas": "",
       "obs_restr_tecido": "",
       "obs_confeccao": "",
@@ -2691,7 +2747,8 @@
             "Encosto Interno",
             "Encosto Externo Superior",
             "Encosto Externo Inferior",
-            "Deslizador"
+            "Deslizador",
+            "Apoio de Pés"
           ]
         }
       ],
@@ -3069,6 +3126,47 @@
           "acessorio_botao_pai": "",
           "acessorio_opcoes": [],
           "par_segue": null
+        },
+        {
+          "ordem": 8,
+          "nome_parte": "Apoio de Pés",
+          "termo": "Apoio de Pés",
+          "qualificador": "",
+          "qualificadores": [],
+          "numero": "sing",
+          "apelido_cliente": "Apoio de Pés",
+          "apelido_override": "",
+          "termo_novo": false,
+          "so3d": false,
+          "subparte_de": "",
+          "tipo": "PD",
+          "materia_prima": {
+            "familia": "Metal",
+            "materia": "Aço Inox"
+          },
+          "materias_primas": [
+            {
+              "familia": "Metal",
+              "materia": "Aço Inox"
+            }
+          ],
+          "materia_prima_herdada": false,
+          "materia_prima_nao_aplica": false,
+          "material_id": "PD_Apoio_de_Pes",
+          "configuravel": false,
+          "entra_3d": true,
+          "mesh_final": "05112030",
+          "tecido": false,
+          "botao_sem_desm": "",
+          "botao_com_desm": "",
+          "metragem_desm": "",
+          "acessorio": false,
+          "acessorio_obrigatorio": null,
+          "acessorio_acabamentos": [],
+          "acessorio_fixo": false,
+          "acessorio_botao_pai": "",
+          "acessorio_opcoes": [],
+          "par_segue": null
         }
       ]
     },
@@ -3080,6 +3178,7 @@
       "familia": "LUANG",
       "classe": "CADEIRA",
       "marca": "BEACH",
+      "designer": "",
       "natureza": "estrutura_estofado",
       "ref": true,
       "ok_fd": false,
@@ -3444,6 +3543,7 @@
       "familia": "LUANG",
       "classe": "CADEIRA",
       "marca": "BEACH",
+      "designer": "",
       "natureza": "estrutura_estofado",
       "ref": false,
       "ok_fd": false,
@@ -3802,6 +3902,7 @@
       "familia": "LUANG LIVING",
       "classe": "CADEIRA",
       "marca": "BEACH",
+      "designer": "",
       "natureza": "estrutura_estofado",
       "ref": true,
       "ok_fd": false,
@@ -4166,6 +4267,7 @@
       "familia": "LUANG LIVING",
       "classe": "CADEIRA",
       "marca": "BEACH",
+      "designer": "",
       "natureza": "estrutura_estofado",
       "ref": false,
       "ok_fd": false,
@@ -4524,6 +4626,7 @@
       "familia": "SOLIS",
       "classe": "CADEIRA",
       "marca": "ARTEFACTO",
+      "designer": "",
       "natureza": "estrutura_estofado",
       "ref": true,
       "ok_fd": true,
@@ -4936,6 +5039,7 @@
       "familia": "ARUGAM",
       "classe": "CARRO CHA",
       "marca": "BEACH",
+      "designer": "",
       "natureza": "estrutura_modular",
       "ref": true,
       "ok_fd": false,
@@ -5233,6 +5337,7 @@
       "familia": "MARU",
       "classe": "MESA DE CHA",
       "marca": "BEACH",
+      "designer": "",
       "natureza": "pernas_tampo",
       "ref": true,
       "ok_fd": false,
@@ -5438,6 +5543,7 @@
       "familia": "MARU LOUNGE",
       "classe": "MESA DE CHA",
       "marca": "BEACH",
+      "designer": "",
       "natureza": "pernas_tampo",
       "ref": true,
       "ok_fd": false,
@@ -5643,6 +5749,7 @@
       "familia": "BERRIZ",
       "classe": "MESA DE JANTAR",
       "marca": "BEACH",
+      "designer": "",
       "natureza": "corpo_unico",
       "ref": true,
       "ok_fd": true,
@@ -5846,6 +5953,7 @@
       "familia": "BERRIZ",
       "classe": "MESA DE JANTAR",
       "marca": "BEACH",
+      "designer": "",
       "natureza": "corpo_unico",
       "ref": false,
       "ok_fd": true,
@@ -6100,6 +6208,7 @@
       "familia": "BERRIZ",
       "classe": "MESA DE JANTAR",
       "marca": "BEACH",
+      "designer": "",
       "natureza": "corpo_unico",
       "ref": false,
       "ok_fd": true,
@@ -6303,6 +6412,7 @@
       "familia": "MARU",
       "classe": "MESA DE JOGO",
       "marca": "BEACH",
+      "designer": "",
       "natureza": "corpo_unico",
       "ref": true,
       "ok_fd": false,
@@ -6508,6 +6618,7 @@
       "familia": "CROMA",
       "classe": "MESA LATERAL",
       "marca": "ARTEFACTO",
+      "designer": "",
       "natureza": "corpo_unico",
       "ref": true,
       "ok_fd": true,
@@ -6656,6 +6767,7 @@
       "familia": "LOUISE",
       "classe": "MESA LATERAL",
       "marca": "ARTEFACTO",
+      "designer": "",
       "natureza": "corpo_unico",
       "ref": true,
       "ok_fd": true,
@@ -6819,6 +6931,7 @@
       "familia": "LOUISE",
       "classe": "MESA LATERAL",
       "marca": "ARTEFACTO",
+      "designer": "",
       "natureza": "corpo_unico",
       "ref": false,
       "ok_fd": true,
@@ -7028,6 +7141,7 @@
       "familia": "LOUISE",
       "classe": "MESA LATERAL",
       "marca": "ARTEFACTO",
+      "designer": "",
       "natureza": "corpo_unico",
       "ref": false,
       "ok_fd": true,
@@ -7237,6 +7351,7 @@
       "familia": "LOUISE",
       "classe": "MESA LATERAL",
       "marca": "ARTEFACTO",
+      "designer": "",
       "natureza": "corpo_unico",
       "ref": false,
       "ok_fd": true,
@@ -7400,6 +7515,7 @@
       "familia": "LOUISE",
       "classe": "MESA LATERAL",
       "marca": "ARTEFACTO",
+      "designer": "",
       "natureza": "corpo_unico",
       "ref": false,
       "ok_fd": true,
@@ -7609,6 +7725,7 @@
       "familia": "LOUISE",
       "classe": "MESA LATERAL",
       "marca": "ARTEFACTO",
+      "designer": "",
       "natureza": "corpo_unico",
       "ref": false,
       "ok_fd": true,
@@ -7818,6 +7935,7 @@
       "familia": "LOUISE PLISSE",
       "classe": "MESA LATERAL",
       "marca": "ARTEFACTO",
+      "designer": "",
       "natureza": "corpo_unico",
       "ref": true,
       "ok_fd": true,
@@ -7901,13 +8019,13 @@
           "subparte_de": "",
           "tipo": "E",
           "materia_prima": {
-            "familia": "Louise",
-            "materia": "Transparente"
+            "familia": "Vidro",
+            "materia": "Transparente Louise"
           },
           "materias_primas": [
             {
-              "familia": "Louise",
-              "materia": "Transparente"
+              "familia": "Vidro",
+              "materia": "Transparente Louise"
             }
           ],
           "materia_prima_herdada": false,
@@ -7981,6 +8099,7 @@
       "familia": "LOUISE PLISSE",
       "classe": "MESA LATERAL",
       "marca": "ARTEFACTO",
+      "designer": "",
       "natureza": "corpo_unico",
       "ref": false,
       "ok_fd": true,
@@ -8064,13 +8183,13 @@
           "subparte_de": "",
           "tipo": "E",
           "materia_prima": {
-            "familia": "Louise",
-            "materia": "Transparente"
+            "familia": "Vidro",
+            "materia": "Transparente Louise"
           },
           "materias_primas": [
             {
-              "familia": "Louise",
-              "materia": "Transparente"
+              "familia": "Vidro",
+              "materia": "Transparente Louise"
             }
           ],
           "materia_prima_herdada": false,
@@ -8144,6 +8263,7 @@
       "familia": "LOUISE PLISSE",
       "classe": "MESA LATERAL",
       "marca": "ARTEFACTO",
+      "designer": "",
       "natureza": "corpo_unico",
       "ref": false,
       "ok_fd": true,
@@ -8227,13 +8347,13 @@
           "subparte_de": "",
           "tipo": "E",
           "materia_prima": {
-            "familia": "Louise",
-            "materia": "Transparente"
+            "familia": "Vidro",
+            "materia": "Transparente Louise"
           },
           "materias_primas": [
             {
-              "familia": "Louise",
-              "materia": "Transparente"
+              "familia": "Vidro",
+              "materia": "Transparente Louise"
             }
           ],
           "materia_prima_herdada": false,
@@ -8307,6 +8427,7 @@
       "familia": "NAMBU",
       "classe": "MESA LATERAL",
       "marca": "ARTEFACTO",
+      "designer": "",
       "natureza": "corpo_unico",
       "ref": true,
       "ok_fd": true,
@@ -8660,6 +8781,7 @@
       "familia": "SCHAF",
       "classe": "MESA LATERAL",
       "marca": "BEACH",
+      "designer": "",
       "natureza": "corpo_unico",
       "ref": true,
       "ok_fd": true,
@@ -8851,6 +8973,7 @@
       "familia": "EMILIANO",
       "classe": "MOLDURA",
       "marca": "BEACH",
+      "designer": "",
       "natureza": "corpo_unico",
       "ref": false,
       "ok_fd": false,
@@ -9012,6 +9135,7 @@
       "familia": "EMILIANO",
       "classe": "MOLDURA",
       "marca": "BEACH",
+      "designer": "",
       "natureza": "corpo_unico",
       "ref": false,
       "ok_fd": false,
@@ -9173,6 +9297,7 @@
       "familia": "EMILIANO",
       "classe": "MOLDURA",
       "marca": "BEACH",
+      "designer": "",
       "natureza": "corpo_unico",
       "ref": false,
       "ok_fd": false,
@@ -9334,6 +9459,7 @@
       "familia": "EMILIANO",
       "classe": "MOLDURA",
       "marca": "BEACH",
+      "designer": "",
       "natureza": "corpo_unico",
       "ref": false,
       "ok_fd": false,
@@ -9495,6 +9621,7 @@
       "familia": "EMILIANO",
       "classe": "MOLDURA",
       "marca": "BEACH",
+      "designer": "",
       "natureza": "corpo_unico",
       "ref": false,
       "ok_fd": false,
@@ -9656,6 +9783,7 @@
       "familia": "EMILIANO",
       "classe": "MOLDURA",
       "marca": "BEACH",
+      "designer": "",
       "natureza": "corpo_unico",
       "ref": false,
       "ok_fd": false,
@@ -9817,6 +9945,7 @@
       "familia": "EMILIANO",
       "classe": "MOLDURA",
       "marca": "BEACH",
+      "designer": "",
       "natureza": "corpo_unico",
       "ref": false,
       "ok_fd": false,
@@ -9978,6 +10107,7 @@
       "familia": "EMILIANO",
       "classe": "MOLDURA",
       "marca": "BEACH",
+      "designer": "",
       "natureza": "corpo_unico",
       "ref": false,
       "ok_fd": false,
@@ -10139,6 +10269,7 @@
       "familia": "EMILIANO",
       "classe": "MOLDURA",
       "marca": "BEACH",
+      "designer": "",
       "natureza": "corpo_unico",
       "ref": false,
       "ok_fd": false,
@@ -10300,6 +10431,7 @@
       "familia": "GAP",
       "classe": "POLTRONA",
       "marca": "BEACH",
+      "designer": "",
       "natureza": "estrutura_estofado",
       "ref": true,
       "ok_fd": true,
@@ -10654,6 +10786,7 @@
       "familia": "MENTHA",
       "classe": "POLTRONA",
       "marca": "ARTEFACTO",
+      "designer": "",
       "natureza": "estrutura_estofado",
       "ref": true,
       "ok_fd": true,
@@ -10907,6 +11040,7 @@
       "familia": "ZAC",
       "classe": "POLTRONA",
       "marca": "BEACH",
+      "designer": "",
       "natureza": "estrutura_estofado",
       "ref": true,
       "ok_fd": true,
@@ -11217,6 +11351,7 @@
       "familia": "ANNECY",
       "classe": "PUFF",
       "marca": "BEACH",
+      "designer": "",
       "natureza": "corpo_unico",
       "ref": true,
       "ok_fd": true,
@@ -11420,6 +11555,7 @@
       "familia": "DORSET",
       "classe": "PUFF",
       "marca": "ARTEFACTO",
+      "designer": "",
       "natureza": "estrutura_estofado",
       "ref": true,
       "ok_fd": true,
@@ -11667,6 +11803,7 @@
       "familia": "DORSET",
       "classe": "PUFF",
       "marca": "ARTEFACTO",
+      "designer": "",
       "natureza": "estrutura_estofado",
       "ref": false,
       "ok_fd": true,
@@ -11914,6 +12051,7 @@
       "familia": "MENTHA",
       "classe": "PUFF",
       "marca": "ARTEFACTO",
+      "designer": "",
       "natureza": "estrutura_estofado",
       "ref": true,
       "ok_fd": true,
@@ -12117,6 +12255,7 @@
       "familia": "MIOS",
       "classe": "PUFF",
       "marca": "BEACH",
+      "designer": "",
       "natureza": "estrutura_estofado",
       "ref": true,
       "ok_fd": false,
@@ -12309,6 +12448,7 @@
       "familia": "PHANTE",
       "classe": "PUFF",
       "marca": "BEACH",
+      "designer": "",
       "natureza": "estrutura_estofado",
       "ref": true,
       "ok_fd": false,
@@ -12462,7 +12602,7 @@
           "acessorio_fixo": false,
           "acessorio_botao_pai": "",
           "acessorio_opcoes": [],
-          "par_segue": "Estrutura"
+          "par_segue": "Pé"
         },
         {
           "ordem": 3,
@@ -12556,6 +12696,7 @@
       "familia": "PHANTE",
       "classe": "PUFF",
       "marca": "BEACH",
+      "designer": "",
       "natureza": "estrutura_estofado",
       "ref": false,
       "ok_fd": false,
@@ -12704,6 +12845,7 @@
       "familia": "PHANTE",
       "classe": "PUFF",
       "marca": "BEACH",
+      "designer": "",
       "natureza": "estrutura_estofado",
       "ref": false,
       "ok_fd": false,
@@ -12907,6 +13049,7 @@
       "familia": "POL",
       "classe": "PUFF",
       "marca": "ARTEFACTO",
+      "designer": "",
       "natureza": "corpo_unico",
       "ref": true,
       "ok_fd": true,
@@ -13154,6 +13297,7 @@
       "familia": "ZAZAH 06",
       "classe": "PUFF",
       "marca": "BEACH",
+      "designer": "",
       "natureza": "estrutura_estofado",
       "ref": true,
       "ok_fd": false,
@@ -13415,6 +13559,7 @@
       "familia": "ZAZAH 06",
       "classe": "PUFF",
       "marca": "BEACH",
+      "designer": "",
       "natureza": "estrutura_estofado",
       "ref": false,
       "ok_fd": false,
@@ -13676,6 +13821,7 @@
       "familia": "ZAZAH 06",
       "classe": "PUFF",
       "marca": "BEACH",
+      "designer": "",
       "natureza": "estrutura_estofado",
       "ref": false,
       "ok_fd": false,
@@ -14039,6 +14185,7 @@
       "familia": "ZAZAH 07",
       "classe": "PUFF",
       "marca": "BEACH",
+      "designer": "",
       "natureza": "estrutura_estofado",
       "ref": true,
       "ok_fd": false,
@@ -14300,6 +14447,7 @@
       "familia": "ZAZAH 07",
       "classe": "PUFF",
       "marca": "BEACH",
+      "designer": "",
       "natureza": "estrutura_estofado",
       "ref": false,
       "ok_fd": false,
@@ -14561,6 +14709,7 @@
       "familia": "ZAZAH 07",
       "classe": "PUFF",
       "marca": "BEACH",
+      "designer": "",
       "natureza": "estrutura_estofado",
       "ref": false,
       "ok_fd": false,
@@ -14764,6 +14913,7 @@
       "familia": "ZAZAH 08",
       "classe": "PUFF",
       "marca": "BEACH",
+      "designer": "",
       "natureza": "estrutura_estofado",
       "ref": true,
       "ok_fd": false,
@@ -14967,6 +15117,7 @@
       "familia": "ZAZAH 08",
       "classe": "PUFF",
       "marca": "BEACH",
+      "designer": "",
       "natureza": "estrutura_estofado",
       "ref": false,
       "ok_fd": false,
@@ -15170,6 +15321,7 @@
       "familia": "ZAZAH 08",
       "classe": "PUFF",
       "marca": "BEACH",
+      "designer": "",
       "natureza": "estrutura_estofado",
       "ref": false,
       "ok_fd": false,
@@ -15548,6 +15700,7 @@
       "familia": "PATONG",
       "classe": "SOFA",
       "marca": "BEACH",
+      "designer": "",
       "natureza": "estrutura_estofado",
       "ref": true,
       "ok_fd": false,
@@ -15559,7 +15712,7 @@
       "qt_botoes_sem": 3,
       "qt_botoes_com": 5,
       "tecido_desmembravel": true,
-      "acabamento_resumo": "Complementar: Pé | Tecido: Estrutura, Encosto Almofada, Almofada Decorativa, Braço Almofada | Pré-definido: Deslizador",
+      "acabamento_resumo": "Complementar: Pé | Tecido: Assento, Encosto Almofada, Almofada Decorativa, Braço Almofada | Pré-definido: Deslizador",
       "obs_cotas": "",
       "obs_restr_tecido": "",
       "obs_confeccao": "",
@@ -15572,7 +15725,7 @@
           "nome": "07131A30",
           "partes": [
             "Pé",
-            "Estrutura",
+            "Assento",
             "Encosto Almofada",
             "Almofada Decorativa",
             "Braço Almofada",
@@ -15588,17 +15741,17 @@
           ]
         },
         {
-          "apelido": "Assento e Encosto",
-          "partes": [
-            "Estrutura",
-            "Encosto Almofada",
-            "Braço Almofada"
-          ]
-        },
-        {
           "apelido": "Almofada Decorativa",
           "partes": [
             "Almofada Decorativa"
+          ]
+        },
+        {
+          "apelido": "Assento e  Encosto",
+          "partes": [
+            "Assento",
+            "Encosto Almofada",
+            "Braço Almofada"
           ]
         }
       ],
@@ -15608,13 +15761,6 @@
           "metragem": "",
           "partes": [
             "Pé"
-          ]
-        },
-        {
-          "apelido": "Estrutura",
-          "metragem": "8,80",
-          "partes": [
-            "Estrutura"
           ]
         },
         {
@@ -15636,6 +15782,13 @@
           "metragem": "1,05",
           "partes": [
             "Braço Almofada"
+          ]
+        },
+        {
+          "apelido": "Assento",
+          "metragem": "",
+          "partes": [
+            "Assento"
           ]
         }
       ],
@@ -15693,12 +15846,12 @@
         },
         {
           "ordem": 2,
-          "nome_parte": "Estrutura",
-          "termo": "Estrutura",
+          "nome_parte": "Assento",
+          "termo": "Assento",
           "qualificador": "",
           "qualificadores": [],
           "numero": "sing",
-          "apelido_cliente": "Estrutura",
+          "apelido_cliente": "Assento",
           "apelido_override": "",
           "termo_novo": false,
           "so3d": false,
@@ -15716,14 +15869,14 @@
           ],
           "materia_prima_herdada": false,
           "materia_prima_nao_aplica": false,
-          "material_id": "ART_T_Estrutura",
+          "material_id": "ART_T_Assento",
           "configuravel": true,
           "entra_3d": true,
           "mesh_final": "07131A30",
           "tecido": true,
-          "botao_sem_desm": "Assento e Encosto",
-          "botao_com_desm": "Estrutura",
-          "metragem_desm": "8,80",
+          "botao_sem_desm": "Assento e  Encosto",
+          "botao_com_desm": "Assento",
+          "metragem_desm": "",
           "acessorio": false,
           "acessorio_obrigatorio": null,
           "acessorio_acabamentos": [],
@@ -15764,7 +15917,7 @@
           "entra_3d": true,
           "mesh_final": "07131A30",
           "tecido": true,
-          "botao_sem_desm": "Assento e Encosto",
+          "botao_sem_desm": "Assento e  Encosto",
           "botao_com_desm": "Almofada do Encosto",
           "metragem_desm": "1,05",
           "acessorio": false,
@@ -15850,7 +16003,7 @@
           "entra_3d": true,
           "mesh_final": "07131A30",
           "tecido": true,
-          "botao_sem_desm": "Assento e Encosto",
+          "botao_sem_desm": "Assento e  Encosto",
           "botao_com_desm": "Almofada do Braço",
           "metragem_desm": "1,05",
           "acessorio": false,
@@ -15912,6 +16065,7 @@
       "familia": "PATONG",
       "classe": "SOFA",
       "marca": "BEACH",
+      "designer": "",
       "natureza": "estrutura_estofado",
       "ref": false,
       "ok_fd": false,
@@ -15923,7 +16077,7 @@
       "qt_botoes_sem": 3,
       "qt_botoes_com": 5,
       "tecido_desmembravel": true,
-      "acabamento_resumo": "Complementar: Pé | Tecido: Estrutura, Encosto Almofada, Almofada Decorativa, Braço Almofada | Pré-definido: Deslizador",
+      "acabamento_resumo": "Complementar: Pé | Tecido: Assento, Encosto Almofada, Almofada Decorativa, Braço Almofada | Pré-definido: Deslizador",
       "obs_cotas": "",
       "obs_restr_tecido": "",
       "obs_confeccao": "",
@@ -15936,7 +16090,7 @@
           "nome": "07131A31",
           "partes": [
             "Pé",
-            "Estrutura",
+            "Assento",
             "Encosto Almofada",
             "Almofada Decorativa",
             "Braço Almofada",
@@ -15952,17 +16106,17 @@
           ]
         },
         {
-          "apelido": "Assento e Encosto",
-          "partes": [
-            "Estrutura",
-            "Encosto Almofada",
-            "Braço Almofada"
-          ]
-        },
-        {
           "apelido": "Almofada Decorativa",
           "partes": [
             "Almofada Decorativa"
+          ]
+        },
+        {
+          "apelido": "Assento e  Encosto",
+          "partes": [
+            "Assento",
+            "Encosto Almofada",
+            "Braço Almofada"
           ]
         }
       ],
@@ -15972,13 +16126,6 @@
           "metragem": "",
           "partes": [
             "Pé"
-          ]
-        },
-        {
-          "apelido": "Estrutura",
-          "metragem": "8,80",
-          "partes": [
-            "Estrutura"
           ]
         },
         {
@@ -16000,6 +16147,13 @@
           "metragem": "1,05",
           "partes": [
             "Braço Almofada"
+          ]
+        },
+        {
+          "apelido": "Assento",
+          "metragem": "",
+          "partes": [
+            "Assento"
           ]
         }
       ],
@@ -16057,12 +16211,12 @@
         },
         {
           "ordem": 2,
-          "nome_parte": "Estrutura",
-          "termo": "Estrutura",
+          "nome_parte": "Assento",
+          "termo": "Assento",
           "qualificador": "",
           "qualificadores": [],
           "numero": "sing",
-          "apelido_cliente": "Estrutura",
+          "apelido_cliente": "Assento",
           "apelido_override": "",
           "termo_novo": false,
           "so3d": false,
@@ -16080,14 +16234,14 @@
           ],
           "materia_prima_herdada": false,
           "materia_prima_nao_aplica": false,
-          "material_id": "ART_T_Estrutura",
+          "material_id": "ART_T_Assento",
           "configuravel": true,
           "entra_3d": true,
           "mesh_final": "07131A31",
           "tecido": true,
-          "botao_sem_desm": "Assento e Encosto",
-          "botao_com_desm": "Estrutura",
-          "metragem_desm": "8,80",
+          "botao_sem_desm": "Assento e  Encosto",
+          "botao_com_desm": "Assento",
+          "metragem_desm": "",
           "acessorio": false,
           "acessorio_obrigatorio": null,
           "acessorio_acabamentos": [],
@@ -16128,7 +16282,7 @@
           "entra_3d": true,
           "mesh_final": "07131A31",
           "tecido": true,
-          "botao_sem_desm": "Assento e Encosto",
+          "botao_sem_desm": "Assento e  Encosto",
           "botao_com_desm": "Almofada do Encosto",
           "metragem_desm": "1,05",
           "acessorio": false,
@@ -16214,7 +16368,7 @@
           "entra_3d": true,
           "mesh_final": "07131A31",
           "tecido": true,
-          "botao_sem_desm": "Assento e Encosto",
+          "botao_sem_desm": "Assento e  Encosto",
           "botao_com_desm": "Almofada do Braço",
           "metragem_desm": "1,05",
           "acessorio": false,
@@ -16276,6 +16430,7 @@
       "familia": "PATONG",
       "classe": "SOFA",
       "marca": "BEACH",
+      "designer": "",
       "natureza": "estrutura_estofado",
       "ref": false,
       "ok_fd": false,
@@ -16287,7 +16442,7 @@
       "qt_botoes_sem": 3,
       "qt_botoes_com": 4,
       "tecido_desmembravel": true,
-      "acabamento_resumo": "Complementar: Pé | Tecido: Estrutura, Encosto Almofada, Almofada Decorativa | Pré-definido: Deslizador",
+      "acabamento_resumo": "Complementar: Pé | Tecido: Assento, Encosto Almofada, Almofada Decorativa | Pré-definido: Deslizador",
       "obs_cotas": "",
       "obs_restr_tecido": "",
       "obs_confeccao": "",
@@ -16300,7 +16455,7 @@
           "nome": "07131A32",
           "partes": [
             "Pé",
-            "Estrutura",
+            "Assento",
             "Encosto Almofada",
             "Almofada Decorativa",
             "Deslizador"
@@ -16315,16 +16470,16 @@
           ]
         },
         {
-          "apelido": "Assento e Encosto",
-          "partes": [
-            "Estrutura",
-            "Encosto Almofada"
-          ]
-        },
-        {
           "apelido": "Almofada Decorativa",
           "partes": [
             "Almofada Decorativa"
+          ]
+        },
+        {
+          "apelido": "Assento e Almofada do Encosto",
+          "partes": [
+            "Assento",
+            "Encosto Almofada"
           ]
         }
       ],
@@ -16334,13 +16489,6 @@
           "metragem": "",
           "partes": [
             "Pé"
-          ]
-        },
-        {
-          "apelido": "Estrutura",
-          "metragem": "",
-          "partes": [
-            "Estrutura"
           ]
         },
         {
@@ -16355,6 +16503,13 @@
           "metragem": "",
           "partes": [
             "Almofada Decorativa"
+          ]
+        },
+        {
+          "apelido": "Assento",
+          "metragem": "",
+          "partes": [
+            "Assento"
           ]
         }
       ],
@@ -16412,12 +16567,12 @@
         },
         {
           "ordem": 2,
-          "nome_parte": "Estrutura",
-          "termo": "Estrutura",
+          "nome_parte": "Assento",
+          "termo": "Assento",
           "qualificador": "",
           "qualificadores": [],
           "numero": "sing",
-          "apelido_cliente": "Estrutura",
+          "apelido_cliente": "Assento",
           "apelido_override": "",
           "termo_novo": false,
           "so3d": false,
@@ -16435,13 +16590,13 @@
           ],
           "materia_prima_herdada": false,
           "materia_prima_nao_aplica": false,
-          "material_id": "ART_T_Estrutura",
+          "material_id": "ART_T_Assento",
           "configuravel": true,
           "entra_3d": true,
           "mesh_final": "07131A32",
           "tecido": true,
-          "botao_sem_desm": "Assento e Encosto",
-          "botao_com_desm": "Estrutura",
+          "botao_sem_desm": "Assento e Almofada do Encosto",
+          "botao_com_desm": "Assento",
           "metragem_desm": "",
           "acessorio": false,
           "acessorio_obrigatorio": null,
@@ -16483,7 +16638,7 @@
           "entra_3d": true,
           "mesh_final": "07131A32",
           "tecido": true,
-          "botao_sem_desm": "Assento e Encosto",
+          "botao_sem_desm": "Assento e Almofada do Encosto",
           "botao_com_desm": "Almofada do Encosto",
           "metragem_desm": "",
           "acessorio": false,
