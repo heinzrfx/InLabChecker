@@ -1,6 +1,6 @@
 {
   "versao_export": "nomenclatura-3D-v2",
-  "exportado_em": "2026-11-24T14:20:02.785Z",
+  "exportado_em": "2026-11-24T18:26:34.366Z",
   "produtos": [
     {
       "linha": "Artefacto & Beach",
@@ -16108,7 +16108,7 @@
       "natureza": "estrutura_estofado",
       "ref": false,
       "ok_fd": false,
-      "ok_3d": false,
+      "ok_3d": true,
       "ok_revisado": false,
       "animacao": false,
       "qt_meshes": 1,
